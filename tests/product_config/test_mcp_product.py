@@ -1,4 +1,4 @@
-"""本机stdio MCP的产品接入（ADR 0126）：配置、信任、未信任不启动、逐次审批、会话结束回收进程。"""
+"""本机stdio MCP的产品接入（ADR 0127）：配置、信任、未信任不启动、逐次审批、会话结束回收进程。"""
 
 from __future__ import annotations
 

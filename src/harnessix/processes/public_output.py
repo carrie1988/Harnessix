@@ -12,8 +12,9 @@ from harnessix.tools.contracts import ReadContract, Revision
 
 # v2历史前缀预览上限；只用于验证和重建已审计的v2结果。
 MAX_PROCESS_PREVIEW_STREAM_BYTES = 1024
-# v3每流尾部预览上限：容纳常见Python Traceback或pytest失败摘要。两流正文最多16 KiB，
-# JSON转义后最坏约32 KiB，仍低于默认64 KiB单结果视图与1 MiB公开扫描预算。
+# v3与v4每流尾部预览上限（v4按去除转义序列后的正文计）：容纳常见Python Traceback或
+# pytest失败摘要。两流正文最多16 KiB，JSON转义后最坏约32 KiB，仍低于默认64 KiB单结果视图
+# 与1 MiB公开扫描预算。
 MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES = 8 * 1024
 
 
@@ -156,6 +157,49 @@ class PublicProcessOutputSummaryV3(_PublicProcessOutputFields):
             preview = getattr(self.diagnostic_preview, name)
             if preview.offset + preview.size_bytes > stream.persisted_bytes or (
                 preview.truncated != (preview.size_bytes < stream.observed_bytes)
+            ):
+                raise ValueError("诊断预览与观察摘要不一致")
+        return self
+
+
+class PublicProcessStreamTailV4(PublicProcessStreamTail):
+    """去除终端转义序列后的UTF-8尾部。
+
+    预览覆盖原流从offset到归档末尾的字节，其中removed_escape_bytes字节是被去除的转义序列。
+    """
+
+    removed_escape_bytes: int = Field(ge=0, le=MAX_PROCESS_OUTPUT_BYTES)
+
+    @model_validator(mode="after")
+    def truthful_removal(self) -> Self:
+        if self.text is None and self.removed_escape_bytes != 0:
+            raise ValueError("不可见预览不能携带去除字节数")
+        return self
+
+
+class PublicProcessDiagnosticTailV4(ReadContract):
+    stdout: PublicProcessStreamTailV4
+    stderr: PublicProcessStreamTailV4
+
+
+class PublicProcessOutputSummaryV4(_PublicProcessOutputFields):
+    """v3遇到颜色等转义序列即整流不可显示；v4先去除完整转义序列再取尾部。
+
+    其他控制字符仍使该流预览为null；其余事实与v3相同。
+    """
+
+    version: Literal["trusted-process-output/v4"]
+    diagnostic_preview: PublicProcessDiagnosticTailV4
+
+    @model_validator(mode="after")
+    def consistent_preview(self) -> Self:
+        for name in ("stdout", "stderr"):
+            stream = getattr(self, name)
+            preview = getattr(self.diagnostic_preview, name)
+            # 预览代表的原流字节数：显示正文加上被去除的转义序列。
+            covered = preview.size_bytes + preview.removed_escape_bytes
+            if preview.offset + covered > stream.persisted_bytes or (
+                preview.truncated != (covered < stream.observed_bytes)
             ):
                 raise ValueError("诊断预览与观察摘要不一致")
         return self

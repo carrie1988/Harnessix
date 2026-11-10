@@ -18,6 +18,7 @@ from harnessix.agent.models import ToolResultContent
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
+from harnessix.context.contracts import ContextBuildInput
 from harnessix.delivery.trusted_action import workspace_patch_supported
 from harnessix.models.contracts import (
     ModelRequest,
@@ -40,6 +41,7 @@ from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStor
 from harnessix.product_config.agent_context import (
     _PLANNING_INSTRUCTIONS,
     _REGEX_CODING_INSTRUCTIONS_VERSION,
+    ProductAgentContext,
     _coding_instructions,
 )
 from harnessix.product_config.cli import config_main
@@ -1015,3 +1017,147 @@ def test_profile_chain_shares_the_smallest_declared_context_window() -> None:
     assert _chain_context_window([profile("a", 262_144), profile("b", 131_072)]) == 131_072
     # 任一Fallback未声明窗口时，整条链沿用固定上限，不按较大窗口放宽。
     assert _chain_context_window([profile("a", 262_144), profile("b", None)]) is None
+
+
+async def _served_context_options(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    action_config: Path | None = None,
+) -> tuple[dict[str, object], ProductAgentContext]:
+    """启动产品Server并截获Context装配参数与结果；协议循环不运行。"""
+    from harnessix.product_config import server
+
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    path = write_config(tmp_path / "config.json", config)
+    captured: dict[str, object] = {}
+    built: list[ProductAgentContext] = []
+    real_build = server.build_product_agent_context
+
+    def build(*args, **kwargs) -> ProductAgentContext:
+        captured.update(kwargs)
+        built.append(real_build(*args, **kwargs))
+        return built[-1]
+
+    async def idle(*_args: object) -> None:
+        return None
+
+    monkeypatch.setattr(server, "build_product_agent_context", build)
+    monkeypatch.setattr(server, "run_stdio", idle)
+    await run_product_stdio(
+        config_path=path,
+        action_config_path=action_config,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=tmp_path / "state",
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+    (context,) = built
+    return captured, context
+
+
+@pytest.mark.parametrize(
+    ("configured", "trigger", "target"),
+    [(None, 393_216, 196_608), ("third_window", 262_144, 131_072)],
+)
+async def test_product_server_compacts_declared_windows_at_the_configured_point(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    configured: str | None,
+    trigger: int,
+    target: int,
+) -> None:
+    """产品默认在声明窗口一半处压缩、压到四分之一；配置third_window时在三分之一处、压到六分之一。"""
+    windowed = config.model_copy(
+        update={
+            "profiles": tuple(
+                profile.model_copy(update={"context_window_tokens": 262_144})
+                for profile in config.profiles
+            ),
+            **({"compaction": configured} if configured is not None else {}),
+        }
+    )
+    options, context = await _served_context_options(
+        tmp_path, ProductConfigV2.model_validate_json(windowed.model_dump_json()), monkeypatch
+    )
+    assert options["context_compaction"] == (configured or "half_window")
+    assert context.compaction.trigger_history_tokens == trigger
+    assert context.compaction.policy.target_history_tokens == target
+
+
+def test_native_command_backends_select_instructions_that_match_them() -> None:
+    """只按实际验证通过的原生命令后端选择指令；外部边界从不得到本机沙箱指令。"""
+    from harnessix.product_config.native_process import native_tool_name
+    from harnessix.product_config.server import _native_instructions
+    from tests.product_config.test_native_process_profile import native_profile
+
+    profiles = {
+        backend: native_profile(profile_id=backend.replace("_", "-"), backend=backend)
+        for backend in ("external_boundary", "seatbelt", "bubblewrap", "host")
+    }
+
+    def select(*verified_backends: str) -> str | None:
+        verified = {native_tool_name(profiles[backend]) for backend in verified_backends}
+        return _native_instructions(verified | {"exec_command.container"}, tuple(profiles.values()))
+
+    assert select() is None  # 只有容器命令：沿用通用执行指令
+    assert select("external_boundary") == "external_boundary"
+    for local in ("seatbelt", "bubblewrap", "host"):
+        assert select(local) == "native"
+        assert select(local, "external_boundary") == "native"
+    assert _native_instructions(set(), ()) is None
+
+
+@pytest.mark.skipif(os.name != "posix", reason="外部边界只支持POSIX Process Owner")
+@pytest.mark.parametrize("asserted", [True, False])
+async def test_product_server_gives_external_boundary_commands_their_own_instructions(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    asserted: bool,
+) -> None:
+    """外部边界命令经环境断言验证后才可用，此时系统指令换成外部边界版本；未断言时没有命令工具。"""
+    from harnessix.product_config.native_process import EXTERNAL_BOUNDARY_ENVIRONMENT
+    from tests.product_config.test_native_process_profile import native_profile
+
+    if asserted:
+        monkeypatch.setenv(EXTERNAL_BOUNDARY_ENVIRONMENT, "1")
+    else:
+        monkeypatch.delenv(EXTERNAL_BOUNDARY_ENVIRONMENT, raising=False)
+    action_path = tmp_path / "actions.json"
+    action_path.write_bytes(
+        canonical_product_action_config_bytes(
+            build_product_action_config(native_process_profiles=(native_profile(),))
+        )
+    )
+    action_path.chmod(0o600)
+    options, context = await _served_context_options(
+        tmp_path, config, monkeypatch, action_config=action_path
+    )
+    assert options["generic_execution"] is asserted
+    assert options["external_boundary_execution"] is asserted
+    assert options["native_execution"] is False
+    prepared = await context.context.prepare(
+        ContextBuildInput(
+            thread_id=uuid4(), turn_id=uuid4(), model_step=1, workspace=str(tmp_path / "workspace")
+        ),
+        CancelToken(),
+    )
+    sources = {
+        item["source"]
+        for item in json.loads(prepared.instructions or "")["fragments"]
+        if item["kind"] == "runtime_instruction"
+    }
+    external_source = "harnessix.external-boundary-execution-instructions/v2"
+    if asserted:
+        assert external_source in sources
+        assert not any(
+            "generic-execution" in item or "native-execution" in item for item in sources
+        )
+    else:
+        assert external_source not in sources and _REGEX_CODING_INSTRUCTIONS_VERSION in sources

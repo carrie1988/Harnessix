@@ -1,4 +1,4 @@
-"""用户级MCP配置（ADR 0126）：解析`~/.harnessix/mcp.json`、解析命令并计算信任指纹。
+"""用户级MCP配置（ADR 0127）：解析`~/.harnessix/mcp.json`、解析命令并计算信任指纹。
 
 格式沿用通行的`{"mcpServers": {"<id>": {"command", "args", "env"}}}`。
 值里的`${NAME}`启动时从用户环境读取，不写入任何持久文件。

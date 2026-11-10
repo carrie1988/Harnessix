@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 23
+version: 24
 code_revision: 09c7db1f1697dc7e59903011d1838a49ac9e8c71
 owners:
   - product
@@ -44,7 +44,7 @@ supersedes: []
 
 `harnessix skills list [工作区]`由`skills_cli.py`解析参数，内容来自`product_config/skill_diagnostics.py`，使用与Agent启动相同的来源和解析规则，不读写状态库。
 
-## 当前增量：MCP Server命令与Doctor结论（ADR 0126）
+## 当前增量：MCP Server命令与Doctor结论（ADR 0127）
 
 - `harnessix mcp list|trust|untrust`由[`mcp_cli.py`](../../src/harnessix/product_ui/mcp_cli.py)解析参数，状态来自`product_config/mcp_status.py`，读取`~/.harnessix/mcp.json`，不读写状态库：
   - `list`逐个列出Server的状态（已信任、未信任、定义已变化、不可用）、解析后的命令和参数；配置文件本身无效时写到stderr并返回2。
@@ -574,7 +574,7 @@ CLI通过当前Python解释器启动`python -m harnessix agent-server`，不依�
 `code_main`后延迟导入；基础安装缺少依赖时返回`{"code":"tui_dependency_missing",...}`并退出2，不动态下载。
 参数解析前或启动前错误输出为单行、排序、有界JSON，不包含路径、argv、stderr或异常正文。
 
-顶层[`src/harnessix/cli.py`](../../src/harnessix/cli.py)还负责把`coding-eval-campaign`和`coding-eval-suite`分派到Evals模块。后者是默认禁网的受控验证入口，不进入Product UI状态、Textual生命周期或Agent Protocol客户端；其合同和恢复事实归[Evals模块设计](evals.md)所有。
+顶层[`src/harnessix/cli.py`](../../src/harnessix/cli.py)还负责把`coding-eval-campaign`和`coding-eval-suite`分派到Evals模块。后者是默认禁网的受控验证入口，不进入Product UI状态、Textual生命周期或Agent Protocol客户端；其合同和恢复事实归[Evals模块设计](evals.md)所有。原`coding-eval-swebench`分派已随旧本地SWE-bench适配于2026-11-10删除，该名称现按未知命令以退出码2拒绝。
 
 ## 8. 数据结构、重点字段与持久化格式
 
@@ -997,7 +997,8 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 23 | `09c7db1f1697dc7e59903011d1838a49ac9e8c71` | 2026-11-10 | 新增`harnessix mcp list/trust/untrust`和Doctor的MCP小节（ADR 0126）；Doctor文本在可启动时把不影响启动的失败项显示为“警告”；工作区信任文件改用共享的私有JSON写入 |
+| 24 | `09c7db1f1697dc7e59903011d1838a49ac9e8c71` | 2026-11-10 | 新增`harnessix mcp list/trust/untrust`和Doctor的MCP小节（ADR 0127）；Doctor文本在可启动时把不影响启动的失败项显示为“警告”；工作区信任文件改用共享的私有JSON写入 |
+| 23 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 顶层CLI删除`coding-eval-swebench`分派及帮助项；外部基准评测改由wheel之外的Harbor集成运行 |
 | 22 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `code configure --self-hosted`、`--context-window-tokens`及内网地址询问；云模型默认累计Token上限由100万调为300万（过渡值）；未指定`--git-executable`时在Git仓库内自动探测git；`exec`默认开启完成守卫；首次运行需确认工作区信任（`exec`可用`--trust-workspace`）；审批窗口可选择本会话自动接受修改或允许完全相同的操作，`Ctrl+E`切换，规则只保存在内存；已核对牌价的DeepSeek、百炼模型显示费用上限（未扣缓存折扣），其余仍显示费用未知；交互模式在费用可见或本地端点时取消累计Token上限，并按金额档位提醒；`exec --max-cost`按输入单价折算Token上限；新增`harnessix data`列出、导出、删除本机数据并生成低敏诊断 |
 | 17 | `7519a8e69887ad32532bd45845597fd861445193` | 2026-09-28 | 同步顶层停机`state backup/verify`分派及低敏输出；在线TUI/Protocol不变，整体恢复和正式发行仍开放。 |
 | 16 | `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b` | 2026-09-23 | 记录Product App 20秒退出期限经本地全量回归和[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收；旧Revision首次Windows失败的排他根因仍未证实。 |

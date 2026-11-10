@@ -1,4 +1,4 @@
-"""MCP Server信任记录（ADR 0126）：按Server保存用户确认时的定义指纹，定义一变即视为未信任。"""
+"""MCP Server信任记录（ADR 0127）：按Server保存用户确认时的定义指纹，定义一变即视为未信任。"""
 
 from __future__ import annotations
 

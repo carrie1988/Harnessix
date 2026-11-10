@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 45
-code_revision: b35c46217aec51c154158e802bd35c8ccb122ff7
+version: 46
+code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
 modules:
@@ -1632,6 +1632,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 46 | `f8c3ceab4599779fd2a350c3e2ae395e3cbf6608` | 2026-11-10 | 同步主线：公开结果支持命令输出摘要v4；进程类调用的`profile`参数可以省略，传入时须与工具绑定的Profile一致，Eval仍要求显式给出 |
 | 45 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅格式化，行为不变 |
 | 22 | `78ab30069ab4f63d58d9bafad903a7bfd660c257` | 2026-09-27 | 计划回调按阶段有限码表重建固定错误，显式Decoder异常收口；补真实五公开面、取消/超时和固定码全量回归，专项等待提交后验收 |
 | 20 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-23 | 澄清独立Action Request/Journal/Worker是已删除的历史实现，当前只保留进程内Trusted Action执行治理 |

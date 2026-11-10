@@ -23,6 +23,7 @@ from harnessix.processes.public_output import (
     PublicProcessOutputSummary,
     PublicProcessOutputSummaryV2,
     PublicProcessOutputSummaryV3,
+    PublicProcessOutputSummaryV4,
 )
 from harnessix.trusted_actions.builtin_success import validate_builtin_success
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRoutePlan
@@ -437,7 +438,12 @@ def _validate_process_success(plan: ActionRoutePlan, output: JsonValue) -> None:
 
 def _process_summary(
     plan: ActionRoutePlan, output: JsonValue
-) -> PublicProcessOutputSummary | PublicProcessOutputSummaryV2 | PublicProcessOutputSummaryV3:
+) -> (
+    PublicProcessOutputSummary
+    | PublicProcessOutputSummaryV2
+    | PublicProcessOutputSummaryV3
+    | PublicProcessOutputSummaryV4
+):
     """成功与失败共用正式DTO及计划身份检查，不重写用于摘要的原JSON。"""
 
     family = failure_family(plan)
@@ -446,9 +452,12 @@ def _process_summary(
         type[PublicProcessOutputSummary]
         | type[PublicProcessOutputSummaryV2]
         | type[PublicProcessOutputSummaryV3]
+        | type[PublicProcessOutputSummaryV4]
     ) = (
         PublicEvalOutputSummary
         if family == "eval"
+        else PublicProcessOutputSummaryV4
+        if version == "trusted-process-output/v4"
         else PublicProcessOutputSummaryV3
         if version == "trusted-process-output/v3"
         else PublicProcessOutputSummaryV2
@@ -456,8 +465,10 @@ def _process_summary(
         else PublicProcessOutputSummary
     )
     summary = model.model_validate(output)
+    # Process的Profile由工具名与执行器绑定确定，参数可省略、传入须一致；Eval仍要求参数显式给出。
+    supplied = plan.invocation.arguments.get("profile")
     if (
-        summary.profile != plan.invocation.arguments.get("profile")
+        (supplied != summary.profile and not (family == "process" and supplied is None))
         or summary.process_id != str(plan.execution.plan_id)
         or (
             family == "process"

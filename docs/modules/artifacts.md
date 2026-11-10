@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 29402f764eae88d50364a37817635fbb77ba907b
+version: 20
+code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
 modules:
@@ -826,6 +826,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 20 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 动作输出存储识别命令输出预览v4（`trusted-process-output/v4`，预览为流的末尾），旧版本按`LEGACY_PREVIEW_VERSIONS`识别 |
 | 19 | `29402f7` 增量基础 | 2026-10-07 | 同步 Artifact 单件显式只读参数、prepared 全集 Evidence/ReadSet 与无外部回调的同步终端核验；不记录最终验收结论 |
 | 13 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加只读Action Artifact purpose/call恢复清单；孤儿只计数、不读取正文或自动删除 |
 | 12 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Migration 26发布时间、显式列写入、低敏容量和Plan-first Body/Thread保留及备份恢复边界 |

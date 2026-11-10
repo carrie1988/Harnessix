@@ -33,10 +33,10 @@ def test_identity_schema_and_description() -> None:
     profile = host_profile()
     descriptor = native_process_descriptor(profile)
     assert descriptor.name == "host_command.host-shell"
-    assert descriptor.version.startswith("harnessix.host-command/v1:")
+    assert descriptor.version.startswith("harnessix.host-command/v2:")
     assert native_process_executor_id(profile) == "product.host-command.host-shell"
     assert native_process_binding(profile).executor_id == "product.host-command.host-shell"
-    assert set(descriptor.input_schema["required"]) == {"profile", "cmd", "reason"}
+    assert set(descriptor.input_schema["required"]) == {"cmd", "reason"}
     assert "需要用户批准" in descriptor.description and "没有隔离" in descriptor.description
     assert descriptor.requires_approval
 

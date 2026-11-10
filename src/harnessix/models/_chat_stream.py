@@ -299,7 +299,7 @@ class ChatStream:
             finish = "tool_calls"
         if finish == "length" and self._calls and self._repair_arguments:
             # 输出在工具调用中途用满上限：截断的调用按非法参数拒绝（不执行），完整调用照常形成，
-            # 运行时以目录拒绝反馈并在原预算内重入；纯文本截断仍按输出上限失败。
+            # 运行时以目录拒绝反馈并在原预算内重入；纯文本截断交给运行时（truncation_recovery）。
             finish = "tool_calls"
         reasons: dict[str, ResponseCompleted] = {
             "stop": ResponseCompleted(usage=self._usage),

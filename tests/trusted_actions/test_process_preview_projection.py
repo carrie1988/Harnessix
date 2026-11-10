@@ -1,4 +1,4 @@
-"""v2/v3诊断正文必须同时满足闭合DTO、原计划身份及原审计Hash。"""
+"""v2/v3/v4诊断正文必须同时满足闭合DTO、原计划身份及原审计Hash。"""
 
 from __future__ import annotations
 
@@ -13,26 +13,26 @@ from tests.trusted_actions.test_agent_gateway import FixedOutput, agent_state
 from tests.trusted_actions.test_process_failure_projection import ProcessExecutor, process_route
 from tests.trusted_actions.test_success_projection_boundaries import output_reference
 
+# v3每流多一个offset，上限从1 KiB升为8 KiB；v4再多一个removed_escape_bytes。
+TAIL_FIELDS = {"v2": {}, "v3": {"offset": 0}, "v4": {"offset": 0, "removed_escape_bytes": 0}}
+LIMITS = {"v2": 1024, "v3": 8192, "v4": 8192}
+
 
 def preview_output(output: dict, version: str) -> dict:
-    """按版本构造合法预览；v3每流多一个offset，上限从1 KiB升为8 KiB。"""
+    """按版本构造合法预览。"""
     public = dict(output)
     public["version"] = f"trusted-process-output/{version}"
     streams = {
         "stdout": {"text": "test diagnostic\n", "size_bytes": 16, "truncated": False},
         "stderr": {"text": "", "size_bytes": 0, "truncated": False},
     }
-    if version == "v3":
-        for stream in streams.values():
-            stream["offset"] = 0
+    for stream in streams.values():
+        stream.update(TAIL_FIELDS[version])
     public["diagnostic_preview"] = streams
     return public
 
 
-LIMITS = {"v2": 1024, "v3": 8192}
-
-
-@pytest.mark.parametrize("version", ["v2", "v3"])
+@pytest.mark.parametrize("version", ["v2", "v3", "v4"])
 @pytest.mark.parametrize("delivery", ["owner", "inline"])
 @pytest.mark.parametrize("recovery", [False, True])
 @pytest.mark.parametrize(
@@ -118,7 +118,7 @@ async def test_preview_requires_formal_contract_even_with_matching_audit(
         audit.close()
 
 
-@pytest.mark.parametrize("version", ["v2", "v3"])
+@pytest.mark.parametrize("version", ["v2", "v3", "v4"])
 @pytest.mark.parametrize("recovery", [False, True])
 @pytest.mark.parametrize("delivery", ["owner", "inline"])
 @pytest.mark.parametrize(
@@ -133,7 +133,7 @@ async def test_nonzero_feedback_only_consumes_verified_visible_preview(
             if case == "v1":
                 return raw
             public = preview_output(raw.output, version)
-            offset = {"offset": 0} if version == "v3" else {}
+            offset = TAIL_FIELDS[version]
             if case == "truncated":
                 public["diagnostic_preview"]["stdout"] = {
                     "text": "test",

@@ -12,7 +12,7 @@ modules:
 related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
   - docs/adr/0125-skill-product-wiring.md
-  - docs/adr/0126-host-stdio-mcp-with-per-server-trust.md
+  - docs/adr/0127-host-stdio-mcp-with-per-server-trust.md
 related_tests:
   - tests/product_ui/test_cli.py
   - tests/product_ui/test_workspace_trust.py

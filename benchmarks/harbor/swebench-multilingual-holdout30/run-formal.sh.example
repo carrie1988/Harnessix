@@ -1,0 +1,70 @@
+#!/bin/bash
+# 多语言正式评测（holdout30，Harnessix对mini-swe-agent，各2次重复）的运行脚本样板。
+# 运行前由运行负责人替换全部REV占位：CODE_REV是评测代码目录（/data/harnessix/harbor/code-<rev>，
+# 该提交里的formal-harnessix-vs-mini.json已把agent-REV填成AGENT_REV），AGENT_REV是集成包目录
+# （/data/harnessix/harbor/agent-<rev>，含harnessix-bundle.tar.gz、product.json与host-bundle）。
+# 步骤：核对 → 冻结 → 依次运行oracle、harnessix、R → 固定数据集上的双判分 → 两个组别的逐步记录 →
+# Langfuse导出并读回。任一核对失败即拒绝运行，不覆盖已有运行目录。
+set -u
+CODE_REV=REV
+AGENT_REV=REV
+H=/data/harnessix/harbor
+C=$H/code-$CODE_REV
+A=$H/agent-$AGENT_REV
+T=$H/tasks-multilingual-holdout30-219d631d5235
+R=$H/runs/multilingual-holdout30-formal-$CODE_REV
+D=$H/multilingual30/multilingual-holdout30-full.jsonl
+D_SHA256=6254510605c7b0bc840a11da1b3275f98df23d009f683ff6a7d1715886e73c69
+S=$C/benchmarks/harbor/swebench-multilingual-holdout30/formal-harnessix-vs-mini.json
+export PYTHONPATH=$C:$C/packages/evalkit/src LITELLM_LOCAL_MODEL_COST_MAP=True HARBOR_TELEMETRY=0
+PY=/data/harnessix/harbor-venv/bin/python
+P="$PY $C/integrations/harbor/pipeline.py"
+CRED=/data/harnessix/langfuse/state/credentials.env
+log() { echo "$(date -Is) $*"; }
+
+[ "$CODE_REV" != REV ] && [ "$AGENT_REV" != REV ] || { log "fill in CODE_REV and AGENT_REV, refusing"; exit 1; }
+[ -e $R ] && { log "$R exists, refusing"; exit 1; }
+grep -q 'agent-REV' $S && { log "spec still has the agent-REV placeholder, refusing"; exit 1; }
+grep -q "/agent-$AGENT_REV/" $S || { log "spec does not use agent-$AGENT_REV, refusing"; exit 1; }
+for f in $A/harnessix-bundle.tar.gz $A/product.json $A/host-bundle/harnessix/bin/python; do
+  [ -e $f ] || { log "missing $f, refusing"; exit 1; }
+done
+echo "$D_SHA256  $D" | sha256sum -c --quiet || { log "multilingual30 dataset digest mismatch, refusing"; exit 1; }
+[ "$(wc -l < $D)" = 30 ] || { log "dataset is not 30 rows, refusing"; exit 1; }
+for port in 18001 18002; do
+  s=$(curl -s --max-time 5 "http://127.0.0.1:$port/metrics" \
+    | awk '/^vllm:num_requests_(running|waiting)\{/{s += $2} END{print s + 0}')
+  [ "$s" = 0 ] || { log "replica $port busy ($s), refusing"; exit 1; }
+done
+systemctl show harnessix-model-relay-balanced -p ExecStart --no-pager | grep -q -- '--docker-socket' \
+  || { log "host relay does not run with --docker-socket, refusing"; exit 1; }
+hot=$(/opt/hyhal/bin/hy-smi | awk '/^[0-9]+ +[0-9.]+C/{t=$2; sub("C","",t); if (t+0 >= 90) n++} END{print n+0}')
+[ "$hot" = 0 ] || { log "DCU temperature >= 90 C, refusing"; exit 1; }
+
+$P freeze --spec $S --tasks $T --run-dir $R --code-root $C --code-revision $CODE_REV \
+  || { log "freeze failed"; exit 1; }
+log "frozen"
+for arm in oracle harnessix R; do
+  $P run --run-dir $R --arm $arm --code-root $C
+  log "$arm finished"
+done
+$P finish --run-dir $R \
+  --parser oracle=integrations.harbor.result_parsers:OracleParser \
+  --parser harnessix=integrations.harnessix_eval.harbor_parser:HarnessixResultParser \
+  --parser R=integrations.harbor.result_parsers:MiniSweAgentParser \
+  --dataset $D --swebench /data/harnessix/swebench-venv/bin/swebench --workers 4 \
+  --code-revision $CODE_REV > $R/finish.json
+log "finish: $(cat $R/finish.json)"
+mkdir -p $R/steps
+$A/host-bundle/harnessix/bin/python -m integrations.harnessix_eval export-steps \
+  --run-dir $R --trials $R/trials/harnessix.json --output-dir $R/steps --model qwen3.8-flash-next
+$PY $C/integrations/harbor/mini_steps.py --run-dir $R --trials $R/trials/R.json --output-dir $R/steps
+(
+  export LANGFUSE_PUBLIC_KEY="$(grep -m1 "^LANGFUSE_PUBLIC_KEY=" $CRED | cut -d= -f2-)"
+  export LANGFUSE_SECRET_KEY="$(grep -m1 "^LANGFUSE_SECRET_KEY=" $CRED | cut -d= -f2-)"
+  cd $C && $PY -m evalkit export --report $R/run-report.json --steps $R/steps/*.json \
+    --output $R/langfuse-export.json --allow-network --langfuse-base-url http://127.0.0.1:3300 \
+    --verify --readback-report $R/langfuse-readback.json
+) > $R/langfuse-export.log 2>&1
+log "langfuse exit=$?"
+log "done"

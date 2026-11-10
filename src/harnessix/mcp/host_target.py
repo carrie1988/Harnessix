@@ -1,4 +1,4 @@
-"""本机stdio MCP目标（ADR 0126）：以用户本人权限启动，只接受已解析的绝对命令与最小环境。"""
+"""本机stdio MCP目标（ADR 0127）：以用户本人权限启动，只接受已解析的绝对命令与最小环境。"""
 
 from __future__ import annotations
 

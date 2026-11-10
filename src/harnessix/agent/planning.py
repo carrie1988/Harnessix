@@ -41,6 +41,14 @@ UPDATE_PLAN_TOOL = "update_plan"
 UPDATE_PLAN_VERSION = "harnessix.update-plan/v1"
 MAX_PLAN_INPUT_BYTES = 4096
 _PLAN_ITEM_NAMESPACE = "harnessix.plan-item/v1"
+# 模型常只发单个步骤（如{"step_id": "verify", "status": "completed"}）或漏写description；
+# 形状与字段错误附一份完整合法调用，说明每次都发送整份计划，而不是只发变化的步骤。
+_WHOLE_PLAN_EXAMPLE = (
+    "每次调用都发送完整计划（全部步骤），而不是只发变化的步骤。示例："
+    '{"steps": [{"step_id": "reproduce", "description": "Reproduce the bug", '
+    '"status": "completed"}, {"step_id": "fix", "description": "Fix the root cause", '
+    '"status": "in_progress"}]}'
+)
 
 
 class UpdatePlanInput(ContractModel):
@@ -104,7 +112,9 @@ def _plan_rule_violation(arguments: dict[str, Any], body: bytes) -> str:
         return f"参数JSON为{len(body)}字节，超过{MAX_PLAN_INPUT_BYTES}字节上限；请缩短步骤描述"
     steps = arguments.get("steps")
     if not isinstance(steps, list):
-        return '参数须为{"steps": [{"step_id", "description", "status"}...]}'
+        return (
+            '参数须为{"steps": [{"step_id", "description", "status"}...]}；' + _WHOLE_PLAN_EXAMPLE
+        )
     if not 1 <= len(steps) <= 8:
         return f"计划需1到8个步骤，当前{len(steps)}个"
     ids = [step.get("step_id") for step in steps if isinstance(step, dict)]
@@ -115,7 +125,7 @@ def _plan_rule_violation(arguments: dict[str, Any], body: bytes) -> str:
         return f"最多一个步骤为in_progress，当前{active}个"
     return (
         "每个步骤只允许step_id、description（非空）与status"
-        "（pending、in_progress或completed）三个字段"
+        "（pending、in_progress或completed）三个字段；" + _WHOLE_PLAN_EXAMPLE
     )
 
 

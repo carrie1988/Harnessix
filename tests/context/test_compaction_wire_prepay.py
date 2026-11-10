@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -33,7 +32,10 @@ from harnessix.agent.turn_budget_compaction import (
 )
 from harnessix.context.compaction import replay_compaction_plan, validate_compaction
 from harnessix.context.compaction_contracts import CompactionSummary
-from harnessix.context.compaction_projection import compaction_summary_item
+from harnessix.context.compaction_projection import (
+    SUMMARY_PROJECTION_HEADER,
+    compaction_summary_item,
+)
 from harnessix.context.compaction_window import prepare_active_model_history
 from harnessix.context.tool_result_view import history_document
 from harnessix.models._anthropic_mapping import build_request as anthropic_request
@@ -53,6 +55,7 @@ from tests.context.test_turn_budget_compaction import (
     preflight_host,
     pressure_thread,
     settled_attempt,
+    summary_sample,
 )
 from tests.models import anthropic_wire, wire
 
@@ -161,7 +164,7 @@ async def test_complete_wire_requests_prepay_exact_projection_and_selection(wire
         projected,
         *planned.retained_history[1:],
     )
-    assert json.loads(projected.content.text)["trust"] == "derived_history"
+    assert projected.content.text.startswith(SUMMARY_PROJECTION_HEADER)
     assert successor.tools == selection.tools and successor.instructions == context.instructions
     assert (
         successor.tool_choice == selection.choice and successor.forced_tool == selection.forced_tool
@@ -413,13 +416,13 @@ async def test_third_party_estimator_without_exact_projection_promise_stays_lega
 
 @pytest.mark.parametrize("capacity", [-1, 0, 1, 3])
 async def test_empty_capacity_or_zero_output_skips_before_estimation_and_tries_next(
-    wire_host, monkeypatch, capacity
+    wire_host, monkeypatch, capacity, long_summary_header
 ):
     source = pressure_thread()
     planned, context, selection = await plan(wire_host, source)
     assert planned is not None
     one = compaction_summary_item(
-        CompactionSummary(compaction_id=planned.plan.compaction_id, text="x")
+        CompactionSummary(compaction_id=planned.plan.compaction_id, text=summary_sample())
     )
     wrapper_bytes = len(history_document(one).encode()) - 1
     tiny_policy = planned.plan.policy.model_copy(

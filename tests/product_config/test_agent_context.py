@@ -19,9 +19,9 @@ from harnessix.domain.models import ToolDescriptor
 from harnessix.models.contracts import ModelRequest
 from harnessix.product_config.agent_context import (
     CODING_INSTRUCTIONS_VERSION,
-    PRODUCT_CONTEXT_INPUT_LIMIT,
     build_product_agent_context,
 )
+from harnessix.product_config.context_budget import PRODUCT_CONTEXT_INPUT_LIMIT
 from harnessix.secrets.publication import MAX_SCAN_BYTES
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime
@@ -209,23 +209,50 @@ async def test_default_compaction_survives_reopen_and_accounts_summary_attempt(
 
 
 def test_declared_model_window_scales_context_and_compaction_limits(tmp_path: Path) -> None:
-    fixed = build_product_agent_context(tmp_path, max_output_tokens=4096)
     windowed = build_product_agent_context(
         tmp_path, max_output_tokens=4096, context_window_tokens=262_144
     )
+    early = build_product_agent_context(
+        tmp_path,
+        max_output_tokens=4096,
+        context_window_tokens=262_144,
+        context_compaction="third_window",
+    )
 
-    # 估算器按UTF-8字节计；声明窗口后按每Token 3字节换算，窗口三分之一触发、压到六分之一。
-    assert windowed.compaction.trigger_history_tokens == 262_144 * 3 // 3
-    assert windowed.compaction.policy.target_history_tokens == 262_144 * 3 // 6
+    # 估算器按UTF-8字节计；声明窗口后按每Token 3字节换算，产品默认窗口一半触发、压到四分之一。
+    assert windowed.compaction.trigger_history_tokens == 262_144 * 3 // 2
+    assert windowed.compaction.policy.target_history_tokens == 262_144 * 3 // 4
     assert windowed.compaction.policy.max_summary_input_tokens == (262_144 - 4096 - 1536) * 3
     assert windowed.compaction.max_summary_output_tokens == 4096
     assert windowed.compaction.policy.summary_reserve_tokens == 20_480
-    # 未声明窗口时与原固定上限和摘要容量一致。
-    assert fixed.compaction.max_summary_output_tokens == 2048
-    assert fixed.compaction.policy.summary_reserve_tokens == 12_288
-    assert fixed.compaction.trigger_history_tokens == PRODUCT_CONTEXT_INPUT_LIMIT // 2
-    assert fixed.compaction.policy.target_history_tokens == PRODUCT_CONTEXT_INPUT_LIMIT // 4
-    assert fixed.compaction.policy.max_summary_input_tokens == PRODUCT_CONTEXT_INPUT_LIMIT
+    # 评测预设三分之一触发、压到六分之一；输入上限与摘要容量不随压缩点变化。
+    assert early.compaction.trigger_history_tokens == 262_144 * 3 // 3
+    assert early.compaction.policy.target_history_tokens == 262_144 * 3 // 6
+    assert early.compaction.policy.max_summary_input_tokens == (262_144 - 4096 - 1536) * 3
+    assert early.compaction.max_summary_output_tokens == 4096
+    assert early.compaction.policy.summary_reserve_tokens == 20_480
+    # 未声明窗口时与原固定上限和摘要容量一致，压缩点设置不生效。
+    for compaction in ("half_window", "third_window"):
+        fixed = build_product_agent_context(
+            tmp_path, max_output_tokens=4096, context_compaction=compaction
+        )
+        assert fixed.compaction.max_summary_output_tokens == 2048
+        assert fixed.compaction.policy.summary_reserve_tokens == 12_288
+        assert fixed.compaction.trigger_history_tokens == PRODUCT_CONTEXT_INPUT_LIMIT // 2
+        assert fixed.compaction.policy.target_history_tokens == PRODUCT_CONTEXT_INPUT_LIMIT // 4
+        assert fixed.compaction.policy.max_summary_input_tokens == PRODUCT_CONTEXT_INPUT_LIMIT
+
+
+@pytest.mark.parametrize("compaction", ["one_third", "", None, 3, ("third_window",)])
+def test_unknown_compaction_policy_is_rejected(tmp_path: Path, compaction: object) -> None:
+    for window in (None, 262_144):
+        with pytest.raises(ValueError, match="压缩点策略"):
+            build_product_agent_context(
+                tmp_path,
+                max_output_tokens=4096,
+                context_window_tokens=window,
+                context_compaction=compaction,  # type: ignore[arg-type]
+            )
 
 
 async def test_declared_model_window_raises_the_context_input_limit(tmp_path: Path) -> None:
@@ -297,8 +324,8 @@ async def test_window_derived_limits_keep_outbound_requests_within_the_protectio
     # 最大窗口按每Token 3字节换算远超出站请求的扫描容量；换算结果截到扫描容量的四分之三。
     input_limit = policy.compaction.policy.max_summary_input_tokens
     assert input_limit == MAX_SCAN_BYTES * 3 // 4
-    assert policy.compaction.trigger_history_tokens == input_limit // 3
-    assert policy.compaction.policy.target_history_tokens == input_limit // 6
+    assert policy.compaction.trigger_history_tokens == input_limit // 2
+    assert policy.compaction.policy.target_history_tokens == input_limit // 4
     prepared = await policy.context.prepare(_request(tmp_path), CancelToken())
     assert prepared.inspection.available_input_tokens == input_limit
 
@@ -314,19 +341,38 @@ async def test_window_derived_limits_keep_outbound_requests_within_the_protectio
     assert caught.value.code == "public_output_limit"
 
 
-async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("compaction", "seed_chars", "seed_turns", "trigger", "target", "reserve", "summary_output"),
+    [
+        ("half_window", 1100, 8, 49_152, 24_576, 6144, 1228),
+        ("third_window", 400, 14, 32_768, 16_384, 4096, 819),
+    ],
+)
+async def test_small_declared_window_compacts_before_the_fixed_threshold(
+    tmp_path: Path,
+    compaction: str,
+    seed_chars: int,
+    seed_turns: int,
+    trigger: int,
+    target: int,
+    reserve: int,
+    summary_output: int,
+) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     path = tmp_path / "state.db"
-    seeds = SequenceProvider([accounted_text("事实" * 400) for _ in range(14)])
+    seeds = SequenceProvider([accounted_text("事实" * seed_chars) for _ in range(seed_turns)])
     policy = build_product_agent_context(
-        workspace, max_output_tokens=4096, context_window_tokens=32_768
+        workspace,
+        max_output_tokens=4096,
+        context_window_tokens=32_768,
+        context_compaction=compaction,  # type: ignore[arg-type]
     )
     # 小窗口的摘要容量随压缩目标收缩，仍为保留历史留出空间。
-    assert policy.compaction.trigger_history_tokens == 32_768
-    assert policy.compaction.policy.target_history_tokens == 16_384
-    assert policy.compaction.policy.summary_reserve_tokens == 4096
-    assert policy.compaction.max_summary_output_tokens == 819
+    assert policy.compaction.trigger_history_tokens == trigger
+    assert policy.compaction.policy.target_history_tokens == target
+    assert policy.compaction.policy.summary_reserve_tokens == reserve
+    assert policy.compaction.max_summary_output_tokens == summary_output
     # 种子历史在固定上限下累积到小窗口触发点与固定触发点之间；单组较小，近期组放得进压缩目标。
     seeding = build_product_agent_context(workspace, max_output_tokens=4096)
     async with AgentRuntime(
@@ -337,7 +383,7 @@ async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_pat
         summary_provider=seeds,
     ) as runtime:
         thread = await runtime.create_thread(str(workspace))
-        for index in range(14):
+        for index in range(seed_turns):
             seeded = await runtime.run_turn(
                 thread.thread_id, "调查实现与测试", request_id=f"seed-{index}"
             )
@@ -347,7 +393,10 @@ async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_pat
         final_provider = SequenceProvider([accounted_text("已完成验证。")])
         summary = SequenceProvider([accounted_text("保留任务、已验证事实和未完成检查。")])
         fresh = build_product_agent_context(
-            workspace, max_output_tokens=4096, context_window_tokens=window
+            workspace,
+            max_output_tokens=4096,
+            context_window_tokens=window,
+            context_compaction=compaction,  # type: ignore[arg-type]
         )
         async with AgentRuntime(
             SQLiteSessionStore(path),
@@ -360,9 +409,9 @@ async def test_small_declared_window_compacts_before_the_fixed_threshold(tmp_pat
                 thread.thread_id, "继续修复", request_id=f"continue-{window}"
             )
 
-    # 同一历史在固定上限下不压缩，声明的小窗口则在其三分之一处压缩。
+    # 同一历史在固定上限下不压缩，声明的小窗口则在所选压缩点处压缩。
     fixed = await continue_turn(None)
     assert fixed.status == "completed" and not fixed.compactions
     windowed = await continue_turn(32_768)
     assert windowed.status == "completed"
-    assert [compaction.status for compaction in windowed.compactions] == ["summarized"]
+    assert [item.status for item in windowed.compactions] == ["summarized"]

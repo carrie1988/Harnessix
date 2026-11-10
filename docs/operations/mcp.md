@@ -9,7 +9,7 @@ modules:
   - mcp
   - product_config
 related_adrs:
-  - docs/adr/0126-host-stdio-mcp-with-per-server-trust.md
+  - docs/adr/0127-host-stdio-mcp-with-per-server-trust.md
 related_tests:
   - tests/product_config/test_mcp_product.py
 supersedes: []

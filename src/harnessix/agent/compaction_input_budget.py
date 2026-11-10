@@ -13,7 +13,10 @@ from harnessix.agent.turn_budget_compaction import (
 )
 from harnessix.context.compaction import PreparedCompaction
 from harnessix.context.compaction_contracts import CompactionSummary
-from harnessix.context.compaction_projection import compaction_summary_item
+from harnessix.context.compaction_projection import (
+    SUMMARY_PROJECTION_HEADER,
+    compaction_summary_item,
+)
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_view import PreparedModelHistory, history_document
@@ -27,13 +30,14 @@ from harnessix.models.contracts import (
 
 def reserved_summary_item(planned: PreparedCompaction) -> Item | None:
     """ASCII 占满 Native 投影预留；当前内置 mapper 的转义/Unicode 也受此 wire 上界支配。"""
-    summary = CompactionSummary(compaction_id=planned.plan.compaction_id, text="x")
+    head = SUMMARY_PROJECTION_HEADER
+    summary = CompactionSummary(compaction_id=planned.plan.compaction_id, text=head + "x")
     wrapper_size = len(history_document(compaction_summary_item(summary)).encode()) - 1
     capacity = planned.plan.policy.summary_reserve_tokens - wrapper_size
     if capacity <= 0:
         return None
     return compaction_summary_item(
-        CompactionSummary(compaction_id=planned.plan.compaction_id, text="x" * capacity)
+        CompactionSummary(compaction_id=planned.plan.compaction_id, text=head + "x" * capacity)
     )
 
 

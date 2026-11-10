@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 131
+version: 132
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -19,11 +19,9 @@ related_adrs:
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
-  - tests/evals/swebench/test_regex_agent_execution.py
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/product_config/test_optional_pre_edit_runtime.py
   - tests/product_config/test_grep_snapshot_patch.py
-  - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/product_config/test_planning_workflow.py
   - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
@@ -139,7 +137,7 @@ supersedes: []
 - **零配置**：
   - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
-- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v2`；外部边界与容器使用通用指令（`harnessix.generic-execution-instructions/v4`）。两者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v3`；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
@@ -157,6 +155,7 @@ supersedes: []
 - 执行：工具名`exec_command.<id>`、执行器`product.command-profile.<id>`，与容器命令Profile共用身份（ID互斥），
   公开输出合同、审批规则与启动恢复不变。执行计划记为`host_guarded/host/full`，能力提供方`external-boundary`。
 - 语义：命令以工作区根为当前目录直接读写，改动保留；只得到Profile预设环境变量，不继承App Server环境；
+  系统指令使用如实描述这些语义的外部边界版本（见上文“系统指令”）；
   非零退出码报`process_nonzero_exit`，超时、输出上限、账本对账与Eval测试Profile共用
   [`host_process_action.py`](../../src/harnessix/product_config/host_process_action.py)宿主执行器。
 - 回归：[合同与证明](../../tests/product_config/test_native_process_profile.py)、
@@ -240,8 +239,8 @@ Source 末轮 Snapshot 捕获显式接入[原生读取与纯编码进度](../cha
 以独立版本`harnessix.workspace-patch-compact/v1`公布较短英文描述与Schema；Router显式Schema与解码器机制保证
 Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`WorkspacePatchInput`严格解码，非法组合照旧以
 `tool_invalid_arguments`失败且无审批或效果。离线测量首请求固定输入由3466降至2524 Token（含工作集指引）。
-只在SWE显式v14与工作集组合冻结；回归见[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)
-与[v14配置](../../tests/evals/swebench/test_compact_surface_run_config.py)。离线通过不代表质量改善。
+原只由本地SWE-bench显式v14与工作集组合启用，该评测路径已于2026-11-10删除，产品默认不开启；回归见
+[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)。离线通过不代表质量改善。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -293,8 +292,8 @@ Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`Wor
 ### 1.1 正式Coding Context装配
 
 默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
-[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source。
-输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），历史达到窗口三分之一时压缩、压到六分之一（较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时），摘要预留至多为压缩目标的四分之一（上限20480字节），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source，
+输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），压缩点由顶层`compaction`选择：默认`half_window`在历史达到窗口一半时压缩、压到四分之一；`third_window`在三分之一时压缩、压到六分之一（单次请求与累计输入更小，但有损压缩更频繁、每次都要等摘要，只用于有累计Token预算的无人值守任务，Harbor评测组别显式选择）。摘要预留至多为压缩目标的四分之一（上限20480字节，`half_window`下即窗口的十六分之一），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（`half_window`触发393216字节、目标196608字节；`third_window`触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要，`compaction`不生效。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
 Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
 
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
@@ -681,6 +680,7 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
 | `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
+| `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
 
 每个Profile都独立展开整条Fallback链并验证：
 
@@ -2024,9 +2024,11 @@ Process公共输入限制为固定`profile`和有界`selectors`。宿主在
 [`process_profile.py`](../../src/harnessix/product_config/process_profile.py)中重新证明Container Engine文件身份、平台Owner能力、镜像
 Repo Digest、无网络只读Sandbox、资源上限及Secret版本；失败返回稳定省略原因，不降级到Host Shell。
 
-广告描述明确要求显式提供`"profile": "固定ID"`，工具名不能替代该必填参数。
+工具名已确定Profile（`run_profile.<id>`、`exec_command.<id>`、`host_command.<id>`），`profile`可省略，
+传入时必须等于固定ID（2026-11-10起，`product-process/v2`、`product-command/v2`、`native-command/v2`、
+`host-command/v2`；见[R3变更说明第8节](../changes/m09-r3-trusted-input-feedback.md)）。
 `selectors`可省略或为空数组；策略`none`广告`maxItems=0`，`bounded_test_selector`保持32。
-原严格Decoder、Selector安全验证、镜像与程序绑定不变；缺少参数不自动补全。
+原严格Decoder、Selector安全验证、镜像与程序绑定不变；省略的`profile`不序列化，显式`null`仍被拒绝。
 描述及Schema进入原Fingerprint，旧Binding不得复用新目录或新批准。
 无效输入沿Trusted规划前安全反馈持久化；修正调用仍需要精确独立审批。
 共同合同、源码链及SDK拒绝/修正/批准/取消/重开验证见
@@ -2250,9 +2252,10 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 131 | `6a2fd39272ef2bba6fee5108bff577c0154183a9` | 2026-11-10 | Windows沙箱外命令（W2）：[`native_shells.py`](../../src/harnessix/product_config/native_shells.py)集中Shell规则，POSIX仍为sh/bash/dash/zsh加`-c`/`-lc`，Windows只允许沙箱外`powershell.exe`或`pwsh.exe`配固定参数（不加载配置、不交互、UTF-8输出）；零配置在Windows上生成`host_command.host-shell`，Windows Process Owner只证明沙箱外命令；环境继承增加Windows系统与用户目录变量 |
-| 130 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 本机MCP（ADR 0126）：`mcp_config.py`解析`~/.harnessix/mcp.json`并计算信任指纹，`mcp_trust.py`保存信任，`mcp_status.py`汇总状态供`harnessix mcp`、`code doctor`和会话启动共用，`mcp_composition.py`把工具按需审批接入；`extension_composition.py`把Skill与MCP作为一个扩展资源交给Action运行时；`private_json.py`供工作区信任与MCP信任共用私有原子写入 |
-| 129 | `d761381c3f5abf0000296efabeb734ad1257b0e1` | 2026-11-10 | `ProviderDefinition.proxy_url`与向导`--proxy-url`：云端点经显式本机HTTP代理访问（优先于环境变量），本机与内网自托管端点拒绝代理；按ADR 0014修订，未显式配置时读取`HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY`；OpenAI Chat与Anthropic请求、`doctor --probe-model`使用同一代理选择 |
+| 132 | `6a2fd39272ef2bba6fee5108bff577c0154183a9` | 2026-11-10 | Windows沙箱外命令（W2）：[`native_shells.py`](../../src/harnessix/product_config/native_shells.py)集中Shell规则，POSIX仍为sh/bash/dash/zsh加`-c`/`-lc`，Windows只允许沙箱外`powershell.exe`或`pwsh.exe`配固定参数（不加载配置、不交互、UTF-8输出）；零配置在Windows上生成`host_command.host-shell`，Windows Process Owner只证明沙箱外命令；环境继承增加Windows系统与用户目录变量 |
+| 131 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 本机MCP（ADR 0127）：`mcp_config.py`解析`~/.harnessix/mcp.json`并计算信任指纹，`mcp_trust.py`保存信任，`mcp_status.py`汇总状态供`harnessix mcp`、`code doctor`和会话启动共用，`mcp_composition.py`把工具按需审批接入；`extension_composition.py`把Skill与MCP作为一个扩展资源交给Action运行时；`private_json.py`供工作区信任与MCP信任共用私有原子写入 |
+| 130 | `d761381c3f5abf0000296efabeb734ad1257b0e1` | 2026-11-10 | `ProviderDefinition.proxy_url`与向导`--proxy-url`：云端点经显式本机HTTP代理访问（优先于环境变量），本机与内网自托管端点拒绝代理；按ADR 0014修订，未显式配置时读取`HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY`；OpenAI Chat与Anthropic请求、`doctor --probe-model`使用同一代理选择 |
+| 129 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 本地SWE-bench评测包`harnessix.evals.swebench`与`coding-eval-swebench`命令删除：相关测试从映射中移除，紧凑Patch回归不再借用该包的自动审批规则；只由该路径开启的复现提示、复现门禁（`coding_reproduction_gate`）和工作流视图草稿开关删除，`coding_scratch`只保留供候选交叉检查使用的命名约定 |
 | 128 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `ProviderDefinition.self_hosted`与向导`--self-hosted`：内网自托管端点可用本地预设和免费计价；未声明时维持原严格校验。预检新增`product_self_hosted_key_length`，拒绝短于16字节的本地占位Key。向导默认为OpenAI Chat开启紧凑工具结果，并为已核对的DeepSeek、百炼模型填写上下文窗口；`agent-server --unattended`由`harnessix exec`传入，开启完成守卫并在费用未知时按预留额继续；向导配置重试4次；声明上下文窗口时按窗口收紧输出上限，放不下思考时自动关闭思考，手写配置违反约束时校验失败；原生执行指令v3允许在用户要求时经`host_command`提交，内置Git交付移至1.1 |
 | 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |
@@ -3131,16 +3134,16 @@ Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新�
 
 ### 复现草稿目录
 
-[`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)定义保留目录名`harnessix_scratch`：显式开启时编码工作流视图在判断
-Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Git `:(exclude,glob)**/harnessix_scratch/**`排除任意深度的草稿。
+[`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)只保留草稿命名约定（`test_harnessix_scratch*.py`文件或
+任意深度的`harnessix_scratch/`目录），目前仅供[候选交叉检查](candidates.md)叠加另一候选的草稿文件。编码工作流视图的草稿开关
+（`scratch_reproduction`）和SWE-bench补丁收集对草稿的排除已随旧本地SWE-bench路径于2026-11-10删除。
 
 
 ## 当前增量：工作流门禁说明（`explain_tool_gates`，默认关闭）
 
 [`CodingWorkflowToolView(explain_tool_gates=True)`](../../src/harnessix/product_config/coding_tool_view.py)在三种受限阶段给出原因：
 测试失败后Patch因改动文件未重读而隐藏（列出待重读路径）、失败Patch后强制重读、目录为空（应以文本给出最终答复）。
-关闭时说明被清空，选择结果与此前逐字一致；开启只附加说明，可执行集合不变。失败且只改复现草稿的Patch（无任何效果）
-连同结果移出视图投影，避免空路径集把重读门禁退化为强制重试Patch；成功的仅草稿Patch仍触发强制运行复现。
+关闭时说明被清空，选择结果与此前逐字一致；开启只附加说明，可执行集合不变。
 
 ## 当前增量：测试超时判定（`test_timeouts_are_failures`，默认关闭）
 
@@ -3187,14 +3190,12 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 依赖`self_verification`：校验轮说明另要求搜索同一行为的其他实现（同类/子类、其他后端或打印器、重复辅助函数）并一致修复。
 依据为新鲜集未解决项中“公开测试通过但修复范围不全”（参考修复同时改动模型未改的同类实现）的通用类别。
 
-## 当前增量：复现门禁（`require_failing_reproduction`，默认关闭）
+## 已删除：复现提示与复现门禁
 
-[`coding_reproduction_gate`](../../src/harnessix/product_config/coding_reproduction_gate.py)经`admit_call`实现：首次修改源码前，
-须有一次选择了复现草稿（`test_harnessix_scratch*.py`或`harnessix_scratch/`，含Django原生标签形态）的公开测试以代码级失败
-（`process_nonzero_exit`/`process_timeout`）结束；此前触及源码的Patch以`workspace_patch_reproduction_required`拒绝，只改草稿的Patch放行。
-门禁有界：复现测试两次未失败（本环境难以复现）或源码修改已被拒绝三次即自动解锁；已有源码改动后不再锁定。锁定期间视图说明解锁条件，
-复现测试通过时不进入Review而重新开放编辑并要求原样使用问题示例；被拒调用从工作流与证据投影中移除（从未准备或执行）。
-开启时自我校验说明另要求原样运行问题示例代码。依赖`scratch_reproduction`与`explain_tool_gates`。
+复现门禁（`require_failing_reproduction`）、复现草稿开关（`scratch_reproduction`）和
+`build_product_agent_context(reproduction_guidance=...)`的复现提示只由已删除的本地SWE-bench配置开启，产品从未默认启用，
+已于2026-11-10随该路径删除；`CodingWorkflowToolView`不再实现`admit_call`，Runtime按普通视图处理。
+历史设计见[SWE-bench历史变更设计](../changes/swebench-adapter-verified-25-pilot.md)，删除范围见[删除记录](../changes/remove-legacy-swebench-path.md)。
 
 ## 当前增量：Provider思考协议与Profile思考模式（已求证端点默认开启）
 

@@ -79,7 +79,7 @@ def test_profile_approval_accepts_formal_empty_selector_defaults(arguments) -> N
 @pytest.mark.parametrize(
     "arguments",
     (
-        {},
+        {"profile": None},
         {"profile": "other-profile"},
         {"profile": "agents-dump-compatible-refactor-check", "selectors": ["tests/test_a.py"]},
         {"profile": "agents-dump-compatible-refactor-check", "selectors": None},

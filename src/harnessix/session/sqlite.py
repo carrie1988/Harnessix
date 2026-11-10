@@ -35,6 +35,7 @@ from harnessix.session.store_publication import (
     SessionPublicationBinding,
     require_projection_content_version,
 )
+from harnessix.session.verified_prefix_cache import VerifiedPrefixCache
 
 _APPLICATION_ID = 0x4858534B
 _WAL_TIMEOUT_SECONDS = 5.0
@@ -213,6 +214,7 @@ class SQLiteSessionStore:
     ) -> None:
         self.path = Path(path).resolve()
         self._publication = publication
+        self._verified_prefixes = VerifiedPrefixCache()  # ADR 0126
         self._fault = fault or (lambda _: None)
         self._runtime_owner_token: object | None = None
 
@@ -561,7 +563,10 @@ class SQLiteSessionStore:
         self, database: aiosqlite.Connection, thread_id: UUID, after: int
     ) -> list[AgentEvent]:
         if self._publication is not None:
-            return await authenticated_events(database, self._publication, thread_id, after)
+            verified = self._verified_prefixes
+            return await authenticated_events(
+                database, self._publication, thread_id, after, verified_prefixes=verified
+            )
         cursor = await database.execute(
             "SELECT * FROM agent_events WHERE thread_id = ? AND sequence > ? ORDER BY sequence",
             (str(thread_id), after),

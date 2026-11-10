@@ -27,6 +27,7 @@ from harnessix.agent.usage import (
 )
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
+from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.product_config import server as product
@@ -260,8 +261,10 @@ async def test_compactions_are_billed_steps_and_a_summary_is_new_input(tmp_path:
     assert compactions["1"].output_text == "[failure]\nprovider_summary_truncated: 摘要达到上限"
     assert compactions["2"].status == "ok"
     # 压缩摘要正文带宿主标注（ADR 0058第2版§2.7），逐步记录如实导出模型看到的摘要。
+    # 宿主说明头（ADR 0058第3版）与时点都写在摘要正文前。
     stamped = (
-        "[Summary of earlier turns, written before step 1; later messages are newer and "
+        SUMMARY_PROJECTION_HEADER
+        + "[Summary of earlier turns, written before step 1; later messages are newer and "
         "override it.]\n保留public接口；解析器待验证。"
     )
     assert compactions["2"].output_text == "[summary]\n" + stamped

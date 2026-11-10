@@ -265,6 +265,23 @@ def test_completion_guard_is_explicit_and_strict():
         ProductConfigV2.model_validate_json(json.dumps({**dumped, "completion_guard": "yes"}))
 
 
+def test_compaction_point_defaults_to_half_window_and_rejects_unknown_policies():
+    """压缩点默认在窗口一半处、不序列化（已有配置摘要不变），向导不预设；只接受已命名策略。"""
+    plain = build_product_config(_draft(context_window_tokens=262_144))
+    assert plain.compaction == "half_window"
+    dumped = plain.model_dump(mode="json")
+    assert "compaction" not in dumped
+    early = ProductConfigV2.model_validate_json(
+        json.dumps({**dumped, "compaction": "third_window"})
+    )
+    assert early.compaction == "third_window"
+    assert early.model_dump(mode="json")["compaction"] == "third_window"
+    assert product_config_digest(early) != product_config_digest(plain)
+    for invalid in ("quarter_window", "1/3", 3, None):
+        with pytest.raises(ValidationError):
+            ProductConfigV2.model_validate_json(json.dumps({**dumped, "compaction": invalid}))
+
+
 def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
     """向导默认为OpenAI Chat开启紧凑工具结果；未开启时Provider发送JSON工具结果。"""
     protocol, omit = thinking_preset(LOCAL_VLLM, "qwen3.8-flash-next") or (None, False)

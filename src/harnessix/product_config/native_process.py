@@ -66,8 +66,8 @@ from .process_command import (
 from .process_profile import process_tool_name
 
 EXTERNAL_BOUNDARY_ENVIRONMENT = "HARNESSIX_EXTERNAL_BOUNDARY"
-NATIVE_COMMAND_VERSION = "harnessix.native-command/v1"
-HOST_COMMAND_VERSION = "harnessix.host-command/v1"
+NATIVE_COMMAND_VERSION = "harnessix.native-command/v2"
+HOST_COMMAND_VERSION = "harnessix.host-command/v2"
 HOST_COMMAND_PREFIX = "host_command"
 # 命令的基础环境；Profile预设同名变量时以预设为准。
 _BASE_ENVIRONMENT: Mapping[str, str] = MappingProxyType(
@@ -339,9 +339,10 @@ def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescr
         f"{profile.profile_sha256[:24]}",
         description=(
             f"在当前环境中执行Shell命令“{profile.description}”（{profile.profile_id} "
-            f'{profile.version}）；必填"profile": "{profile.profile_id}"和"cmd"'
-            + ('以及"reason"，' if host else "，")
-            + "工具名不能替代字段。cmd必须非空白，允许管道、重定向和多行，"
+            f'{profile.version}）；必填"cmd"'
+            + ('和"reason"' if host else "")
+            + f'，"profile"可省略（工具名已确定，传入时须为"{profile.profile_id}"）。'
+            + "cmd必须非空白，允许管道、重定向和多行，"
             "不含NUL且最多16384 UTF-8字节。"
             + _boundary_description(profile)
             + (

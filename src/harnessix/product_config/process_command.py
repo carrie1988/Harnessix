@@ -3,21 +3,37 @@
 from __future__ import annotations
 
 import json
+from typing import Annotated
 
-from pydantic import ConfigDict, Field, JsonValue, ValidationError, field_validator
+from pydantic import BeforeValidator, ConfigDict, Field, JsonValue, ValidationError, field_validator
 
 from harnessix.domain.models import ContractModel
 
-PRODUCT_COMMAND_VERSION = "harnessix.product-command/v1"
+PRODUCT_COMMAND_VERSION = "harnessix.product-command/v2"
 MAX_COMMAND_BYTES = 16_384
 
 
+def _explicit_profile(value: object) -> object:
+    """Profile可省略，但显式传入的null不是固定Profile ID；省略时默认值不经过此校验。"""
+    if value is None:
+        raise ValueError("Profile必须是固定ID字符串")
+    return value
+
+
+# 工具名已确定Profile：参数可省略，传入时须为固定ID；省略时不序列化，规范化参数再次解码一致。
+OptionalProfileId = Annotated[
+    str | None,
+    BeforeValidator(_explicit_profile),
+    Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$", exclude_if=lambda value: value is None),
+]
+
+
 class RunCommandInput(ContractModel):
-    """模型仅提供固定Profile ID及一条有界UTF-8 Shell命令。"""
+    """模型提供一条有界UTF-8 Shell命令；Profile由工具名绑定，可省略，传入时必须等于固定值。"""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    profile: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
+    profile: OptionalProfileId = None
     cmd: str = Field(min_length=1, max_length=MAX_COMMAND_BYTES)
 
     @field_validator("cmd")
@@ -41,9 +57,7 @@ def run_command_schema(profile_id: str) -> dict[str, JsonValue]:
             "profile": {
                 "type": "string",
                 "const": profile_id,
-                "description": (
-                    f'必填字段，必须显式传入固定值"{profile_id}"；工具名不能替代该字段。'
-                ),
+                "description": f'可省略：工具名已确定Profile；传入时必须等于固定值"{profile_id}"。',
             },
             "cmd": {
                 "type": "string",
@@ -56,7 +70,7 @@ def run_command_schema(profile_id: str) -> dict[str, JsonValue]:
                 ),
             },
         },
-        "required": ["profile", "cmd"],
+        "required": ["cmd"],
         "additionalProperties": False,
     }
 
@@ -71,7 +85,7 @@ def decode_run_command(
         )
     except (ValidationError, ValueError, TypeError):
         raise ValueError("Command Profile参数无效") from None
-    if checked.profile != profile_id:
+    if checked.profile not in (None, profile_id):
         raise ValueError("Command Profile不匹配")
     return checked
 
@@ -108,7 +122,7 @@ def host_command_schema(profile_id: str) -> dict[str, JsonValue]:
             "会在审批时展示给用户；最多500 UTF-8字节。"
         ),
     }
-    return {**schema, "properties": properties, "required": ["profile", "cmd", "reason"]}
+    return {**schema, "properties": properties, "required": ["cmd", "reason"]}
 
 
 def decode_host_command(profile_id: str, arguments: dict[str, JsonValue]) -> HostCommandInput:
@@ -118,6 +132,6 @@ def decode_host_command(profile_id: str, arguments: dict[str, JsonValue]) -> Hos
         )
     except (ValidationError, ValueError, TypeError):
         raise ValueError("沙箱外命令参数无效") from None
-    if checked.profile != profile_id:
+    if checked.profile not in (None, profile_id):
         raise ValueError("Command Profile不匹配")
     return checked

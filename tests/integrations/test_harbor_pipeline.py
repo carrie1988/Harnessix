@@ -64,9 +64,10 @@ def test_harnessix_swebench_template_renders_the_issue_verbatim_with_mini_aligne
         assert phrase in rendered
 
 
-def test_template_v2_reviews_failures_against_the_original_code_in_place() -> None:
-    """v2：基线在原地用git stash取得，按测试id与失败信息比较，并区分预期的旧行为断言与回归。"""
-    template = ROOT / "benchmarks/harbor/harnessix/swebench-task-v2.j2"
+@pytest.mark.parametrize("version", ["v2", "v3"])
+def test_template_reviews_failures_against_the_original_code_in_place(version: str) -> None:
+    """v2起：基线在原地用git stash取得，按测试id与失败信息比较，并区分预期的旧行为断言与回归。"""
+    template = ROOT / f"benchmarks/harbor/harnessix/swebench-task-{version}.j2"
     issue = "Callable storage {{ not a template }} fails\nwith `default_storage` <b>"
     rendered = render_prompt_template(template, issue)
     assert rendered.startswith("<pr_description>\nConsider the following PR description:\n")
@@ -88,6 +89,34 @@ def test_template_v2_reviews_failures_against_the_original_code_in_place() -> No
         assert name not in lowered
 
 
+def test_template_v3_accepts_an_old_behaviour_failure_only_with_a_quoted_request() -> None:
+    """v3：只有能引用PR描述中要求该改变的原句时，既有测试的新失败才算预期；否则按回归收窄修复。"""
+    rendered = render_prompt_template(
+        ROOT / "benchmarks/harbor/harnessix/swebench-task-v3.j2", "Issue text"
+    )
+    for phrase in (
+        "quote the sentence of the PR description that\n"
+        "  asks for the behaviour the test contradicts",
+        "narrow or change your fix until the test passes again",
+        "If you cannot quote such a sentence, the failure is (b)",
+        "does not ask for never justifies (a)",
+    ):
+        assert phrase in rendered
+    assert "name the test and the reason in your summary" not in rendered
+
+
+def test_template_v3_is_language_neutral_and_asks_for_a_clean_diff() -> None:
+    """v3同时用于Multilingual：不写某一种语言的命令，并要求收尾前删除自己产生的构建产物。"""
+    rendered = render_prompt_template(
+        ROOT / "benchmarks/harbor/harnessix/swebench-task-v3.j2", "Issue text"
+    )
+    assert "python -" not in rendered
+    for manifest in ("pyproject.toml", "package.json", "go.mod", "Cargo.toml", "pom.xml"):
+        assert manifest in rendered
+    assert "delete the scratch files and build outputs you created" in rendered
+    assert "builds and installed packages may point at the workspace" in rendered
+
+
 @pytest.mark.parametrize(
     "spec",
     [
@@ -99,6 +128,7 @@ def test_template_v2_reviews_failures_against_the_original_code_in_place() -> No
         "benchmarks/harbor/swebench-verified-holdout49/network-isolation-smoke.json",
         "benchmarks/harbor/swebench-verified-dev25/oracle.json",
         "benchmarks/harbor/swebench-verified-dev25/formal-ab.json",
+        "benchmarks/harbor/swebench-multilingual-holdout30/formal-harnessix-vs-mini.json",
     ],
 )
 def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec: str) -> None:
@@ -118,6 +148,51 @@ def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec
         if "prompt_template_path" in kwargs:
             assert not Path(kwargs["prompt_template_path"]).is_absolute()
             render_prompt_template(ROOT / kwargs["prompt_template_path"], "issue")
+
+
+def test_multilingual_formal_spec_matches_the_verified_budgets_with_task_environments() -> None:
+    """多语言正式评测：Harnessix预算与dev25正式评测相同，命令环境按任务生成而非固定actions.json；
+    mini与11-08的R组别同配置但断网。"""
+    spec = json.loads(
+        (
+            ROOT / "benchmarks/harbor/swebench-multilingual-holdout30/formal-harnessix-vs-mini.json"
+        ).read_text(encoding="utf-8")
+    )
+    dev25 = json.loads(
+        (ROOT / "benchmarks/harbor/swebench-verified-dev25/formal-ab.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    earlier_r = json.loads(
+        (
+            ROOT / "benchmarks/harbor/swebench-multilingual-holdout30/r-mini-swe-agent.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert [arm["arm_id"] for arm in spec["arms"]] == ["oracle", "harnessix", "R"]
+    assert (spec["attempts"], spec["content_policy"]) == (2, "full")
+    harnessix = spec["arms"][1]["agent"]
+    reference = next(a for a in dev25["arms"] if a["arm_id"] == "harnessix-new")["agent"]
+    budget = ("max_steps", "max_tokens", "timeout_seconds", "approval_mode", "model_relays")
+    assert {k: harnessix["kwargs"][k] for k in budget} == {
+        k: reference["kwargs"][k] for k in budget
+    }
+    assert harnessix["override_timeout_sec"] == reference["override_timeout_sec"] == 3900
+    assert harnessix["kwargs"]["task_command_environment"] is True
+    assert harnessix["kwargs"]["external_boundary"] is True
+    assert "action_config_template" not in harnessix["kwargs"]
+    assert not any(path.endswith("actions.json") for path in spec["arms"][1]["artifacts"])
+    assert harnessix["kwargs"]["prompt_template_path"].endswith("swebench-task-v3.j2")
+    mini = spec["arms"][2]["agent"]
+    earlier = earlier_r["arms"][1]["agent"]
+    assert {**mini, "kwargs": {**mini["kwargs"], "network_isolation": False}} == {
+        **earlier,
+        "kwargs": {**earlier["kwargs"], "network_isolation": False},
+    }
+    assert spec["compose_env"] == {
+        **dev25["compose_env"],
+        "HARNESSIX_RAW_MIRROR_DIR": earlier_r["compose_env"]["HARNESSIX_RAW_MIRROR_DIR"],
+    }
+    assert spec["graders"] == earlier_r["graders"]
 
 
 def test_every_agent_arm_runs_offline_exactly_when_the_spec_has_the_isolation_overlay() -> None:

@@ -74,7 +74,9 @@ ModelRequest、Provider Wire或Session公共合同。Kernel验证规则只能引
 [`planning.py`](../../src/harnessix/agent/planning.py)复用Plan契约，一次受保护CAS发布短结果、
 准备状态和模型自报计划；末尾规则、取消／期限、输出上限和崩溃恢复不授予Workspace权限。
 缺少`step_id`的步骤按位置补齐（不改已给出的ID、不制造重复；回放时同样补齐，压缩Pin仍能识别最新计划），
-被拒时失败说明指出具体违反的规则（步骤数、重复ID、多个进行中、字节上限、字段或位置），不回显参数值。
+被拒时失败说明指出具体违反的规则（步骤数、重复ID、多个进行中、字节上限、字段或位置），不回显参数值；
+参数形状或步骤字段错误（常见为只发单个步骤或漏写`description`）另附一份固定的完整合法调用示例，
+并说明每次调用都发送整份计划；工具合同、Schema与版本不变。
 完整契约及源码／测试映射统一见[规划候选设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)。
 [`test_planning_tool.py`](../../tests/agent/test_planning_tool.py)的离线绿灯不构成真实编码验收。
 

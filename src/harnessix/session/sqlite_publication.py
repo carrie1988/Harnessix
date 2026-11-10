@@ -27,6 +27,7 @@ from harnessix.session.store_publication import (
     require_projection_content_version,
     unproven,
 )
+from harnessix.session.verified_prefix_cache import VerifiedPrefix, VerifiedPrefixCache
 
 
 async def verify_store(
@@ -216,8 +217,13 @@ async def authenticated_events(
     *,
     history_checkpoint: Callable[[], None] | None = None,
     _body_refs: list[EventBodyRef] | None = None,
+    verified_prefixes: VerifiedPrefixCache | None = None,
 ) -> list[AgentEvent]:
-    """从根重算完整前缀再返回选定事件；损坏投影不改变原事件认证依据。"""
+    """返回after之后的认证事件；链与签名检查点一致才交付。
+
+    游标读取命中进程内已验证前缀时只校验本次返回的事件（ADR 0126），否则从根重算完整前缀；
+    损坏投影不改变原事件认证依据。
+    """
     # 仅原历史协调器传入内建空列表；不让累积器变成可执行的自定义回调。
     if _body_refs is not None and (type(_body_refs) is not list or _body_refs):
         raise unproven()
@@ -225,7 +231,7 @@ async def authenticated_events(
     proof = await checkpoint(database, publication, thread_id)
     if proof is None:
         return []
-    deadline, size = monotonic() + 10.0, 0
+    deadline = monotonic() + 10.0
 
     def check() -> None:
         if history_checkpoint is not None:
@@ -234,12 +240,66 @@ async def authenticated_events(
             raise KernelError("publication_history_timeout", "Session历史认证超时")
 
     check_cancel = parent_cancel_checkpointer(check)
+    cached = (
+        verified_prefixes.prefix(publication, thread_id, after)
+        if verified_prefixes is not None and after > 0 and _body_refs is None
+        else None
+    )
+    if cached is not None:
+        assert verified_prefixes is not None
+        try:
+            return await _verified_events(
+                database,
+                publication,
+                thread_id,
+                proof,
+                after,
+                cached,
+                check_cancel,
+                after,
+                verified_prefixes=verified_prefixes,
+            )
+        except KernelError as error:
+            if error.code != "publication_history_unproven":
+                raise
+            # 增量不成立时不信任缓存，回到从根全量校验。
+            verified_prefixes.forget(thread_id)
+    root = VerifiedPrefix(EMPTY_PREFIX, 0)
+    return await _verified_events(
+        database,
+        publication,
+        thread_id,
+        proof,
+        0,
+        root,
+        check_cancel,
+        after,
+        _body_refs,
+        verified_prefixes=verified_prefixes,
+    )
+
+
+async def _verified_events(
+    database: aiosqlite.Connection,
+    publication: SessionPublicationBinding,
+    thread_id: UUID,
+    proof: ProjectionPublicationSeal,
+    start: int,
+    base: VerifiedPrefix,
+    check_cancel: Callable[[], None],
+    after: int,
+    body_refs: list[EventBodyRef] | None = None,
+    *,
+    verified_prefixes: VerifiedPrefixCache | None = None,
+) -> list[AgentEvent]:
+    """从第start个事件之后的已验证前缀起逐个验MAC并串链，与签名检查点一致才返回after之后的事件。"""
     cursor = await database.execute(
         "SELECT thread_id,sequence,event_id,substr(event_json,1,1048577) AS event_json "
-        "FROM agent_events WHERE thread_id=? ORDER BY sequence",
-        (str(thread_id),),
+        "FROM agent_events WHERE thread_id=? AND sequence>? ORDER BY sequence",
+        (str(thread_id), start),
     )
-    prefix, count, selected = EMPTY_PREFIX, 0, []
+    prefix, size, count = base.prefix_sha256, base.history_bytes, start
+    entries, selected = [base], []
     async for row in cursor:
         check_cancel()
         count += 1
@@ -252,6 +312,7 @@ async def authenticated_events(
         if size > MAX_HISTORY_BYTES:
             raise KernelError("publication_history_limit", "Session历史认证超过资源上限")
         prefix = extend_prefix(prefix, seal)
+        entries.append(VerifiedPrefix(prefix, size))
         # 复用MAC成功后唯一解析的事件，索引与原Body身份也必须一致。
         if (
             str(event.thread_id) != row["thread_id"]
@@ -261,9 +322,9 @@ async def authenticated_events(
             raise unproven()
         if count > after:
             selected.append(event)
-            if _body_refs is not None:
+            if body_refs is not None:
                 # 摘要来自刚完成 MAC 核验的原字节，禁止以模型重编码代替。
-                _body_refs.append(
+                body_refs.append(
                     EventBodyRef(
                         event.thread_id,
                         event.event_id,
@@ -274,6 +335,8 @@ async def authenticated_events(
         check_cancel()
     if count != proof.sequence or prefix != proof.prefix_sha256 or size != proof.history_bytes:
         raise unproven()
+    if verified_prefixes is not None:
+        verified_prefixes.record(publication, thread_id, start, entries)
     return selected
 
 

@@ -1,4 +1,4 @@
-"""`harnessix mcp list|trust|untrust`：查看并逐个信任本机MCP Server（ADR 0126）。"""
+"""`harnessix mcp list|trust|untrust`：查看并逐个信任本机MCP Server（ADR 0127）。"""
 
 from __future__ import annotations
 

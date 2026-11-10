@@ -1610,7 +1610,7 @@ Container限制第三方Server启动即越权的范围，代价是依赖Containe
 
 | 文档版本 | 代码版本 | 日期 | 变更 |
 |---|---|---|---|
-| 8 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 增加本机stdio目标与产品接入（ADR 0126），见文末“本机stdio目标与产品接入” |
+| 8 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 增加本机stdio目标与产品接入（ADR 0127），见文末“本机stdio目标与产品接入” |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 启用DOC-1.6严格文档门禁；MCP产品能力边界不变 |
 | 1 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 建立MCP现行模块设计，覆盖Target、目录、Schema、SQLite、调用新鲜度、Trusted Action、UNKNOWN、反向Server、取消、部署、安全、测试和已知风险 |
 
@@ -1660,9 +1660,9 @@ Target可能长期保存Prepared对象，旧Probe与transport文字字段都不�
 不创建Client；稳定失败与原清理由既有MCP Store和生命周期拥有。资源失效不阻断按身份清理。
 详细字段、源码研究、流程/时序/数据流及测试见[资源准入详设](../changes/m09-r1-container-resource-admission.md)。
 
-## 本机stdio目标与产品接入（ADR 0126）
+## 本机stdio目标与产品接入（ADR 0127）
 
-[ADR 0126](../adr/0126-host-stdio-mcp-with-per-server-trust.md)修订ADR 0073第2条：产品默认在本机以stdio启动用户信任的Server，
+[ADR 0127](../adr/0127-host-stdio-mcp-with-per-server-trust.md)修订ADR 0073第2条：产品默认在本机以stdio启动用户信任的Server，
 容器目标保留给需要隔离的部署。目标接口移到[`target_protocol.py`](../../src/harnessix/mcp/target_protocol.py)，成员都是只读属性，
 三种目标（容器、本机、进程内）都满足它。
 

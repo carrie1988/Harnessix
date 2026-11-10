@@ -241,6 +241,17 @@ async def _command_case(
                 )
 
 
+def test_command_profile_may_be_omitted_because_the_tool_name_binds_it() -> None:
+    """v2合同：工具名已确定Profile，省略profile有效；传入时仍须等于固定值。"""
+    checked = decode_run_command("workspace-command", {"cmd": "echo ok"})
+    assert checked.profile is None
+    # 规范化参数可再次解码：省略的profile不会序列化成显式null。
+    assert checked.model_dump(mode="json") == {"cmd": "echo ok"}
+    assert decode_run_command("workspace-command", checked.model_dump(mode="json")) == checked
+    with pytest.raises(ValueError):
+        decode_run_command("workspace-command", {"profile": "other", "cmd": "echo ok"})
+
+
 def test_command_profile_has_distinct_opt_in_identity_and_strict_schema(tmp_path: Path) -> None:
     profile = _command_profile(tmp_path / "docker")
     descriptor = process_profile_descriptor(profile)
@@ -248,12 +259,12 @@ def test_command_profile_has_distinct_opt_in_identity_and_strict_schema(tmp_path
     assert process_tool_name(profile.profile_id) == "run_profile.workspace-command"
     assert process_tool_name(profile.profile_id, "shell_command") == descriptor.name
     assert descriptor.name == "exec_command.workspace-command"
-    assert descriptor.version == f"harnessix.product-command/v1:{profile.profile_sha256[:24]}"
+    assert descriptor.version == f"harnessix.product-command/v2:{profile.profile_sha256[:24]}"
     assert binding.executor_id == "product.command-profile.workspace-command"
     assert descriptor.requires_approval and descriptor.requires_idempotency
     assert descriptor.supports_reconciliation and not descriptor.supports_parallel_calls
     assert set(descriptor.input_schema["properties"]) == {"profile", "cmd"}
-    assert set(descriptor.input_schema["required"]) == {"profile", "cmd"}
+    assert set(descriptor.input_schema["required"]) == {"cmd"}
     assert descriptor.input_schema["additionalProperties"] is False
 
 
@@ -286,7 +297,7 @@ def test_command_decoder_preserves_exact_text_and_utf8_boundary(cmd: str) -> Non
         {"profile": "workspace-command", "cmd": "\ud800"},
         {"profile": "other", "cmd": "echo ok"},
         {"profile": "workspace-command"},
-        {"cmd": "echo ok"},
+        {"profile": None, "cmd": "echo ok"},
         {"profile": "workspace-command", "cmd": 123},
         {"profile": "workspace-command", "cmd": "echo ok", "selectors": []},
         {"profile": "workspace-command", "cmd": "echo ok", "cwd": "/tmp"},
@@ -371,7 +382,7 @@ async def test_command_terminal_output_uses_process_contract_and_archives_comple
         if returncode:
             assert result.error is not None and result.error.code == "process_nonzero_exit"
         assert isinstance(result.output, dict)
-        assert result.output["version"] == "trusted-process-output/v3"
+        assert result.output["version"] == "trusted-process-output/v4"
         assert result.output["profile"] == "workspace-command"
         assert result.output["process_id"] == str(case.approval.plan_id)
         reference = cast(dict[str, Any], result.output["artifact"])

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from uuid import UUID
 
-from harnessix.agent.errors import AgentFailure
 from harnessix.agent.models import (
     ItemStatus,
     TextContent,
@@ -20,17 +18,6 @@ from harnessix.delivery.rollback_action import WORKSPACE_ROLLBACK_TOOL
 from harnessix.delivery.trusted_action import WORKSPACE_PATCH_TOOL
 from harnessix.domain.models import EffectClass, ToolDescriptor
 from harnessix.product_config.coding_closure_budget import prefer_closing_over_investigation
-from harnessix.product_config.coding_reproduction_gate import (
-    LOCKED_NOTICE,
-    REPRODUCTION_PASSED_NOTICE,
-    RUN_REPRODUCTION_NOTICE,
-    VERBATIM_SELF_CHECK,
-    ReproductionGateState,
-    reproduction_admission_failure,
-    reproduction_gate_state,
-    without_reproduction_rejections,
-)
-from harnessix.product_config.coding_scratch import is_scratch_path
 from harnessix.product_config.coding_test_outcomes import (
     with_test_timeouts_as_failures,
     without_rejected_profile_arguments,
@@ -54,15 +41,6 @@ class _Observation:
     @property
     def tool(self) -> str:
         return self.call.tool
-
-
-def _is_scratch_entry(entry: object) -> bool:
-    """Patch文件项或状态项的路径是否属于可忽略的复现草稿。"""
-
-    if not isinstance(entry, dict):
-        return False
-    path = entry.get("path")
-    return isinstance(path, str) and is_scratch_path(path)
 
 
 def _observations(turn: Turn) -> tuple[_Observation, ...]:
@@ -358,48 +336,11 @@ def _with_reads_after_failed_patch(
 
 
 def _delivers_change(observation: _Observation) -> bool:
-    """Patch调用是否触及可交付文件；复现草稿被剔除后为空的调用不算首次修改。"""
+    """Patch调用是否声明了要修改的文件；空文件列表的调用不算首次修改。"""
     if observation.tool not in _PATCH_TOOLS:
         return False
     files = observation.call.arguments.get("files")
     return bool(files) if isinstance(files, list) else True
-
-
-def _without_scratch_edits(turn: Turn) -> Turn:
-    """视图专用投影：Patch调用只保留非复现草稿文件，草稿不触发重读门禁或首次修改判断。
-
-    失败且只改草稿的调用无任何效果，连同结果整体移出视图；否则它以空路径集
-    退化为强制重试Patch，模型无法再读取草稿取得正确SHA。
-    """
-    results = {
-        item.content.call_id: item.content
-        for item in turn.items
-        if isinstance(item.content, ToolResultContent)
-    }
-    items = []
-    dropped: set[UUID] = set()
-    for item in turn.items:
-        content = item.content
-        if isinstance(content, ToolResultContent) and content.call_id in dropped:
-            continue
-        files = (
-            content.arguments.get("files")
-            if isinstance(content, ToolCallContent) and content.tool in _PATCH_TOOLS
-            else None
-        )
-        if isinstance(content, ToolCallContent) and isinstance(files, list):
-            kept = [entry for entry in files if not _is_scratch_entry(entry)]
-            result = results.get(content.call_id)
-            if files and not kept and result is not None and result.outcome == "failed":
-                dropped.add(content.call_id)
-                continue
-            if len(kept) != len(files):
-                content = content.model_copy(
-                    update={"arguments": {**content.arguments, "files": kept}}
-                )
-                item = item.model_copy(update={"content": content})
-        items.append(item)
-    return turn.model_copy(update={"items": tuple(items)})
 
 
 def _workflow_failed(observations: tuple[_Observation, ...]) -> bool:
@@ -421,10 +362,8 @@ def _with_exclusive_profile_patch(selection: ModelToolSelection) -> ModelToolSel
     return selection
 
 
-def _latest_review_is_clean(
-    observations: tuple[_Observation, ...], *, ignore_scratch: bool = False
-) -> bool:
-    """最近一次成功的git_review在最近一次成功Patch之后，且无可交付改动（可忽略复现草稿）。"""
+def _latest_review_is_clean(observations: tuple[_Observation, ...]) -> bool:
+    """最近一次成功的git_review在最近一次成功Patch之后，且无可交付改动。"""
     patches = [
         o.index for o in observations if o.tool in _PATCH_TOOLS and o.result.outcome == "succeeded"
     ]
@@ -441,8 +380,7 @@ def _latest_review_is_clean(
     entries = status.get("entries")
     if not isinstance(entries, list) or len(entries) != status.get("total_entries"):
         return False
-    deliverable = [entry for entry in entries if not (ignore_scratch and _is_scratch_entry(entry))]
-    return not deliverable and diff.get("utf8_bytes") == 0
+    return not entries and diff.get("utf8_bytes") == 0
 
 
 _VERIFICATION_NOTICE = (
@@ -540,16 +478,14 @@ _SIBLING_SCOPE_CHECK = (
 )
 
 
-def _first_closure_with_changes(
-    observations: tuple[_Observation, ...], *, ignore_scratch: bool
-) -> bool:
+def _first_closure_with_changes(observations: tuple[_Observation, ...]) -> bool:
     """恰有一次成功的git_review，且它在最近一次成功Patch之后并显示可交付改动。"""
     reviews = [
         o for o in observations if o.tool == _GIT_REVIEW_TOOL and o.result.outcome == "succeeded"
     ]
     return (
         len(reviews) == 1
-        and not _latest_review_is_clean(observations, ignore_scratch=ignore_scratch)
+        and not _latest_review_is_clean(observations)
         and any(o.tool in _PATCH_TOOLS and o.result.outcome == "succeeded" for o in observations)
     )
 
@@ -558,15 +494,10 @@ def _verification_selection(
     definitions: tuple[ToolDescriptor, ...],
     *,
     sibling_scope: bool = False,
-    verbatim_example: bool = False,
 ) -> ModelToolSelection:
     """自我校验轮：开放调查、修改与测试（auto，可直接总结收尾）；Review门禁随新改动照旧生效。"""
     hidden = _ALL_GIT_REVIEW_TOOLS | _HIDDEN_WORKFLOW_ACTIONS | {"read_artifact"}
-    notice = (
-        _VERIFICATION_NOTICE
-        + (_SIBLING_SCOPE_CHECK if sibling_scope else "")
-        + (VERBATIM_SELF_CHECK if verbatim_example else "")
-    )
+    notice = _VERIFICATION_NOTICE + (_SIBLING_SCOPE_CHECK if sibling_scope else "")
     return ModelToolSelection(
         tuple(tool for tool in definitions if tool.name not in hidden),
         notice=notice,
@@ -579,27 +510,6 @@ _CLEAN_REVIEW_NOTICE = (
     "a new patch; re-read the target file, re-apply the intended fix with {patch}, then run "
     "the tests."
 )
-
-
-def _with_reproduction_lock(
-    gate: ReproductionGateState,
-    selection: ModelToolSelection,
-    definitions: tuple[ToolDescriptor, ...],
-) -> ModelToolSelection:
-    """门禁锁定时不进入Review（仅改了复现草稿），并说明解锁条件；关闭的目录保持关闭。"""
-    if not gate.locked or not selection.tools:
-        return selection
-    forced = selection.forced_tool
-    if forced is not None and forced.startswith("run_profile."):
-        return replace(selection, notice=RUN_REPRODUCTION_NOTICE)
-    names = {tool.name for tool in selection.tools}
-    if names & _ALL_GIT_REVIEW_TOOLS or gate.latest_reproduction_passed:
-        editable = _SOURCE_INSPECTION_TOOLS | ({tool.name for tool in definitions} & _PATCH_TOOLS)
-        return ModelToolSelection(
-            tuple(tool for tool in definitions if tool.name in editable),
-            notice=REPRODUCTION_PASSED_NOTICE if gate.latest_reproduction_passed else LOCKED_NOTICE,
-        )
-    return replace(selection, notice=LOCKED_NOTICE)
 
 
 def _reopened_selection(definitions: tuple[ToolDescriptor, ...]) -> ModelToolSelection:
@@ -626,8 +536,6 @@ class CodingWorkflowToolView:
     patch_deadline_requests: int | None = None
     # Review显示工作区净改动为空（如后续Patch撤销了修复）时重新开放调查与修改，而不是关闭目录。
     reopen_after_clean_review: bool = False
-    # 复现草稿目录中的改动不算可交付改动（草稿永不进入补丁）。
-    scratch_reproduction: bool = False
     # 向模型说明本步工具受限的原因与解锁条件；关闭时选择结果逐字不变。
     explain_tool_gates: bool = False
     # 公开测试Profile超时（被测代码或测试挂起）按代码级失败进入诊断修复，而非关闭目录。
@@ -646,8 +554,6 @@ class CodingWorkflowToolView:
     force_review_after_repairs: bool = False
     # 自我校验另要求检查同一行为的其他实现（同类/子类、其他后端或打印器、重复辅助函数）。
     sibling_scope_check: bool = False
-    # 首次改源码前须有一次复现草稿测试以代码级失败结束（有界自动解锁）；自我校验原样运行问题示例。
-    require_failing_reproduction: bool = False
 
     def __post_init__(self) -> None:
         if self.patch_deadline_requests is not None and (
@@ -655,8 +561,6 @@ class CodingWorkflowToolView:
             or not 1 <= self.patch_deadline_requests <= 16
         ):
             raise ValueError("Patch截止请求数必须是1到16")
-        if type(self.scratch_reproduction) is not bool:
-            raise ValueError("复现草稿开关必须是布尔值")
         if type(self.explain_tool_gates) is not bool:
             raise ValueError("工具门禁说明开关必须是布尔值")
         if type(self.test_timeouts_are_failures) is not bool:
@@ -673,12 +577,6 @@ class CodingWorkflowToolView:
             raise ValueError("修复循环上限依赖工具门禁说明传达收尾条件")
         if type(self.profile_argument_errors_recoverable) is not bool:
             raise ValueError("Profile参数错误可恢复开关必须是布尔值")
-        if type(self.require_failing_reproduction) is not bool:
-            raise ValueError("复现门禁开关必须是布尔值")
-        if self.require_failing_reproduction and not (
-            self.scratch_reproduction and self.explain_tool_gates
-        ):
-            raise ValueError("复现门禁依赖复现草稿与工具门禁说明")
         if type(self.sibling_scope_check) is not bool:
             raise ValueError("同类实现检查开关必须是布尔值")
         if self.sibling_scope_check and not self.self_verification:
@@ -704,27 +602,16 @@ class CodingWorkflowToolView:
         if self.allow_optional_pre_edit_profile and self.require_pre_edit_profile is not False:
             raise ValueError("可选预测试不能同时启用强制修改前基线")
 
-    def admit_call(self, turn: Turn, call: ToolCallContent) -> AgentFailure | None:
-        """复现门禁未解锁时拒绝触及源码的Patch；其他调用与关闭门禁时一律放行。"""
-        if not self.require_failing_reproduction:
-            return None
-        return reproduction_admission_failure(turn, call)
-
     def select(
         self,
         turn: Turn,
         definitions: tuple[ToolDescriptor, ...],
     ) -> ModelToolSelection:
-        gate = reproduction_gate_state(turn) if self.require_failing_reproduction else None
-        if gate is not None:
-            turn = without_reproduction_rejections(turn)
         workflow_definitions = (
             tuple(tool for tool in definitions if tool.name != UPDATE_PLAN_TOOL)
             if self.enable_planning
             else definitions
         )
-        if self.scratch_reproduction:
-            turn = _without_scratch_edits(turn)
         if self.test_timeouts_are_failures:
             turn = with_test_timeouts_as_failures(turn)
         if self.profile_argument_errors_recoverable:
@@ -740,21 +627,15 @@ class CodingWorkflowToolView:
         if (
             self.self_verification
             and not selection.tools
-            and _first_closure_with_changes(
-                _observations(turn), ignore_scratch=self.scratch_reproduction
-            )
+            and _first_closure_with_changes(_observations(turn))
         ):
             selection = _verification_selection(
-                workflow_definitions,
-                sibling_scope=self.sibling_scope_check,
-                verbatim_example=self.require_failing_reproduction,
+                workflow_definitions, sibling_scope=self.sibling_scope_check
             )
         if (
             self.reopen_after_clean_review
             and not selection.tools
-            and _latest_review_is_clean(
-                _observations(turn), ignore_scratch=self.scratch_reproduction
-            )
+            and _latest_review_is_clean(_observations(turn))
         ):
             selection = _reopened_selection(workflow_definitions)
             patches = [tool.name for tool in selection.tools if tool.name in _PATCH_TOOLS]
@@ -768,8 +649,6 @@ class CodingWorkflowToolView:
             )
         if self.reserve_closing_phase:
             selection = self._prefer_closing(turn, selection)
-        if gate is not None:
-            selection = _with_reproduction_lock(gate, selection, workflow_definitions)
         baseline_pending = (
             self.require_pre_edit_profile
             and any(tool.name.startswith("run_profile.") for tool in selection.tools)

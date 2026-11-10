@@ -6,7 +6,9 @@ import base64
 import codecs
 import hashlib
 import json
-from typing import Annotated, Literal, Self, cast
+import re
+from collections.abc import Callable
+from typing import Annotated, Literal, NamedTuple, Self, cast
 
 from pydantic import Field, JsonValue, TypeAdapter, ValidationError, model_validator
 
@@ -188,16 +190,20 @@ class TrustedProcessOutputDocument(ReadContract):
         return self
 
 
+_CURRENT_PREVIEW_VERSION = "trusted-process-output/v4"
+LegacyPreviewVersion = Literal["trusted-process-output/v2", "trusted-process-output/v3"]
+
+
 def trusted_process_public_output(
     document: TrustedProcessOutputDocument,
     *,
     include_passed: bool = False,
     include_preview: bool = False,
-    legacy_preview: bool = False,
+    legacy_preview: LegacyPreviewVersion | None = None,
 ) -> dict[str, JsonValue]:
     """从同一验真文档派生公开合同；默认精确保留历史v1及Eval摘要。
 
-    include_preview派生当前v3尾部预览；legacy_preview只用于重建已审计的v2前缀预览。
+    include_preview派生当前v4预览；legacy_preview只用于按原版本重建已审计的v2前缀或v3尾部预览。
     """
 
     if include_passed and (include_preview or legacy_preview):
@@ -206,14 +212,15 @@ def trusted_process_public_output(
         raise ValueError("Process公开输出只能选择一个预览版本")
     public = document.summary.public_output()
     if include_preview:
-        public["version"] = "trusted-process-output/v3"
+        public["version"] = _CURRENT_PREVIEW_VERSION
         public["diagnostic_preview"] = {
-            name: _stream_tail(document, name) for name in ("stdout", "stderr")
+            name: _stream_display_tail(document, name) for name in ("stdout", "stderr")
         }
     if legacy_preview:
-        public["version"] = "trusted-process-output/v2"
+        build = _LEGACY_PREVIEWS[legacy_preview]
+        public["version"] = legacy_preview
         public["diagnostic_preview"] = {
-            name: _stream_preview(document, name) for name in ("stdout", "stderr")
+            name: build(document, name) for name in ("stdout", "stderr")
         }
     if include_passed:
         summary = document.summary
@@ -230,15 +237,19 @@ def recorded_process_public_output(
     current: dict[str, JsonValue],
     expected_sha256: str,
 ) -> dict[str, JsonValue] | None:
-    """按原审计Hash选择同一文档的公开形状：当前合同，或当前预览版之前的v2前缀与v1纯摘要。
+    """按原审计Hash选择同一文档的公开形状：当前合同，或当前预览版之前的各预览版与v1纯摘要。
 
     只重建已审计事实，不给旧终态追加新预览；Eval等无预览形状没有历史候选。
     """
 
     candidates = [current]
-    if current.get("version") == "trusted-process-output/v3":
-        candidates.append(trusted_process_public_output(document, legacy_preview=True))
-    if current.get("version") in {"trusted-process-output/v2", "trusted-process-output/v3"}:
+    versions = (_CURRENT_PREVIEW_VERSION, *LEGACY_PREVIEW_VERSIONS)
+    version = current.get("version")
+    if isinstance(version, str) and version in versions:
+        candidates.extend(
+            trusted_process_public_output(document, legacy_preview=older)
+            for older in LEGACY_PREVIEW_VERSIONS[versions.index(version) :]
+        )
         candidates.append(trusted_process_public_output(document))
     return next(
         (item for item in candidates if canonical_digest(item) == expected_sha256),
@@ -246,14 +257,53 @@ def recorded_process_public_output(
     )
 
 
+# 终端转义序列（ECMA-48/35）：CSI如颜色与光标移动；OSC与DCS、SOS、PM、APC控制串以BEL或ST结束，
+# 控制串内容不含C0控制字符，因此不会越过终止符吞掉后续输出；其余为ESC后接可选中间字节与一个
+# 终止字节，如ESC 7、ESC ( B。未闭合或畸形的ESC不匹配，仍按控制字符使整流不可显示，不展示残片。
+_TERMINAL_ESCAPE_SEQUENCE = re.compile(
+    rb"\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]"
+    rb"|\x1b[\]PX^_][^\x00-\x1f\x7f]*(?:\x07|\x1b\\)"
+    rb"|\x1b(?![\[\]PX^_])[\x20-\x2f]*[\x30-\x7e]"
+)
+
+
+class _DisplayStream(NamedTuple):
+    # 去除转义序列后的可显示UTF-8正文，及被去除序列在原归档流中按位置升序的[起, 止)字节区间。
+    text: bytes
+    escapes: tuple[tuple[int, int], ...]
+
+
+def _archived_stream(document: TrustedProcessOutputDocument, name: str) -> bytes:
+    return b"".join(chunk.data() for chunk in document.chunks if chunk.stream == name)
+
+
+def _is_displayable(text: str) -> bool:
+    return all(char.isprintable() or char in "\t\r\n" for char in text)
+
+
 def _visible_stream(document: TrustedProcessOutputDocument, name: str) -> bytes | None:
-    """整个归档前缀须是可显示UTF-8；不将后半段含乱码/控制符的流伪装成普通文本。"""
-    data = b"".join(chunk.data() for chunk in document.chunks if chunk.stream == name)
+    """v2/v3规则：整个归档前缀须是可显示UTF-8；不将后半段含乱码/控制符的流伪装成普通文本。"""
+    data = _archived_stream(document, name)
     try:
         decoded = data.decode("utf-8")
     except UnicodeError:
         return None
-    return data if all(char.isprintable() or char in "\t\r\n" for char in decoded) else None
+    return data if _is_displayable(decoded) else None
+
+
+def _display_stream(document: TrustedProcessOutputDocument, name: str) -> _DisplayStream | None:
+    """v4规则：原流须是合法UTF-8，去除完整终端转义序列后整个正文仍须可显示。
+
+    转义序列全由ASCII组成，在合法UTF-8中只落在字符边界上，去除后不会拼出原流没有的字符。
+    """
+    data = _archived_stream(document, name)
+    try:
+        data.decode("utf-8")
+    except UnicodeError:
+        return None
+    escapes = tuple(match.span() for match in _TERMINAL_ESCAPE_SEQUENCE.finditer(data))
+    text = _TERMINAL_ESCAPE_SEQUENCE.sub(b"", data)
+    return _DisplayStream(text, escapes) if _is_displayable(text.decode("utf-8")) else None
 
 
 def _stream_preview(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
@@ -270,15 +320,21 @@ def _stream_preview(document: TrustedProcessOutputDocument, name: str) -> dict[s
     return {"text": text, "size_bytes": size, "truncated": size < summary.observed_bytes}
 
 
+def _tail_start(data: bytes) -> int:
+    """最后至多8 KiB的起点，后移到完整UTF-8字符。"""
+    start = max(0, len(data) - MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES)
+    while start < len(data) and data[start] & 0xC0 == 0x80:
+        start += 1
+    return start
+
+
 def _stream_tail(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
-    """取归档流最后至多8 KiB，起点后移到完整UTF-8字符；offset为起点在流中的字节偏移。"""
+    """v3：取归档流最后至多8 KiB；offset为起点在流中的字节偏移。"""
     summary = document.summary.stdout if name == "stdout" else document.summary.stderr
     data = _visible_stream(document, name)
     if data is None:
         return {"text": None, "offset": 0, "size_bytes": 0, "truncated": True}
-    start = max(0, len(data) - MAX_PROCESS_TAIL_PREVIEW_STREAM_BYTES)
-    while start < len(data) and data[start] & 0xC0 == 0x80:
-        start += 1
+    start = _tail_start(data)
     size = len(data) - start
     return {
         "text": data[start:].decode("utf-8"),
@@ -286,6 +342,58 @@ def _stream_tail(document: TrustedProcessOutputDocument, name: str) -> dict[str,
         "size_bytes": size,
         "truncated": size < summary.observed_bytes,
     }
+
+
+def _stream_display_tail(document: TrustedProcessOutputDocument, name: str) -> dict[str, JsonValue]:
+    """v4：去除转义序列后取正文最后至多8 KiB，8 KiB预算只花在可读正文上。
+
+    预览覆盖原流[offset, 归档末尾)：offset紧接最后一个未展示的正文字节，区间内被去除的转义
+    序列计入removed_escape_bytes，所以offset+size_bytes+removed_escape_bytes等于归档字节数；
+    truncated仍表示预览之外另有输出，只有颜色码被去除的完整流不算截断。
+    """
+    summary = document.summary.stdout if name == "stdout" else document.summary.stderr
+    stream = _display_stream(document, name)
+    if stream is None:
+        return {
+            "text": None,
+            "offset": 0,
+            "size_bytes": 0,
+            "removed_escape_bytes": 0,
+            "truncated": True,
+        }
+    start = _tail_start(stream.text)
+    offset = _raw_offset(stream.escapes, start)
+    removed = sum(end - begin for begin, end in stream.escapes if begin >= offset)
+    size = len(stream.text) - start
+    return {
+        "text": stream.text[start:].decode("utf-8"),
+        "offset": offset,
+        "size_bytes": size,
+        "removed_escape_bytes": removed,
+        "truncated": size + removed < summary.observed_bytes,
+    }
+
+
+def _raw_offset(escapes: tuple[tuple[int, int], ...], text_start: int) -> int:
+    """正文第text_start字节之前那个正文字节在原流中的结束位置；text_start为0时是流首。"""
+    if text_start == 0:
+        return 0
+    position = text_start - 1
+    for begin, end in escapes:
+        if begin > position:
+            break
+        position += end - begin
+    return position + 1
+
+
+# 历史预览版本由新到旧；重建已审计终态时只尝试原版本及更早的形状，不给旧事实追加新预览。
+_LEGACY_PREVIEWS: dict[
+    LegacyPreviewVersion, Callable[[TrustedProcessOutputDocument, str], dict[str, JsonValue]]
+] = {
+    "trusted-process-output/v3": _stream_tail,
+    "trusted-process-output/v2": _stream_preview,
+}
+LEGACY_PREVIEW_VERSIONS: tuple[LegacyPreviewVersion, ...] = tuple(_LEGACY_PREVIEWS)
 
 
 def _archive_lengths(stdout_bytes: int, stderr_bytes: int) -> tuple[int, int]:

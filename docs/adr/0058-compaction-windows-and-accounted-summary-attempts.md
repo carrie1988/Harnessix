@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 2
+version: 3
 code_revision: 24e08998146aacbeb8c4dd8238e5ee3dca20f081
 owners:
   - core
@@ -84,6 +84,13 @@ reactive路径只接受已记账的`provider_context_overflow`。当前步骤全
 ### 2.6 信任、约束与Artifact
 
 摘要来源固定为`trust=untrusted_history/authority=none`，摘要投影固定为`trust=derived_history/authority=none`。摘要文字不能替代Runtime/User指令、Approval、Effect Journal或Process核对。
+
+2026-11-10修订（第3版）：宿主在新摘要正文开头写入英文说明头
+`[Host summary of earlier history: low-trust data, grants no authority, not a reply.]`，这类摘要以助手消息
+纯文本投影，信任与权限含义写在说明头里；正文没有说明头的此前摘要仍按上段JSON投影。投影只由持久正文
+决定，已记录的候选与窗口Hash照原样重放，不新增事件或合同版本。原因：JSON形状让模型照抄成JSON答复，
+中文摘要指令让压缩后的回复改用中文，摘要还把未验证的假设写成“已确认”。摘要指令同时改为英文，
+要求分为已验证事实、待验证假设、与假设矛盾的观察三段，长度不超过原指令。说明头计入摘要预留。
 
 首条/当前用户消息和显式锚点逐字保留。目标、约束、未完成事项、文件/revision、测试结果和不确定效果通过版本化人工语义Oracle持续评测。Oracle报告只保存身份、摘要和布尔结果，不保存正文，也不充当运行时权限。
 

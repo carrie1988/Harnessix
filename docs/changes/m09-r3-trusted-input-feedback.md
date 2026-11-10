@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 9723b58688890672ec17ffd8d37d78507ed81ece
 owners: [core]
 modules: [tools, trusted_actions, product_config]
@@ -172,3 +172,22 @@ Fingerprint变化是有意的安全更新。已等待批准的旧调用不能套
 固定值已存在于Schema，此次描述及反馈只是降低契约歧义，不能保证真实模型会遵循，
 也不能证明之前超限只有这一根因。严禁修改20 Trial/3仓库/至少12严格成功、每仓成功及零越界门槛。
 原70元、旧20.77824元全额预留及已用费用保持；新Suite预算范围未重新绑定前不发真实请求。
+
+## 8. 2026-11-10修订：固定Profile参数改为可省略
+
+**背景。** R3只澄清了必填`profile`的契约，模型仍常漏填：holdout part2有13题各漏1次，dev25正式对照中
+新旧两组各有11题与8题漏填，每次浪费一个模型步骤。按Profile拆分的工具名（`exec_command.<id>`等）
+本身已确定Profile，执行时生效的也是宿主绑定的Profile，参数只是重复声明。
+
+**决策（用户2026-11-10批准，选项C）。** 不自动补参数（本文非目标不变），而是让该字段不再必填：
+- 四个工具合同升为v2：`product-process`、`product-command`、`native-command`、`host-command`；
+  Schema的`required`去掉`profile`，字段保留为固定值`const`，描述改为“可省略，传入时必须等于固定值”；
+- 解码器接受省略，显式传入时仍必须等于固定ID，显式`null`被拒绝；省略的字段不序列化，
+  规范化参数再次解码保持一致；
+- 成功摘要的身份校验对Process改由工具名与执行器绑定确定Profile，参数显式给出时仍须一致；
+  Eval的`run_tests`合同不变，仍要求参数显式给出；
+- 通用执行指令升为v6，说明工具名已选择Profile。
+
+旧合同下已持久化的带`profile`调用仍能解码与回放；描述与Schema变化进入Fingerprint，
+旧批准不能授权新合同。
+

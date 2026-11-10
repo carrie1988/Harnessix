@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 0aa84ae536a8618210d96ef9ad5bffe2016f48a2
+version: 20
+code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
 modules:
@@ -667,6 +667,7 @@ restore(backup):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 20 | `f3f93a54108406bb2df7cca5d5716bc62aeaaefc` | 2026-11-10 | 增量历史校验（ADR 0126）：游标读取命中进程内已验证的链前缀缓存时，只校验本次返回的事件；增量不成立时不信任缓存，回到从根全量校验；全量读取行为不变 |
 | 13 | Git记录认证增量 | 2026-10-01 | 原Binding增加有限Git签发/只验真端口，复用原Key与HMAC；不改变数据库或开放Git产品写入 |
 | 12 | R1维护变更 | 2026-09-28 | 认证容量先验原Seal；认证Store拒绝旧式维护；候选预检、有界IO、取消结算和恢复故障回归 |
 | 9 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 增加Migration 27归档表达式索引、Thread有界分页和全库单事务恢复扫描；保留非活跃损坏启动失败语义 |

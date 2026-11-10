@@ -44,7 +44,8 @@ def _pair(*, arguments=None, outcome="succeeded", output=None, error=None):
 
 def _rejected(arguments=None):
     return _pair(
-        arguments={} if arguments is None else arguments,
+        # 固定Profile参数可省略（合同v2），无效输入以错误的Profile值表示。
+        arguments={"profile": "other-profile"} if arguments is None else arguments,
         outcome="failed",
         error=AgentFailure(code="tool_invalid_arguments", message="Profile参数无效"),
     )
@@ -76,7 +77,7 @@ def _project(items, case):
 @pytest.mark.parametrize(
     "arguments",
     (
-        {},
+        {"profile": None},
         {"profile": "other-profile"},
         {"profile": _PROFILE, "selectors": ["tests/test_a.py"]},
         {"profile": _PROFILE, "selectors": None},

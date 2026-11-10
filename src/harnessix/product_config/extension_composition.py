@@ -1,4 +1,4 @@
-"""产品扩展装配：Skill（ADR 0125）与本机MCP（ADR 0126）一起接入统一Action入口。
+"""产品扩展装配：Skill（ADR 0125）与本机MCP（ADR 0127）一起接入统一Action入口。
 
 组合根只持有这一个扩展资源；没有Skill目录、也没有已信任的MCP Server时产品行为不变。
 """
