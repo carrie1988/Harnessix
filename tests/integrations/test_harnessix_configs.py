@@ -54,6 +54,8 @@ def test_harnessix_arms_only_use_known_agent_options():
         "max_steps",
         "max_tokens",
         "model_relays",
+        # 评测环境约束：智能体运行期间断开任务容器公网，防止从上游抄答案；不改变产品配置。
+        "network_isolation",
         "normalize_workspace_modes",
         # 任务模板是已知差异，由不带模板的产品默认组对照。
         "prompt_template_path",

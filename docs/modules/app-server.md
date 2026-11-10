@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 9
-code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
+version: 10
+code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
 modules:
@@ -1186,6 +1186,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 | Malformed Response结算全部Pending | `test_subprocess_transport_fails_all_pending_on_malformed_response` |
 | 薄CLI全页列表与停滞Cursor拒绝 | [`test_agent_cli.py`](../../tests/app_server/test_agent_cli.py) `test_thin_cli_lists_all_pages_and_rejects_stalled_cursor` |
 | 薄CLI使用协商事件页上限 | 同文件`test_thin_cli_uses_negotiated_event_page_limit` |
+| 薄CLI遇超限事件页减半重读 | 同文件`test_thin_cli_halves_event_pages_rejected_as_oversized` |
 | Question驱动保持模型Transcript | 同文件`test_thin_cli_drives_question_and_preserves_model_transcript` |
 | 快速终态仍回放最终文本 | 同文件`test_thin_cli_replays_final_text_when_turn_completed_before_follow` |
 | 批次审批前先读取Diff | 同文件`test_thin_cli_reads_diff_before_batch_approval` |
@@ -1221,6 +1222,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 - Delta低延迟、持久终态、Deadline边界、1000条溢出Gap和能力门禁；
 - Artifact只在Scoped Reader装配时广告并按页读取；
 - 薄CLI只依赖SDK完成协商上限内分页、提问、快速终态回放和Diff后审批；
+- 薄CLI的事件页被服务端以`response_too_large`（超过协商消息字节）或`public_output_limit`（超过公开数据保护扫描上限）拒绝时，减半页长重读，页长随后保持缩小；
 - Product启动失败不会提前激活配置或开放协议，固定Workspace拒绝其他Create根。
 
 ### 30.2 尚未证明范围
@@ -1362,6 +1364,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 10 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的薄CLI行为：事件页因`response_too_large`被拒时与`public_output_limit`一样减半页长重读 |
 | 8 | `184fb125f6159de4202a64a525f6b5cc99f0ab97` | 2026-09-29 | 显式公共预算转换使用内部字段名；同步现行Windows受管Patch边界，保持公开JSON、幂等与持久事实合同 |
 | 7 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表委托Session有界索引页读取，保持游标与公开投影合同不变；跨平台候选与CI验收见专项详设 |
 | 6 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a改为守护Reader/Writer泵，贯穿协商Pending/Outbox限制，并让Writer故障与出站Timeout有界唤醒主循环 |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 22
-code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
+version: 23
+code_revision: 09c7db1f1697dc7e59903011d1838a49ac9e8c71
 owners:
   - product
 modules:
@@ -43,6 +43,16 @@ supersedes: []
 ## 当前增量：Skill清单命令（ADR 0125）
 
 `harnessix skills list [工作区]`由`skills_cli.py`解析参数，内容来自`product_config/skill_diagnostics.py`，使用与Agent启动相同的来源和解析规则，不读写状态库。
+
+## 当前增量：MCP Server命令与Doctor结论（ADR 0126）
+
+- `harnessix mcp list|trust|untrust`由[`mcp_cli.py`](../../src/harnessix/product_ui/mcp_cli.py)解析参数，状态来自`product_config/mcp_status.py`，读取`~/.harnessix/mcp.json`，不读写状态库：
+  - `list`逐个列出Server的状态（已信任、未信任、定义已变化、不可用）、解析后的命令和参数；配置文件本身无效时写到stderr并返回2。
+  - `trust <id>`先打印命令、参数和所需环境变量的名称（不打印值），说明它以用户权限在本机运行，再把定义指纹写入`~/.harnessix/mcp-trust.json`；定义或命令文件变化后需要重新信任。
+  - `untrust <id>`删除该Server的信任记录。
+- `code doctor`文本在检查结果之后追加MCP小节（`mcp_doctor_lines`），没有配置时不输出；JSON报告不变。
+- `code doctor`文本中，结论为“可启动”时，不影响启动的失败项（如沙箱不可用）显示为“警告”；不可启动时仍显示“失败”。JSON报告中的状态值不变。
+- 工作区信任文件改用与MCP信任文件相同的私有JSON写入（`product_config/private_json.py`：临时文件、仅当前用户可读写、原子替换），文件格式不变。
 
 ## 当前增量：零配置命令工具的请求（ADR 0111、0113）
 
@@ -987,6 +997,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 23 | `09c7db1f1697dc7e59903011d1838a49ac9e8c71` | 2026-11-10 | 新增`harnessix mcp list/trust/untrust`和Doctor的MCP小节（ADR 0126）；Doctor文本在可启动时把不影响启动的失败项显示为“警告”；工作区信任文件改用共享的私有JSON写入 |
 | 22 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `code configure --self-hosted`、`--context-window-tokens`及内网地址询问；云模型默认累计Token上限由100万调为300万（过渡值）；未指定`--git-executable`时在Git仓库内自动探测git；`exec`默认开启完成守卫；首次运行需确认工作区信任（`exec`可用`--trust-workspace`）；审批窗口可选择本会话自动接受修改或允许完全相同的操作，`Ctrl+E`切换，规则只保存在内存；已核对牌价的DeepSeek、百炼模型显示费用上限（未扣缓存折扣），其余仍显示费用未知；交互模式在费用可见或本地端点时取消累计Token上限，并按金额档位提醒；`exec --max-cost`按输入单价折算Token上限；新增`harnessix data`列出、导出、删除本机数据并生成低敏诊断 |
 | 17 | `7519a8e69887ad32532bd45845597fd861445193` | 2026-09-28 | 同步顶层停机`state backup/verify`分派及低敏输出；在线TUI/Protocol不变，整体恢复和正式发行仍开放。 |
 | 16 | `c3cb22fc8465a7da1022c0bb9cc16ce9a5b7595b` | 2026-09-23 | 记录Product App 20秒退出期限经本地全量回归和[CI 35847851813](https://github.com/carrie1988/Harnessix/actions/runs/35847851813)三次六Job成功验收；旧Revision首次Windows失败的排他根因仍未证实。 |

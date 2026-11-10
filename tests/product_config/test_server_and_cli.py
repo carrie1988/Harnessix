@@ -132,13 +132,17 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
                 "interrupted",
             }:
                 code = current.latest_turn.error.code if current.latest_turn.error else "none"
-                raise AssertionError(f"Windows默认Git编码链失败：{code}")
+                first = bundle.requests[0].tools if bundle.requests else ()
+                offered = sorted(tool.name for tool in first)
+                raise AssertionError(f"Windows默认Git编码链失败：{code}；首步工具：{offered}")
             await asyncio.sleep(0.01)
         else:
             raise AssertionError("Windows默认Git编码链未在期限内结束")
         replay = await client.replay_events(thread.thread_id, limit=100)
         assert CANARY not in replay.model_dump_json()
         assert len(bundle.requests) == 2
+        offered = {tool.name for tool in bundle.requests[0].tools}
+        assert {"git_diff", "host_command.host-shell"} <= offered, offered
         result = next(
             item.content
             for item in reversed(bundle.requests[-1].history)
@@ -158,6 +162,9 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
         git_executable=_git(),
         input_stream=io.BytesIO(),
         output_stream=io.BytesIO(),
+        # 与用户运行`harnessix code`相同：Windows零配置提供逐条批准的PowerShell（W2），
+        # 有通用命令时不套用编码流程视图，git_diff首步可用。
+        zero_config_actions=True,
     )
     assert (state / "process-owner/process-leases.db").is_file()
     captures = list((state / "process-owner/runs").glob("*/stdout.bin"))

@@ -331,7 +331,8 @@ async def test_constraint_feedback_reaches_real_sdk_and_corrected_call_replays(
     monkeypatch.setenv("HARNESSIX_FEEDBACK_FIXTURE_KEY", "offline-key")
     root = tmp_path / "workspace"
     root.mkdir()
-    (root / "example.py").write_text("before\nneedle\nafter\n")
+    # 固定LF字节：Windows上write_text会写成CRLF，读出的正文不再以needle加LF开头。
+    (root / "example.py").write_bytes(b"before\nneedle\nafter\n")
     requests, wires = [], []
 
     def handle(request):

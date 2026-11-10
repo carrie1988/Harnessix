@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 42
-code_revision: b35c46217aec51c154158e802bd35c8ccb122ff7
+version: 43
+code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
 modules:
@@ -146,7 +146,7 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 被严格合同拒绝后原样重发直至预算耗尽）。`AgentRuntime(normalize_stringified_arguments=True)`时，
 [参数还原](../../src/harnessix/agent/argument_normalization.py)仅在工具`input_schema`于该位置声明array/object
 （含本地`$defs`引用与嵌套items/properties）且字符串可严格解析为同类型容器时还原（文本以已闭合内层容器结尾而仅缺外层闭合符时，补齐后再严格解析）；其余值原样交给工具原有严格校验。
-还原发生在调用组发布前，审批、审计与执行看到的都是规范参数。回归见[参数还原测试](../../tests/agent/test_argument_normalization.py)。
+还原按提案逐个进行（`normalize_proposal`，未注册工具与目录拒绝提案原样返回），位于结构修复`repair_proposal`和补丁前置条件补全之前，二者看到的是真实数组与对象；调用组发布时参数已是规范值，审批、审计与执行看到的都是规范参数。回归见[参数还原测试](../../tests/agent/test_argument_normalization.py)。
 
 ## 当前增量：提案阶段调用修复
 
@@ -557,13 +557,15 @@ sequenceDiagram
 | 本步回复 | 处理 |
 |---|---|
 | 空正文、JSON对象或含上下文摘要标记 | 补发“不是答复，继续用工具”提示 |
-| 本Turn尚无成功补丁（Trusted Action `patch_batch`或旧补丁效果），且上一步不是对补发的回应 | 补发“尚未修改代码”提示；模型再次给出纯文本结论即照常完成 |
+| 上一步是对补发的回应 | 照常完成（以下两行不再判定） |
+| 回复宣布还要继续：去掉行首Markdown标记后以“next step”“let me”“I'll”“下一步”“让我”“我将”等开头，或以半角/全角冒号结尾 | 补发“刚才宣布了下一步却没有工具调用”提示；与是否已有补丁无关 |
+| 本Turn尚无成功补丁（Trusted Action `patch_batch`或旧补丁效果） | 补发“尚未修改代码”提示；模型再次给出纯文本结论即照常完成 |
 | 其他 | 照常完成 |
 
 补发提示以用户消息Item持久化（身份`uuid5(turn_id, "harnessix.completion-guard/v1:<step>")`，正文以
 `[Harnessix host notice]`开头），并以`TurnStateChanged(reason="steering")`重入，沿用§13.3的Event v19
 语义，事件版本不变。每个Turn最多补发两次；步骤或Token预算已用尽时不补发。产品配置`completion_guard`
-默认关闭（ADR 0124）；Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+默认关闭（ADR 0124），`harnessix exec`默认开启；Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
 
 ## 14. 取消、超时和关闭
 
@@ -958,6 +960,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 43 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的两项行为：完成守卫在回复宣布下一步却没有工具调用时补发提示；字符串化容器参数还原移到结构修复之前按提案进行 |
 | 42 | `feat/p0-beta-readiness` | 2026-11-09 | 新增`continue_after_unknown_usage`：费用未知的尝试按已知单次最大消耗预留后继续，默认维持停止（ADR 0123第6节） |
 | 41 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅类型标注修复，行为不变 |
 | 14 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 启动恢复改用Session全库单事务校验后仅恢复活跃Turn；多Thread三平台冻结候选及同Revision常规CI通过 |
