@@ -11,6 +11,7 @@ from harnessix.product_config.contracts import ProductConfigV2
 from integrations.harbor.harnessix_configs import (
     CONTEXT_WINDOW_TOKENS,
     apply_eval_overrides,
+    apply_eval_profile_overrides,
     product_config,
 )
 from integrations.harbor.task_environment import MODEL
@@ -75,3 +76,23 @@ def test_harnessix_arms_only_use_known_agent_options():
             if "harnessix" in str(arm.get("system", "")).lower():
                 seen |= set(arm["agent"].get("kwargs", {}))
     assert seen and seen <= allowed, sorted(seen - allowed)
+
+
+def test_the_harbor_arm_allows_longer_single_responses():
+    """评测每步输出上限16384（产品自托管默认4096），流式分块与响应字节上限足以容纳用满的输出。"""
+    profile = json.loads(product_config(18001))["profiles"][0]
+    assert profile["max_output_tokens"] == 16_384
+    assert profile["max_chunks"] >= profile["max_output_tokens"]
+    assert profile["max_response_bytes"] >= 128 * profile["max_output_tokens"]
+
+
+def test_eval_profile_overrides_reject_fields_outside_the_whitelist():
+    config = ProductConfigV2.model_validate_json(product_config(18001))
+    assert (
+        apply_eval_profile_overrides(config, {"max_output_tokens": 8192})
+        .profiles[0]
+        .max_output_tokens
+        == 8192
+    )
+    with pytest.raises(SystemExit, match="timeout_seconds"):
+        apply_eval_profile_overrides(config, {"timeout_seconds": 60})

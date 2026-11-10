@@ -25,6 +25,13 @@ COMMAND_TIMEOUT_SECONDS = 900
 # 宿主模型服务的上下文窗口（vLLM --max-model-len）；未列出的模型沿用产品固定上限。
 CONTEXT_WINDOW_TOKENS = {MODEL: 262_144}
 EVAL_ALLOWED_OVERRIDES = frozenset({"completion_guard"})
+# 评测每步输出上限：自托管默认4096会让偶发的一步长推导截断整题（dev25 xarray-4356），评测放宽到
+# 16384；非思考约一个流式分块/Token，分块与响应字节上限同步放宽。这是已知的评测与产品差异。
+EVAL_PROFILE_OVERRIDES: Mapping[str, object] = {
+    "max_output_tokens": 16_384,
+    "max_chunks": 20_000,
+    "max_response_bytes": 4 * 1024 * 1024,
+}
 
 
 def apply_eval_overrides(
@@ -36,6 +43,24 @@ def apply_eval_overrides(
     if rejected:
         raise SystemExit(f"评测配置覆盖了白名单外的字段：{rejected}")
     updated = config.model_copy(update=dict(overrides)).model_dump_json()
+    return type(config).model_validate_json(updated)
+
+
+def apply_eval_profile_overrides(
+    config: ProductConfigV2, overrides: Mapping[str, object]
+) -> ProductConfigV2:
+    """活动Profile只能覆盖EVAL_PROFILE_OVERRIDES登记的字段，结果仍经产品合同完整校验。"""
+
+    rejected = sorted(set(overrides) - set(EVAL_PROFILE_OVERRIDES))
+    if rejected:
+        raise SystemExit(f"评测配置覆盖了白名单外的Profile字段：{rejected}")
+    profiles = tuple(
+        profile.model_copy(update=dict(overrides))
+        if profile.profile_id == config.active_profile
+        else profile
+        for profile in config.profiles
+    )
+    updated = config.model_copy(update={"profiles": profiles}).model_dump_json()
     return type(config).model_validate_json(updated)
 
 
@@ -56,6 +81,7 @@ def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off"
     )
     # 协议运行器不经过`harnessix exec`，无人值守的完成守卫要在配置里开启。
     config = apply_eval_overrides(build_product_config(draft), {"completion_guard": True})
+    config = apply_eval_profile_overrides(config, EVAL_PROFILE_OVERRIDES)
     return config.model_dump_json(indent=2)
 
 
