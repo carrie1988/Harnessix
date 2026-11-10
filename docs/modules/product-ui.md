@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 26
+version: 27
 code_revision: aa686be2bc813e9a26e5595f050fadded94be69f
 owners:
   - product
@@ -39,6 +39,20 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：终端界面易用性第二轮（0.10.0b4）
+
+2026-11-10在247上用tmux驱动TUI完成真实开发任务时发现的问题，按用户“易用、稳定、功能可用”的要求修复：
+
+- **审批与提问自动弹窗**：[`InteractionPresenter.prompt_later`](../../src/harnessix/product_ui/interaction_presenter.py)在新的待审批或待回答项出现约2秒后弹窗，届时仍在等待且没有其他弹窗、Intent才打开。延迟避免沙箱策略或“自动接受修改”即将决定的审批一闪而过。每项只自动弹出一次（自动或用户手动打开都记为已弹出），选“暂不处理”后不再打扰，`Ctrl+A`/`Ctrl+U`仍可打开。
+- **情境快捷键**：`ProductApp.check_action`经`action_enabled`判断，审批、回答、取消、补充说明、重连只在可用时显示和响应，底部快捷键栏随状态刷新（`refresh_bindings`）；去掉Textual命令面板；“取消Turn”“补充Turn”改为“取消任务”“补充说明”。
+- **白话状态栏**：去掉`ready · 连接代际N`与`Turn <内部状态>`，改为“就绪/思考中/执行中/等待你审批（Ctrl+A）/已完成”等（`rendering.turn_status_label`）；连接异常时显示“连接中断，按 Ctrl+R 重新连接”。Token显示千分位，费用文案缩短为“费用≤¥x”。
+- **累计用量**：[`projection.py`](../../src/harnessix/product_ui/projection.py)此前用逐步用量事件覆盖Turn用量，快照刷新时又恢复累计值，状态栏数字忽大忽小、结束时偏低。现在逐步累加，`TurnProjection.usage_cursor`记录用量已计入到哪个事件游标，快照已含的步骤重放时不再计入。
+- **对话记录**：操作与结果合成一行（“读取 a.py → 完成”），并行调用不再错位；计划状态用✓/▸/○；Agent回复按Markdown排版，角色着色，操作过程弱化显示。会话列表显示创建时间、状态和轮数，选中会话用当前Turn的实时状态。
+- **只追加的对话渲染**：此前每次刷新清空并重写全部对话，3000行约需340ms（本机实测），长会话流式输出时会卡顿。[`TranscriptPane`](../../src/harnessix/product_ui/transcript_pane.py)把开头连续的定稿行追加进历史区（`RichLog`），尚未定稿的行（进行中的操作、待决审批、流式文本）在下方实时区显示；切换会话、历史不一致或终端尺寸变化时才整体重绘。终端窄于90列时收起会话列表。
+- **审批窗口**：开头一句话说明Agent要做什么（与对话记录共用`tool_summary.describe_tool`），会删除或覆盖数据时加提醒；工具版本、策略和指纹缩为底部一行弱化显示。
+
+回归见`tests/product_ui/test_tui_usability.py`、`test_usage_projection.py`与更新后的`test_rendering.py`。
 
 ## 当前增量：命令行输出统一为UTF-8（0.10.0b3）
 
@@ -1013,6 +1027,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 27 | `33146c91` 增量 | 2026-11-10 | 审批与提问自动弹窗、情境快捷键、白话状态栏、累计用量修正、操作与结果合并、Markdown排版、只追加的对话渲染与窄屏布局、审批窗口一句话摘要（0.10.0b4） |
 | 26 | `aa686be2` 增量 | 2026-11-10 | 顶层CLI的标准输出和错误统一为UTF-8，修复Windows重定向输出时打印中文崩溃（0.10.0b3） |
 | 25 | `a1b9cabd` 增量 | 2026-11-10 | 首次输入即开始会话；输入框恢复可用时自动获得焦点（247上用tmux驱动TUI时发现） |
 | 24 | `09c7db1f1697dc7e59903011d1838a49ac9e8c71` | 2026-11-10 | 新增`harnessix mcp list/trust/untrust`和Doctor的MCP小节（ADR 0127）；Doctor文本在可启动时把不影响启动的失败项显示为“警告”；工作区信任文件改用共享的私有JSON写入 |

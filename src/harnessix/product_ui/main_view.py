@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Final
+
+from textual import events
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widget import Widget
-from textual.widgets import Input, Label, ListItem, ListView, RichLog, Static
+from textual.widgets import Input, Label, ListItem, ListView, Static
 
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
 from harnessix.product_ui.cost_estimate import cost_upper_bound
@@ -17,19 +20,42 @@ from harnessix.product_ui.interactions import (
     pending_question,
     usage_cost_view,
 )
-from harnessix.product_ui.rendering import thread_label, transcript_lines
+from harnessix.product_ui.rendering import thread_label, transcript_lines, turn_status_label
+from harnessix.product_ui.transcript_pane import TranscriptPane
 from harnessix.product_ui.turn_budget import UNCAPPED_TOKENS
 
+# 窄于此宽度时收起会话列表，把空间留给对话。
+NARROW_WIDTH: Final = 90
+_PHASE_LABELS: Final = {
+    ControllerPhase.CREATED: "正在启动…",
+    ControllerPhase.STARTING: "正在连接…",
+    ControllerPhase.BROKEN: "连接中断，按 Ctrl+R 重新连接",
+    ControllerPhase.CLOSING: "正在退出…",
+    ControllerPhase.CLOSED: "已退出",
+}
+_STATUS_KEYS: Final = {"waiting_approval": "（Ctrl+A）", "waiting_input": "（Ctrl+U）"}
 
-def _interaction_label(state: ProductControllerState) -> str:
+
+def _interaction_label(state: ProductControllerState, turn_status: str | None) -> str:
+    """Turn状态已提示按键时不再重复。"""
+
     try:
-        if pending_approval(state.thread_view) is not None:
+        if pending_approval(state.thread_view) is not None and turn_status != "waiting_approval":
             return " · 待审批 Ctrl+A"
-        if pending_question(state.thread_view) is not None:
+        if pending_question(state.thread_view) is not None and turn_status != "waiting_input":
             return " · 待回答 Ctrl+U"
     except ProductUIError:
         return " · 交互状态异常 F1"
     return ""
+
+
+def _activity_text(state: ProductControllerState) -> str:
+    if state.phase is not ControllerPhase.READY:
+        return _PHASE_LABELS.get(state.phase, state.phase.value)
+    turn = state.thread_view.current_turn if state.thread_view is not None else None
+    if turn is None:
+        return "就绪"
+    return turn_status_label(turn.status) + _STATUS_KEYS.get(turn.status, "")
 
 
 def _cost_text(state: ProductControllerState, usage: UsageCostView) -> str:
@@ -44,30 +70,70 @@ def _cost_text(state: ProductControllerState, usage: UsageCostView) -> str:
 
 def _status_text(state: ProductControllerState) -> str:
     turn = state.thread_view.current_turn if state.thread_view is not None else None
-    turn_status = "无活动Turn" if turn is None else f"Turn {turn.status}"
     usage = usage_cost_view(state.thread_view)
     usage_text = ""
     if usage is not None:
-        limit = "?" if usage.max_tokens is None else str(usage.max_tokens)
         tokens = (
-            f"Tokens {usage.total_tokens}"
-            if usage.max_tokens is not None and usage.max_tokens >= UNCAPPED_TOKENS
-            else f"Tokens {usage.total_tokens}/{limit}"
+            f"{usage.total_tokens:,} tokens"
+            if usage.max_tokens is None or usage.max_tokens >= UNCAPPED_TOKENS
+            else f"{usage.total_tokens:,}/{usage.max_tokens:,} tokens"
         )
-        cost = _cost_text(state, usage)
-        usage_text = f" · {tokens} · {cost}"
+        usage_text = f" · {tokens} · {_cost_text(state, usage)}"
     sandbox = "" if state.sandbox is None else f" · {state.sandbox}"
     if state.auto_accept_edits:
         sandbox += " · 自动接受修改"
     notice = (
         ""
         if state.last_notice is None
-        else f" · {state.last_notice.code}：{state.last_notice.message}"
+        else f" · {state.last_notice.message}（{state.last_notice.code}）"
     )
-    return (
-        f"{state.phase.value} · 连接代际 {state.connection_generation} · {turn_status}"
-        f"{sandbox}{usage_text}{_interaction_label(state)}{notice}"
-    )
+    interaction = _interaction_label(state, None if turn is None else turn.status)
+    return f"{_activity_text(state)}{sandbox}{usage_text}{interaction}{notice}"
+
+
+class ThreadList(ListView):
+    """会话列表，标签为创建时间、状态和轮数。"""
+
+    def __init__(self) -> None:
+        super().__init__(id="threads")
+        self._labels: tuple[tuple[str, str], ...] = ()
+
+    async def show(self, state: ProductControllerState) -> bool:
+        """只在标签变化时重建列表；选中会话用当前Turn的实时状态。"""
+
+        turn = state.thread_view.current_turn if state.thread_view is not None else None
+        labels = tuple(
+            (
+                f"thread-{thread.thread_id.hex}",
+                thread_label(
+                    thread,
+                    turn.status
+                    if turn is not None and thread.thread_id == state.selected_thread_id
+                    else None,
+                ),
+            )
+            for thread in state.threads
+        )
+        if labels != self._labels:
+            await self.clear()
+            if not self.is_attached:
+                return False
+            await self.extend(
+                ListItem(Label(label, markup=False), id=item_id) for item_id, label in labels
+            )
+            self._labels = labels
+        if not self.is_attached:
+            return False
+        if state.selected_thread_id is not None:
+            self.index = next(
+                (
+                    index
+                    for index, thread in enumerate(state.threads)
+                    if thread.thread_id == state.selected_thread_id
+                ),
+                None,
+            )
+        return True
 
 
 class ProductMainView(Widget):
@@ -77,7 +143,6 @@ class ProductMainView(Widget):
     ProductMainView { height: 1fr; layout: vertical; }
     #workspace { height: 1fr; }
     #threads { width: 28; min-width: 20; border-right: solid $primary; }
-    #transcript { width: 1fr; padding: 0 1; }
     #status { height: auto; min-height: 1; padding: 0 1; color: $text-muted; }
     #composer { dock: bottom; }
     """
@@ -85,8 +150,9 @@ class ProductMainView(Widget):
     def __init__(self) -> None:
         super().__init__()
         self._rendered_revision = -1
-        self._threads = ListView(id="threads")
-        self._transcript = RichLog(id="transcript", wrap=True, markup=False, max_lines=10_000)
+        self._threads = ThreadList()
+        self._conversation = TranscriptPane()
+        self._last_state: ProductControllerState | None = None
         self._status = Static("正在启动…", id="status")
         self._composer = Input(
             placeholder="输入任务，Enter发送",
@@ -98,7 +164,7 @@ class ProductMainView(Widget):
     def compose(self) -> ComposeResult:
         with Horizontal(id="workspace"):
             yield self._threads
-            yield self._transcript
+            yield self._conversation
         yield self._status
         yield self._composer
 
@@ -108,35 +174,25 @@ class ProductMainView(Widget):
         if state.revision <= self._rendered_revision:
             return False
         self._rendered_revision = state.revision
-        await self._threads.clear()
-        if not self.is_attached:
+        self._last_state = state
+        if not await self._threads.show(state):
             return False
-        await self._threads.extend(
-            ListItem(Label(thread_label(thread), markup=False), id=f"thread-{thread.thread_id.hex}")
-            for thread in state.threads
-        )
-        if not self.is_attached:
-            return False
-        if state.selected_thread_id is not None:
-            self._threads.index = next(
-                (
-                    index
-                    for index, thread in enumerate(state.threads)
-                    if thread.thread_id == state.selected_thread_id
-                ),
-                None,
-            )
-        self._transcript.clear()
-        lines = transcript_lines(state.thread_view)
-        if not lines:
-            self._transcript.write("输入任务并按 Enter 开始；Ctrl+N 可另开新会话。")
-        else:
-            for line in lines:
-                self._transcript.write(f"{line.role}：{line.text}")
-        if not self.is_attached:
-            return False
+        self._render_transcript(state)
         self._status.update(_status_text(state))
         return True
+
+    def on_resize(self, event: events.Resize) -> None:
+        self._threads.display = event.size.width >= NARROW_WIDTH
+        # 布局更新后按新宽度重新折行，并回到最新内容。
+        self.call_after_refresh(self._rewrap)
+
+    def _rewrap(self) -> None:
+        if self._last_state is not None and self.is_attached:
+            self._render_transcript(self._last_state, rewrap=True)
+
+    def _render_transcript(self, state: ProductControllerState, *, rewrap: bool = False) -> None:
+        lines = transcript_lines(state.thread_view)
+        self._conversation.show(lines, state.selected_thread_id, rewrap=rewrap)
 
     def update_composer(
         self,

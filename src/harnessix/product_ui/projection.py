@@ -59,6 +59,8 @@ class TurnProjection:
     usage: PublicUsage | None
     model_step: int
     error: PublicFailure | None = None
+    # usage已计入到哪个事件游标：快照含其游标前的全部用量，之后的逐步用量事件累加。
+    usage_cursor: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +100,7 @@ def _turn_from_snapshot(thread: ThreadView) -> TurnProjection | None:
         usage=turn.usage,
         model_step=turn.model_steps,
         error=turn.error,
+        usage_cursor=thread.cursor,
     )
 
 
@@ -149,6 +152,18 @@ def _replace_item(
     )
 
 
+def _added_usage(total: PublicUsage | None, step: PublicUsage) -> PublicUsage:
+    """用量事件只带本步用量；Turn用量是各步之和。"""
+
+    if total is None:
+        return step
+    return PublicUsage(
+        input_tokens=total.input_tokens + step.input_tokens,
+        output_tokens=total.output_tokens + step.output_tokens,
+        total_tokens=total.total_tokens + step.total_tokens,
+    )
+
+
 def _apply_event(state: ProductViewState, event: PublicEvent) -> ProductViewState:
     data = event.data
     if isinstance(data, ItemPublicEvent):
@@ -169,6 +184,7 @@ def _apply_event(state: ProductViewState, event: PublicEvent) -> ProductViewStat
                 budget=data.budget,
                 usage=None,
                 model_step=0,
+                usage_cursor=event.cursor,
             ),
         )
     if isinstance(data, TurnStatePublicEvent):
@@ -186,9 +202,17 @@ def _apply_event(state: ProductViewState, event: PublicEvent) -> ProductViewStat
             raise ProductUIError("projection_turn_conflict", "Usage事件与当前Turn不匹配")
         if data.step < current.model_step:
             raise ProductUIError("projection_usage_rollback", "Usage步骤发生回退")
+        if event.cursor <= current.usage_cursor:
+            # 快照已含这一步的用量，重放时不再累加。
+            return replace(state, current_turn=replace(current, model_step=data.step))
         return replace(
             state,
-            current_turn=replace(current, usage=data.usage, model_step=data.step),
+            current_turn=replace(
+                current,
+                usage=_added_usage(current.usage, data.usage),
+                usage_cursor=event.cursor,
+                model_step=data.step,
+            ),
         )
     return state
 

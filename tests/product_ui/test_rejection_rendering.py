@@ -217,7 +217,8 @@ async def test_headless_main_view_displays_rejection_without_buttons_or_approval
                 requires_approval=False,
             ),
             "操作",
-            "调用 workspace.read",
+            # 尚无结果的操作以省略号表示进行中。
+            "调用 workspace.read …",
         ),
         (PublicToolResultContent(call_id=uuid4(), outcome="succeeded"), "结果", "完成"),
         (
@@ -271,7 +272,7 @@ async def test_headless_main_view_displays_rejection_without_buttons_or_approval
                 )
             ),
             "计划",
-            "1. [completed] 检查源码",
+            "1. ✓ 检查源码",
         ),
         (
             PublicCompactionContent(

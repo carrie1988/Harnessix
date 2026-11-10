@@ -26,6 +26,11 @@ from harnessix.product_ui.controller import (
 )
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_presenter import InteractionPresenter
+from harnessix.product_ui.interactions import (
+    active_turn_control,
+    pending_approval,
+    pending_question,
+)
 from harnessix.product_ui.main_view import ProductMainView
 
 PRODUCT_QUIT_DEADLINE_SECONDS = 20.0
@@ -41,19 +46,53 @@ class ControllerUpdated(Message):
 
 # 输入框自带Ctrl+A/E/U/X（行首、行尾、删除、剪切）；设为优先，输入框有焦点时界面快捷键照样生效。
 _BINDINGS: list[Binding | tuple[str, str] | tuple[str, str, str]] = [
-    Binding("ctrl+n", "new_thread", "新建会话"),
-    Binding("ctrl+r", "reconnect", "重新连接"),
     Binding("ctrl+a", "approval", "审批", priority=True),
-    Binding("ctrl+e", "toggle_auto_accept", "自动接受修改", priority=True),
     Binding("ctrl+u", "question", "回答", priority=True),
-    Binding("ctrl+x", "cancel_turn", "取消Turn", priority=True),
-    Binding("ctrl+s", "steer_turn", "补充Turn"),
+    Binding("ctrl+x", "cancel_turn", "取消任务", priority=True),
+    Binding("ctrl+s", "steer_turn", "补充说明"),
+    Binding("ctrl+r", "reconnect", "重新连接"),
+    Binding("ctrl+n", "new_thread", "新建会话"),
+    Binding("ctrl+e", "toggle_auto_accept", "自动接受修改", priority=True),
     Binding("f1", "error_help", "帮助"),
     Binding("ctrl+q", "quit_product", "退出"),
 ]
 _MAIN_SCREEN_ACTIONS = frozenset(
     {"approval", "toggle_auto_accept", "question", "cancel_turn", "steer_turn"}
 )
+# 只在可用时显示和响应的操作，底部快捷键栏随状态变化。
+_CONTEXTUAL_ACTIONS = frozenset({"approval", "question", "cancel_turn", "steer_turn", "reconnect"})
+
+
+def available_actions(state: ProductControllerState) -> frozenset[str]:
+    """当前状态下可用的情境操作。"""
+
+    view = state.thread_view
+    try:
+        approval, question = pending_approval(view), pending_question(view)
+        control = active_turn_control(view)
+    except ProductUIError:
+        # 交互状态异常时保留入口，打开后显示具体错误。
+        return _CONTEXTUAL_ACTIONS
+    available = {
+        name
+        for name, present in (
+            ("approval", approval is not None),
+            ("question", question is not None),
+            ("cancel_turn", control is not None and control.can_cancel),
+            ("steer_turn", control is not None and control.can_steer),
+            ("reconnect", state.phase is ControllerPhase.BROKEN),
+        )
+        if present
+    }
+    return frozenset(available)
+
+
+def action_enabled(action: str, state: ProductControllerState, *, modal_open: bool) -> bool:
+    """弹窗打开时停用主界面操作；情境操作只在可用时显示和响应。"""
+
+    if action in _MAIN_SCREEN_ACTIONS and modal_open:
+        return False
+    return action not in _CONTEXTUAL_ACTIONS or action in available_actions(state)
 
 
 class ProductApp(App[CloseReport]):
@@ -61,10 +100,10 @@ class ProductApp(App[CloseReport]):
 
     TITLE, SUB_TITLE = "Harnessix Code", "生产级 Coding Agent"
     BINDINGS = _BINDINGS
+    ENABLE_COMMAND_PALETTE = False
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        """弹窗打开时停用主界面操作，按键留给弹窗里的输入框。"""
-        return action not in _MAIN_SCREEN_ACTIONS or len(self.screen_stack) == 1
+        return action_enabled(action, self.controller.state, modal_open=len(self.screen_stack) > 1)
 
     def __init__(self, controller: ProductController, request: StartRequest) -> None:
         super().__init__()
@@ -107,6 +146,10 @@ class ProductApp(App[CloseReport]):
     async def _render_state(self, state: ProductControllerState) -> None:
         if await self._main_view.render_state(state):
             self._update_composer(state)
+            self.refresh_bindings()
+            self._presenter.prompt_later(
+                lambda: not (self._intent_in_flight or self._closing or len(self.screen_stack) > 1)
+            )
 
     def _update_composer(self, state: ProductControllerState) -> None:
         self._main_view.update_composer(

@@ -183,6 +183,12 @@ CI权限保持`contents: read`。`self_hosted`相关的信任边界见[接入自
 保留各自原有的错误处理方式；交互控制台本来就是UTF-8，不受影响。治理脚本已有同样处理（`scripts/cli_console.py`），产品入口此前遗漏。
 回归见`tests/test_cli_output_encoding.py`，以`PYTHONIOENCODING=cp1252:strict`在各平台CI上复现。修复以0.10.0b3发布，b2标签保留但不发布。
 
+0.10.0b3候选在247上用tmux驱动TUI做真实开发任务（库存工具新增`--search`，审批时拒绝并补充要求），发现第二轮易用性与稳定性问题：
+审批不会自动弹窗；状态栏和会话列表显示内部状态名与“连接代际”；Token与费用把单步用量当累计、数字忽大忽小；并行操作的结果与操作错位；
+Agent回复的Markdown原样显示；窄屏下会话列表占去三分之一宽度；每次刷新重绘全部对话，3000行约340ms，长会话会卡顿。
+修复以0.10.0b4发布，设计见[Product UI模块设计](../modules/product-ui.md)“终端界面易用性第二轮”。拆出`TranscriptPane`与`ThreadList`、
+自动弹窗逻辑放入`InteractionPresenter`，`ProductApp`和`ProductMainView`保持在可读性预算内。
+
 ## 11. 源码映射
 
 | 内容 | 位置 |

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Literal
 
@@ -19,8 +20,10 @@ from harnessix.product_ui.interactions import (
     ActiveTurnControl,
     ApprovalEvidenceStatus,
     ApprovalReview,
+    PendingApproval,
     PendingQuestion,
 )
+from harnessix.product_ui.tool_summary import describe_tool
 
 _MODAL_CSS = """
 ModalScreen { align: center middle; }
@@ -33,9 +36,25 @@ ModalScreen { align: center middle; }
 .interaction-content { height: 1fr; border: solid $secondary; padding: 0 1; }
 .interaction-input { height: auto; margin-top: 1; }
 .interaction-error { height: auto; color: $error; }
+.interaction-detail { height: auto; color: $text-muted; }
 .interaction-buttons { height: auto; align-horizontal: right; margin-top: 1; }
 .interaction-buttons Button { margin-left: 1; }
 """
+
+
+def approval_summary(pending: PendingApproval) -> str:
+    """审批窗口开头的一句话：Agent要做什么；会删除或覆盖数据时额外提醒。"""
+
+    try:
+        arguments = json.loads(pending.arguments_json)
+    except ValueError:
+        arguments = None
+    action = (
+        describe_tool(pending.tool, arguments) if isinstance(arguments, dict) else None
+    ) or f"调用 {pending.tool}"
+    if pending.effect_class == "destructive":
+        return f"Agent 请求：{action}\n注意：此操作可能删除或覆盖数据，请仔细核对。"
+    return f"Agent 请求：{action}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,15 +76,14 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
 
     def compose(self) -> ComposeResult:
         pending = self.review.pending
-        summary = (
-            f"类型：{pending.approval_type}  工具：{pending.tool}@{pending.tool_version}\n"
-            f"效果：{pending.effect_class}  策略：{pending.policy_version}\n"
-            f"指纹：{pending.binding.fingerprint[:12]}…  "
-            f"证据：{self.review.evidence.status.value}"
+        # 审计细节保留一行弱化显示，便于反馈问题时核对。
+        detail = (
+            f"{pending.tool}@{pending.tool_version} · {pending.policy_version} · "
+            f"指纹 {pending.binding.fingerprint[:12]}…"
         )
         with Container(classes="interaction-dialog"):
             yield Label("审批确认", classes="interaction-title")
-            yield Static(summary, markup=False, classes="interaction-summary")
+            yield Static(approval_summary(pending), markup=False, classes="interaction-summary")
             yield RichLog(
                 id="approval-evidence",
                 classes="interaction-content",
@@ -96,6 +114,7 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                 yield Button("拒绝", id="approval-reject", variant="error")
                 yield Button("暂不处理", id="approval-close")
             yield Static("Enter 确认所选按钮 · Tab 切换 · Esc 关闭", classes="interaction-summary")
+            yield Static(detail, markup=False, classes="interaction-detail")
 
     def on_mount(self) -> None:
         pending = self.review.pending
@@ -114,7 +133,7 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
             for line in rendered:
                 log.write(line)
             return
-        log.write("公开Tool参数：")
+        log.write("完整参数：")
         log.write(pending.arguments_json)
         if evidence.status is ApprovalEvidenceStatus.READY:
             log.write("\n完整Diff Artifact：")

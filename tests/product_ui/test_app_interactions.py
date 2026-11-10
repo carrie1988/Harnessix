@@ -178,13 +178,13 @@ async def test_product_app_answers_question_from_dedicated_modal(tmp_path: Path)
                 await pilot.press("q", "enter")
                 await _wait_until(lambda: _turn_status(controller) == "waiting_input")
                 await _wait_until(
-                    lambda: "待回答 Ctrl+U" in str(app.query_one("#status", Static).content)
+                    lambda: "等待你回答（Ctrl+U）" in str(app.query_one("#status", Static).content)
                 )
 
                 status = str(app.query_one("#status", Static).content)
-                assert "Tokens 0/" in status
+                assert status.startswith("等待你回答（Ctrl+U）")
+                assert " · 0/" in status and " tokens · " in status
                 assert "费用未知（price_not_exposed）" in status
-                assert "待回答 Ctrl+U" in status
 
                 await pilot.press("ctrl+u")
                 await _wait_until(lambda: isinstance(app.screen, QuestionScreen))

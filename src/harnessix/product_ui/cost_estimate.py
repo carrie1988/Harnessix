@@ -42,7 +42,8 @@ class CostUpperBound:
         """费用上限文案；越过提醒档位后提示用户可以取消。"""
 
         symbol = _SYMBOLS[self.currency]
-        base = f"费用不超过 {symbol}{self.amount:.4f}（牌价估算，未扣缓存折扣）"
+        # 上限按牌价且不扣缓存折扣估算，实际账单通常更低；说明见用户手册，状态栏只放数字。
+        base = f"费用≤{symbol}{self.amount:.4f}"
         crossed = [item for item in _REMINDERS[self.currency] if self.amount >= item]
         return f"{base} · 已超过 {symbol}{crossed[-1]}，可按 Ctrl+X 取消" if crossed else base
 

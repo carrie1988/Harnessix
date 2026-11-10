@@ -43,7 +43,7 @@ def test_upper_bound_charges_all_input_at_the_full_rate() -> None:
     )
 
     assert bound.amount == Decimal("24")
-    assert bound.text().startswith("费用不超过 ¥24.0000（牌价估算，未扣缓存折扣）")
+    assert bound.text().startswith("费用≤¥24.0000 · ")
 
 
 def _turn(input_tokens: int, output_tokens: int) -> SimpleNamespace:

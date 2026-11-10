@@ -34,7 +34,12 @@ _ERRORS = {
 def tool_call_text(content: PublicToolCallContent) -> str | None:
     """返回调用说明；计划更新另有计划行展示，返回None。"""
 
-    tool, arguments = content.tool, content.arguments
+    return describe_tool(content.tool, content.arguments)
+
+
+def describe_tool(tool: str, arguments: Mapping[str, JsonValue]) -> str | None:
+    """用一句话说明工具调用要做什么，供对话记录与审批窗口共用。"""
+
     if tool == "update_plan":
         return None
     if tool in _FIXED:

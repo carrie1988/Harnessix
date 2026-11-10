@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 605,
-    "physical_lines": 127803,
-    "logical_lines": 111936,
-    "documented_modules": 605,
-    "classes": 1198,
-    "documented_classes": 612,
-    "functions": 4989,
-    "documented_functions": 1618,
+    "source_files": 606,
+    "physical_lines": 128167,
+    "logical_lines": 112219,
+    "documented_modules": 606,
+    "classes": 1200,
+    "documented_classes": 614,
+    "functions": 5011,
+    "documented_functions": 1630,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1643,8 +1643,8 @@
       "path": "src/harnessix/product_ui/app.py",
       "qualname": "ProductApp",
       "kind": "class",
-      "line": 59,
-      "lines": 182,
+      "line": 98,
+      "lines": 186,
       "documented": true
     },
     {

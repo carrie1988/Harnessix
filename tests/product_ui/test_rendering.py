@@ -67,7 +67,9 @@ def test_transcript_lines_keep_persisted_order_and_append_transient_text() -> No
         ("你", "检查项目", False),
         ("Harnessix（生成中）", "正在检查", True),
     ]
-    assert thread_label(thread).startswith(f"{str(thread.thread_id)[:8]} · 空会话")
+    created = now.astimezone().strftime("%m-%d %H:%M")
+    assert thread_label(thread) == f"{created} · 新会话 · 1轮"
+    assert thread_label(thread, "waiting_approval") == f"{created} · 等待你审批 · 1轮"
 
 
 def test_transcript_gap_is_explicit_and_final_item_suppresses_stream() -> None:
@@ -174,9 +176,64 @@ def test_transcript_expands_plan_and_exposes_tool_lifecycle_and_stable_error() -
 
     lines = transcript_lines(view)
 
-    assert [(line.role, line.text) for line in lines] == [
-        ("计划", "1. [completed] 检查源码"),
-        ("计划", "2. [in_progress] 运行测试"),
-        ("操作", "调用 workspace.read"),
-        ("结果", "失败：目标文件不存在（file_missing）"),
+    assert [(line.role, line.text, line.final) for line in lines] == [
+        ("计划", "1. ✓ 检查源码", True),
+        ("计划", "2. ▸ 运行测试", True),
+        # 结果并入对应操作行。
+        ("操作", "调用 workspace.read → 失败：目标文件不存在（file_missing）", True),
+    ]
+
+
+def test_running_operations_and_streams_are_not_final() -> None:
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    thread = ThreadView(
+        thread_id=uuid4(),
+        workspace="/workspace",
+        cursor=2,
+        turn_count=1,
+        created_at=now,
+        updated_at=now,
+    )
+    turn_id = uuid4()
+    calls = [uuid4(), uuid4()]
+    entries = [
+        ProjectedItem(
+            item=PublicItem(
+                item_id=uuid4(),
+                status="started",
+                content=PublicToolCallContent(
+                    call_id=call_id,
+                    tool="read_file",
+                    tool_version="1",
+                    effect_class="read_only",
+                    arguments={"path": name},
+                    requires_approval=False,
+                ),
+            ),
+            turn_id=turn_id,
+            first_cursor=index,
+            last_cursor=index,
+            final=True,
+        )
+        for index, (call_id, name) in enumerate(zip(calls, ("a.py", "b.py"), strict=True), 1)
+    ]
+    # 两个并行读取中只有第二个先完成：各自显示在自己的操作行上。
+    entries.append(
+        ProjectedItem(
+            item=PublicItem(
+                item_id=uuid4(),
+                status="completed",
+                content=PublicToolResultContent(call_id=calls[1], outcome="succeeded"),
+            ),
+            turn_id=turn_id,
+            first_cursor=3,
+            last_cursor=3,
+            final=True,
+        )
+    )
+    view = ProductViewState(thread=thread, durable_cursor=3, items=tuple(entries))
+
+    assert [(line.text, line.final) for line in transcript_lines(view)] == [
+        ("读取 a.py …", False),
+        ("读取 b.py → 完成", True),
     ]
