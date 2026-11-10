@@ -42,6 +42,10 @@ def _call(tool: str, **arguments: object) -> PublicToolCallContent:
             _call("apply_patch_batch", files=[{"path": "a.py"}, {"path": "b/c.py"}]),
             "修改文件：a.py, b/c.py",
         ),
+        (
+            _call("apply_patch_batch", files=[{"path": f"svc{i}/h.py"} for i in range(1, 9)]),
+            "修改 8 个文件：svc1/h.py 等",
+        ),
         (_call("read_file", path="src/app.py"), "读取 src/app.py"),
         (_call("grep", query="def main"), "搜索 “def main”"),
         (_call("git_review"), "查看 Git 状态和差异"),

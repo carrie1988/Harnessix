@@ -50,7 +50,7 @@ def describe_tool(tool: str, arguments: Mapping[str, JsonValue]) -> str | None:
     if tool.startswith("run_profile."):
         return f"运行检查：{tool.removeprefix('run_profile.')}"
     if tool == "apply_patch_batch":
-        return "修改文件：" + _short(", ".join(_patch_paths(arguments)) or "（无）")
+        return _patch_summary(_patch_paths(arguments))
     if tool == "read_file":
         return f"读取 {_text(arguments, 'path')}"
     if tool == "grep":
@@ -102,6 +102,14 @@ def _patch_paths(arguments: Mapping[str, JsonValue]) -> list[str]:
     if not isinstance(files, list):
         return []
     return [str(item["path"]) for item in files if isinstance(item, dict) and "path" in item]
+
+
+def _patch_summary(paths: list[str]) -> str:
+    """一两个文件全部列出；更多时只给数量和第一个路径，完整清单在审批窗口和差异中。"""
+
+    if len(paths) <= 2:
+        return "修改文件：" + _short(", ".join(paths) or "（无）")
+    return f"修改 {len(paths)} 个文件：{_short(paths[0])} 等"
 
 
 def _short(text: str) -> str:
