@@ -1,8 +1,10 @@
 """官方SWE-bench判分：对试次登记的补丁批量运行`swebench eval`，把判定写回试次记录。
 
-按组别与重复序号分批，每批每个条目一条预测；补丁先按登记摘要核对。官方报告中resolved为通过，
-unresolved与空补丁为未通过；出错、基础设施失败、结果含糊或没有报告的试次不写判定，
-主指标据此记为无效，不补造结果。原试次文件不修改，输出新的0600试次文件。
+按组别与重复序号分批，每批每个条目一条预测；补丁先按登记摘要核对。判定与官方报告同口径：
+resolved为通过，unresolved与空补丁为未通过；出错或没有报告的试次不写判定，主指标据此记为无效，
+不补造结果。swebench 5.0.2对未通过试次另做的基础设施/含糊失败分类只是参考（官方报告里这些试次
+仍留在unresolved或error中，分母不变），这里同样不改判定，只把层级与原因作为诊断分数记下。
+原试次文件不修改，输出新的0600试次文件。
 """
 
 from __future__ import annotations
@@ -25,7 +27,12 @@ _VERDICTS = {
     "unresolved_ids": (False, "unresolved"),
     "empty_patch_ids": (False, "empty_patch"),
 }
-_NO_VERDICT = ("error_ids", "infra_failure_ids", "ambiguous_failure_ids", "incomplete_ids")
+_NO_VERDICT = ("error_ids", "incomplete_ids")
+# 官方的事后失败分类（swebench.harness.infra_failure）：只作诊断，不改变上面的判定。
+_FAILURE_TIERS = {"infra_failure_ids": "environment", "ambiguous_failure_ids": "ambiguous"}
+
+# 一个试次的官方结论：通过判定（None为不写判定）、状态与诊断分数。
+Verdict = tuple[bool | None, str, dict[str, str]]
 
 
 def _predictions(
@@ -47,9 +54,30 @@ def _predictions(
     return batches
 
 
+def report_verdicts(report: dict) -> dict[str, Verdict]:
+    """官方报告的分类映射为判定；失败层级与原因只附为诊断。"""
+    verdicts: dict[str, Verdict] = {}
+    for key, (value, status) in _VERDICTS.items():
+        verdicts.update({instance: (value, status, {}) for instance in report.get(key, [])})
+    for key in _NO_VERDICT:
+        verdicts.update(
+            {instance: (None, key.removesuffix("_ids"), {}) for instance in report.get(key, [])}
+        )
+    reasons = report.get("failure_reasons", {})
+    for key, tier in _FAILURE_TIERS.items():
+        for instance in report.get(key, []):
+            if instance in verdicts:
+                value, status, _ = verdicts[instance]
+                diagnostics = {"failure_tier": tier}
+                if isinstance(reasons.get(instance), str):
+                    diagnostics["failure_reason"] = reasons[instance]
+                verdicts[instance] = (value, status, diagnostics)
+    return verdicts
+
+
 def _evaluate(
     batch: list[dict], name: str, work: Path, dataset: Path, swebench: str, workers: int
-) -> dict[str, tuple[bool | None, str]]:
+) -> dict[str, Verdict]:
     directory = work / name
     directory.mkdir(parents=True, exist_ok=False)
     predictions = directory / "predictions.jsonl"
@@ -71,15 +99,19 @@ def _evaluate(
     reports = sorted(directory.glob("*.json"))
     if len(reports) != 1:
         return {}
-    report = json.loads(reports[0].read_text())
-    verdicts: dict[str, tuple[bool | None, str]] = {}
-    for key, verdict in _VERDICTS.items():
-        verdicts.update({instance: verdict for instance in report.get(key, [])})
-    for key in _NO_VERDICT:
-        verdicts.update(
-            {instance: (None, key.removesuffix("_ids")) for instance in report.get(key, [])}
-        )
-    return verdicts
+    return report_verdicts(json.loads(reports[0].read_text()))
+
+
+def _scores(verdict: Verdict, spec: GraderSpec) -> list[Score]:
+    value, status, diagnostics = verdict
+    scores = [Score(name="official_status", value=status, grader_id=spec.grader_id)]
+    if value is not None:
+        scores.append(Score(name=spec.pass_score, value=value, grader_id=spec.grader_id))
+    scores += [
+        Score(name=name, value=text, grader_id=spec.grader_id)
+        for name, text in sorted(diagnostics.items())
+    ]
+    return scores
 
 
 def grade(
@@ -97,16 +129,14 @@ def grade(
     for group in arm_trials:
         if group.plan_digest != plan.digest:
             raise SystemExit("试次文件不属于该计划")
-        verdicts: dict[tuple[int, str], tuple[bool | None, str]] = {}
+        verdicts: dict[tuple[int, str], Verdict] = {}
         for (arm, attempt), batch in sorted(_predictions(group.trials, evidence_root).items()):
             result = _evaluate(batch, f"{arm}-attempt{attempt}", work, dataset, swebench, workers)
             verdicts.update({(attempt, instance): value for instance, value in result.items()})
         trials = []
         for trial in group.trials:
-            value, status = verdicts.get((trial.attempt, trial.item_id), (None, "not_graded"))
-            scores = [Score(name="official_status", value=status, grader_id=spec.grader_id)]
-            if value is not None:
-                scores.append(Score(name=spec.pass_score, value=value, grader_id=spec.grader_id))
+            verdict = verdicts.get((trial.attempt, trial.item_id), (None, "not_graded", {}))
+            scores = _scores(verdict, spec)
             trials.append(
                 TrialRecord.model_validate_json(
                     trial.model_copy(update={"scores": (*trial.scores, *scores)}).model_dump_json()

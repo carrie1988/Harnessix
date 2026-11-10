@@ -287,6 +287,9 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
 6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、
    以严格奖励判分器生成报告（判分报告缺失或与奖励不一致时不给判定），并写一致性报告。
+   官方判定与swebench报告同口径：resolved通过，unresolved与空补丁未通过，error与未提交不写判定；
+   swebench 5.0.2对未通过试次的基础设施/含糊失败分类只是参考（分母不变），记为诊断分数
+   `failure_tier`（environment或ambiguous）与`failure_reason`，不改变判定。
 7. 逐步记录：mini-swe-agent轨迹用`mini_steps.py`；Harnessix试次由协议驱动导出本Turn的公开事件
    （`agent/harnessix-events.jsonl`，作为试次制品登记摘要），`python -m integrations.harnessix_eval
    export-steps`转为逐步记录。工具调用取tool_call与tool_result完成时刻；模型调用结束于该步用量记录，
