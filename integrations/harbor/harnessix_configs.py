@@ -1,6 +1,6 @@
 """Harbor任务容器内Harnessix的原生配置生成器。
 
-模型与命令环境沿用一期本地组别（scripts/swebench_local_run.py）：同一本地模型、关闭思考、
+模型与命令环境沿用一期本地组别（预设见task_environment）：同一本地模型、关闭思考、
 同一按语言的环境预设与900秒命令期限。命令改走外部边界原生Profile（ADR 0121）：任务容器即边界，
 工作区可写且改动保留。模型经协议运行器在容器回环端口上的转发访问宿主模型服务。
 """
@@ -19,7 +19,7 @@ from harnessix.product_config.action_contracts import (
 from harnessix.product_config.contracts import ProductConfigV2
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.wizard import build_product_config, thinking_preset
-from scripts.swebench_local_run import API_KEY_VARIABLE, MODEL, environment_presets
+from integrations.harbor.task_environment import API_KEY_VARIABLE, MODEL, environment_presets
 
 COMMAND_TIMEOUT_SECONDS = 900
 # 宿主模型服务的上下文窗口（vLLM --max-model-len）；未列出的模型沿用产品固定上限。

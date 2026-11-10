@@ -13,7 +13,7 @@ from integrations.harbor.harnessix_configs import (
     apply_eval_overrides,
     product_config,
 )
-from scripts.swebench_local_run import MODEL
+from integrations.harbor.task_environment import MODEL
 
 
 def test_harbor_product_config_declares_the_local_model_window() -> None:
