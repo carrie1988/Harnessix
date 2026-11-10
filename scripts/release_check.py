@@ -1,13 +1,15 @@
-"""发布工作流的前置检查：版本标签与包版本一致、CHANGELOG已写明本版本，并提取发布说明。
+"""发布工作流的检查：版本标签与包版本一致、CHANGELOG已写明本版本、构建目录只有本版本Wheel，并提取发布说明。
 
 用法：
   release_check.py gate --tag v0.10.0b1        # 校验并把version、prerelease写入GITHUB_OUTPUT
+  release_check.py wheel --dist dist --version 0.10.0b1   # 核对Wheel并把sha256写入GITHUB_OUTPUT
   release_check.py notes --version 0.10.0b1 --output notes.md
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import re
 import sys
@@ -59,6 +61,16 @@ def release_notes(changelog: str, version: str) -> str:
     return body + "\n"
 
 
+def release_wheel(dist: Path, version: str) -> Path:
+    """构建目录必须恰好是本版本的一个Wheel；构建工具写入的隐藏文件（如uv的.gitignore）不计入。"""
+
+    expected = f"harnessix-{version}-py3-none-any.whl"
+    found = sorted(item.name for item in dist.iterdir() if not item.name.startswith("."))
+    if found != [expected]:
+        raise ReleaseCheckError(f"{dist}中应只有{expected}，实际为{found}")
+    return dist / expected
+
+
 def _write_outputs(values: dict[str, str]) -> None:
     lines = "".join(f"{key}={value}\n" for key, value in values.items())
     target = os.environ.get("GITHUB_OUTPUT")
@@ -75,6 +87,11 @@ def _gate(tag: str) -> None:
     _write_outputs({"version": version, "prerelease": str(parsed.is_prerelease).lower()})
 
 
+def _wheel(dist: Path, version: str) -> None:
+    digest = hashlib.sha256(release_wheel(dist, version).read_bytes()).hexdigest()
+    _write_outputs({"sha256": digest})
+
+
 def _notes(version: str, output: Path) -> None:
     notes = release_notes((ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), version)
     output.write_text(notes, encoding="utf-8")
@@ -85,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     gate = commands.add_parser("gate", help="校验标签、版本与CHANGELOG")
     gate.add_argument("--tag", required=True)
+    wheel = commands.add_parser("wheel", help="核对构建出的Wheel并记录摘要")
+    wheel.add_argument("--dist", required=True, type=Path)
+    wheel.add_argument("--version", required=True)
     notes = commands.add_parser("notes", help="提取本版本的发布说明")
     notes.add_argument("--version", required=True)
     notes.add_argument("--output", required=True, type=Path)
@@ -92,6 +112,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if arguments.command == "gate":
             _gate(arguments.tag)
+        elif arguments.command == "wheel":
+            _wheel(arguments.dist, arguments.version)
         else:
             _notes(arguments.version, arguments.output)
     except ReleaseCheckError as error:

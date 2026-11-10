@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -76,6 +77,24 @@ def test_gate_reports_version_and_prerelease(
     assert "::error::" in capsys.readouterr().err
 
 
+def test_wheel_check_ignores_hidden_build_files_and_records_the_digest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    # uv build会在输出目录写入.gitignore；0.10.0b1的发布因把它算作多余文件而中止。
+    (dist / ".gitignore").write_text("*\n", encoding="utf-8")
+    (dist / "harnessix-0.10.0b2-py3-none-any.whl").write_bytes(b"wheel")
+    output = tmp_path / "github-output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    assert release_check.main(["wheel", "--dist", str(dist), "--version", "0.10.0b2"]) == 0
+    assert output.read_text(encoding="utf-8") == f"sha256={hashlib.sha256(b'wheel').hexdigest()}\n"
+    assert release_check.main(["wheel", "--dist", str(dist), "--version", "0.10.0b3"]) == 1
+    (dist / "harnessix-0.10.0b2.tar.gz").write_bytes(b"sdist")
+    with pytest.raises(ReleaseCheckError, match="应只有"):
+        release_check.release_wheel(dist, "0.10.0b2")
+
+
 def test_release_runs_only_for_version_tags_with_read_only_default() -> None:
     workflow = _workflow()
     # PyYAML把键on解析为True。
@@ -114,6 +133,7 @@ def test_release_waits_for_ci_mainline_and_three_platform_smoke() -> None:
     ]
     build = "\n".join(step.get("run", "") for step in jobs["build"]["steps"])
     assert "secret_scan.py --artifact-dir dist" in build
+    assert 'release_check.py wheel --dist dist --version "$VERSION"' in build
     release = jobs["github-release"]
     assert release["needs"] == ["gate", "build", "publish"]
     assert release["permissions"] == {"contents": "write"}
