@@ -139,7 +139,7 @@ supersedes: []
 - **零配置**：
   - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
-- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v2`；外部边界与容器使用通用指令（`harnessix.generic-execution-instructions/v4`）。两者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v3`；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v1`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v5`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
@@ -157,6 +157,7 @@ supersedes: []
 - 执行：工具名`exec_command.<id>`、执行器`product.command-profile.<id>`，与容器命令Profile共用身份（ID互斥），
   公开输出合同、审批规则与启动恢复不变。执行计划记为`host_guarded/host/full`，能力提供方`external-boundary`。
 - 语义：命令以工作区根为当前目录直接读写，改动保留；只得到Profile预设环境变量，不继承App Server环境；
+  系统指令使用如实描述这些语义的外部边界版本（见上文“系统指令”）；
   非零退出码报`process_nonzero_exit`，超时、输出上限、账本对账与Eval测试Profile共用
   [`host_process_action.py`](../../src/harnessix/product_config/host_process_action.py)宿主执行器。
 - 回归：[合同与证明](../../tests/product_config/test_native_process_profile.py)、

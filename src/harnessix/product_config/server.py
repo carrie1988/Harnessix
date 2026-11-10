@@ -7,7 +7,7 @@ import os
 import stat
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Literal
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
@@ -23,6 +23,7 @@ from harnessix.product_config.action_codec import (
 from harnessix.product_config.action_contracts import (
     ProductActionConfigSnapshot,
     ProductActionConfigV1,
+    ProductNativeProcessProfile,
 )
 from harnessix.product_config.action_runtime import open_default_product_action_runtime
 from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStore
@@ -336,12 +337,9 @@ async def _serve_product_stdio(
                         generic_execution = any(
                             tool.startswith(("exec_command.", "host_command.")) for tool in verified
                         )
-                        # 本机沙箱或沙箱外命令（ADR 0111、0113）用本机命令指令；
-                        # 外部边界与容器保持原指令。
-                        native_execution = any(
-                            native_tool_name(profile) in verified
-                            for profile in startup.actions.config.native_process_profiles
-                            if profile.backend != "external_boundary"
+                        # 原生命令按后端选用如实描述其执行语义的指令；容器命令保持通用指令。
+                        native_instructions = _native_instructions(
+                            verified, startup.actions.config.native_process_profiles
                         )
                         chain = _active_profiles(startup)
                         context = build_product_agent_context(
@@ -350,7 +348,8 @@ async def _serve_product_stdio(
                             context_window_tokens=_chain_context_window(chain),
                             context_compaction=startup.config.config.compaction,
                             generic_execution=generic_execution,
-                            native_execution=native_execution,
+                            native_execution=native_instructions == "native",
+                            external_boundary_execution=native_instructions == "external_boundary",
                             enable_planning=True,
                             enable_regex_search=True,
                             extra_fragments=skill_context_fragments(
@@ -396,6 +395,21 @@ async def _serve_product_stdio(
                             await run_stdio(
                                 AgentProtocolServer(service), input_stream, output_stream
                             )
+
+
+def _native_instructions(
+    verified: set[str], profiles: tuple[ProductNativeProcessProfile, ...]
+) -> Literal["native", "external_boundary"] | None:
+    """按实际验证通过的原生命令后端选择执行指令；未验证的Profile不参与，配置本身不授予权限。
+
+    本机沙箱或沙箱外命令（ADR 0111、0113）用本机命令指令，与外部边界同时验证时仍以其为准，
+    外部边界从不得到声称本机沙箱或host_command的指令；只有外部边界命令（ADR 0121）时用外部边界
+    指令；没有原生命令时返回None，由调用方按容器命令沿用通用执行指令。
+    """
+    backends = {profile.backend for profile in profiles if native_tool_name(profile) in verified}
+    if backends - {"external_boundary"}:
+        return "native"
+    return "external_boundary" if backends else None
 
 
 def _active_profiles(startup: _ProductRuntimeStartup) -> list[ModelProfile]:

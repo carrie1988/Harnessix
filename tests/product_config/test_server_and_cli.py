@@ -18,6 +18,7 @@ from harnessix.agent.models import ToolResultContent
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
+from harnessix.context.contracts import ContextBuildInput
 from harnessix.delivery.trusted_action import workspace_patch_supported
 from harnessix.models.contracts import (
     ModelRequest,
@@ -1078,3 +1079,76 @@ async def test_product_server_compacts_declared_windows_at_the_configured_point(
     assert options["context_compaction"] == (configured or "half_window")
     assert context.compaction.trigger_history_tokens == trigger
     assert context.compaction.policy.target_history_tokens == target
+
+
+def test_native_command_backends_select_instructions_that_match_them() -> None:
+    """只按实际验证通过的原生命令后端选择指令；外部边界从不得到本机沙箱指令。"""
+    from harnessix.product_config.native_process import native_tool_name
+    from harnessix.product_config.server import _native_instructions
+    from tests.product_config.test_native_process_profile import native_profile
+
+    profiles = {
+        backend: native_profile(profile_id=backend.replace("_", "-"), backend=backend)
+        for backend in ("external_boundary", "seatbelt", "bubblewrap", "host")
+    }
+
+    def select(*verified_backends: str) -> str | None:
+        verified = {native_tool_name(profiles[backend]) for backend in verified_backends}
+        return _native_instructions(verified | {"exec_command.container"}, tuple(profiles.values()))
+
+    assert select() is None  # 只有容器命令：沿用通用执行指令
+    assert select("external_boundary") == "external_boundary"
+    for local in ("seatbelt", "bubblewrap", "host"):
+        assert select(local) == "native"
+        assert select(local, "external_boundary") == "native"
+    assert _native_instructions(set(), ()) is None
+
+
+@pytest.mark.skipif(os.name != "posix", reason="外部边界只支持POSIX Process Owner")
+@pytest.mark.parametrize("asserted", [True, False])
+async def test_product_server_gives_external_boundary_commands_their_own_instructions(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    asserted: bool,
+) -> None:
+    """外部边界命令经环境断言验证后才可用，此时系统指令换成外部边界版本；未断言时没有命令工具。"""
+    from harnessix.product_config.native_process import EXTERNAL_BOUNDARY_ENVIRONMENT
+    from tests.product_config.test_native_process_profile import native_profile
+
+    if asserted:
+        monkeypatch.setenv(EXTERNAL_BOUNDARY_ENVIRONMENT, "1")
+    else:
+        monkeypatch.delenv(EXTERNAL_BOUNDARY_ENVIRONMENT, raising=False)
+    action_path = tmp_path / "actions.json"
+    action_path.write_bytes(
+        canonical_product_action_config_bytes(
+            build_product_action_config(native_process_profiles=(native_profile(),))
+        )
+    )
+    action_path.chmod(0o600)
+    options, context = await _served_context_options(
+        tmp_path, config, monkeypatch, action_config=action_path
+    )
+    assert options["generic_execution"] is asserted
+    assert options["external_boundary_execution"] is asserted
+    assert options["native_execution"] is False
+    prepared = await context.context.prepare(
+        ContextBuildInput(
+            thread_id=uuid4(), turn_id=uuid4(), model_step=1, workspace=str(tmp_path / "workspace")
+        ),
+        CancelToken(),
+    )
+    sources = {
+        item["source"]
+        for item in json.loads(prepared.instructions or "")["fragments"]
+        if item["kind"] == "runtime_instruction"
+    }
+    external_source = "harnessix.external-boundary-execution-instructions/v1"
+    if asserted:
+        assert external_source in sources
+        assert not any(
+            "generic-execution" in item or "native-execution" in item for item in sources
+        )
+    else:
+        assert external_source not in sources and _REGEX_CODING_INSTRUCTIONS_VERSION in sources
