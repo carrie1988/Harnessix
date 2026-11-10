@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -109,6 +110,21 @@ async def shared_repository(make_process, tmp_path: Path, request: pytest.Fixtur
                     await case.port.aclose()
     finally:
         protection.close()
+
+
+def _wait_for_git_background(root: Path, timeout_seconds: float = 10.0) -> None:
+    """Git 2.4x起提交后会在后台自动维护，短暂创建并删除.git下的锁文件；等仓库稳定后再取快照。"""
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        try:
+            if not any((root / ".git").rglob("*.lock")) and _source_snapshot(
+                root
+            ) == _source_snapshot(root):
+                return
+        except FileNotFoundError:
+            pass
+        time.sleep(0.05)
+    raise AssertionError("Git后台维护未在期限内结束")
 
 
 def _source_snapshot(root: Path) -> tuple:
@@ -275,6 +291,7 @@ def _make_unsafe(repository: _SharedRepository, fault: str, tmp_path: Path) -> N
             path.write_bytes(body)
             case.runner.run(root, ("add", "--", path.relative_to(root).as_posix()))
         case.runner.run(root, ("commit", "-qm", "unsafe repository fixture"))
+        _wait_for_git_background(root)
 
 
 async def _invalidate_host(repository: _SharedRepository, fault: str) -> None:
