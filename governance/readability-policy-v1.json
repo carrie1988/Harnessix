@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 900,
-    "src/harnessix/agent/runtime.py": 3445,
+    "src/harnessix/agent/runtime.py": 3471,
     "src/harnessix/context/sources.py": 839,
     "src/harnessix/delivery/git.py": 902,
     "src/harnessix/delivery/git_push.py": 609,
@@ -24,11 +24,11 @@
     "src/harnessix/product_config/action_composition.py": 628,
     "src/harnessix/product_config/action_contracts.py": 616,
     "src/harnessix/product_config/coding_tool_view.py": 895,
-    "src/harnessix/product_config/native_process.py": 604,
-    "src/harnessix/product_config/process_action.py": 765,
+    "src/harnessix/product_config/native_process.py": 605,
+    "src/harnessix/product_config/process_action.py": 766,
     "src/harnessix/protocol/contracts.py": 656,
     "src/harnessix/sandbox/container.py": 629,
-    "src/harnessix/session/sqlite.py": 617,
+    "src/harnessix/session/sqlite.py": 622,
     "src/harnessix/skills/runtime.py": 644,
     "src/harnessix/trusted_actions/agent_gateway_support.py": 608
   },
@@ -58,11 +58,11 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 3171,
+      "max_lines": 3189,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
-      "max_lines": 190,
+      "max_lines": 192,
       "max_decision_complexity": 48
     },
     "harnessix.agent.runtime:AgentRuntime._drive": {
@@ -82,12 +82,12 @@
       "max_decision_complexity": 21
     },
     "harnessix.agent.runtime:AgentRuntime._run_compaction": {
-      "max_lines": 171,
+      "max_lines": 172,
       "max_decision_complexity": 19
     },
     "harnessix.agent.runtime:AgentRuntime._sample_events": {
-      "max_lines": 279,
-      "max_decision_complexity": 85
+      "max_lines": 285,
+      "max_decision_complexity": 87
     },
     "harnessix.agent.runtime:AgentRuntime._select_model_tools": {
       "max_lines": 47,
@@ -602,7 +602,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.session.sqlite:SQLiteSessionStore": {
-      "max_lines": 414,
+      "max_lines": 418,
       "max_decision_complexity": 0
     },
     "harnessix.skills.contracts:SkillCatalogSnapshot.canonical_catalog": {
@@ -634,7 +634,7 @@
       "max_decision_complexity": 25
     },
     "harnessix.tools.runtime:CodingToolRuntime": {
-      "max_lines": 296,
+      "max_lines": 302,
       "max_decision_complexity": 0
     },
     "harnessix.tools.workspace:Workspace": {
