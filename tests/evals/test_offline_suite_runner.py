@@ -54,7 +54,7 @@ def test_evidence_manifest_is_strict_and_digest_bound() -> None:
         "scheduled_trials": 20,
         "passed_trials": 20,
         "provider_open_count": 20,
-        "provider_request_count": 120,
+        "provider_request_count": 100,
         "case_evidence_recovery_verified": True,
         "report_publication_recovery_verified": True,
     }

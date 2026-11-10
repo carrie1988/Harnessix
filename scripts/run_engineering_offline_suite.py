@@ -68,7 +68,7 @@ class OfflineSuiteEvidenceManifest(ContractModel):
     scheduled_trials: Literal[20]
     passed_trials: Literal[20]
     provider_open_count: Literal[20]
-    provider_request_count: Literal[120]
+    provider_request_count: Literal[100]
     case_evidence_recovery_verified: Literal[True]
     report_publication_recovery_verified: Literal[True]
 
@@ -206,9 +206,9 @@ def _validate_complete_report(
         "passed_trials": 20,
         "tests_passed_trials": 20,
         "human_intervention_trials": 0,
-        "model_attempts": 120,
-        "input_tokens": 1200,
-        "output_tokens": 600,
+        "model_attempts": 100,
+        "input_tokens": 1000,
+        "output_tokens": 500,
         "cost_completeness": "complete",
         "known_cost_amount": "0",
         "human_intervention_counts": [(0, 20)],
@@ -216,7 +216,7 @@ def _validate_complete_report(
         "test_outcomes": [("passed", 20)],
         "opened_run_ids_match": True,
         "provider_open_count": 20,
-        "provider_request_count": 120,
+        "provider_request_count": 100,
     }
     mismatches = {
         key: {"expected": expected[key], "observed": value}
@@ -251,7 +251,7 @@ def _validate_complete_report(
                 }
                 for case in report.cases
                 for transcript in case.transcripts
-                if transcript.model_attempts != 6
+                if transcript.model_attempts != 5
             ]
         }
         detail = json.dumps(mismatches, ensure_ascii=False, sort_keys=True)

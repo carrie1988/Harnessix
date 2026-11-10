@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 59
+version: 60
 code_revision: a65d7ff7ec2697922d17b931e22d109f162624d7
 owners:
   - core
@@ -1149,7 +1149,7 @@ URL或Secret参数，因此不能借组合器建立新的执行旁路。
 
 完整场景由Wheel外的[`recorded_task_pack.py`](../../scripts/recorded_task_pack.py)与
 [`run_engineering_offline_suite.py`](../../scripts/run_engineering_offline_suite.py)编排。前者只在测试/CI进程中把外置Golden
-应用到独立Oracle Workspace，再生成“基线检查→正式批量Patch→最终检查→Git状态→Git Diff→结构化回答”六步Provider
+应用到独立Oracle Workspace，再生成“基线检查→正式批量Patch→最终检查→Git审阅（`git_review`）→结构化回答”五步Provider
 事件；事件仍交给正式Agent Runtime消费，测试支持代码不能直接构造Run、Campaign或Suite通过报告。后者复用唯一的
 `run_coding_eval_suite → TaskPackCaseExecutor → run_task_pack_coding_eval`链，执行10 Case × 2 Trial，并验证以下提交窗口：
 
@@ -1176,7 +1176,7 @@ sequenceDiagram
 
 公开证据目录与私有运行目录必须互不包含，只允许Suite Plan、Suite Report和摘要清单；递归检查拒绝Prompt、Arguments、
 Response、Tool Output、Diff、Secret、Workspace、Work Root、宿主绝对路径及私有目录片段。清单绑定Pack摘要、Revision、
-Plan Fingerprint和Report SHA-256，并固定Pack v2、10 Case、20 Trial、20通过、20次Provider打开、120次请求及两个恢复标志。清单以
+Plan Fingerprint和Report SHA-256，并固定Pack v2、10 Case、20 Trial、20通过、20次Provider打开、100次请求及两个恢复标志（2026-11-09起工作流强制聚合的`git_review`，原Git状态与Git Diff两步合并为一步）。清单以
 0600临时文件写入、`fsync`后原子替换。取消/停止由Suite Runner专项测试承担，真实Turn Timeout由Agent测试承担，
 `UNKNOWN → reconcile`由Trusted Action与Product Action测试承担；聚合层不复制这些权威状态机。
 
