@@ -9,7 +9,6 @@ from harnessix.agent.models import AgentFailure, ToolCallContent, ToolResultCont
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
-from harnessix.evals.swebench.execution import _case_evidence_failure
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
@@ -112,7 +111,7 @@ async def test_runtime_drives_patch_test_and_git_review_to_completion(tmp_path: 
 
 
 @pytest.mark.parametrize("read_count", (0, 4, 12))
-async def test_investigation_can_finish_honestly_but_no_patch_remains_unresolved(
+async def test_investigation_can_finish_honestly_without_a_patch(
     tmp_path: Path, read_count: int
 ) -> None:
     tools = _SuccessfulCodingTools()
@@ -136,8 +135,6 @@ async def test_investigation_can_finish_honestly_but_no_patch_remains_unresolved
     assert turn.status is TurnStatus.COMPLETED and turn.error is None
     assert tools.calls == ["read_file"] * read_count
     assert all(request.tool_choice == "auto" for request in provider.requests)
-    failure = _case_evidence_failure(turn, "", "run_profile.public-tests", cost_complete=True)
-    assert failure is not None and failure[0] == "swebench_patch_missing"
     restored = await SQLiteSessionStore(store.path).get_thread(thread.thread_id)
     assert restored.turns[0] == turn and replay(await store.events(thread.thread_id)) == restored
 

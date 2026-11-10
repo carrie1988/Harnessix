@@ -27,7 +27,6 @@ from harnessix.delivery.workspace_patch_compact import (
     decode_compact_workspace_patch,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
-from harnessix.evals.swebench.agent_execution import _approval_decision
 from harnessix.execution.contracts import canonical_digest
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.scripted import ScriptedProvider
@@ -43,7 +42,6 @@ from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from tests.agent.helpers import answer
 from tests.delivery.test_trusted_action_patch import _action_step, _approval
-from tests.evals.swebench.test_agent_execution import _process_profile
 
 
 def sha(text: str) -> str:
@@ -195,11 +193,6 @@ async def test_gateway_advertises_compact_descriptor_and_applies_after_approval(
         call = next(i.content for i in waiting.items if isinstance(i.content, ToolCallContent))
         assert call.tool_version == WORKSPACE_PATCH_COMPACT_VERSION
         approval = _approval(waiting)
-        profile = _process_profile(tmp_path)
-        compact_decision = _approval_decision(waiting, approval, profile, "compact")
-        assert compact_decision.outcome is ApprovalOutcome.APPROVED
-        # 标准合同的审批规则不得批准紧凑版本调用，避免版本混淆。
-        assert _approval_decision(waiting, approval, profile).outcome is ApprovalOutcome.REJECTED
         await runtime.reply_approval(
             thread.thread_id,
             waiting.turn_id,

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 2
+version: 3
 code_revision: 022bb9c0d061aabe669c7716fbdbdbaceddec2ea
 owners:
   - core
@@ -24,7 +24,8 @@ supersedes: []
 `candidates`在多次互相隔离的完整单Agent运行之后，选出一个补丁：从各候选自己执行过并在自己补丁上通过的
 检查命令中选出有区分度的命令，在与候选相同的容器策略下交叉运行到每个候选的工作区上，按通过数打分。
 它不改变Agent运行时，也不让多个Agent协作；候选之间没有通信。本模块是“多候选并行 + 验证择优”的选择层，
-编排层目前在SWE-bench本地评测执行器中（`scripts/swebench_local_run.py`的`A2x4`配置）。
+编排层原在SWE-bench本地评测执行器（`scripts/swebench_local_run.py`的`A2x4`配置）中；该执行器已于2026-11-10
+随旧SWE-bench路径删除，本模块当前没有产品调用方。
 
 ## 2. 需求背景
 
@@ -78,7 +79,8 @@ flowchart TD
 ```
 
 检查命令按候选轮流选取并去重，最多8条；命令须是测试、复现或运行代码的命令，查看类命令（`cat`、`grep`、`git`等）
-没有区分度，不入选。只收在提出者自己补丁上返回0的命令。
+没有区分度，不入选。识别只用通用测试入口（pytest、unittest、tox、经`python`启动的脚本、各语言常见测试命令），
+不再为Django的`tests/runtests.py`或SymPy的`bin/test`单独开例；它们经`python`启动时仍按通用规则计入。只收在提出者自己补丁上返回0的命令。
 
 ## 7. 接口设计与核心伪代码
 
@@ -116,7 +118,7 @@ Product Process Profile保持同一边界：只读根文件系统、工作区只
 
 ## 11. 测试、验证与验收
 
-- `tests/candidates/test_selection.py`：有区分度命令识别、只取最后一次通过的命令、轮流去重与上限、排序键与空补丁；
+- `tests/candidates/test_selection.py`：有区分度命令识别（含不再特殊识别仓库自带Runner）、只取最后一次通过的命令、轮流去重与上限、排序键与空补丁；
 - `tests/candidates/test_verification.py`：容器参数保持隔离、默认与自定义挂载路径、草稿叠加不改原工作区、
   跨候选检查叠加提出者草稿、引擎错误不计为失败。
 
@@ -127,7 +129,7 @@ Product Process Profile保持同一边界：只读根文件系统、工作区只
 1. [selection.py](../../src/harnessix/candidates/selection.py)；
 2. [verification.py](../../src/harnessix/candidates/verification.py)；
 3. [judge.py](../../src/harnessix/candidates/judge.py)；
-4. 编排：[swebench_local_run.py](../../scripts/swebench_local_run.py)中的`select_candidate`与任务调度；
+4. 编排（已删除，仅作历史参考）：[swebench_local_run.py](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/scripts/swebench_local_run.py)中的`select_candidate`与任务调度；
 5. 测试：[test_selection.py](../../tests/candidates/test_selection.py)、
    [test_verification.py](../../tests/candidates/test_verification.py)、
    [test_judge.py](../../tests/candidates/test_judge.py)。
@@ -137,9 +139,11 @@ Product Process Profile保持同一边界：只读根文件系统、工作区只
 - 交叉重放由宿主直接启动容器，不进入Trusted Action账本与Process Owner对账；后续应提供宿主发起的Action入口；
 - 容器参数与`sandbox/container.py`各自维护，两处需同步；
 - 评审模型与生成模型相同时可能偏向自身风格；双顺序一致只抵消位置偏差；候选都没写有效检查时主要依赖评审；
-- 尚未作为产品命令提供（如`harnessix exec --candidates N`），也不写回用户工作区。
+- 尚未作为产品命令提供（如`harnessix exec --candidates N`），也不写回用户工作区；旧编排随本地SWE-bench执行器删除后，
+  本模块暂无调用方，接入产品前需重新设计编排层。
 
 ## 14. 变更记录
 
 - v1（2026-11-06）：首版，选择逻辑、交叉检查与SWE-bench本地评测编排。
 - v2（2026-11-06）：并列时双顺序两两评审；交叉检查遵循快照模式与环境预设，在私有写时复制副本上执行。
+- v3（2026-11-10）：本地SWE-bench执行器（原编排层）删除，本模块暂无调用方；有区分度命令的识别去掉Django/SymPy专用Runner模式，见[删除记录](../changes/remove-legacy-swebench-path.md)。

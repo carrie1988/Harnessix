@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
-status: current
-version: 29
+status: historical
+version: 30
 code_revision: 898eab8711af74be417466164b998746b80f40d5
 owners:
   - core
@@ -19,21 +19,13 @@ related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/models/test_current_tool_catalog.py
   - tests/product_config/test_closing_phase_budget.py
-  - tests/evals/swebench/test_workspace_retirement.py
-  - tests/evals/swebench/test_authenticated_workspace_retirement.py
-  - tests/evals/swebench/test_workspace_retirement_cancellation.py
-  - tests/evals/swebench/test_recycling_run_config.py
-  - tests/evals/swebench/test_optional_pre_edit_agent_execution.py
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/product_config/test_optional_pre_edit_runtime.py
   - tests/agent/test_tool_call_groups.py
-  - tests/evals/swebench/test_optional_pre_edit_run_config.py
   - tests/tools/test_grep_snapshots.py
   - tests/tools/test_windows_grep_snapshots.py
   - tests/tools/test_grep_snapshot_runtime.py
   - tests/product_config/test_grep_snapshot_patch.py
-  - tests/evals/swebench/test_search_snapshot_run_config.py
-  - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/artifacts/test_model_history.py
   - tests/agent/test_planning_tool.py
   - tests/agent/test_planning_tool_recovery.py
@@ -41,17 +33,6 @@ related_tests:
   - tests/context/test_planning_compaction_runtime.py
   - tests/models/test_planning_sdk.py
   - tests/product_config/test_planning_workflow.py
-  - tests/evals/swebench/test_planning_run_config.py
-  - tests/evals/swebench/test_planning_agent_execution.py
-  - tests/evals/swebench/test_contracts.py
-  - tests/evals/swebench/test_selection.py
-  - tests/evals/swebench/test_predictions.py
-  - tests/evals/swebench/test_official.py
-  - tests/evals/swebench/test_cli.py
-  - tests/evals/swebench/test_execution.py
-  - tests/evals/swebench/test_agent_execution.py
-  - tests/evals/swebench/test_failure_isolation.py
-  - tests/evals/swebench/test_workspace.py
   - tests/context/test_turn_budget_compaction.py
   - tests/context/test_compaction_runtime.py
   - tests/agent/test_pressure_compaction_loop.py
@@ -59,6 +40,8 @@ supersedes: []
 ---
 
 # SWE-bench Adapter 与 Verified 25 Case 预注册 Pilot
+
+> 历史记录：本文描述的旧本地SWE-bench适配（`harnessix.evals.swebench`包、`harnessix coding-eval-swebench`命令及只由它开启的复现提示与复现门禁）已于2026-11-10删除，当前评测走Harbor与Langfuse（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。文中指向已删除源码和测试的链接改为删除前最后版本`4992c2e7`的永久链接，正文保持原样；删除范围见[删除记录](remove-legacy-swebench-path.md)。
 
 ## 1. 需求背景、设计目标与当前结论
 
@@ -115,15 +98,15 @@ Agent Workspace，不允许依据评分结果换题或启动第二次模型修�
 
 | 合同 | 源码 | 责任 |
 |---|---|---|
-| `SweBenchPublicCase` | [`contracts.py`](../../src/harnessix/evals/swebench/contracts.py) | 公开字段白名单，拒绝额外字段 |
-| `SweBenchPreRegistrationPlan` | [`contracts.py`](../../src/harnessix/evals/swebench/contracts.py) | 固定总体、版本、模型、预算、25 Case和计划摘要 |
-| `select_swebench_cases` | [`selection.py`](../../src/harnessix/evals/swebench/selection.py) | 仅按公开身份字段分层选样 |
-| `SweBenchPrediction` | [`predictions.py`](../../src/harnessix/evals/swebench/predictions.py) | 官方三字段格式；空补丁仍合法并计入分母 |
-| `run_swebench_agent_suite` | [`execution.py`](../../src/harnessix/evals/swebench/execution.py) | 按预注册顺序恢复同一 pass@1 Turn、冻结 Patch 与 Prediction |
-| `materialize_swebench_workspace` | [`workspace.py`](../../src/harnessix/evals/swebench/workspace.py) | 物化公开仓库精确 base commit，隔离缓存、Agent 工作区与官方 Task Repo |
-| `collect_workspace_patch` | [`predictions.py`](../../src/harnessix/evals/swebench/predictions.py) | 临时 Index 捕获修改、新增、删除和二进制 Diff，不改真实 Index |
-| `build_official_evaluation_command` | [`official.py`](../../src/harnessix/evals/swebench/official.py) | 无 Shell 拼接；核对 Evaluator 与 Task Repo Revision |
-| `import_official_result` | [`official.py`](../../src/harnessix/evals/swebench/official.py) | 核对 25 Case 范围、计数、patch 和原生日志摘要 |
+| `SweBenchPublicCase` | [`contracts.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/contracts.py) | 公开字段白名单，拒绝额外字段 |
+| `SweBenchPreRegistrationPlan` | [`contracts.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/contracts.py) | 固定总体、版本、模型、预算、25 Case和计划摘要 |
+| `select_swebench_cases` | [`selection.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/selection.py) | 仅按公开身份字段分层选样 |
+| `SweBenchPrediction` | [`predictions.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/predictions.py) | 官方三字段格式；空补丁仍合法并计入分母 |
+| `run_swebench_agent_suite` | [`execution.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution.py) | 按预注册顺序恢复同一 pass@1 Turn、冻结 Patch 与 Prediction |
+| `materialize_swebench_workspace` | [`workspace.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/workspace.py) | 物化公开仓库精确 base commit，隔离缓存、Agent 工作区与官方 Task Repo |
+| `collect_workspace_patch` | [`predictions.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/predictions.py) | 临时 Index 捕获修改、新增、删除和二进制 Diff，不改真实 Index |
+| `build_official_evaluation_command` | [`official.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/official.py) | 无 Shell 拼接；核对 Evaluator 与 Task Repo Revision |
+| `import_official_result` | [`official.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/official.py) | 核对 25 Case 范围、计数、patch 和原生日志摘要 |
 
 ## 5. 选样语义、风险与取舍
 
@@ -211,7 +194,7 @@ Session或Agent Runtime合同；已冻结计划仍作为历史证据保留，不
 
 本轮修改的通用机制及边界：
 
-- [公开测试Profile](../../src/harnessix/evals/swebench/public_test_profile.py)：
+- [公开测试Profile](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/public_test_profile.py)：
   优先从只读Workspace导入被修改的Python源码；缺少的构建生成模块及编译扩展从该Case绑定的
   官方基础镜像读取，运行目录为临时目录。pytest使用实际存在的公开测试文件，忽略猜测的node后缀；
   目标文件缺失时，只按修改源码与基础镜像的字节差异匹配公开`test_<module>.py`。
@@ -223,7 +206,7 @@ Session或Agent Runtime合同；已冻结计划仍作为历史证据保留，不
 - [Git复核](../../src/harnessix/tools/git.py)：`git_review`复用既有`git_status`和工作区`git_diff`，
   返回[严格聚合契约](../../src/harnessix/tools/git_contracts.py)。两次观察顺序执行、并非原子快照；
   任一步失败、取消、输出无效或合并输出越界，都不返回部分成功。评测还独立核验类型与截断标志。
-- [Suite状态v2](../../src/harnessix/evals/swebench/execution_contracts.py)：
+- [Suite状态v2](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution_contracts.py)：
   已尝试Case与证据成功Case分别统计。预算耗尽、空补丁、代码测试失败、缺少复核等质量失败
   保存原终态与Patch并继续后面的Case，官方分母始终为25。取消、未知状态、环境或身份错误
   停止；恢复重用原Turn，不创建同Case第二次尝试。v1历史状态及结果保留原语义。
@@ -302,7 +285,7 @@ v15结束时，该100元周期累计保守计价上界 **22.290948元**，无未
   历史改写、模型别名、来源不匹配回到完整输入上界；未声明能力的Provider保持旧算法。
   能力返回非法值或抛异常在请求前失败关闭。实际用量硬门、未知费用及原任务预算不变。
 - v15提前压缩没有质量收益，现改为显式实验选项、默认关闭；原窗口阈值压缩和溢出恢复不变。
-- [磁盘门禁](../../src/harnessix/evals/swebench/disk_space.py)在初始化、克隆、下一新Case及
+- [磁盘门禁](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/disk_space.py)在初始化、克隆、下一新Case及
   官方评测启动前保留10 GiB余量；不足或无法读取余量则停止新写入/付费调用。
   已完成Case及原费用记录保留，不把未尝试Case计作成功。此门禁是阶段准入，不是运行中Docker
   守护进程或其他本机程序的磁盘配额，也不自动删除镜像、容器、Volume或原始评测证据。
@@ -324,10 +307,10 @@ v15结束时，该100元周期累计保守计价上界 **22.290948元**，无未
 
 - v17增加[进程内封装证明](../../src/harnessix/models/_chat_input_anchor.py)，避免在实际输入锚点
   已包含同一工具/指令时再次全额预留；仅保存摘要，重启和漂移保守回退。没有扩大50K/16步预算。
-- [执行器](../../src/harnessix/evals/swebench/execution.py)对两种已结算协议错误码统一映射为单项
+- [执行器](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution.py)对两种已结算协议错误码统一映射为单项
   质量失败；必须有完整价格覆盖、响应身份和终态尝试。未知费用、传输失败及工具状态未知仍停止，
   原失败Case不重试、不改判成功；负控和重放摘要检查继续保留。
-- v18的[任务提示](../../src/harnessix/evals/swebench/agent_execution.py)从冻结Budget生成明确的累计
+- v18的[任务提示](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/agent_execution.py)从冻结Budget生成明确的累计
   Token、步骤和期限说明，指出历史与目录每次重发都会计数。只提供资源事实和通用调查建议，
   不引入仓库/Case专用规则、隐藏断言或答案，原Problem Statement不变。
 
@@ -424,7 +407,7 @@ Agent、模型、工具权限、评分、50K/16-step/900s限制均不改变。
 → 满足隔离条件才允许下一Case → 全25项尝试完毕才导出predictions并官方评测
 ```
 
-[费用与主循环](../../src/harnessix/evals/swebench/execution.py)以原生模型尝试为唯一用量来源。
+[费用与主循环](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution.py)以原生模型尝试为唯一用量来源。
 只允许终态`provider_transport`，普通步骤完整覆盖且每步一次尝试；全部尝试已关闭，
 普通末次是传输失败，所有其他请求必须可按冻结模型、计费上下文与有效价格快照计价。
 最多普通末次Usage可未知/不完整，按`max_request_bytes × 输入上界 + max_output_tokens × 输出价`
@@ -433,23 +416,23 @@ Agent、模型、工具权限、评分、50K/16-step/900s限制均不改变。
 失败Case始终`failed`，错误码`swebench_provider_transport_isolated`，不计入质量成功；
 `attempted_case_ids`可包含失败，`completed_case_ids`只包含成功，不能把尝试完成当Resolved。
 
-[版本化配置](../../src/harnessix/evals/swebench/run_config.py)声明v3整轮理论上界123.6864元，
+[版本化配置](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py)声明v3整轮理论上界123.6864元，
 但不要求一次预付整轮；每个下一Case必须先覆盖1.8元已知最坏额加3.147456元未知预留，
 合计4.947456元。新轮最多占用本周期尚可用43.088836元，历史9.442368元预留不变；
 资金不足在打开下一Case前停止，不生成缺项或补零的完整评分。
 
 **恢复与失败顺序。**
-[Case终态重放](../../src/harnessix/evals/swebench/agent_execution.py)必须找到原Session、
+[Case终态重放](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/agent_execution.py)必须找到原Session、
 原Thread和原终态Turn，才返回历史；缺失或漂移不得创建Thread、发新请求、审批或恢复执行。
 主循环再核对Patch摘要、Turn身份、用量和错误分类。原状态前缀不可改写，v2不能静默升级v3。
 最终完整predictions包含每项原Patch（包括失败项），不删除故障Case，也不拼接旧轮答案。
 
 **验证范围。** 搜索、工具视图、原生契约与SWE-bench联合562项通过，554个源码文件Mypy通过，合同与改动范围Ruff通过；不覆盖已保留的扩大集历史失败。
 
-[隔离回归](../../tests/evals/swebench/test_failure_isolation.py)覆盖多次传输失败
+[隔离回归](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_failure_isolation.py)覆盖多次传输失败
 分别预留、完整失败prediction、逐Case额度不足的请求前停止、重放状态字节不变、错误模型/Provider/
 响应身份/价格周期/开放尝试/步骤缺失/额外尝试/旧契约拒绝，以及工具未知优先停止。
-[终态负控](../../tests/evals/swebench/test_agent_execution.py)验证缺失或漂移的Session、Thread、
+[终态负控](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_agent_execution.py)验证缺失或漂移的Session、Thread、
 Turn与非终态不能触发新请求。离线通过只证明运行边界；真实长流稳定性、Resolved和基础设施目标
 必须由新冻结轮次的完整原生证据和官方Docker评分另行验收。
 
@@ -559,17 +542,17 @@ savings = original_history - retained_history - summary_reserve
 | [`_budget_plan`](../../src/harnessix/agent/model_history_runtime.py) | 按选择后的Schema和同一规范JSON准备Context与计量；不计不可见工具。工具描述的嵌套Schema深拷贝，避免后续原地改动污染快照 |
 | `PreparedHistoryStep.budget_tool_selection` | 仅保存已准入压力摘要对应的单步临时快照，不新增Session/Event字段。恢复沿原生事实重新规划，不是新的持久权限票据 |
 | 摘要后复核 | 先检查取消；工具集合、Schema、`choice`或`forced_tool`漂移以`context_compaction_source_changed`停止下一主请求。合法窗口及已知费用仍保留，不回滚或重试 |
-| [`SweBenchBudgetWindowAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 显式v4及`context_budget_policy=amortized_pressure_window`进入完整执行指纹；保留v3故障隔离、逐Case预付和未知费用规则 |
-| [`CLI与Case装配`](../../src/harnessix/evals/swebench/cli.py) | 新轮须同时显式选择故障隔离和`--budget-pressure-compaction`；恢复拒绝策略漂移，v2/v3不会自动升级。Case入口传入同一Runtime选项，非布尔值在打开Provider前拒绝 |
+| [`SweBenchBudgetWindowAgentRunConfig`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py) | 显式v4及`context_budget_policy=amortized_pressure_window`进入完整执行指纹；保留v3故障隔离、逐Case预付和未知费用规则 |
+| [`CLI与Case装配`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/cli.py) | 新轮须同时显式选择故障隔离和`--budget-pressure-compaction`；恢复拒绝策略漂移，v2/v3不会自动升级。Case入口传入同一Runtime选项，非布尔值在打开Provider前拒绝 |
 
 **验收及回退。** 纯规划负控证明隐藏大目录不误占本步骤额度，全部注册项仍存在；
 Runtime负控覆盖工具/选择/强制工具/嵌套Schema漂移、取消优先、零下一主请求、结算与重放；
 版本测试覆盖v2/v3/v4私有读写、非法激活、指纹及CLI恢复拒绝漂移。
 对应测试见[预算规划](../../tests/context/test_turn_budget_compaction.py)、
 [实际Runtime与SDK](../../tests/agent/test_pressure_compaction_loop.py)、
-[执行配置](../../tests/evals/swebench/test_run_config.py)、
-[Case传递](../../tests/evals/swebench/test_failure_isolation.py)和
-[CLI恢复](../../tests/evals/swebench/test_cli.py)。默认产品不启用，回退使用新v3轮次；不得改写已冻结v4配置。
+[执行配置](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_run_config.py)、
+[Case传递](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_failure_isolation.py)和
+[CLI恢复](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_cli.py)。默认产品不启用，回退使用新v3轮次；不得改写已冻结v4配置。
 固定25项顺序、50K累计Token、16次含摘要请求、900秒、原模型与隐藏答案边界不变。
 新候选的离线通过不等于质量提升；没有新完整官方评分前，实际最新结果仍为v21的4/25。
 
@@ -613,7 +596,7 @@ WAL从缺失变成空文件，其余空WAL不变，不将主文件不变夸大�
 独立只读镜像导入确认pytest_httpbin、httpbin、werkzeug均不存在，未下载、安装或修改原镜像。
 因此原基础设施门槛仍OPEN，不能因process_nonzero_exit就将所有失败归给模型补丁。
 
-**目标与实现。** [`public_test_profile.py`](../../src/harnessix/evals/swebench/public_test_profile.py)
+**目标与实现。** [`public_test_profile.py`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/public_test_profile.py)
 新增`swebench-public-tests-v6`：Django家族通过固定Python入口把通用测试路径/节点转换为原生模块
 标签，插入原tests导入根，始终`--parallel=1`调用原runtests.py，并保留原退出码。首次仅增加串行
 参数的诊断仍因路径标签未安装测试App而失败；该失败保留，整改覆盖入口语义而不是隐藏错误。
@@ -630,7 +613,7 @@ CPU/内存/进程/期限限制保持不变，不为并行测试开放权限。
 
 **兼容及证据。** 版本化校验按原Profile.version选择精确参数；既有v5配置、摘要和执行指纹不变，
 不静默升级或重跑旧Case，新生成Profile为v6并进入新执行配置指纹。
-[测试入口回归](../../tests/evals/swebench/test_public_test_profile.py)覆盖路径/节点/原生标签、非法标签、
+[测试入口回归](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_public_test_profile.py)覆盖路径/节点/原生标签、非法标签、
 原退出码、原导入路径、旧v5不升级、跨版本参数与未知版本拒绝。SWE-bench专项352项通过，
 554个源码文件Mypy及公共Schema检查通过；这不覆盖已保留的全仓库历史重试失败。
 
@@ -787,7 +770,7 @@ Case后继续独立Case，不伪造实扣、不合并旧成功。当前仍须完
 规划改用出站字节上界的假设被否定：固定保守估算反而增加257～1916，摘要候选无一更便宜，
 24个预算失败末次位置仍无解锁候选。这不是实际Token测量；不更改原预算、保留组、摘要预付或摊销准入。
 
-已实施提示v8：[`build_swebench_agent_prompt`](../../src/harnessix/evals/swebench/agent_execution.py)
+已实施提示v8：[`build_swebench_agent_prompt`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/agent_execution.py)
 只持有公开任务、完整问题原文、测试目标选择及评测隔离约束；通用读取、Patch、验证、
 修复和Review规则继续由原[共享Runtime Context](../../src/harnessix/product_config/agent_context.py)
 持有，动态预算事实仍来自Provider的`budget_instruction`。固定前言1954→633字节；上述180个
@@ -848,11 +831,11 @@ base commit、工具和镜像；900秒、摘要计费、隔离／审批和无重
 
 v29真实调用仍反复调查及提交已知非法参数；不能据此直接归因模型缺少思考能力。新增**独立v5**
 以检验有界思考配置整体，不修改原主评测的非思考模型条件。
-[`SweBenchThinkingAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py)保留原隔离、
+[`SweBenchThinkingAgentRunConfig`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py)保留原隔离、
 逐Case预付与压力压缩，显式思考上限1024、整体输出4096，使用`max_completion_tokens`。
 配置、模式参数、价格模式及执行指纹必须一致；旧三版序列化字节回归不变，CLI默认仍非思考。
 
-[`_next_case_reserve`](../../src/harnessix/evals/swebench/execution.py)和完整轮次费用上界同时覆盖
+[`_next_case_reserve`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution.py)和完整轮次费用上界同时覆盖
 官方10 Token输出容差：v5下一Case4.948176元（已知1.800360＋未决3.147816），
 25项全轮123.704400元。只覆盖最后请求的计价尾差，不扩大任务50K硬预算；原版本容差0、费用公式不变。
 公开字段、原Problem全文、审批、工具、Profile、模型地域和无重试仍沿原流程。
@@ -938,7 +921,7 @@ v29真实调用仍反复调查及提交已知非法参数；不能据此直接�
 | [`CodingWorkflowToolView`](../../src/harnessix/product_config/coding_tool_view.py) | 只在调查／确定测试失败后的修复窗口开放。pre-edit baseline首次调用仍最后；强制Patch／Profile／Review及失败空目录不开放计划。已有单Profile分支按阶段拆分，保持原默认选择结果 |
 | [`build_product_agent_context`](../../src/harnessix/product_config/agent_context.py) | 可选独立`harnessix.coding-planning/v1`片段；原指令v22正文不变。要求记录事实、简短、同响应末尾更新，不能仅为重述计划花请求 |
 | [`planning_history_anchors`](../../src/harnessix/agent/planning.py) | 最新Plan必须与原调用的版本、fingerprint、确定身份、步骤和完整确认输出一致。只固定原调用所属完整工具组，不向模型重复注入Plan正文；人工旧Plan不追补规则 |
-| [`SweBenchPlanningAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 独立v6配置含`planning_policy=native-model-plan`，固定非思考、故障隔离和压力压缩；旧v2～v5序列化及默认行为不变。10 Token容差只进入费用上界，不增加任务额度 |
+| [`SweBenchPlanningAgentRunConfig`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py) | 独立v6配置含`planning_policy=native-model-plan`，固定非思考、故障隔离和压力压缩；旧v2～v5序列化及默认行为不变。10 Token容差只进入费用上界，不增加任务额度 |
 
 ```mermaid
 sequenceDiagram
@@ -1070,8 +1053,8 @@ GrepSnapshotOutput → Scoped Artifact/Session → SDK → 原Patch Gateway`。
 [POSIX搜索](../../src/harnessix/tools/search.py)、[原生端复用](../../src/harnessix/tools/windows_search.py)、
 [宿主绑定](../../src/harnessix/tools/runtime.py)、[纯合同目录](../../src/harnessix/tools/read_catalog.py)、[历史省略](../../src/harnessix/context/tool_result_view.py)、
 [独立Context片段](../../src/harnessix/product_config/agent_context.py)、
-[封闭SWE配置](../../src/harnessix/evals/swebench/run_config.py)及
-[正式装配](../../src/harnessix/evals/swebench/agent_execution.py)。
+[封闭SWE配置](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py)及
+[正式装配](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/agent_execution.py)。
 
 核心流程伪代码：打开已授权文件 → 同FD读取前后身份核验 → 严格解码 → 从同份原始内容计算SHA
 → 生成有界片段和摘要记录 → 原上限控制预览／完整归档 → 原事务发布 → 下一模型请求。
@@ -1093,8 +1076,8 @@ POSIX严格UTF-8重新编码不改变BOM、CRLF或Unicode；原生端直接使�
 [原生适配一致性](../../tests/tools/test_windows_grep_snapshots.py)、
 [归档归属/省略/重放](../../tests/tools/test_grep_snapshot_runtime.py)、
 [原Gateway审批与漂移拒绝](../../tests/product_config/test_grep_snapshot_patch.py)、
-[配置兼容](../../tests/evals/swebench/test_search_snapshot_run_config.py)及
-[真实SDK/认证Owner装配](../../tests/evals/swebench/test_search_snapshot_agent_execution.py)
+[配置兼容](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_search_snapshot_run_config.py)及
+[真实SDK/认证Owner装配](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_search_snapshot_agent_execution.py)
 构成离线门禁，不是自主编码能力证据。扩展归档回归同时纠正已落后于原生规划v21的旧版本断言，
 未改变事件生成或重放格式。
 
@@ -1137,10 +1120,10 @@ POSIX严格UTF-8重新编码不改变BOM、CRLF或Unicode；原生端直接使�
 | --- | --- | --- |
 | 工具组约束 | `ModelToolSelection.exclusive_tool_groups`：本次请求中不能共存的工具名组，默认空 | [ports](../../src/harnessix/agent/ports.py)、[校验](../../src/harnessix/agent/tool_call_groups.py)、[Kernel](../../src/harnessix/agent/runtime.py) |
 | 可选预测试 | `CodingWorkflowToolView.allow_optional_pre_edit_profile`；单Profile/Patch/Review，不允许隐式回退完整写目录 | [Tool View](../../src/harnessix/product_config/coding_tool_view.py)、[Context](../../src/harnessix/product_config/agent_context.py) |
-| 策略冻结 | v8仅可选预测试；v9的`agent_strategy`为standard/search_snapshot/optional_pre_edit，`workspace_policy`固定sealed_terminal_retirement | [run_config](../../src/harnessix/evals/swebench/run_config.py)、[IO](../../src/harnessix/evals/swebench/run_config_io.py) |
-| 顺序编排 | 逐项物化、认证原Turn、按原结算事实复核、封存回收 | [execution](../../src/harnessix/evals/swebench/execution.py)、[费用解释](../../src/harnessix/evals/swebench/execution_costs.py)、[质量解释](../../src/harnessix/evals/swebench/execution_evidence.py) |
-| 原终态认证 | `_read_terminal_case_turn`核对Thread、Workspace、请求ID、Turn和原预算；在Provider/Action装配之前返回 | [agent_execution](../../src/harnessix/evals/swebench/agent_execution.py) |
-| 封存与回收 | `seal_and_retire_workspace`、`read_retired_patch`；仅可信宿主可调用，不是模型工具 | [退役入口](../../src/harnessix/evals/swebench/workspace_retirement.py)、[合同](../../src/harnessix/evals/swebench/workspace_retirement_contracts.py)、[FS](../../src/harnessix/evals/swebench/workspace_retirement_fs.py) |
+| 策略冻结 | v8仅可选预测试；v9的`agent_strategy`为standard/search_snapshot/optional_pre_edit，`workspace_policy`固定sealed_terminal_retirement | [run_config](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py)、[IO](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config_io.py) |
+| 顺序编排 | 逐项物化、认证原Turn、按原结算事实复核、封存回收 | [execution](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution.py)、[费用解释](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution_costs.py)、[质量解释](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution_evidence.py) |
+| 原终态认证 | `_read_terminal_case_turn`核对Thread、Workspace、请求ID、Turn和原预算；在Provider/Action装配之前返回 | [agent_execution](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/agent_execution.py) |
+| 封存与回收 | `seal_and_retire_workspace`、`read_retired_patch`；仅可信宿主可调用，不是模型工具 | [退役入口](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/workspace_retirement.py)、[合同](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/workspace_retirement_contracts.py)、[FS](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/workspace_retirement_fs.py) |
 
 ### 模型工具状态与失败顺序
 
@@ -1308,8 +1291,8 @@ v35九次真实执行均在调查阶段预算准入失败，出现正则转义�
 | `path/include/max_results/context_lines` | 路径隔离和通配不变；默认10项及前后2行，最多3行上下文 |
 | [`grep_matcher`](../../src/harnessix/tools/grep_matcher.py) | 每次调用编译一次；1 MiB RE2预算、不记录模式错误正文；官方128项缓存上界另计 |
 | [`CodingToolRuntime`](../../src/harnessix/tools/runtime.py) / [`read_catalog`](../../src/harnessix/tools/read_catalog.py) | 宿主显式开关；只替换grep为major4，引擎/version/options加入新执行指纹；旧默认及snapshot字节不变 |
-| [`SweBenchRegexAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 独立v10，固定模型/费用/认证回收；拒绝与其他搜索、预测试、思考或规划候选混合 |
-| [`run_settings`](../../src/harnessix/evals/swebench/run_settings.py) | 各版本共享设置独立成214行文件，配置工厂不扩成新热点；旧v9指纹与序列化不变 |
+| [`SweBenchRegexAgentRunConfig`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py) | 独立v10，固定模型/费用/认证回收；拒绝与其他搜索、预测试、思考或规划候选混合 |
+| [`run_settings`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_settings.py) | 各版本共享设置独立成214行文件，配置工厂不扩成新热点；旧v9指纹与序列化不变 |
 | [`agent_context`](../../src/harnessix/product_config/agent_context.py) | 正则模式用v24指令，不与旧literal-only指导冲突；三种旧工作流指令SHA逐字不变 |
 
 ```mermaid
@@ -1382,7 +1365,7 @@ v35、v36真实执行仍在首次修改前耗尽累计额度；正则可用、�
 | [`coding_closure_budget`](../../src/harnessix/product_config/coding_closure_budget.py) | 最近完整、同模型主请求的输入用量×4加原收尾量形成调度偏好，或剩余槽≤4；不是未来费用上界或Token准入证明 |
 | [`CodingWorkflowToolView`](../../src/harnessix/product_config/coding_tool_view.py) | 仅首次修改前自由调查、最新User之后已有完整文件SHA时允许仅Patch AUTO；允许诚实结束，不强迫写入 |
 | [`agent_context`](../../src/harnessix/product_config/agent_context.py) | 独立固定指令明确偏好非授权、不保证足够预算；旧指令字节不变 |
-| [`SweBenchClosingAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py) | 独立v11及指纹，拒绝与regex/snapshot/可选预测试/思考/规划混合；产品默认关闭 |
+| [`SweBenchClosingAgentRunConfig`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_config.py) | 独立v11及指纹，拒绝与regex/snapshot/可选预测试/思考/规划混合；产品默认关闭 |
 
 ```mermaid
 flowchart LR
@@ -1526,7 +1509,7 @@ v38[真实执行与独立认证](../../benchmarks/swebench/verified-25-focused-c
 
 本轮针对v39公共基线源码审计发现的实现读取效率问题，不扩展预算、不给Case专用提示或参考Patch。
 需求及工具详设收敛在[定义视图](../modules/tools.md#显式定义视图候选默认关闭)。
-[`definition_config`](../../src/harnessix/evals/swebench/definition_config.py)显式v12保留故障隔离、原压力压缩及认证回收，
+[`definition_config`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/definition_config.py)显式v12保留故障隔离、原压力压缩及认证回收，
 独立开启定义视图，禁止混入正则、收尾限制、可选预测试、规划或思考；旧v2～v11读取与序列化保持。
 
 数据流：`冻结配置 → Case执行端口 → Runtime v4工具目录 + v25定义指令 → 正式Session工具结果 → 终态证据`。
@@ -1571,12 +1554,12 @@ v38[真实执行与独立认证](../../benchmarks/swebench/verified-25-focused-c
   更早结果换成含短标量的固定占位；Native事实、决定、Artifact、压缩规划不变；记录为`ModelHistoryInspectionV3`，
   需Agent Event/Thread v22（migration32，认证发布Seal与备份迁移集合同步）；回放按记录重算核对。
 - Runtime仅在工作集启用且锚定上界更紧时采用，实际输入超出即`model_input_bound_violated`失败关闭。
-- [`working_set_config`](../../src/harnessix/evals/swebench/working_set_config.py)显式v13（保留组数入指纹），
+- [`working_set_config`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/working_set_config.py)显式v13（保留组数入指纹），
   保留故障隔离、原压力压缩及认证回收，禁止混入定义视图、正则、收尾、可选预测试、规划或思考。
 
 - **紧凑模型表面**（P3，[product-config](../modules/product-config.md#紧凑模型表面候选默认关闭)）：紧凑编码指令v26与
   独立版本紧凑Patch合同（同一严格解码），首请求固定输入离线测得3466→2524 Token；
-  [`compact_surface_config`](../../src/harnessix/evals/swebench/compact_surface_config.py)显式v14只与工作集组合冻结。
+  [`compact_surface_config`](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)显式v14只与工作集组合冻结。
 - P4（收尾调度）暂不叠加：v37/v38收尾目录在约第3次请求即触发并导致已下架工具被调用，先以v14真实配对测量请求数与行为再决定。
 
 原50K累计Token（含摘要）、16次请求、900秒、固定Profile、Patch审批、修改后测试与Git核对不变；不含Case专用逻辑。
@@ -1642,7 +1625,7 @@ astropy-8872、requests-1142。1项error：scikit-learn-25973评测镜像构建�
 [v45前16项官方评测](../../benchmarks/swebench/generalization-25-v45/partial16-official-summary.json)（只读、非预注册指标）：
 Resolved 7/16，空补丁6，error 0，ambiguous 1；补丁取自HMAC封存的回收记录并逐项核对Case状态SHA。
 
-因预算约束，[运行设置](../../src/harnessix/evals/swebench/run_settings.py)新增已求证北京PAYG非思考单价的模型目录：
+因预算约束，[运行设置](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_settings.py)新增已求证北京PAYG非思考单价的模型目录：
 qwen3.8-max（12/36元每百万Token，默认不变）、qwen3.7-plus（输入≤256K时2/8元，单价只覆盖首阶梯，超出无法估价即失败关闭）、
 qwen3.8-flash（0.8/2.7元）。模型、价格、阶梯上界与计划公开名（`harnessix-<model>`）一一校验，思考诊断仅限qwen3.8-max；
 旧配置字段与指纹不变。qwen3.7-plus单请求连通探针（0.000852元，已入账）确认非思考、并行工具调用与流式用量可用。
@@ -1692,14 +1675,14 @@ v18在matplotlib-25960第17步已提交补丁，随后公开测试三次报`Errn
 重读——工作集只保留最近2组结果，已读内容被遮蔽，且每步改写一组旧结果使其后前缀按创建价重建（命中约61%，单项约5元）。
 
 据此（用户确认）：
-- [公开测试Profile v8](../../src/harnessix/evals/swebench/public_test_profile.py)：只读`/workspace`仍是唯一真源；pytest入口先把
+- [公开测试Profile v8](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/public_test_profile.py)：只读`/workspace`仍是唯一真源；pytest入口先把
   工作区（不含`.git`/缓存）复制到容器内临时目录并赋予属主写权限，`sys.path`与cwd指向副本，以仓库根为cwd运行；写入随容器销毁，
   不回流补丁。为容纳副本，v8 Profile设`tmpfs_bytes=1GiB`（仍noexec）；Django/sympy原生入口不变。真实matplotlib镜像中验证。
-- [v19](../../src/harnessix/evals/swebench/compact_surface_config.py)：v18之上关闭工作集遮蔽，历史只追加、整段命中前缀缓存，
+- [v19](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：v18之上关闭工作集遮蔽，历史只追加、整段命中前缀缓存，
   已读源码保持可见。
 
 另查明官方评测器在评测前对每个实例`force_rebuild`：先删除既有镜像再构建，构建遇网络瞬断即镜像缺失并记为error
-（v44的scikit-learn-25973、v47的matplotlib-24026即此因），同时使冻结Profile绑定的镜像ID失效。经用户确认，[评测入口](../../src/harnessix/evals/swebench/official.py)新增`rebuild_images=False`（默认仍为True）：不传`--task-repo`，直接使用执行前已从同一固定Task Repo修订构建的本地镜像；Task Repo修订仍逐字核验，评分规则与评测器不变。
+（v44的scikit-learn-25973、v47的matplotlib-24026即此因），同时使冻结Profile绑定的镜像ID失效。经用户确认，[评测入口](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/official.py)新增`rebuild_images=False`（默认仍为True）：不传`--task-repo`，直接使用执行前已从同一固定Task Repo修订构建的本地镜像；Task Repo修订仍逐字核验，评分规则与评测器不变。
 
 ### v50（v19＋Profile v8）与v20缓存收尾工作流
 
@@ -1712,19 +1695,19 @@ matplotlib-25960在可写副本上公开测试137项通过（不再报只读）�
 - pytest-10051第二个补丁撤销了第一个，Review显示工作区无改动仍关闭全部工具，模型13次调用被拒后放弃；
 - 无工作集时历史增长触发预算压力摘要，摘要溢出直接终止Case。
 
-据此冻结[v20](../../src/harnessix/evals/swebench/compact_surface_config.py)：Runtime`stable_tool_catalog`令线上目录整轮不变（只有阶段视图所选
+据此冻结[v20](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：Runtime`stable_tool_catalog`令线上目录整轮不变（只有阶段视图所选
 工具可执行，越权调用照原路径拒绝且不执行，末尾说明只列可执行别名）；工作流`reopen_after_clean_review`在最近Review显示无改动时
 重新开放调查与修改（新Patch后测试与Review门禁照旧）；关闭预算压力摘要（仍保留上下文溢出时的被动摘要）。
 
 ### v21：先复现再修复（复现草稿目录）
 
 v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过官方针对问题本身的测试——模型只验证了“没改坏”，没验证
-“修好了”。高分Agent的通用做法是先写出能复现所报问题的失败用例，再修复至其通过。据此冻结[v21](../../src/harnessix/evals/swebench/compact_surface_config.py)：
+“修好了”。高分Agent的通用做法是先写出能复现所报问题的失败用例，再修复至其通过。据此冻结[v21](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：
 - [复现指引](../../src/harnessix/product_config/agent_context.py)`harnessix.coding-reproduction/v1`：修改源码前在与最相关测试相邻的既有测试目录
   中新建`test_harnessix_scratch.py`（Django置于既有`tests/<app>/`包内），用公开测试Profile只选该文件确认按所报原因失败，修复后与最相关既有测试
   一起重跑；不得修改既有测试文件。
 - [草稿约定](../../src/harnessix/product_config/coding_scratch.py)（`test_harnessix_scratch*.py`文件或任意深度`harnessix_scratch/`目录）由
-  [补丁收集](../../src/harnessix/evals/swebench/predictions.py)排除，永不进入交付补丁，因而不会与官方测试补丁冲突；Review“净改动为空”的判断同样忽略草稿。
+  [补丁收集](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/predictions.py)排除，永不进入交付补丁，因而不会与官方测试补丁冲突；Review“净改动为空”的判断同样忽略草稿。
 
 [v51](../../benchmarks/swebench/verified-5-reproduction-v51/preregistration.json)首项即停止：模型按初版指引在不存在的`harnessix_scratch/`目录下创建文件，
 工作区快照在规划期抛出`workspace_parent_missing`，该码不在准备期可回传白名单，被保守记为`uncertain_effect`中断Turn并停止诊断
@@ -1747,9 +1730,9 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 （[执行摘要](../../benchmarks/swebench/generalization-25-v53/execution-summary.json)）：已尝试8项中7项非空补丁、4项自主闭环，已知费用7.026663元、
 保留3.897456元。第8项模型单次响应发出超过`max_tool_calls_per_step=8`的并行调用，流解析以`tool_index_limit_exceeded`中止于用量帧之前，
 费用未知且非传输失败，按冻结策略整轮停止；不续跑、不拼接。收敛指引鼓励“同批发出独立读取”，却从未告知单响应上限。
-据此冻结[v22](../../src/harnessix/evals/swebench/compact_surface_config.py)：
+据此冻结[v22](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：
 - [指令片段](../../src/harnessix/product_config/agent_context.py)`harnessix.coding-tool-call-cap/v1`按计划预算明确单响应工具调用上限；
-- [失败隔离](../../src/harnessix/evals/swebench/execution_costs.py)在显式开启时将调用组发布前失败的`provider_invalid_provider_output`
+- [失败隔离](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution_costs.py)在显式开启时将调用组发布前失败的`provider_invalid_provider_output`
   （无任何工具效果）与传输失败同样按足额预留隔离，Case记失败但不停整轮；其余条件（尝试闭合、无未知摘要、已结算尝试可估价）不变。
 
 ### v53前8项部分官方评测与两项改进
@@ -1786,7 +1769,7 @@ v50中matplotlib-25960的补丁通过了137项既有公开测试，却未通过�
 
 ### v23：工具门禁说明
 
-[v23](../../src/harnessix/evals/swebench/compact_surface_config.py)（v22之上）只开启工作流视图的门禁说明：v54在308次请求中有51次调用了
+[v23](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)（v22之上）只开启工作流视图的门禁说明：v54在308次请求中有51次调用了
 当前阶段不可调用的工具，模型只收到“工具未注册”，不知道应先重读上次Patch改动的文件（xarray-4629连续10次）。说明经
 `ModelRequest.tool_notice`追加到本次目录说明（尾部系统消息，不改变缓存前缀）；可执行集合、门禁与拒绝事实不变。
 v23同时启用有界输出预留：单Case最坏已知费用原把全部Token按较高的输出费率计价；有界版本以“每请求输出不超过provider
@@ -1795,7 +1778,7 @@ v23同时启用有界输出预留：单Case最坏已知费用原把全部Token�
 
 ### DeepSeek-V4.1-Flash接入（2026-10-16）
 
-[模型目录](../../src/harnessix/evals/swebench/run_settings.py)由百炼专用推广为`CatalogModel`：每项绑定端点、计费方、区域、缓存模式
+[模型目录](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_settings.py)由百炼专用推广为`CatalogModel`：每项绑定端点、计费方、区域、缓存模式
 （`explicit_tail`打标记／`automatic`服务端自动前缀缓存）与思考开关格式；原qwen条目取值不变。新增`deepseek-flash`：
 [官方价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)按高峰时段计价（未命中2、命中0.04、输出8元/百万Token；
 空闲时段减半，账本因此偏保守），自动缓存无创建附加费、创建按未命中价；上下文1M；思考固定关闭。
@@ -1805,19 +1788,19 @@ DeepSeek把用量放在`finish_reason`分片内，旧解析只接受独立用量
 6次尝试的用量未知，按每次完整未知请求预留0.532768元结算（共3.196608元，实际账单约每项0.01～0.02元）。修复[流解析](../../src/harnessix/models/_chat_stream.py)
 后d1作废、开发集以新计划d2整体重跑（不与d1拼接；开发集不作泛化结论）。
 d2开发运行前2项因本机代理瞬时连接失败（`httpx_connect_failure`，与v47丢失9项同因）被隔离，操作者停止。由此冻结
-[v24](../../src/harnessix/evals/swebench/compact_surface_config.py)：v23之上仅把连接建立重试固定为3次（请求未发出，不违反无重试/无重采样）。
+[v24](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：v23之上仅把连接建立重试固定为3次（请求未发出，不违反无重试/无重采样）。
 d3（v24）前2项补丁均已完成并通过公开测试（pytest-7982补丁与v54已解决的补丁逐字相同），却在强制`git_review`时被DeepSeek调用其他
 工具而整Turn失败（`swebench_model_response_invalid`）；独立探测中DeepSeek均遵守强制选择，长上下文实跑中偶发违约。由此冻结
-[v25](../../src/harnessix/evals/swebench/compact_surface_config.py)：违约调用沿原拒绝路径无效果记录并在原预算内纠正。d3已知费用按全未命中上界
+[v25](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：违约调用沿原拒绝路径无效果记录并在原预算内纠正。d3已知费用按全未命中上界
 0.375634元、在途1次按完整预留结算。
 
 d4（v25）停止于3项：pytest-7982中DeepSeek的`create`缺`mode`，反馈只列顶层字段（“缺少必填字段：无”），模型连续50次盲目重试至预算耗尽；
 django-13343的参数JSON畸形使整Turn失败；三项缓存命中仅10%～38%（目录/预算说明插在指令与历史之间，前缀只覆盖指令3712个Token）。
-已知费用按完整用量分区价2.644920元、1次未知按完整预留结算。修复：参数校验位置反馈（全局）、[v26](../../src/harnessix/evals/swebench/compact_surface_config.py)
+已知费用按完整用量分区价2.644920元、1次未知按完整预留结算。修复：参数校验位置反馈（全局）、[v26](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)
 工具参数有界修复与自动缓存`stable_tail`布局。
 
 d5（v26）首项0.06元：参数位置反馈生效（`files[1]：create需要…mode`后下一次即修正），但修复后测试挂起超时，被判为公开测试
-不可用而停止整轮。由此冻结[v27](../../src/harnessix/evals/swebench/compact_surface_config.py)：Profile超时按代码级测试失败进入诊断修复。
+不可用而停止整轮。由此冻结[v27](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：Profile超时按代码级测试失败进入诊断修复。
 
 ### d7开发集完整结果（DeepSeek-V4.1-Flash，v27）
 
@@ -1834,12 +1817,12 @@ d5（v26）首项0.06元：参数位置反馈生效（`files[1]：create需要�
 下一次泛化测量须使用另一组新题。
 
 v55坏例归因（13项）：6项在57～59次请求处触及60次上限（其中sphinx-11445在参数错误后只剩强制Patch、无法重读取得SHA而连续被拒）；
-其余多为公开测试通过但隐藏测试未过的错误修复。由此：[v28](../../src/harnessix/evals/swebench/compact_surface_config.py)失败Patch后保留读取；
+其余多为公开测试通过但隐藏测试未过的错误修复。由此：[v28](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)失败Patch后保留读取；
 下一轮计划预算提高到100次请求／3M Token／2700秒（[v56](../../benchmarks/swebench/generalization-25-v56/plan.json)执行前冻结）。
 
 v55r（v28，100次请求／3M）前6项全部自主闭环（含v55中预算耗尽的sphinx-11445与xarray-6992），第7项matplotlib-24177一次响应
 退化为4096个输出Token被截断，`provider_max_output_tokens`不在质量失败集合而停整轮（已知费用1.43元）。由此冻结
-[v29](../../src/harnessix/evals/swebench/compact_surface_config.py)：所有尝试响应身份与用量已知时，输出上限截断计为该Case的
+[v29](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：所有尝试响应身份与用量已知时，输出上限截断计为该Case的
 `swebench_model_output_truncated`质量失败，独立Case继续；响应未知时仍失败关闭。
 
 v55r3（v29）前15项中14项闭环，第16项astropy-14096以与现有内容相同、但SHA过期的`replace`改写复现草稿：规划器先报“无变化”，
@@ -1847,7 +1830,7 @@ Review只在SHA也一致时绑定无变化拒绝，未绑定即为`uncertain_eff
 对`replace`与`edit`一样在规划前核对SHA，SHA不符先于无变化判定成为可纠正拒绝。
 
 v55r3前15项官方评测7/15，与v55同组15项（7/15）持平：稳健性修复使预算耗尽题闭环，但补丁仍错，瓶颈转为修复质量。由此冻结
-[v30](../../src/harnessix/evals/swebench/compact_surface_config.py)：对已求证`thinking_type`格式的模型开启原生思考，不回传推理内容
+[v30](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：对已求证`thinking_type`格式的模型开启原生思考，不回传推理内容
 （实测deepseek-flash在带工具多轮中不强制回传），输出上限放宽到8192以免推理挤占回答；计划参数须声明`thinking: enabled`。
 
 v55t首项第二次请求被DeepSeek以400拒绝：思考模式下带工具调用的历史助手消息必须携带`reasoning_content`（此前探测为假阴性）。
@@ -1868,8 +1851,8 @@ v55t3（v30高强度思考）首项单步推理增至5K～8K Token、第12次请
 
 ### 目标提高到pass@1≥65%：A（deepseek-v4-pro）＋C（自我校验），100元新周期
 
-用户同意改用[deepseek-v4-pro](../../src/harnessix/evals/swebench/run_settings.py)（同一价格页高峰单价：未命中9、命中0.3、输出27元/百万Token；
-协议与Flash相同，实测用量随结束分片、自动缓存命中96%）并加入[v31](../../src/harnessix/evals/swebench/compact_surface_config.py)收尾前自我校验。
+用户同意改用[deepseek-v4-pro](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_settings.py)（同一价格页高峰单价：未命中9、命中0.3、输出27元/百万Token；
+协议与Flash相同，实测用量随结束分片、自动缓存命中96%）并加入[v31](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)收尾前自我校验。
 v57（Flash复现）在执行任何Case前停止，其25项保持未见，留作Pro配置的新鲜终测集。
 
 p1（Pro＋v31，v56同题）前3项闭环、费用1.17／0.50／0.35元，但缓存命中仅13%～22%且固定约1400 Token；首项在强制`git_review`阶段
@@ -1972,18 +1955,18 @@ DeepSeek直连高峰只在工作日9:00～12:00、14:00～18:00。
 
 实现（通用规则，无逐题逻辑）：
 
-- [模型目录](../../src/harnessix/evals/swebench/run_settings.py)新增`deepseek-v4-pro-0813`（公开名`harnessix-deepseek-v4-pro-0813-bailian`）：按百炼闲时单价冻结
+- [模型目录](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/run_settings.py)新增`deepseek-v4-pro-0813`（公开名`harnessix-deepseek-v4-pro-0813-bailian`）：按百炼闲时单价冻结
   （未命中4.5、命中0.9、创建4.5、输出13.5元/百万Token），并绑定计价时段`BillingWindow(Asia/Shanghai, 22:00, 08:00)`；
-  [执行循环](../../src/harnessix/evals/swebench/execution.py)在每个未终态Case开始前要求“当前处于窗口内且剩余时长≥Case墙钟预算＋10分钟”，
+  [执行循环](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/execution.py)在每个未终态Case开始前要求“当前处于窗口内且剩余时长≥Case墙钟预算＋10分钟”，
   否则以`swebench_billing_window_closed`停在Case之间，已完成Case保持终态，下一窗口内原样恢复。由此每个请求都按冻结的闲时单价发生。
 - `OpenAIChatConfig.implicit_cache_usage`：百炼隐式缓存只报告命中数时，创建记0、未缓存为输入减命中，使成本口径完整；其他端点不变。
-- [v39全程思考](../../src/harnessix/evals/swebench/compact_surface_config.py)只建立在v37之上（不与v38复现门禁或v30原生思考组合）：每个模型步骤开启思考，
+- [v39全程思考](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)只建立在v37之上（不与v38复现门禁或v30原生思考组合）：每个模型步骤开启思考，
   工作流与强制工具选择不变；输出上限16384（在宽输出8192之上再留8192推理余量），SSE帧上限40000、响应字节上限12 MiB；推理内容不回传历史，
   不混用思考与非思考，缓存只维护一份。只开放给实测思考时仍接受强制`tool_choice`的端点（当前仅百炼`deepseek-v4-pro-0813`）。
 - 单Case最坏预留（2M Token、100步、Case外未知请求各一）随输出上限上升：v39按闲时单价25.09元，v37同端点17.61元。
 
-验证：新增[百炼与v39测试](../../tests/evals/swebench/test_bailian_full_thinking.py)、隐式缓存用量与思考保留强制选择的
-[映射/流测试](../../tests/models/test_prompt_cache.py)、计价窗口停于Case之间并可恢复的[执行测试](../../tests/evals/swebench/test_failure_isolation.py)；
+验证：新增[百炼与v39测试](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_bailian_full_thinking.py)、隐式缓存用量与思考保留强制选择的
+[映射/流测试](../../tests/models/test_prompt_cache.py)、计价窗口停于Case之间并可恢复的[执行测试](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/tests/evals/swebench/test_failure_isolation.py)；
 `tests/models`与`tests/evals/swebench`全部通过，仅4项重试相关用例失败，与改动前HEAD完全相同（既有问题）；`tests/product_config`中的git用例
 因本机`/usr/bin/git` 2.24不支持`--object-format`在HEAD上同样失败，与本改动无关。
 
@@ -2011,7 +1994,7 @@ sphinx-8269、sympy-18763）。局限：真实1M预算会更早触发预算压�
 
 **d39b（v39，修复tool_choice后重跑同一冒烟）未通过门槛**：3项均跑完（11～13分钟/项，共3.41元，成本完整、无传输与语法超时故障），
 但全部以失败结束、官方0/3：2项在历史超过约6.5万Token触发压缩时，摘要请求（无工具、输出上限2048）开启了思考，2048 Token全被推理
-用尽而无摘要正文（`invalid_provider_output`）；1项单步推理用满16384被截断（另1项单步达16134）。修复为[v40](../../src/harnessix/evals/swebench/compact_surface_config.py)：
+用尽而无摘要正文（`invalid_provider_output`）；1项单步推理用满16384被截断（另1项单步达16134）。修复为[v40](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/src/harnessix/evals/swebench/compact_surface_config.py)：
 只在提供工具的步骤开启思考（`thinking_tool_steps_only`，摘要与收尾回复不思考），单次输出上限放宽到32768（百炼流式约60字节/Token，
 字节上限不变、帧数上限80000）；1M单题预算下单Case最坏预留仍约15元。v39保持冻结语义（d39/d39b记录可复核，宿主副本见
 `benchmarks/swebench/deepseek-dev-d39b/hosts/`）。v63思考臂改用v40，并先以d39c重跑同一冒烟。

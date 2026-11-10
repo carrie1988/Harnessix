@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 1
+version: 2
 code_revision: 1793360021099fa4dae5f9e64f48c1b4fbbf35f5
 owners:
   - core
@@ -104,5 +104,7 @@ prefill剖析：73%的GPU时间在模型的QSA稀疏注意力（`_qsa_sparse_pag
 - 基准与探针：[`local_model_serving_bench.py`](../../scripts/local_model_serving_bench.py)、
   [`local_model_tool_call_probe.py`](../../scripts/local_model_tool_call_probe.py)；
 - 本地预设：[`wizard.py`](../../src/harnessix/product_config/wizard.py)；
-- 评测：[`swebench_local_run.py`](../../scripts/swebench_local_run.py)、[`swebench_local_report.py`](../../scripts/swebench_local_report.py)、
-  [`security_acceptance.py`](../../scripts/security_acceptance.py)。
+- 评测：当前评测走[Harbor集成](../../integrations/harbor/)（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）；
+  [`swebench_local_report.py`](../../scripts/swebench_local_report.py)、[`security_acceptance.py`](../../scripts/security_acceptance.py)。
+  旧本地运行器`scripts/swebench_local_run.py`已于2026-11-10删除，最后版本见
+  [Git历史](https://github.com/carrie1988/Harnessix/blob/4992c2e7937ef7da35fad6468e0acee7940a9cbc/scripts/swebench_local_run.py)。

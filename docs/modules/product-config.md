@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 128
+version: 129
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -19,11 +19,9 @@ related_adrs:
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
-  - tests/evals/swebench/test_regex_agent_execution.py
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/product_config/test_optional_pre_edit_runtime.py
   - tests/product_config/test_grep_snapshot_patch.py
-  - tests/evals/swebench/test_search_snapshot_agent_execution.py
   - tests/product_config/test_planning_workflow.py
   - tests/product_config/test_git_user_collection_progress.py
   - tests/product_config/test_git_source_capture_progress.py
@@ -240,8 +238,8 @@ Source 末轮 Snapshot 捕获显式接入[原生读取与纯编码进度](../cha
 以独立版本`harnessix.workspace-patch-compact/v1`公布较短英文描述与Schema；Router显式Schema与解码器机制保证
 Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`WorkspacePatchInput`严格解码，非法组合照旧以
 `tool_invalid_arguments`失败且无审批或效果。离线测量首请求固定输入由3466降至2524 Token（含工作集指引）。
-只在SWE显式v14与工作集组合冻结；回归见[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)
-与[v14配置](../../tests/evals/swebench/test_compact_surface_run_config.py)。离线通过不代表质量改善。
+原只由本地SWE-bench显式v14与工作集组合启用，该评测路径已于2026-11-10删除，产品默认不开启；回归见
+[紧凑Patch](../../tests/product_config/test_compact_workspace_patch.py)。离线通过不代表质量改善。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -2252,6 +2250,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 129 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 本地SWE-bench评测包`harnessix.evals.swebench`与`coding-eval-swebench`命令删除：相关测试从映射中移除，紧凑Patch回归不再借用该包的自动审批规则；只由该路径开启的复现提示、复现门禁（`coding_reproduction_gate`）和工作流视图草稿开关删除，`coding_scratch`只保留供候选交叉检查使用的命名约定 |
 | 128 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `ProviderDefinition.self_hosted`与向导`--self-hosted`：内网自托管端点可用本地预设和免费计价；未声明时维持原严格校验。预检新增`product_self_hosted_key_length`，拒绝短于16字节的本地占位Key。向导默认为OpenAI Chat开启紧凑工具结果，并为已核对的DeepSeek、百炼模型填写上下文窗口；`agent-server --unattended`由`harnessix exec`传入，开启完成守卫并在费用未知时按预留额继续；向导配置重试4次；声明上下文窗口时按窗口收紧输出上限，放不下思考时自动关闭思考，手写配置违反约束时校验失败；原生执行指令v3允许在用户要求时经`host_command`提交，内置Git交付移至1.1 |
 | 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |
@@ -3129,16 +3128,16 @@ Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新�
 
 ### 复现草稿目录
 
-[`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)定义保留目录名`harnessix_scratch`：显式开启时编码工作流视图在判断
-Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Git `:(exclude,glob)**/harnessix_scratch/**`排除任意深度的草稿。
+[`coding_scratch`](../../src/harnessix/product_config/coding_scratch.py)只保留草稿命名约定（`test_harnessix_scratch*.py`文件或
+任意深度的`harnessix_scratch/`目录），目前仅供[候选交叉检查](candidates.md)叠加另一候选的草稿文件。编码工作流视图的草稿开关
+（`scratch_reproduction`）和SWE-bench补丁收集对草稿的排除已随旧本地SWE-bench路径于2026-11-10删除。
 
 
 ## 当前增量：工作流门禁说明（`explain_tool_gates`，默认关闭）
 
 [`CodingWorkflowToolView(explain_tool_gates=True)`](../../src/harnessix/product_config/coding_tool_view.py)在三种受限阶段给出原因：
 测试失败后Patch因改动文件未重读而隐藏（列出待重读路径）、失败Patch后强制重读、目录为空（应以文本给出最终答复）。
-关闭时说明被清空，选择结果与此前逐字一致；开启只附加说明，可执行集合不变。失败且只改复现草稿的Patch（无任何效果）
-连同结果移出视图投影，避免空路径集把重读门禁退化为强制重试Patch；成功的仅草稿Patch仍触发强制运行复现。
+关闭时说明被清空，选择结果与此前逐字一致；开启只附加说明，可执行集合不变。
 
 ## 当前增量：测试超时判定（`test_timeouts_are_failures`，默认关闭）
 
@@ -3185,14 +3184,12 @@ Review是否仍有可交付改动时忽略该目录，SWE-bench补丁收集以Gi
 依赖`self_verification`：校验轮说明另要求搜索同一行为的其他实现（同类/子类、其他后端或打印器、重复辅助函数）并一致修复。
 依据为新鲜集未解决项中“公开测试通过但修复范围不全”（参考修复同时改动模型未改的同类实现）的通用类别。
 
-## 当前增量：复现门禁（`require_failing_reproduction`，默认关闭）
+## 已删除：复现提示与复现门禁
 
-[`coding_reproduction_gate`](../../src/harnessix/product_config/coding_reproduction_gate.py)经`admit_call`实现：首次修改源码前，
-须有一次选择了复现草稿（`test_harnessix_scratch*.py`或`harnessix_scratch/`，含Django原生标签形态）的公开测试以代码级失败
-（`process_nonzero_exit`/`process_timeout`）结束；此前触及源码的Patch以`workspace_patch_reproduction_required`拒绝，只改草稿的Patch放行。
-门禁有界：复现测试两次未失败（本环境难以复现）或源码修改已被拒绝三次即自动解锁；已有源码改动后不再锁定。锁定期间视图说明解锁条件，
-复现测试通过时不进入Review而重新开放编辑并要求原样使用问题示例；被拒调用从工作流与证据投影中移除（从未准备或执行）。
-开启时自我校验说明另要求原样运行问题示例代码。依赖`scratch_reproduction`与`explain_tool_gates`。
+复现门禁（`require_failing_reproduction`）、复现草稿开关（`scratch_reproduction`）和
+`build_product_agent_context(reproduction_guidance=...)`的复现提示只由已删除的本地SWE-bench配置开启，产品从未默认启用，
+已于2026-11-10随该路径删除；`CodingWorkflowToolView`不再实现`admit_call`，Runtime按普通视图处理。
+历史设计见[SWE-bench历史变更设计](../changes/swebench-adapter-verified-25-pilot.md)，删除范围见[删除记录](../changes/remove-legacy-swebench-path.md)。
 
 ## 当前增量：Provider思考协议与Profile思考模式（已求证端点默认开启）
 

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 59
+version: 60
 code_revision: a65d7ff7ec2697922d17b931e22d109f162624d7
 owners:
   - core
@@ -26,18 +26,7 @@ related_adrs:
   - docs/adr/0088-controlled-real-provider-suite-baseline.md
   - docs/adr/0107-authenticated-eval-host-and-history-read.md
 related_tests:
-  - tests/evals/swebench/test_closing_run_config.py
-  - tests/evals/swebench/test_regex_run_config.py
-  - tests/evals/swebench/test_regex_agent_execution.py
-  - tests/evals/swebench/test_workspace_retirement.py
-  - tests/evals/swebench/test_authenticated_workspace_retirement.py
-  - tests/evals/swebench/test_workspace_retirement_cancellation.py
-  - tests/evals/swebench/test_recycling_run_config.py
-  - tests/evals/swebench/test_optional_pre_edit_agent_execution.py
-  - tests/evals/swebench/test_search_snapshot_run_config.py
-  - tests/evals/swebench/test_search_snapshot_agent_execution.py
-  - tests/evals/swebench/test_planning_run_config.py
-  - tests/evals/swebench/test_planning_agent_execution.py
+  - tests/evals/test_legacy_swebench_removed.py
   - tests/evalkit/test_langfuse.py
   - tests/evalkit/test_harbor.py
   - tests/integrations/test_harnessix_eval.py
@@ -77,12 +66,6 @@ related_tests:
   - tests/evals/test_provider_source_checkout_failures.py
   - tests/evals/test_provider_suite_cli.py
   - tests/evals/test_provider_suite_evidence.py
-  - tests/evals/swebench/test_contracts.py
-  - tests/evals/swebench/test_selection.py
-  - tests/evals/swebench/test_predictions.py
-  - tests/evals/swebench/test_official.py
-  - tests/evals/swebench/test_cli.py
-  - tests/evals/swebench/test_agent_execution.py
 supersedes: []
 ---
 
@@ -92,15 +75,15 @@ supersedes: []
 未将源码或离线接线通过视为真实质量改善；旧默认合同和指令不变。
 
 
-## SWE-bench按需工作区与显式终态退役
+## 旧本地SWE-bench适配（2026-11-10已删除）
 
-Suite只物化即将执行或核验的一项；v2～v8不自动删除。显式v9将Agent策略和
-`sealed_terminal_retirement`一并冻结进执行指纹：原生终态认证→Patch/费用/质量边界复核
-→认证封存→Marker→描述符级回收。只回收owned工作区内容，Native、Artifact、Case状态、
-账本和结果不变；恢复从原封存读取完整Patch，不重新运行模型或执行器。单写者锁必须持有
-至清理线程结算，父Task取消会传递到删除检查点。纯费用与质量解释分别位于
-`execution_costs.py`和`execution_evidence.py`，主编排不再混杂这些职责。详见
-[统一详设与失败语义](../changes/swebench-adapter-verified-25-pilot.md#工具闭环与工作区生命周期整改)。
+`harnessix.evals.swebench`包（公开字段预注册、公开测试Profile、Suite执行与恢复、prediction导出、官方评分导入、
+终态退役及历次运行配置）和`harnessix coding-eval-swebench`命令已删除，产品wheel不再包含SWE-bench专用代码。
+外部基准评测由产品wheel之外的[Harbor集成](../../integrations/harbor/)、
+[官方评分封装](../../integrations/swebench/official_grader.py)和[evalkit](../../packages/evalkit/src/evalkit/)
+通过公共Agent Protocol驱动产品（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。
+原设计、版本演进和结果保留在[历史变更设计](../changes/swebench-adapter-verified-25-pilot.md)，
+源码见Git历史`4992c2e7`，删除范围见[删除记录](../changes/remove-legacy-swebench-path.md)。
 
 ## 显式搜索快照候选（默认关闭）
 
@@ -111,19 +94,6 @@ Suite只物化即将执行或核验的一项；v2～v8不自动删除。显式v9
 离线通过不代表真实质量改善，配对前不得推广。
 
 # Evals模块设计
-
-## 可选原生规划SWE配置
-
-[`SweBenchPlanningAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py)是独立v6，
-只显式启用非思考规划并保留隔离／压力压缩；原v2～v5、50K/16次及无重试不变。
-它不代表质量通过。源码接线、输入及费用边界、后续配对范围见[统一设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)，
-旧字节及真实产品装配回归见[配置测试](../../tests/evals/swebench/test_planning_run_config.py)和
-[接线测试](../../tests/evals/swebench/test_planning_agent_execution.py)。
-
-最新完整v27为3/25、空补丁19，仍未达质量目标。提示v8已删除任务包装中重复的通用编码规则，
-保留完整公开问题及评测边界；共享Runtime指令v22、工具和50K/16次均不变，尚未付费实跑。
-180个认证请求位置的只读计量、预算假设反证及兼容／失败边界见
-[后续输入收敛设计](../changes/swebench-adapter-verified-25-pilot.md#后续只读求证与任务包装收敛)。
 
 Langfuse导出与Harbor导入不在产品wheel内（[ADR 0120](../adr/0120-system-neutral-evaluation-platform.md)）。
 系统无关部分在[evalkit](../../packages/evalkit/src/evalkit/)：Harbor Job导入与奖励判分、
@@ -146,9 +116,9 @@ Langfuse导出与Harbor导入不在产品wheel内（[ADR 0120](../adr/0120-syste
 | 项目 | 内容 |
 |---|---|
 | 源码包 | [`src/harnessix/evals`](../../src/harnessix/evals/) |
-| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case；为完整Suite提供默认禁网、私有Provider配置、宿主恢复绑定及低敏证据发布；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库；为SWE-bench提供公开字段预注册、完整Diff导出、官方评测调用和结果证据导入边界 |
+| 当前职责 | 固定历史缺陷任务及版本；加载Wheel内置不可变Task Pack并安全物化固定Git基线；把固定无网检查Profile投影到产品Trusted Action/Container链；通过正式Agent、Session、受限自动审批、产品Trusted Action、Process Artifact和Grader执行或恢复Task Pack Trial；以Case Adapter复用Campaign前缀、成本和报告合同；确定性组合Task Pack的10 Case/20 Trial Suite身份与执行配置；采集隐藏检查、Git、Session、Usage及Cost证据；确定性评分；顺序执行受控真实模型Campaign；冻结多任务Suite身份，以单写者状态机顺序执行/恢复Case；为完整Suite提供默认禁网、私有Provider配置、宿主恢复绑定及低敏证据发布；评测Compaction语义保持；把严格通过的单文件Eval候选受控写回精确历史仓库 |
 | 非职责 | 不提供通用Benchmark平台、运行时动态任意第三方数据集、LLM Judge、分布式调度、供应商账单、账户级硬费用上限、在线排行榜、默认产品质量门禁、通用多文件交付或Windows原生执行；Recorded Provider只证明产品执行链，单一真实Provider或25 Case Pilot均不构成完整榜单质量结论 |
-| 产品入口 | `harnessix coding-eval-campaign`是显式单任务真实Campaign CLI；`harnessix coding-eval-suite`是默认禁网的完整Task Pack真实Provider Suite CLI；`harnessix coding-eval-swebench`负责外部基准预注册、prediction导出、官方评分和结果复核；单次内部运行、Compaction评测和Eval专用交付仍仅由库调用 |
+| 产品入口 | `harnessix coding-eval-campaign`是显式单任务真实Campaign CLI；`harnessix coding-eval-suite`是默认禁网的完整Task Pack真实Provider Suite CLI；单次内部运行、Compaction评测和Eval专用交付仍仅由库调用 |
 | 核心依赖 | Agent Runtime、Session、Models、Context、Coding Tools、Managed Patch、Trusted Action Catalog/Gateway/Router、Process Supervisor、Artifact、Git Read和Workspace |
 | 持久化 | 每Task Pack Run的0700目录、0755只读挂载Workspace和0600物化清单；每Eval Run私有JSON、Session、Execution Plan、Action Audit、Process Lease与Artifact；每Campaign私有Plan/State/Report；每Suite私有Plan/State/Case Reports/Report/Lock；Eval专用交付目录中的Package/State/Lock |
 | 平台 | 执行实现仍有POSIX专用边界；包入口已把九个执行导出改为按需加载，合同导入与执行能力分离，真实Windows治理验收仍待修复版CI |
@@ -176,10 +146,6 @@ Langfuse导出与Harbor导入不在产品wheel内（[ADR 0120](../adr/0120-syste
 [`provider_suite_execution.py`](../../src/harnessix/evals/provider_suite_execution.py)、
 [`provider_suite_evidence.py`](../../src/harnessix/evals/provider_suite_evidence.py)、
 [`provider_suite_cli.py`](../../src/harnessix/evals/provider_suite_cli.py)、
-[`swebench/contracts.py`](../../src/harnessix/evals/swebench/contracts.py)、
-[`swebench/selection.py`](../../src/harnessix/evals/swebench/selection.py)、
-[`swebench/predictions.py`](../../src/harnessix/evals/swebench/predictions.py)、
-[`swebench/official.py`](../../src/harnessix/evals/swebench/official.py)、
 [`compaction.py`](../../src/harnessix/evals/compaction.py)和
 [`delivery.py`](../../src/harnessix/evals/delivery.py)的当前事实源。测试原则和历史验收数字保留在
 [测试与Eval规范](../testing-and-evals.md)，通用工程交付以[Delivery模块设计](delivery.md)为事实源。
@@ -198,19 +164,6 @@ Project/Workspace/Environment双观察及既有持久Compaction。没有含Task�
 Patch网关非空不足以证明容器执行能力；缺失时以`eval_task_pack_action_unavailable`拒绝，
 不进入模型驱动循环、不降级宿主命令。Provider构造和清理保留，认证Owner、Scope及缺证评分不变。
 需求、流程、接口、失败语义与负控见[固定Profile准入详设](../changes/m09-r3-required-profile-preflight.md)。
-
-### 1.2 SWE-bench的执行边界
-
-[`agent_execution`](../../src/harnessix/evals/swebench/agent_execution.py)使用冻结Budget生成任务提示，
-装配只读公开测试Profile和正式Runtime；不读取隐藏测试或参考Patch。
-[`execution`](../../src/harnessix/evals/swebench/execution.py)保留已完整计费、带响应身份的
-模型协议质量失败。v2仍在未知费用/传输故障时停止；显式v3/v4仅隔离可证明闭合的终态传输故障，
-每项未知请求足额预留，未知工具效果等仍停止，失败Case不重试。
-[`run_config`](../../src/harnessix/evals/swebench/run_config.py)的v4候选显式启用预算压力窗口，
-v2/v3原字节与默认关闭不变；CLI恢复时拒绝激活策略漂移，不静默升级旧轮。
-每次源码改变重新冻结计划并使用新副本，未尝试Case不计成功；部分运行不生成完整官方分数。
-初始化、物化和下一新Case前的磁盘门禁保留10 GiB余量，运行宿主另做监控，不删除原始证据。
-当前结果和专项/扩大回归的完整边界见[SWE-bench变更设计](../changes/swebench-adapter-verified-25-pilot.md)。
 
 ## 2. 需求背景
 
@@ -259,8 +212,7 @@ Evals用版本化合同和持久证据回答这些问题。它衡量的是“固
 
 - 不接受用户动态提供的任意Git URL、测试命令或隐藏检查脚本；
 - 不在运行时下载第三方仓库；v1只发布权利链已审查的内置Archive，不提供远端对象存储或动态导入；
-- SWE-bench仅提供固定Revision、预注册范围内的专用适配，不扩展为任意Benchmark平台；
-- SWE-bench Agent侧已装配固定、断网、只读挂载的公开测试Profile，成功Patch后要求公开测试和Git复核；官方隐藏测试仍只在隔离Evaluator侧运行。机制具备不等于自主测试或质量目标已经验收；
+- 产品wheel不含SWE-bench等外部基准的专用适配；外部基准由Harbor集成和evalkit在wheel之外驱动（ADR 0120），官方隐藏测试只在隔离Evaluator侧运行；
 - 不在评分器中执行模型、测试、Patch、Git写入或发布；
 - 不使用LLM Judge，不评价代码风格、可维护性或唯一实现文本；
 - 不提供请求内硬费用上限；费用停止只发生在完整试验之间；
@@ -2378,6 +2330,7 @@ TYPE_CHECKING保留原签名，访问成功后缓存原对象，未知名称拒�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 60 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 删除旧本地SWE-bench适配：`harnessix.evals.swebench`包、`coding-eval-swebench`命令及其测试移除，相关章节合并为删除说明；外部基准只经wheel之外的Harbor集成与evalkit运行（ADR 0120） |
 | 59 | `a65d7ff7ec2697922d17b931e22d109f162624d7` | 2026-11-09 | Task Pack评分器把成功的`git_review`同时计为状态与差异核对；录制Provider改走`git_review`；评分器版本不变，历史报告不受影响 |
 | 36 | `e1aad041da7817eb5da20896cf092c296544ae25` | 2026-10-08 | 仅付费验证宿主追加实际脚本根、包入口来源和完整非忽略Git状态准入；原Pack/HEAD拒绝优先、Owner/凭据在后；共享Runner和产品Wheel不变 |
 | 35 | `eea6c8ab650d389023b68c97596dec0f79bb1d6c`基准上的候选 | 2026-10-07 | 固定Profile必须在实际网关注册，缺失时先于AgentRuntime和模型IO拒绝；不更改探测、安全或评分 |
@@ -2501,61 +2454,3 @@ Session内部10秒事件读取上限及Key加载5秒合同保持。认证读取�
 ### 当前增量：固定审批策略的拒绝也须正式结算
 
 `_require_allowed_approval`的允许集合、文件／选择器校验不变；`_approval_decision`将其确定`eval_approval_denied`转为原Runtime的指纹绑定REJECTED，持久回复后继续原预算内Turn。异常身份、损坏投影、取消与持久化失败仍中止，不批准回滚或扩大Task Pack；详见[第14节调用顺序与恢复负控](../changes/m09-r3-coding-workflow-instructions.md#14-固定审批拒绝不得扩大成suite宿主崩溃)。
-
-
-### SWE-bench v3：独立传输故障隔离与终态只读恢复
-
-正式执行配置和Suite状态新增显式v3；旧v1/v2不自动升级。终态传输失败、单次未决请求且
-全部工具已闭合时，Case保留失败与原Patch，逐笔足额预留后可推进下一隔离Case。
-工具效果未知、原生证据损坏、计费来源/价格不符或下一Case最坏额度不足仍停止；
-冻结终态重放缺失原Session/Thread/Turn时禁止新请求，全部25项尝试完毕才导出完整prediction。
-字段、资金公式、原生恢复、负控及真实评分边界集中见[SWE-bench详设](../changes/swebench-adapter-verified-25-pilot.md#v3独立case故障隔离保留失败不把网络恢复等同于质量恢复)。
-
-### SWE-bench公开测试入口v6：原生标签和串行边界
-
-当前生成的Profile使用v6，Django家族将通用测试路径/节点转换为原生模块标签，并用固定
-`--parallel=1`运行原runtests.py；保留原退出码，非法标签在runner前拒绝。既有v5精确参数和
-摘要仍可读取，不静默升级；pytest/SymPy、网络/IPC/挂载及资源限制未放宽。
-动机、接口调用顺序、兼容、负控和宿主56项失败测试的证据边界见
-[SWE-bench详设](../changes/swebench-adapter-verified-25-pilot.md#原生测试入口v6仓库家族适配而非case专用修补)。
-它只整改公开测试启动，不是Agent自主验收或新官方质量评分；缺失依赖和22/25目标仍未完成。
-
-### 当前v25候选：容量准入与pytest原生执行上下文
-
-新Profile v7保持仓库根cwd并原样传递pytest节点后缀；v5/v6的原字节仍可读取，不静默升级。
-公开依赖准备与Agent执行隔离，派生镜像单独按完整image ID冻结，不覆盖官方镜像或放宽执行网络。
-有界摘要容量、失败顺序、原预算、测试与宿主诊断边界集中见
-[v25详设](../changes/swebench-adapter-verified-25-pilot.md#v25候选有界摘要容量与原生pytest上下文)。
-[新计划](../../benchmarks/swebench/verified-25-v25/plan.json)保留原25项及50K/16次限制；
-本轮完整官方评分4/25，空补丁16，补丁应用失败0；3项模糊失败使基础设施验收仍开放。
-不能把宿主239项通过、838项回归或9次有效摘要当成Resolved提升；新轮结论NO_GO。
-
-### v27定位与读取合并候选
-
-Agent prompt v7复用正式read_file唯一锚点能力。
-[新计划](../../benchmarks/swebench/verified-25-v27/plan.json)仅更新源码身份，保留Case顺序、
-全部模型配置、50K/16次含摘要及900秒；新Root／pass@1，无旧Case恢复或拼分。
-[预检](../../benchmarks/swebench/verified-25-v27/preflight.json)与
-[依据及结果边界](../changes/swebench-adapter-verified-25-pilot.md#v27候选已知文件的唯一锚点源码页)分开记录。
-
-提示v8仅去除与共享Runtime重复的任务包装；字节减少不代表质量收益。
-[三组同源预算对照](../../benchmarks/swebench/verified-25-budget-sensitivity-v28/result-summary.json)
-使用新目录，50K/16次和100K/24次两组均0/3闭环、空Patch 3/3；较大预算只延长调查，
-没有模型传输故障。它不是正式25项评分或显著性证明，不改变原22/25目标和预算口径；
-约束、资金及下一步整改边界见[集中详设](../changes/swebench-adapter-verified-25-pilot.md#独立三项配对预算诊断非正式成绩)。
-
-### 独立思考模式诊断，不替换主评测条件
-
-SWE运行配置新增显式v5，旧v2/v3/v4默认、模式和序列化不变；v5约束思考1024、整体输出4096，
-全量推理与摘要进入原累计50K/16次。官方10 Token容差仅进费用预留，不进执行预算。
-同源前三项配对诊断、字段与失败语义统一见[专项设计](../changes/swebench-adapter-verified-25-pilot.md#独立有界思考配置配对诊断非正式成绩)，
-Provider原计账、正文隔离及临界调度负控见[Models合同](models.md#25-有界思考配置输出上限包含推理不发布推理正文)。
-不将6次诊断、脚本SDK回归或正常Turn结束填充25项Resolved，原22/25门槛及新泛化集仍OPEN。
-
-
-## v37 固定预算两组诊断
-
-[`SweBenchClosingAgentRunConfig`](../../src/harnessix/evals/swebench/run_config.py)采用独立v11、默认关闭的收尾候选，
-[`agent_execution`](../../src/harnessix/evals/swebench/agent_execution.py)绑定正式Runtime/Context/工具视图。
-同源baseline/closing各前三项新执行，总预付36元；原50K/16次/900秒、模型及任务不变。
-诊断不能充当25项官方成绩或新泛化集证明，完整设计见[本轮切片](../changes/swebench-adapter-verified-25-pilot.md#v37完整-wire-预付与调查收尾对照默认关闭)。
