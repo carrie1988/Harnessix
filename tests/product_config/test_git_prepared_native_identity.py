@@ -17,6 +17,9 @@ from harnessix.agent.errors import KernelError
 from harnessix.product_config import git_prepared_link_connection as connection
 from harnessix.product_config import git_prepared_native_identity as native
 from tests.product_config.test_git_prepared_link_connection import _closed, _database, _invalid
+from tests.support.sqlite_extensions import requires_sqlite_extensions
+
+pytestmark = requires_sqlite_extensions
 
 
 class _BridgeError(RuntimeError):

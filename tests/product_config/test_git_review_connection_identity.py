@@ -19,6 +19,9 @@ from harnessix.agent.errors import KernelError
 from harnessix.product_config import git_delivery_review_host as hosts
 from harnessix.product_config import git_prepared_native_identity as native
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
+from tests.support.sqlite_extensions import requires_sqlite_extensions
+
+pytestmark = requires_sqlite_extensions
 
 _REVIEW_INVALID = "git_action_review_host_invalid"
 _PREPARED_INVALID = "git_prepared_link_host_invalid"

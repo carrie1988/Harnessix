@@ -59,6 +59,9 @@ def _require_exclusive_startup() -> None:
 @contextmanager
 def _extension_loading(database: sqlite3.Connection) -> Iterator[None]:
     """关闭临时扩展许可；清理失败不能覆盖 audit hook 的原取消或首失败。"""
+    if not hasattr(database, "enable_load_extension"):
+        # 部分Python构建（如uv在macOS上的独立Python）不支持扩展加载：按身份不可用失败关闭。
+        raise _invalid()
     database.enable_load_extension(True)
     try:
         yield

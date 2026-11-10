@@ -27,7 +27,8 @@ async def test_status_failure_safely_refused_before_paid_gates(
 
     def fail_status(command, **kwargs):
         assert Path(kwargs["cwd"]).resolve() == root.resolve()
-        assert str(command[0]) == config.git_executable
+        # 宿主把Git固定到真实可执行文件；Homebrew的/opt/homebrew/bin/git是指向Cellar的链接。
+        assert Path(command[0]).resolve() == Path(config.git_executable).resolve()
         if "status" not in command:
             assert "rev-parse" in command
             return original_run(command, **kwargs)

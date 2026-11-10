@@ -15,6 +15,9 @@ from harnessix.product_config import git_prepared_link_connection as factory
 from harnessix.product_config import git_prepared_link_observation as observation
 from harnessix.product_config import git_prepared_native_identity as native
 from harnessix.product_config.git_prefix_sql import git_prefix_sql_window
+from tests.support.sqlite_extensions import requires_sqlite_extensions
+
+pytestmark = requires_sqlite_extensions
 
 
 @pytest.fixture(autouse=True)
