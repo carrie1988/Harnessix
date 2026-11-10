@@ -821,6 +821,7 @@
     "product_config->domain",
     "product_config->execution",
     "product_config->file_lock",
+    "product_config->mcp",
     "product_config->models",
     "product_config->processes",
     "product_config->protocol",

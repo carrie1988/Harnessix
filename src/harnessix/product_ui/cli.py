@@ -21,6 +21,7 @@ from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProviderKind
 from harnessix.product_config.endpoint_probe import EndpointProbe, probe_provider_endpoint
 from harnessix.product_config.errors import ProductConfigError
+from harnessix.product_config.mcp_status import mcp_doctor_lines
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
     ConfigurationDraft,
@@ -502,6 +503,7 @@ def _doctor(argv: Sequence[str]) -> None:
                 print(
                     f"- 端点探测 {item.check}：{item.status}（{item.detail}，{item.seconds:.1f}s）"
                 )
+            sys.stdout.writelines(f"{line}\n" for line in mcp_doctor_lines(os.environ))
         healthy = all(item.status != "failed" for item in probes)
         raise SystemExit(0 if report.ready and healthy else 2)
     except SystemExit:

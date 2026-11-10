@@ -12,7 +12,7 @@ from harnessix.execution.public_tool_contracts import McpToolCallOutput as McpTo
 from harnessix.tools.contracts import Revision
 
 MCP_PROTOCOL_VERSION = "2026-07-28"
-McpTransportKind = Literal["container_stdio", "in_process", "streamable_http"]
+McpTransportKind = Literal["container_stdio", "host_stdio", "in_process", "streamable_http"]
 McpConnectionState = Literal[
     "connecting",
     "connected",

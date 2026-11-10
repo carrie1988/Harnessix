@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 129
+version: 130
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -2250,7 +2250,8 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 129 | `d761381c` | 2026-11-10 | `ProviderDefinition.proxy_url`与向导`--proxy-url`：云端点经显式本机HTTP代理访问（优先于环境变量），本机与内网自托管端点拒绝代理；按ADR 0014修订，未显式配置时读取`HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY`；OpenAI Chat与Anthropic请求、`doctor --probe-model`使用同一代理选择 |
+| 130 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 本机MCP（ADR 0126）：`mcp_config.py`解析`~/.harnessix/mcp.json`并计算信任指纹，`mcp_trust.py`保存信任，`mcp_status.py`汇总状态供`harnessix mcp`、`code doctor`和会话启动共用，`mcp_composition.py`把工具按需审批接入；`extension_composition.py`把Skill与MCP作为一个扩展资源交给Action运行时；`private_json.py`供工作区信任与MCP信任共用私有原子写入 |
+| 129 | `d761381c3f5abf0000296efabeb734ad1257b0e1` | 2026-11-10 | `ProviderDefinition.proxy_url`与向导`--proxy-url`：云端点经显式本机HTTP代理访问（优先于环境变量），本机与内网自托管端点拒绝代理；按ADR 0014修订，未显式配置时读取`HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY`；OpenAI Chat与Anthropic请求、`doctor --probe-model`使用同一代理选择 |
 | 128 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | `ProviderDefinition.self_hosted`与向导`--self-hosted`：内网自托管端点可用本地预设和免费计价；未声明时维持原严格校验。预检新增`product_self_hosted_key_length`，拒绝短于16字节的本地占位Key。向导默认为OpenAI Chat开启紧凑工具结果，并为已核对的DeepSeek、百炼模型填写上下文窗口；`agent-server --unattended`由`harnessix exec`传入，开启完成守卫并在费用未知时按预留额继续；向导配置重试4次；声明上下文窗口时按窗口收紧输出上限，放不下思考时自动关闭思考，手写配置违反约束时校验失败；原生执行指令v3允许在用户要求时经`host_command`提交，内置Git交付移至1.1 |
 | 67 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job实际结果、核心Job可读性失败及Snapshot候选本机回归边界；安装升级治理仅为门禁例证 |
 | 17 | `33fcf02a5dc7b9a4fc6ca6afaa0956b47180b2d6` | 2026-09-22 | 修复Action组合根在恢复扫描前初始化Session，并记录固定Container/文档六实例CI关闭证据 |

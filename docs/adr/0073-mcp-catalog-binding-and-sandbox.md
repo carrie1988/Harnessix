@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 1
+version: 2
 code_revision: 901244b45925cbf9e9ed9793209665b4e3a3391d
 owners:
   - core
@@ -17,6 +17,8 @@ supersedes: []
 ---
 
 # ADR 0073：MCP目录绑定与Sandbox执行边界
+
+> 2026-11-10：第2条由[ADR 0126](0126-host-stdio-mcp-with-per-server-trust.md)修订，产品默认在本机以stdio启动用户逐个信任的Server；容器路径保留。
 
 - 状态：已接受
 - 日期：2026-09-09

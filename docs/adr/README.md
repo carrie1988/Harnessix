@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 33
+version: 34
 code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
@@ -265,6 +265,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0123：服务方故障的如实归因](0123-provider-service-failure-attribution.md)：用量未知时仍停止付费请求，但服务方故障以原Provider错误码结束；评测记为基础设施失败，可重跑。
 - [ADR 0124：无人值守任务的完成守卫](0124-completion-guard-for-unattended-turns.md)：显式开启时，不像完成的纯文本回复（空、JSON、照抄摘要或尚未改过代码）改为宿主补发继续提示，每Turn至多两次；压缩保留当前Turn全部用户消息。
 - [ADR 0125：Skill的产品装配](0125-skill-product-wiring.md)：模型只给名称，宿主补齐摘要；目录快照只在进程内，工具合同不随Skill内容变化；没有Skill时产品行为不变。
+- [ADR 0126：本机stdio MCP与逐个信任](0126-host-stdio-mcp-with-per-server-trust.md)：修订ADR 0073第2条；只读用户级`mcp.json`，逐个显式信任并绑定定义指纹，每次工具调用审批，仓库级配置与远端MCP不在1.0。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 7
+version: 8
 code_revision: 753d6a82ec3fbd1f30f065703684a8e9869fe8f0
 owners:
   - core
@@ -346,7 +346,7 @@ classDiagram
 | 字段/方法 | 输入/输出 | 前置条件 | 失败与敏感信息 |
 |---|---|---|---|
 | `server_id` | 稳定字符串 | 首字符字母，总长1～256，只含字母数字`_.-` | 进入Store主键与模型名称，可能暴露拓扑 |
-| `transport` | 三值合同 | 实现必须与真实Transport一致 | 当前无HTTP实现 |
+| `transport` | 四值合同（含`host_stdio`） | 实现必须与真实Transport一致 | 当前无HTTP实现 |
 | `target_sha256` | 64位摘要 | 必须绑定目标身份和启动事实 | 不是签名或认证凭据 |
 | `startup_timeout_seconds` | 0.1～3600秒 | 构造时校验 | 连接与目录捕获各自使用一次该上限 |
 | `call_timeout_seconds` | 0.1～3600秒 | 构造时校验 | 目录刷新和Tool调用各自使用一次该上限 |
@@ -1610,6 +1610,7 @@ Container限制第三方Server启动即越权的范围，代价是依赖Containe
 
 | 文档版本 | 代码版本 | 日期 | 变更 |
 |---|---|---|---|
+| 8 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 增加本机stdio目标与产品接入（ADR 0126），见文末“本机stdio目标与产品接入” |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | 启用DOC-1.6严格文档门禁；MCP产品能力边界不变 |
 | 1 | `3a81225fe8014d28ba559001f7a1fdf3da5d36a0` | 2026-09-12 | 建立MCP现行模块设计，覆盖Target、目录、Schema、SQLite、调用新鲜度、Trusted Action、UNKNOWN、反向Server、取消、部署、安全、测试和已知风险 |
 
@@ -1658,3 +1659,27 @@ Target可能长期保存Prepared对象，旧Probe与transport文字字段都不�
 只读资源查询在唯一后台线程中执行，固定期限15秒，不重试。父取消（包括重复取消）等待原查询结算后传播，
 不创建Client；稳定失败与原清理由既有MCP Store和生命周期拥有。资源失效不阻断按身份清理。
 详细字段、源码研究、流程/时序/数据流及测试见[资源准入详设](../changes/m09-r1-container-resource-admission.md)。
+
+## 本机stdio目标与产品接入（ADR 0126）
+
+[ADR 0126](../adr/0126-host-stdio-mcp-with-per-server-trust.md)修订ADR 0073第2条：产品默认在本机以stdio启动用户信任的Server，
+容器目标保留给需要隔离的部署。目标接口移到[`target_protocol.py`](../../src/harnessix/mcp/target_protocol.py)，成员都是只读属性，
+三种目标（容器、本机、进程内）都满足它。
+
+- [`McpHostStdioTarget`](../../src/harnessix/mcp/host_target.py)：只接受绝对命令与工作目录；`target_sha256`绑定信任指纹，
+  定义变化后不能复用旧目录与绑定。Server的stderr丢弃，避免带出配置值。SDK退出stdio上下文时终止子进程，
+  该上下文必须在进入它的同一任务里退出，所以产品依次连接各Server。
+- 配置与信任在`product_config`：[`mcp_config.py`](../../src/harnessix/product_config/mcp_config.py)解析`~/.harnessix/mcp.json`、
+  展开`${NAME}`并计算指纹（原样定义、解析后的命令路径、可执行文件字节、环境值摘要）；
+  [`mcp_trust.py`](../../src/harnessix/product_config/mcp_trust.py)保存指纹；
+  [`mcp_status.py`](../../src/harnessix/product_config/mcp_status.py)汇总状态，供`harnessix mcp list`、`code doctor`和会话启动共用。
+  只有`env`里引用的值作为秘密参与输出脱敏。
+- [`mcp_composition.py`](../../src/harnessix/product_config/mcp_composition.py)把每个工具注册为外部写入、高风险、需审批，
+  Server的只读标注与描述不参与；资源声明为该Server的外部写入。调用发出后的失败报告为结果未知，
+  Reconcile固定返回人工处理，不重放。描述加`[MCP <id>]`前缀并截断到2048字符。
+- [`extension_composition.py`](../../src/harnessix/product_config/extension_composition.py)把Skill与MCP作为一个扩展资源交给
+  产品Action运行时；单个Server连接失败只记录原因，不阻塞会话。
+- 1.0不读仓库内配置，不支持远端MCP、resources、prompts、sampling。会话中断时在途的MCP调用不在启动恢复范围内，不会重放。
+
+验证见[`test_mcp_product.py`](../../tests/product_config/test_mcp_product.py)：真实stdio夹具上，自称只读的工具仍需审批，
+批准前无副作用，批准后执行，环境变量值不进入结果，会话结束后进程退出；定义变化后信任失效；连接失败不阻塞会话。

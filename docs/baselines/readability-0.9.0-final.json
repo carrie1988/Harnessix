@@ -16,20 +16,20 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 618,
-    "physical_lines": 134433,
-    "logical_lines": 117793,
-    "documented_modules": 618,
-    "classes": 1249,
-    "documented_classes": 651,
-    "functions": 5237,
-    "documented_functions": 1654,
+    "source_files": 627,
+    "physical_lines": 135289,
+    "logical_lines": 118479,
+    "documented_modules": 627,
+    "classes": 1258,
+    "documented_classes": 658,
+    "functions": 5286,
+    "documented_functions": 1663,
     "public_exports": 372,
     "public_contract_types": 166,
     "undocumented_public_behavior": 0,
     "high_risk_callables": 25,
     "undocumented_high_risk_callables": 0,
-    "package_dependency_edges": 168
+    "package_dependency_edges": 169
   },
   "missing_module_docstrings": [],
   "public_contract_types": [
@@ -249,7 +249,7 @@
     },
     {
       "path": "src/harnessix/mcp/runtime.py",
-      "lines": 634
+      "lines": 619
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
@@ -1125,7 +1125,7 @@
       "path": "src/harnessix/mcp/runtime.py",
       "qualname": "McpClientConnection",
       "kind": "class",
-      "line": 201,
+      "line": 186,
       "lines": 257,
       "documented": true
     },
@@ -1579,7 +1579,7 @@
       "path": "src/harnessix/product_config/action_runtime.py",
       "qualname": "open_default_product_action_runtime",
       "kind": "function",
-      "line": 267,
+      "line": 275,
       "lines": 120,
       "documented": true,
       "decision_complexity": 8
@@ -2203,6 +2203,7 @@
     "product_config->domain",
     "product_config->execution",
     "product_config->file_lock",
+    "product_config->mcp",
     "product_config->models",
     "product_config->processes",
     "product_config->protocol",

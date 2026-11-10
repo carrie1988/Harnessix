@@ -39,6 +39,7 @@ harnessix code /path/to/repo
 | 上下文 | 按模型窗口自动压缩，读取仓库中的 `AGENTS.md` |
 | Git | 查看状态和差异；你要求时，经批准后提交 |
 | Skills | 按需加载个人或仓库里的任务说明，见[使用 Skills](docs/operations/skills.md) |
+| MCP | 在本机启动你逐个信任的 MCP Server，每次工具调用都需批准，见[使用 MCP](docs/operations/mcp.md) |
 | 模型 | OpenAI 兼容接口与 Anthropic 接口；已预设 DeepSeek 和百炼，支持自托管模型 |
 | 集成 | 终端界面、无头模式（JSON 输出）、stdio App Server、Python SDK |
 

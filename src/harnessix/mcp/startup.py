@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import AsyncExitStack
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from mcp import Client
 
@@ -24,7 +24,7 @@ async def build_preflight_client(
     """仅在固定Container资源有效且原只读工作结算后创建Client。"""
 
     if isinstance(target, container_type):
-        await _verify_container_resources(cast("McpContainerStdioTarget", target).builder)
+        await _verify_container_resources(target.builder)
     return target.build_client(stack)
 
 

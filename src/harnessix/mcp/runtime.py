@@ -9,7 +9,7 @@ import os
 import re
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
-from typing import Any, Protocol, cast
+from typing import Any, cast
 
 from mcp import Client, StdioServerParameters, stdio_client
 from mcp.server import Server
@@ -41,6 +41,7 @@ from harnessix.mcp.startup import (
     build_preflight_client,
 )
 from harnessix.mcp.store import SQLiteMcpStore
+from harnessix.mcp.target_protocol import McpClientTarget as McpClientTarget
 from harnessix.sandbox.container import ContainerCommandBuilder, PreparedContainerLaunch
 from harnessix.sandbox.contracts import ContainerExecutionSpec, ContainerSandboxProfile
 from harnessix.secrets.guard import SecretLeakGuard
@@ -52,22 +53,6 @@ DEFAULT_MCP_STARTUP_TIMEOUT_SECONDS = 30.0
 DEFAULT_MCP_CALL_TIMEOUT_SECONDS = 300.0
 
 _MODEL_NAME_INVALID = re.compile(r"[^A-Za-z0-9_.-]")
-
-
-class McpClientTarget(Protocol):
-    server_id: str
-    transport: McpTransportKind
-    target_sha256: str
-    startup_timeout_seconds: float
-    call_timeout_seconds: float
-    sandbox_profile_digest: str | None
-    sandbox_network: str | None
-
-    def build_client(self, stack: AsyncExitStack) -> Client: ...
-
-    async def cleanup(self) -> None: ...
-
-    def redaction_values(self) -> tuple[bytes, ...]: ...
 
 
 @dataclass(frozen=True, slots=True)

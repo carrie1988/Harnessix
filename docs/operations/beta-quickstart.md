@@ -70,7 +70,7 @@ harnessix code /path/to/repo
 
 ## 4. 已知限制
 
-- 还不支持 MCP 和 Hooks，没有 IDE 集成。Skills 见[使用 Skills](skills.md)。
+- 还不支持 Hooks，没有 IDE 集成。Skills 见[使用 Skills](skills.md)，MCP 见[使用 MCP](mcp.md)。
 - 云模型显示的是费用上限（未扣除缓存折扣），不是账单。
 - 单个任务默认最多 100 步、1 小时，等待审批的时间也计入。交互模式不限累计 Token（费用未知的云模型限 300 万），`harnessix exec` 默认限 300 万（本地模型 600 万），也可用 `--max-cost` 按金额限制。
 - 网络中断导致费用未知时，交互模式会停止，发送新消息即可继续。

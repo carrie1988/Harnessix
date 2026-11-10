@@ -11,6 +11,8 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+from harnessix.product_config.private_json import write_private_json
+
 TRUST_ENVIRONMENT = "HARNESSIX_TRUST_WORKSPACE"
 _SPEC_VERSION = "harnessix.trusted-workspaces/v1"
 
@@ -45,20 +47,7 @@ def remember_trust(workspace: Path, store: Path) -> None:
     """用临时文件加原子替换写入，文件只允许当前用户读写。"""
 
     entries = {str(item) for item in _load(store)} | {str(workspace.resolve())}
-    store.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    temporary = store.with_name(f"{store.name}.{os.getpid()}.tmp")
-    body = json.dumps(
-        {"spec_version": _SPEC_VERSION, "workspaces": sorted(entries)},
-        ensure_ascii=False,
-        indent=2,
-    )
-    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(body + "\n")
-        os.replace(temporary, store)
-    finally:
-        temporary.unlink(missing_ok=True)
+    write_private_json(store, {"spec_version": _SPEC_VERSION, "workspaces": sorted(entries)})
 
 
 def _notice(workspace: Path) -> str:

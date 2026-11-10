@@ -28,6 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     subcommands.add_parser("state", help="停机备份并验证完整产品状态")
     subcommands.add_parser("data", help="列出、导出或删除本机会话数据，生成诊断信息")
     subcommands.add_parser("skills", help="查看 Agent 可用的 Skill 及未被采用的原因")
+    subcommands.add_parser("mcp", help="查看并信任本机 MCP Server")
     subcommands.add_parser("license", help="显示社区许可证、源代码和商业许可信息")
     return parser
 
@@ -79,6 +80,11 @@ def _delegate_special_command(args: list[str]) -> bool:
         from harnessix.product_ui.skills_cli import skills_main
 
         skills_main(args[1:])
+        return True
+    if args[0] == "mcp":
+        from harnessix.product_ui.mcp_cli import mcp_main
+
+        mcp_main(args[1:])
         return True
     if args[0] == "exec":
         from harnessix.exec_cli import exec_main

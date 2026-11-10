@@ -15,6 +15,7 @@
     "transport": {
       "enum": [
         "container_stdio",
+        "host_stdio",
         "in_process",
         "streamable_http"
       ],

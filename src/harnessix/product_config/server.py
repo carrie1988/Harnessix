@@ -35,6 +35,7 @@ from harnessix.product_config.contracts import (
     ProfileSelection,
     ProviderDefinition,
 )
+from harnessix.product_config.extension_composition import product_extension_sources
 from harnessix.product_config.native_process import native_tool_name
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import ProductPreflightReport
@@ -47,7 +48,6 @@ from harnessix.product_config.runtime import (
 )
 from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.product_config.skill_composition import (
-    product_skill_sources,
     skill_context_fragments,
 )
 from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
@@ -317,7 +317,7 @@ async def _serve_product_stdio(
                         recovery_config=recovery_action,
                         output_redaction=public_scope,
                         root_owner=startup.root_owner,
-                        skill_sources=product_skill_sources(startup.workspace_root),
+                        extensions=product_extension_sources(startup.workspace_root),
                     ) as action_owner:
                         config_store.save_action_recovery_scan(action_owner.recovery_scan)
                         config_store.save_action_recovery_report(action_owner.recovery)

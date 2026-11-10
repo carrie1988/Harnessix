@@ -9,9 +9,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, JsonValue
 
+from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.domain.errors import UncertainEffectError
-from harnessix.domain.models import EffectClass, RiskLevel
+from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
 from harnessix.execution.contracts import canonical_digest
 from harnessix.mcp.contracts import McpToolSnapshot
 from harnessix.mcp.runtime import McpCallAfterSendError, McpClientConnection
@@ -132,17 +133,28 @@ class McpTrustedActionExecutor:
 def build_mcp_action_definition(
     connection: McpClientConnection,
     policy: McpTrustedToolPolicy,
+    *,
+    descriptor: ToolDescriptor | None = None,
 ) -> TrustedActionDefinition:
-    """将固定MCP Tool快照转换为统一Action定义。"""
+    """将固定MCP Tool快照转换为统一Action定义。
+
+    给出模型工具描述时（产品Agent入口），Binding按该描述取版本与指纹，供通用Agent Gateway核对；
+    调用前仍按快照摘要刷新并比较目录。
+    """
     catalog = connection.catalog
     tool = connection.tool(policy.raw_name)
-    version = _tool_version(catalog.server.protocol_version, catalog.server.reported_version, tool)
+    server = catalog.server
+    version = (
+        descriptor.version
+        if descriptor is not None
+        else mcp_tool_version(server.protocol_version, server.reported_version, tool)
+    )
     binding = build_trusted_tool_binding(
         source="mcp",
         source_id=connection.server_id,
         tool=tool.model_name,
         tool_version=version,
-        tool_fingerprint=tool.tool_sha256,
+        tool_fingerprint=tool.tool_sha256 if descriptor is None else tool_fingerprint(descriptor),
         input_schema_sha256=canonical_digest(tool.input_schema),
         effect_class=policy.effect_class,
         risk_level=policy.risk_level,
@@ -250,6 +262,6 @@ def _mcp_arguments(value: BaseModel) -> McpToolArguments:
     return value
 
 
-def _tool_version(protocol: str, server_version: str | None, tool: McpToolSnapshot) -> str:
+def mcp_tool_version(protocol: str, server_version: str | None, tool: McpToolSnapshot) -> str:
     value = f"{protocol}.{server_version or 'unknown'}.{tool.tool_sha256[:16]}"
     return value[:128]
