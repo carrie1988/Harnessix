@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 25
-code_revision: 09c7db1f1697dc7e59903011d1838a49ac9e8c71
+version: 26
+code_revision: aa686be2bc813e9a26e5595f050fadded94be69f
 owners:
   - product
 modules:
@@ -39,6 +39,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：命令行输出统一为UTF-8（0.10.0b3）
+
+顶层入口`harnessix.cli.main`先把标准输出和错误重配为UTF-8，保留各自原有的错误处理方式。Windows把重定向到管道或文件的输出按旧代码页（如cp1252）编码，此前`harnessix --help`等命令打印中文时抛`UnicodeEncodeError`退出；交互控制台本来就是UTF-8，不受影响。回归见`tests/test_cli_output_encoding.py`。
 
 ## 当前增量：Skill清单命令（ADR 0125）
 
@@ -1009,6 +1013,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 26 | `aa686be2` 增量 | 2026-11-10 | 顶层CLI的标准输出和错误统一为UTF-8，修复Windows重定向输出时打印中文崩溃（0.10.0b3） |
 | 25 | `a1b9cabd` 增量 | 2026-11-10 | 首次输入即开始会话；输入框恢复可用时自动获得焦点（247上用tmux驱动TUI时发现） |
 | 24 | `09c7db1f1697dc7e59903011d1838a49ac9e8c71` | 2026-11-10 | 新增`harnessix mcp list/trust/untrust`和Doctor的MCP小节（ADR 0127）；Doctor文本在可启动时把不影响启动的失败项显示为“警告”；工作区信任文件改用共享的私有JSON写入 |
 | 23 | `4992c2e7937ef7da35fad6468e0acee7940a9cbc` | 2026-11-10 | 顶层CLI删除`coding-eval-swebench`分派及帮助项；外部基准评测改由wheel之外的Harbor集成运行 |

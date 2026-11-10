@@ -178,6 +178,11 @@ CI权限保持`contents: read`。`self_hosted`相关的信任边界见[接入自
 用户按`Ctrl+N`后或每轮任务结束后直接打字，字符进入会话列表；首次进入必须先按`Ctrl+N`才能输入。现在输入框恢复可用时自动获得焦点，
 没有会话时第一条输入自动开启新会话。焦点回到输入框后，输入框自带的`Ctrl+A/E/U/X`会截获同名界面快捷键（247上`Ctrl+E`失效），这四个界面快捷键改为优先，弹窗打开时停用。审批窗口原先把差异Artifact的JSON记录原样显示（换行被转义），现在整理成文件清单与着色diff，打开时焦点在“批准”。回归见`tests/product_ui/test_app.py::test_composer_takes_focus_whenever_it_becomes_usable`。
 
+0.10.0b2的发布在Windows全新安装冒烟中失败：GitHub Windows运行器把重定向输出按cp1252编码，`harnessix --help`打印中文帮助时抛`UnicodeEncodeError`退出。
+用户在Windows上把输出重定向到管道或文件、或控制台使用西文代码页时同样会崩溃。`harnessix.cli.main`现在先把标准输出和错误重配为UTF-8，
+保留各自原有的错误处理方式；交互控制台本来就是UTF-8，不受影响。治理脚本已有同样处理（`scripts/cli_console.py`），产品入口此前遗漏。
+回归见`tests/test_cli_output_encoding.py`，以`PYTHONIOENCODING=cp1252:strict`在各平台CI上复现。修复以0.10.0b3发布，b2标签保留但不发布。
+
 ## 11. 源码映射
 
 | 内容 | 位置 |

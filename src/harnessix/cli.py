@@ -98,7 +98,25 @@ def _delegate_special_command(args: list[str]) -> bool:
     return False
 
 
+def _use_utf8_output() -> None:
+    """标准输出与错误统一按UTF-8编码，保留各自原有的错误处理方式。
+
+    Windows把重定向到管道或文件的输出按旧代码页（如cp1252）编码，中文帮助和提示会抛
+    UnicodeEncodeError使命令崩溃；交互控制台本来就是UTF-8，不受影响。
+    """
+
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors=getattr(stream, "errors", None))
+            except (OSError, ValueError):
+                # 已关闭或不可重配的宿主流保留原行为。
+                pass
+
+
 def main(argv: Sequence[str] | None = None) -> None:
+    _use_utf8_output()
     args = list(sys.argv[1:] if argv is None else argv)
     if _delegate_special_command(args):
         return
