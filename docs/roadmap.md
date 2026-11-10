@@ -1,7 +1,7 @@
 ---
 doc_type: roadmap
 status: current
-version: 264
+version: 265
 code_revision: c6c58b690095bb5be493144a8f9c89f13b4b74f3
 owners:
   - core
@@ -737,20 +737,20 @@ DOC-1.1和DOC-1.2前置门禁已经完成。0.9.1及以后每次重大提交都�
 ### 发布范围
 
 - [ ] 版本化Agent/Tool/Provider/Context/Session/Protocol；现有CLI/TUI、stdio和Python SDK；
-- [ ] macOS Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit和Rollback闭环；Commit经用户批准的沙箱外命令执行，内置Commit/Checkpoint移至1.1（用户决定，2026-11-09）；
+- [ ] macOS、Linux、Windows Git仓库中的读取、搜索、多文件修改、受控进程、测试、Diff、本地Commit和Rollback闭环；Windows命令不加沙箱、逐条批准（用户决定，2026-11-10）；Commit经用户批准的沙箱外命令执行，内置Commit/Checkpoint移至1.1（用户决定，2026-11-09）；
 - [ ] 持久会话、恢复、取消、审批、压缩、当前状态认证以及同机同用户数据库/Key备份；
 - [ ] 两类Provider Adapter与离线契约；至少一份真实认证配置及明确的Usage/估算边界；
-- [ ] 受控本地stdio MCP、项目指令、Skills/Hooks、Host等级及一种Container后端；
-- [ ] 统一Wheel通道、按原生证据核定的macOS版本/架构、手动升级/回退、删除/卸载、低敏诊断、支持文档与商业授权。
+- [ ] 本机stdio MCP（逐个信任，工具调用走审批）、项目指令、Skills、Host等级及一种Container后端；Hooks移出1.0（用户决定，2026-11-10）；
+- [ ] 统一Wheel通道、按原生证据核定的macOS/Linux/Windows版本/架构、手动升级/回退、删除/卸载、低敏诊断、支持文档与商业授权；正式发布前使用`0.x`预览版本号（用户决定，2026-11-10）。
 
 ### 发布门禁
 
 - [ ] **R1**：正式装配安全与失败恢复通过；没有可达但未经处置的高风险延期入口；
 - [ ] **R2**：自有权利链、12件许可复核、精确安装输入和实际发行物扫描/SBOM/通知通过；
 - [ ] **R3**：真实编码结果达到预注册阈值，认证配置的功能/Usage/保护通过；0/20不能视为商用质量；
-- [ ] **R4**：声明支持的macOS各版本/架构的核心链、脱离源码全新安装、当前认证候选升级、同机恢复及卸载通过；
-- [ ] **R5**：macOS小批真实Beta及正式资料完成，无未处置P0/P1；
-- [ ] **R6**：同一候选Revision的必要离线/macOS原生/真实门禁通过，版本、校验、Changelog、迁移和macOS支持矩阵一致。
+- [ ] **R4**：声明支持的macOS、Linux、Windows各版本/架构的核心链、脱离源码全新安装、当前认证候选升级、同机恢复及卸载通过；
+- [ ] **R5**：小批真实Beta及正式资料完成，无未处置P0/P1；Beta先在macOS和Linux开放，Windows须在1.0前完成同等验证；
+- [ ] **R6**：同一候选Revision的必要离线/三平台原生/真实门禁通过，版本、校验、Changelog、迁移和三平台支持矩阵一致。
 
 公共Schema保留版本/兼容/废弃策略；现有数据库及Artifact变更仍需迁移和失败恢复证据。
 R3已补[产品与评测的共享Context、编码指令及持久压缩装配](changes/m09-r3-product-context-composition.md)。
@@ -1090,7 +1090,7 @@ Session重开回放链。原Suite/未知费用保持不变，0次真实模型请
 固定`65d7323`的原生两项观察者实验及原未决恢复均通过，但112项组合步骤在79项通过后被CI进程期限截断。
 [完整集合分组](changes/m09-r1-single-child-reaper.md#10-原生验收进程分组与完整性)只调整37/75编排，
 所有112项、恢复断言、原步骤保护和产品期限保留；完整原生门禁尚未通过。
-[安装手册](operations/installation.md)现行操作使用内部1.0.0rc1及哈希锁定源码外环境，原历史版本事实不改写。
+[安装手册](operations/installation.md)现行操作使用预览版0.10.0b1及哈希锁定源码外环境，原历史版本事实不改写。
 
 ### 固定候选安全锚点、原生分组及宿主对照
 

@@ -26,7 +26,7 @@ def scenario(tmp_path, monkeypatch):
     case = subject._case(tmp_path)
 
     def identity(path, digest):
-        return subject.WheelIdentity("0.1.0" if path == old else "1.0.0rc1", digest)
+        return subject.WheelIdentity("0.1.0" if path == old else subject.CANDIDATE_VERSION, digest)
 
     def install(args, path, digest, phase):
         state["events"].append(("install", phase))
@@ -56,7 +56,7 @@ def scenario(tmp_path, monkeypatch):
             threads = ["original", "rollback-new"]
         return {
             "phase": name,
-            "version": "0.1.0" if path == old else "1.0.0rc1",
+            "version": "0.1.0" if path == old else subject.CANDIDATE_VERSION,
             "threads": threads,
             "backup_id": "matching-backup",
         }

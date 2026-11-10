@@ -15,6 +15,7 @@ import yaml
 
 from scripts import installed_product_upgrade_acceptance as upgrade
 from scripts.installed_product_upgrade_acceptance import (
+    CANDIDATE_VERSION,
     AcceptanceFailure,
     check_upgrade_pair,
     read_wheel_identity,
@@ -39,10 +40,10 @@ def _sha(path: Path) -> str:
 
 def test_upgrade_identity_uses_actual_wheel_metadata_and_pinned_bytes(tmp_path: Path) -> None:
     old = _wheel(tmp_path, "old", "0.1.0")
-    new = _wheel(tmp_path, "new", "1.0.0rc1")
+    new = _wheel(tmp_path, "new", CANDIDATE_VERSION)
     before = read_wheel_identity(old, _sha(old))
     after = read_wheel_identity(new, _sha(new))
-    assert before.version == "0.1.0" and after.version == "1.0.0rc1"
+    assert before.version == "0.1.0" and after.version == CANDIDATE_VERSION
     check_upgrade_pair(before, after)
 
 
@@ -53,7 +54,7 @@ def test_same_version_reinstall_cannot_be_reported_as_upgrade(tmp_path: Path) ->
         check_upgrade_pair(read_wheel_identity(old, _sha(old)), read_wheel_identity(new, _sha(new)))
 
 
-@pytest.mark.parametrize("version", ["1.0.0", "0.9.5rc1", "not-a-version"])
+@pytest.mark.parametrize("version", ["1.0.0", "1.0.0rc1", "0.9.5rc1", "not-a-version"])
 def test_unregistered_candidate_version_is_refused(tmp_path: Path, version: str) -> None:
     old = _wheel(tmp_path, "old", "0.1.0")
     new = _wheel(tmp_path, "new", version)
@@ -63,13 +64,13 @@ def test_unregistered_candidate_version_is_refused(tmp_path: Path, version: str)
 
 @pytest.mark.parametrize("digest", ["0" * 64, "missing", "A" * 64])
 def test_upgrade_refuses_wrong_digest_before_package_install(tmp_path: Path, digest: str) -> None:
-    wheel = _wheel(tmp_path, "candidate", "1.0.0rc1")
+    wheel = _wheel(tmp_path, "candidate", CANDIDATE_VERSION)
     with pytest.raises(AcceptanceFailure, match="upgrade_wheel_identity_invalid"):
         read_wheel_identity(wheel, digest)
 
 
 def test_upgrade_refuses_ambiguous_metadata(tmp_path: Path) -> None:
-    wheel = _wheel(tmp_path, "duplicate", "1.0.0rc1", duplicate=True)
+    wheel = _wheel(tmp_path, "duplicate", CANDIDATE_VERSION, duplicate=True)
     with pytest.raises(AcceptanceFailure, match="upgrade_wheel_metadata_invalid"):
         read_wheel_identity(wheel, _sha(wheel))
 
@@ -79,7 +80,8 @@ def test_upgrade_refuses_unrelated_distribution(tmp_path: Path, name: str) -> No
     wheel = tmp_path / "invalid.whl"
     with ZipFile(wheel, "w") as archive:
         archive.writestr(
-            "harnessix-1.0.0rc1.dist-info/METADATA", f"Name: {name}\nVersion: 1.0.0rc1\n"
+            f"harnessix-{CANDIDATE_VERSION}.dist-info/METADATA",
+            f"Name: {name}\nVersion: {CANDIDATE_VERSION}\n",
         )
     with pytest.raises(AcceptanceFailure, match="upgrade_wheel_metadata_invalid"):
         read_wheel_identity(wheel, _sha(wheel))
@@ -162,7 +164,7 @@ def test_actual_acceptance_scripts_must_match_committed_revision_bytes(
     monkeypatch.setattr(sys, "prefix", str(prefix))
     monkeypatch.setattr(upgrade._helpers, "check_environment", lambda *args, **kwargs: None)
     monkeypatch.setattr(upgrade._helpers, "check_package_members", lambda *args: 1)
-    monkeypatch.setattr(upgrade._helpers, "version", lambda _name: "1.0.0rc1")
+    monkeypatch.setattr(upgrade._helpers, "version", lambda _name: CANDIDATE_VERSION)
     monkeypatch.setattr(
         upgrade._helpers.harnessix, "__file__", str(prefix / "harnessix/__init__.py")
     )
@@ -178,7 +180,7 @@ def test_actual_acceptance_scripts_must_match_committed_revision_bytes(
     arguments = Namespace(
         environment_root=prefix.parent, source_root=source, source_revision=revision
     )
-    identity = upgrade.WheelIdentity("1.0.0rc1", "b" * 64)
+    identity = upgrade.WheelIdentity(CANDIDATE_VERSION, "b" * 64)
     if changed is None:
         assert upgrade._environment(arguments, tmp_path / "wheel.whl", identity) == 1
     else:
