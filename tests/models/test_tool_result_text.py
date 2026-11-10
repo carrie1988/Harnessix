@@ -290,3 +290,43 @@ def test_patch_v2_and_process_v3_render_digests_diff_and_stream_tails():
         "[stdout: not shown, binary or control characters]\n"
         "[stderr: last 6 of 20000 bytes]\nError\n"
     )
+
+
+def test_process_v4_preview_says_when_terminal_escape_sequences_were_removed():
+    process = {
+        "version": "trusted-process-output/v4",
+        "state": "exited",
+        "returncode": 1,
+        "stop_reason": "exited",
+        "stdout": {"observed_bytes": 20},
+        "stderr": {"observed_bytes": 20000},
+        "complete": True,
+        "diagnostic_preview": {
+            "stdout": {
+                "text": "1 failed\n",
+                "offset": 0,
+                "size_bytes": 9,
+                "removed_escape_bytes": 11,
+                "truncated": False,
+            },
+            "stderr": {
+                "text": "Error\n",
+                "offset": 19990,
+                "size_bytes": 6,
+                "removed_escape_bytes": 4,
+                "truncated": True,
+            },
+        },
+    }
+    assert tool_result_text(succeeded(process)) == (
+        "exit 1; stdout 20 bytes; stderr 20000 bytes\n"
+        "[stdout: terminal escape sequences removed]\n1 failed\n\n"
+        "[stderr: last 6 of 20000 bytes; terminal escape sequences removed]\nError\n"
+    )
+    for stream in process["diagnostic_preview"].values():
+        stream["removed_escape_bytes"] = 0
+    assert tool_result_text(succeeded(process)) == (
+        "exit 1; stdout 20 bytes; stderr 20000 bytes\n"
+        "[stdout]\n1 failed\n\n"
+        "[stderr: last 6 of 20000 bytes]\nError\n"
+    )

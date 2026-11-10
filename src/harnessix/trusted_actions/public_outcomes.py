@@ -23,6 +23,7 @@ from harnessix.processes.public_output import (
     PublicProcessOutputSummary,
     PublicProcessOutputSummaryV2,
     PublicProcessOutputSummaryV3,
+    PublicProcessOutputSummaryV4,
 )
 from harnessix.trusted_actions.builtin_success import validate_builtin_success
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRoutePlan
@@ -437,7 +438,12 @@ def _validate_process_success(plan: ActionRoutePlan, output: JsonValue) -> None:
 
 def _process_summary(
     plan: ActionRoutePlan, output: JsonValue
-) -> PublicProcessOutputSummary | PublicProcessOutputSummaryV2 | PublicProcessOutputSummaryV3:
+) -> (
+    PublicProcessOutputSummary
+    | PublicProcessOutputSummaryV2
+    | PublicProcessOutputSummaryV3
+    | PublicProcessOutputSummaryV4
+):
     """成功与失败共用正式DTO及计划身份检查，不重写用于摘要的原JSON。"""
 
     family = failure_family(plan)
@@ -446,9 +452,12 @@ def _process_summary(
         type[PublicProcessOutputSummary]
         | type[PublicProcessOutputSummaryV2]
         | type[PublicProcessOutputSummaryV3]
+        | type[PublicProcessOutputSummaryV4]
     ) = (
         PublicEvalOutputSummary
         if family == "eval"
+        else PublicProcessOutputSummaryV4
+        if version == "trusted-process-output/v4"
         else PublicProcessOutputSummaryV3
         if version == "trusted-process-output/v3"
         else PublicProcessOutputSummaryV2

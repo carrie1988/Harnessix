@@ -55,7 +55,42 @@ supersedes: []
 
 # Harnessix Code Process Runtime模块设计
 
+## 当前增量：v4预览去除终端转义序列
+
+**背景。** SWE-bench运行中，带颜色的pytest输出有6次得到空的`diagnostic_preview`：v3要求整个归档流
+都是可显示UTF-8，颜色码里的ESC使整流`text=null`，模型只能另读归档Artifact。新结果改为
+[`PublicProcessOutputSummaryV4`](../../src/harnessix/processes/public_output.py)
+（`version=trusted-process-output/v4`，[Schema](../../spec/public-process-output-summary-v4.schema.json)）：
+
+| 字段 | 约束 |
+|---|---|
+| `diagnostic_preview.<流>.text` | 原流须是合法UTF-8；去除完整终端转义序列后，整个正文仍须可显示，再取最后至多8192字节（预算只算正文）；否则为`null` |
+| `offset` | 预览对应原流区间`[offset, 归档末尾)`的起点：紧接最后一个未展示的正文字节，与归档分片`offset`同义；`text=null`时为0 |
+| `removed_escape_bytes` | 新增：该区间内被去除的转义序列字节数；`offset+size_bytes+removed_escape_bytes`等于归档字节数，不超过`persisted_bytes`；`text=null`时为0 |
+| `size_bytes`、`truncated` | `size_bytes`为`text`的UTF-8字节数；`truncated`改为`size_bytes+removed_escape_bytes < observed_bytes`：只去除了颜色码的完整流不算截断 |
+
+去除范围（[`trusted_output.py`](../../src/harnessix/processes/trusted_output.py)的`_TERMINAL_ESCAPE_SEQUENCE`）：
+CSI（`ESC [`参数/中间字节及终止字节，如颜色、清行）；OSC、DCS、SOS、PM、APC控制串（以BEL或`ESC \`结束，
+正文不含C0控制字符，不会越过终止符吞掉后续输出）；其余ESC后接可选中间字节与一个终止字节的序列（如`ESC 7`、
+`ESC ( B`）。可见性规则不放宽：孤立或未结束的ESC、控制串内的控制字符、BEL/退格等其他C0控制符、DEL、
+C1控制符、Bidi控制符和非法UTF-8仍使该流`text=null`；转义序列切开的多字节字符不会被拼回。
+
+**为何用字节数而非布尔值标注去除。** 预览不再与原流某段逐字节相同；`removed_escape_bytes`让DTO能独立验证
+预览区间不越过持久字节、`truncated`如实（布尔值无法校验这两点），也让读取方按`offset`在归档中定位原文。
+紧凑文本渲染在其大于0时注明`terminal escape sequences removed`，模型不会把正文当作逐字节原样输出。
+
+兼容：v3、v2与v1只用于已审计历史。`trusted_process_public_output(include_preview=True)`派生v4，
+`legacy_preview="trusted-process-output/v3"`或`"…/v2"`按原版本重建；`recorded_process_public_output`
+按原审计Hash依次匹配v4、v3、v2、v1，不给旧终态追加新预览；Artifact读取按已提交版本重建并精确比较；
+公开校验按`version`选择v1/v2/v3/v4闭合DTO。v3的常量、DTO与Schema不变，原v3用例改用`legacy_preview`继续覆盖；
+无转义序列的流上v4与v3预览相同，只多`removed_escape_bytes=0`。Secret扫描仍覆盖整个原始归档双流。
+回归见[预览合同](../../tests/processes/test_diagnostic_preview.py)、
+[产品批准链](../../tests/product_config/test_process_diagnostic_preview.py)与
+[投影边界](../../tests/trusted_actions/test_process_preview_projection.py)。
+
 ## 当前增量：v3尾部诊断预览（每流8 KiB）
+
+> v3现只用于已审计历史；新结果见上一节v4。
 
 **背景。** 2026-11-09 holdout part 1步数分析：v2每流只给前1024字节，Python Traceback的异常行和pytest
 失败摘要都在流末尾，模型只能另发`read_artifact`读取日志。新结果改为
@@ -83,7 +118,7 @@ v2的1024字节常量与Schema不变，原v2用例改用`legacy_preview`继续�
 
 ## 当前增量：经审计的有界诊断预览
 
-> v2（1 KiB前缀）现只用于已审计历史；新结果见上一节v3。
+> v2（1 KiB前缀）现只用于已审计历史；新结果见本文开头的v4。
 
 **背景与目标。** R3旧候选四份报告的八次模型调用累计输入约5.4～5.8万Token；
 Profile只返回元数据，模型另发`read_artifact`读取Base64日志。现在直接提供可显示的短诊断，
