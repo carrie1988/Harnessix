@@ -497,7 +497,7 @@ sequenceDiagram
 |---|---|---|
 | `protocolVersion` | 固定`AGENT_PROTOCOL_VERSION` | 只发送2.0，无版本范围协商 |
 | `clientInfo.name` | 构造参数，默认`harnessix-python-sdk` | 由Protocol模型校验 |
-| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与包版本（当前0.10.0b4）独立，不自动读取安装版本 |
+| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与包版本（当前0.10.0b5）独立，不自动读取安装版本 |
 | `clientInstanceId` | 注入或`uuid4()` | SDK不持久；调用方负责重连复用 |
 | `capabilities.itemDeltas` | 硬编码`true` | 调用方不能关闭；其他能力使用模型默认值 |
 | `limits` | `InitializeParams`默认 | 构造接口不允许调用方自定义 |
