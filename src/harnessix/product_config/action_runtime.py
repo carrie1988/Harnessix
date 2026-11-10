@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.ports import TrustedActionGateway
 from harnessix.agent.runtime import ApprovalResponder
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
@@ -44,11 +45,14 @@ from harnessix.product_config.process_profile import (
     ProductProcessProfileProbeResult,
     probe_product_process_profile,
 )
+from harnessix.product_config.skill_composition import ProductSkills, open_product_skills
 from harnessix.product_config.state_owner import ProductStateOwner
 from harnessix.product_config.task_dependencies import TaskDependencyEnvironments
 from harnessix.sandbox.process_runtime import ProcessSupervisor
 from harnessix.secrets.provider import SecretProvider
+from harnessix.skills import SkillSource
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
+from harnessix.trusted_actions.composite_gateway import CompositeAgentActionGateway
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
 from harnessix.trusted_actions.recovery_contracts import (
     ActionRecoveryScanReport,
@@ -71,6 +75,17 @@ class ProductActionRuntimeOwner:
     recovery: ProductActionStartupRecoveryReport
     fence: ActionRuntimeFence
     recovery_scan: ActionRecoveryScanReport
+    skills: ProductSkills | None = None
+
+    @property
+    def agent_gateway(self) -> TrustedActionGateway | None:
+        """产品Agent入口：有Skill时把其只读工具并入内置Action目录。"""
+        builtin = self.composition.gateway
+        if self.skills is None:
+            return builtin
+        if builtin is None:
+            return self.skills.gateway
+        return CompositeAgentActionGateway(builtin, self.skills.gateway)
 
     @property
     def report(self) -> ProductActionCapabilityReport:
@@ -261,6 +276,7 @@ async def open_default_product_action_runtime(
     output_redaction: OutputRedactionSource | None = None,
     root_owner: ProductStateOwner | None = None,
     patch_contract: WorkspacePatchContract = "standard",
+    skill_sources: tuple[SkillSource, ...] = (),
 ) -> AsyncIterator[ProductActionRuntimeOwner]:
     """持有全部Action资源，先初始化Session并结算旧Route，再发布候选目录。"""
 
@@ -334,10 +350,12 @@ async def open_default_product_action_runtime(
                 candidate_config_sha256=checked_config.config_sha256,
                 recovery_config_sha256=checked_recovery.config_sha256,
             )
+            active_router = recovery_router
             if checked_recovery == checked_config:
                 composition = recovery_composition
             else:
                 candidate_router = _product_router(environment, dependencies, checked_config)
+                active_router = candidate_router
                 composition = build_product_action_composition(
                     checked_config,
                     environment,
@@ -356,11 +374,15 @@ async def open_default_product_action_runtime(
                 )
                 protection.callback(_close_composition, composition)
                 _verify_active_product_bindings(candidate_router, audit)
+            skills = protection.enter_context(
+                open_product_skills(active_router, environment, skill_sources)
+            )
             yield ProductActionRuntimeOwner(
                 composition,
                 recovery_report,
                 dependencies.fence,
                 recovery_scan,
+                skills,
             )
 
 

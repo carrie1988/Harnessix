@@ -118,7 +118,9 @@ async def test_http_failures_no_retry_and_no_body_echo(provider, status, code):
     assert report.reason == "runtime_failed"
     assert report.provider_failure.code == code
     assert report.attempts_started == len(factory.requests) == 1
-    assert not report.usage_complete
+    # 收到HTTP错误响应说明请求未被模型处理，按确定未计费记零用量（ADR 0123第6节）。
+    assert report.usage_complete
+    assert not report.known_input_tokens and not report.known_output_tokens
     assert report.replay_verified and factory.closed and factory.wires[0].closed
     assert CANARY not in report.model_dump_json()
 
@@ -138,7 +140,7 @@ async def test_failed_checks_never_pass(provider, fault):
     assert CANARY not in report.model_dump_json()
 
 
-async def test_token_budget_stops_followup_request(provider):
+async def test_token_budget_stops_unaffordable_request_before_sending(provider):
     factory = WireFactory()
     report = await runner.run_smoke(
         config(provider, scenario="tool", max_tokens=1),
@@ -147,10 +149,7 @@ async def test_token_budget_stops_followup_request(provider):
     )
     assert report.reason == "runtime_failed"
     assert report.failure_category == "budget"
-    assert len(factory.requests) == 1
-    assert (
-        factory.requests[0].get("max_tokens", factory.requests[0].get("max_completion_tokens")) == 1
-    )
+    assert factory.requests == []
     assert factory.closed and all(w.closed for w in factory.wires)
 
 

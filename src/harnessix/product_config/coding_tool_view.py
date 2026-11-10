@@ -56,6 +56,15 @@ class _Observation:
         return self.call.tool
 
 
+def _is_scratch_entry(entry: object) -> bool:
+    """Patch文件项或状态项的路径是否属于可忽略的复现草稿。"""
+
+    if not isinstance(entry, dict):
+        return False
+    path = entry.get("path")
+    return isinstance(path, str) and is_scratch_path(path)
+
+
 def _observations(turn: Turn) -> tuple[_Observation, ...]:
     calls: dict[object, ToolCallContent] = {}
     observations: list[_Observation] = []
@@ -378,16 +387,8 @@ def _without_scratch_edits(turn: Turn) -> Turn:
             if isinstance(content, ToolCallContent) and content.tool in _PATCH_TOOLS
             else None
         )
-        if isinstance(files, list):
-            kept = [
-                entry
-                for entry in files
-                if not (
-                    isinstance(entry, dict)
-                    and isinstance(entry.get("path"), str)
-                    and is_scratch_path(entry["path"])
-                )
-            ]
+        if isinstance(content, ToolCallContent) and isinstance(files, list):
+            kept = [entry for entry in files if not _is_scratch_entry(entry)]
             result = results.get(content.call_id)
             if files and not kept and result is not None and result.outcome == "failed":
                 dropped.add(content.call_id)
@@ -440,16 +441,7 @@ def _latest_review_is_clean(
     entries = status.get("entries")
     if not isinstance(entries, list) or len(entries) != status.get("total_entries"):
         return False
-    deliverable = [
-        entry
-        for entry in entries
-        if not (
-            ignore_scratch
-            and isinstance(entry, dict)
-            and isinstance(entry.get("path"), str)
-            and is_scratch_path(entry["path"])
-        )
-    ]
+    deliverable = [entry for entry in entries if not (ignore_scratch and _is_scratch_entry(entry))]
     return not deliverable and diff.get("utf8_bytes") == 0
 
 

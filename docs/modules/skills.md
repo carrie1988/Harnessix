@@ -74,10 +74,10 @@ Coding Agent需要把领域规范、工作流说明、检查清单和项目约�
 | 当前内容 | UTF-8 `SKILL.md`、安全YAML Frontmatter、按需正文、最多64个文本资源 | 已实现 |
 | 当前文件边界 | POSIX目录描述符链或Windows句柄/Reparse检查，Root身份、普通文件、目录稳定性和链接约束 | 通过`SecureWorkspaceReader`复用 |
 | 当前持久化 | 不可变目录代次、相同语义摘要复用、访问事件Hash链和损坏检测 | 已实现 |
-| 当前Action | 两个低风险只读Definition和来源隔离Gateway | 已实现，需宿主显式装配 |
+| 当前Action | 两个低风险只读Definition和来源隔离Gateway，以及模型入口`build_skill_agent_tools` | 已实现，产品默认装配模型入口 |
 | 当前Secret边界 | 调用方提供精确字节值时，Action输出越界前执行`SecretLeakGuard` | 已实现但默认保护集合为空 |
-| 当前模型集成 | 自动把目录元数据加入模型、按需触发Tool并规定消息优先级 | 未实现 |
-| 当前产品装配 | 默认Profile配置Skill Root、启动发现、热更新、诊断和UI | 未实现 |
+| 当前模型集成 | 把目录元数据按项目指令优先级加入Context，模型按需调用Tool（[ADR 0125](../adr/0125-skill-product-wiring.md)） | 已实现 |
+| 当前产品装配 | 启动时发现`~/.harnessix/skills`和`<工作区>/.harnessix/skills`，`harnessix skills list`诊断 | 已实现；热更新、Profile配置和UI未实现 |
 | 当前供应链 | 远端安装、签名、发布者身份、锁文件、原子升级和回滚 | 未实现 |
 | 0.9目标 | 生命周期、遥测、资源总预算、审计一致性、三平台门禁和供应链信任收敛 | 规划，不是当前保证 |
 | 1.0目标 | 默认产品装配、真实任务Dogfooding、发行签名、运维SLO和多用户隔离 | 尚未完成 |
@@ -243,16 +243,20 @@ flowchart TD
 | `SQLiteSkillStore(...)` | 保存目录和访问事件 | 同步SQLite，无显式迁移框架 |
 | `build_skill_action_definitions(...)` | 为一个冻结Catalog生成两个可信Definition | Catalog变化必须重新构建并注册 |
 | `SkillActionGateway(...)` | 从来源隔离Port计划和执行读取 | 构造时要求两项匹配Binding恰好各一条 |
+| `skills.actions.build_skill_agent_tools(...)` | 生成模型工具：入参只有名称和资源路径，摘要由宿主按冻结目录补齐 | 工具合同不随目录内容变化，未加入`__all__` |
+| `skills.prompt.render_skill_listing(...)` | 渲染模型可见的元数据清单 | 不含正文；最多48项、8 KiB，超出时说明省略数量 |
 
-### 9.2 当前没有默认装配
+### 9.2 产品默认装配
 
-对`src/harnessix`中`skills`包之外的生产代码进行静态反查，没有默认产品模块实例化上述API。因此：
+产品启动时由`product_config/skill_composition.py`完成装配，设计见[ADR 0125](../adr/0125-skill-product-wiring.md)：
 
-- 安装Harnessix后不会自动扫描任何Skill目录；
-- Product Config当前没有Skill Root或热更新字段；
-- App Server、CLI和Agent Runtime当前不会自动向模型呈现Skill；
-- 只有显式创建Store、Registry、Definitions、Router Port和Gateway的宿主才启用该能力；
-- 单元测试中的完整Action链是可组合性证明，不是默认产品行为证明。
+- 只读取已存在的`~/.harnessix/skills`和`<工作区>/.harnessix/skills`，不创建目录；没有可用Skill时，工具列表和提示词都不变；
+- 目录快照写入进程私有临时目录，每次启动重新发现，不进入状态备份；调用审计由Action Audit持久化；
+- 发现失败时记录日志并按无Skill运行，不阻塞启动；
+- 工作流视图不暴露Skill工具，此时不写入清单；
+- 一次启动内目录固定，运行中修改Skill要重启才生效。
+
+产品把正文和资源的Secret防护交给Agent的公开输出保护（`public_output_protection`），`protected_secret_values`保持为空。
 
 ## 10. Skill来源与Root身份
 

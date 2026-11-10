@@ -99,9 +99,9 @@ def patch_paths(call: ToolCallContent) -> tuple[str, ...]:
     if not isinstance(files, list):
         return ()
     return tuple(
-        item["path"]
+        path
         for item in files
-        if isinstance(item, dict) and isinstance(item.get("path"), str)
+        if isinstance(item, dict) and isinstance(path := item.get("path"), str)
     )
 
 

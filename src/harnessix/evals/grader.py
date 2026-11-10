@@ -133,6 +133,10 @@ def _record_tool_result(
         statuses.append(position)
     elif call.tool == "git_diff" and result.outcome == "succeeded":
         diffs.append(position)
+    elif call.tool == "git_review" and result.outcome == "succeeded":
+        # git_review在一次调用内顺序聚合状态与差异，产品工作流只强制这一个工具。
+        statuses.append(position)
+        diffs.append(position)
 
 
 def _transcript(turn: Turn) -> _Transcript:
@@ -253,7 +257,7 @@ def _git_feedback_order(task: CodingEvalTask, transcript: _Transcript) -> bool:
         (
             position
             for position in transcript.git_diff_positions
-            if status is not None and position > status
+            if status is not None and position >= status
         ),
         None,
     )

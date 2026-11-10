@@ -24,7 +24,15 @@ from harnessix.models._chat_input_anchor import CompletedChatInput
 from harnessix.models._chat_mapping import build_request
 from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
 from harnessix.models._history import InvalidModelRequest, encode_json
-from harnessix.models._provider_io import finish_attempt, read_key, validate_key, wait_for_io
+from harnessix.models._provider_io import (
+    finish_attempt,
+    read_key,
+    retry_after_seconds,
+    retry_delay_seconds,
+    unbilled_usage,
+    validate_key,
+    wait_for_io,
+)
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import (
     ModelRequest,
@@ -64,6 +72,15 @@ def _failure(error: Exception) -> ResponseFailed:
     if isinstance(error, APIError):
         return ResponseFailed(code="provider_internal", retryable=True)
     return ResponseFailed(code="invalid_provider_output")
+
+
+def _is_unbilled(error: Exception) -> bool:
+    """收到HTTP错误响应，或TCP/TLS连接未建立：请求没有被模型处理。"""
+
+    if isinstance(error, APIStatusError):
+        return error.status_code >= 400
+    cause = error.__cause__ if isinstance(error, APIConnectionError) else error
+    return isinstance(cause, httpx.ConnectError | httpx.ConnectTimeout)
 
 
 def _failed_response(
@@ -244,6 +261,8 @@ class OpenAIChatProvider:
             )
             stream: AsyncStream[ChatCompletionChunk] | None = None
             failure: ResponseFailed | None = None
+            unbilled = False
+            retry_after = 0.0
             try:
                 cancel.checkpoint()
                 stream = await wait_for_io(
@@ -293,6 +312,8 @@ class OpenAIChatProvider:
                 raise
             except Exception as error:
                 failure, terminal = _failed_response(attempt_id, error)
+                unbilled = stream is None and _is_unbilled(error)
+                retry_after = retry_after_seconds(error)
             finally:
                 if stream is not None:
                     try:
@@ -301,6 +322,8 @@ class OpenAIChatProvider:
                     except Exception:
                         # 清理故障不能泄露原始异常或覆盖取消；SDK/HTTPX 本身仍负责关闭连接池。
                         pass
+            if unbilled:
+                yield unbilled_usage(attempt_id)
             yield terminal
             if (
                 failure is None
@@ -313,7 +336,11 @@ class OpenAIChatProvider:
                 return
             try:
                 await wait_for_io(
-                    asyncio.sleep(self.config.retry_delay_seconds * (2**attempt)), cancel, deadline
+                    asyncio.sleep(
+                        retry_delay_seconds(self.config.retry_delay_seconds, attempt, retry_after)
+                    ),
+                    cancel,
+                    deadline,
                 )
             except TimeoutError:
                 yield ResponseFailed(code="transport", retryable=True)

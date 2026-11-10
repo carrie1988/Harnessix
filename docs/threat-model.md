@@ -1,8 +1,8 @@
 ---
 doc_type: threat-model
 status: current
-version: 15
-code_revision: ae590042f52de7e08eafb51a1fa080b935afc6df
+version: 16
+code_revision: b32605f8096d1d3b169c1fc1cde82542e8d7782d
 owners:
   - core
 modules:
@@ -45,13 +45,18 @@ related_tests:
   - tests/mcp
   - tests/skills
   - tests/hooks
+  - tests/product_ui/test_workspace_trust.py
+  - tests/product_ui/test_controller_interactions.py
+  - tests/product_config/test_native_host_command.py
+  - tests/agent/test_model_attempts.py
+  - tests/models/test_openai_chat.py
 supersedes: []
 ---
 
 # Harnessix Code 威胁模型 v2
 
 - 状态：当前安全基线，已同步单一Coding Agent边界、Product Config、MCP、Skill、Hook与Smoke现行设计
-- 更新日期：2026-09-29
+- 更新日期：2026-11-09（默认沙箱与自动执行见TM-14；文中Windows相关段落是历史记录，首发范围已收敛）
 - 适用范围：本地优先CLI、Headless App Server、Agent Runtime、Coding Tools、Session Store与Trusted Action Runtime
 
 实施说明：当前产品复用单宿主Owner、事件CAS/幂等、可信工具准入、统一公开输出、持久审批、受管Patch/Process、Context来源和真实Sandbox能力检查。默认产品只有`CLI/TUI或SDK → stdio App Server → Agent Runtime → Trusted Action`主链；旧Action HTTP/Worker、Journal与专用Process桥接已退役，历史状态不自动执行。本地MCP、Skill和Hook经原受限扩展端口装配，远端MCP/OAuth及公网Git自动Push不属于首发范围。Session、Projection和Artifact原正文已接入原Key来源认证，完整停机备份/恢复沿原Owner、独立回执和耐久Journal执行。正式行为以[当前架构](architecture.md)、[产品模块](modules/product-config.md)及[发布范围](changes/m09-to-v1-release-scope-convergence.md)为准；下方里程碑补充保留历史，不覆盖当前装配或替代发布验收。
@@ -305,7 +310,7 @@ Agent Runtime                │
 - 来源、版本、内容/定义摘要与Trust Grant状态；
 - 非Bundled Hook没有精确定义授权时失败关闭；
 - Tool Schema/版本变化使授权失效；
-- Skill只作为不受信内容经渐进读取Action加载，不解释其中的权限或可执行声明；
+- Skill只作为不受信内容经渐进读取Action加载，不解释其中的权限或可执行声明；产品装配见TM-14与ADR 0125；
 - Hook输入只获得Thread/Turn/Action身份及参数/结果摘要；
 - 扩展只通过受限 Context 和 Tool API；
 - 所有效果经过统一 Permission/Sandbox；
@@ -456,6 +461,21 @@ Receipt等敏感正文。组织必须限制旧Revision制品发布、归档访�
 - CI Secret 与发布权限分离。
 
 **剩余风险**：上游合法版本也可能包含漏洞，需要持续更新策略。
+
+### TM-14：默认沙箱、自动执行与本地模型接入
+
+用户未指定Action配置时，产品自动生成沙箱内命令和沙箱外命令（ADR 0111、0113）。沙箱内命令不经用户确认就执行，因此下列控制是默认路径的一部分。
+
+| 威胁 | 控制 | 验证 | 剩余风险 |
+|---|---|---|---|
+| 恶意仓库的指令文件在用户不知情时被加载，并驱动自动执行 | 首次运行须确认信任；非交互运行须显式`--trust-workspace`；信任记录位于沙箱拒读目录 | `tests/product_ui/test_workspace_trust.py` | 确认后，仓库内容仍可能包含提示注入 |
+| 沙箱内命令越权写入或篡改Git历史 | 可写范围限于工作区和私有临时目录，`.git`只读 | `tests/sandbox/test_native_policy.py`、`tests/sandbox/test_seatbelt.py` | 工作区内被Git忽略的可执行内容（如`.venv/bin`）可被改写，之后在沙箱外运行时不受保护 |
+| 读取工作区外的数据并外传 | 凭据和浏览器目录拒读；Linux沙箱断网；macOS只放行回环并拦截已识别的代理端口 | `tests/sandbox/test_native_policy.py` | 拒读清单外的文件可读，并可能随工具结果发给模型服务商；未识别的本机代理端口仍是外传途径 |
+| 沙箱外命令造成不可逆影响 | 每条单独批准，`auto`模式也不自动批准 | `tests/product_config/test_native_host_command.py` | 批准后没有隔离，取决于用户判断 |
+| 本会话自动批准被滥用 | 规则只在内存；修改与命令分开；命令必须完全相同；仍走证据校验 | `tests/product_ui/test_controller_interactions.py` | 用户开启后，修改不再逐个确认 |
+| 内网明文端点泄露API Key和代码 | 必须显式声明自托管；公网地址被拒绝 | `tests/models/test_openai_chat.py`、`tests/product_config/test_wizard.py` | 内网中可被窃听，只应在可信网络使用 |
+| 恶意仓库的Skill诱导Agent越权（ADR 0125） | Skill文本按项目指令优先级进入Context，不能提升权限；两个工具只读；文件修改和沙箱命令不能写`.harnessix`，Agent不能改写Skill；读取时重核内容摘要 | `tests/skills/test_agent_tools.py`、`tests/sandbox/test_native_policy.py` | 信任仓库后，Skill内容仍可能包含提示注入；经用户批准的沙箱外命令可以写入 |
+| 费用未知时继续产生费用 | 确定未计费的失败才自动重试；付费交互模式停止；无人值守按预留额继续，耗尽即停 | `tests/agent/test_model_attempts.py`、`tests/models/test_openai_chat.py` | 预留额是估算，不是账单 |
 
 ## 7. 安全不变量
 

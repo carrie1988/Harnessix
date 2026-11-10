@@ -9,11 +9,39 @@ from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure
-from harnessix.agent.usage import ModelAttemptFinished
+from harnessix.agent.usage import ModelAttemptFinished, ModelUsageObserved, UsageObservation
 from harnessix.models.config import ModelHTTPConfig
 from harnessix.models.contracts import ResponseFailed
 
 MAX_PROVIDER_API_KEY_BYTES = 8 * 1024
+MAX_RETRY_AFTER_SECONDS = 60.0
+
+
+def unbilled_usage(attempt_id: UUID) -> ModelUsageObserved:
+    """服务端明确拒绝或连接未建立的尝试没有消耗模型，记为完整的零用量。"""
+
+    return ModelUsageObserved(
+        attempt_id=attempt_id,
+        usage=UsageObservation(completeness="complete", input_tokens=0, output_tokens=0),
+    )
+
+
+def retry_after_seconds(error: Exception) -> float:
+    """读取错误响应的Retry-After秒数并限制上限；缺失或不是数字时返回0。"""
+
+    response = getattr(error, "response", None)
+    headers = getattr(response, "headers", None)
+    try:
+        seconds: float = float(headers.get("retry-after")) if headers is not None else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+    return min(max(0.0, seconds), MAX_RETRY_AFTER_SECONDS)
+
+
+def retry_delay_seconds(base: float, attempt: int, retry_after: float) -> float:
+    """指数退避与服务端要求的等待时间取较大值。"""
+
+    return max(base * float(2**attempt), retry_after)
 
 
 def finish_attempt(attempt_id: UUID, failure: ResponseFailed | None = None) -> ModelAttemptFinished:

@@ -12,6 +12,7 @@ from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, RichLog, Static
 
+from harnessix.product_ui.approval_automation import EDIT_APPROVAL_TYPES
 from harnessix.product_ui.error_help import ProductErrorHelp
 from harnessix.product_ui.interactions import (
     ActiveTurnControl,
@@ -40,6 +41,7 @@ ModalScreen { align: center middle; }
 class ApprovalScreenResult:
     outcome: Literal["approved", "rejected"]
     reason: str | None = None
+    remember: bool = False
 
 
 class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
@@ -81,6 +83,15 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                 yield Button(
                     "批准", id="approval-approve", disabled=not self.review.approve_allowed
                 )
+                yield Button(
+                    (
+                        "批准并自动接受本会话的修改"
+                        if pending.approval_type in EDIT_APPROVAL_TYPES
+                        else "批准并在本会话允许相同操作"
+                    ),
+                    id="approval-approve-session",
+                    disabled=not self.review.approve_allowed,
+                )
                 yield Button("拒绝", id="approval-reject", variant="error")
                 yield Button("暂不处理", id="approval-close")
 
@@ -113,6 +124,8 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
             return
         if event.button.id == "approval-approve" and self.review.approve_allowed:
             self.dismiss(ApprovalScreenResult("approved", reason))
+        if event.button.id == "approval-approve-session" and self.review.approve_allowed:
+            self.dismiss(ApprovalScreenResult("approved", reason, remember=True))
 
     def action_close_modal(self) -> None:
         self.dismiss(None)

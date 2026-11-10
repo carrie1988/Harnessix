@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 from uuid import UUID
 
-from pydantic import BaseModel, JsonValue
+from pydantic import BaseModel, Field, JsonValue, ValidationError
 
+from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
-from harnessix.domain.models import EffectClass, RiskLevel
-from harnessix.execution.contracts import canonical_digest
+from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
+from harnessix.execution.contracts import ExecutionContract, canonical_digest
 from harnessix.secrets.guard import SecretLeakGuard
 from harnessix.skills.contracts import (
     SkillCatalogSnapshot,
@@ -19,6 +21,7 @@ from harnessix.skills.contracts import (
     SkillResourceReadInput,
 )
 from harnessix.skills.runtime import SkillRegistry
+from harnessix.trusted_actions.builtin_success import skill_name_resource_identifier
 from harnessix.trusted_actions.contracts import (
     ActionExecutionOutcome,
     ActionRoutePlan,
@@ -37,6 +40,8 @@ from harnessix.trusted_actions.router import (
 
 SKILL_LOAD_TOOL = "skill.load"
 SKILL_RESOURCE_TOOL = "skill.read_resource"
+# 模型工具合同与目录内容无关：编辑Skill后，未完成的Turn仍能恢复。
+SKILL_AGENT_TOOL_VERSION = "1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,17 +49,20 @@ class _SkillExecutor:
     registry: SkillRegistry
     operation: str
     guard: SecretLeakGuard
+    # 模型入口只给名称，这里按冻结目录补齐摘要；None表示入参已是完整请求。
+    complete_request: Callable[[BaseModel], BaseModel] | None = None
 
     async def execute(self, plan: ActionRoutePlan, arguments: BaseModel) -> ActionExecutionOutcome:
         del plan
         try:
+            request = (
+                arguments if self.complete_request is None else self.complete_request(arguments)
+            )
             value: BaseModel
             if self.operation == "load":
-                parsed = SkillLoadInput.model_validate(arguments)
-                value = self.registry.load(parsed)
+                value = self.registry.load(SkillLoadInput.model_validate(request))
             else:
-                parsed_resource = SkillResourceReadInput.model_validate(arguments)
-                value = self.registry.read_resource(parsed_resource)
+                value = self.registry.read_resource(SkillResourceReadInput.model_validate(request))
             output = cast(JsonValue, value.model_dump(mode="json", warnings="error"))
             self.guard.assert_safe(output)
             return ActionExecutionOutcome(kind="succeeded", output=output)
@@ -150,6 +158,150 @@ def build_skill_action_definitions(
             SkillResourceReadInput,
             resource_resolver,
             "read_resource",
+        ),
+    )
+
+
+class SkillLoadToolInput(ExecutionContract):
+    """模型调用skill.load的入参；目录与清单摘要由宿主补齐。"""
+
+    name: str = Field(
+        min_length=1,
+        max_length=128,
+        description="Skill name exactly as listed, in source/name form when the list shows one.",
+    )
+
+
+class SkillResourceToolInput(SkillLoadToolInput):
+    """模型调用skill.read_resource的入参。"""
+
+    path: str = Field(
+        min_length=1,
+        max_length=4096,
+        description="Relative path from the resources list returned by skill.load.",
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SkillAgentTools:
+    """同一事实生成的模型工具描述与可注册Definition。"""
+
+    descriptors: tuple[ToolDescriptor, ...]
+    definitions: tuple[TrustedActionDefinition, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _NamedSkillRequests:
+    """按冻结目录把模型只给名称的入参补齐为完整请求；名称错误是普通工具失败。"""
+
+    registry: SkillRegistry
+    catalog: SkillCatalogSnapshot
+
+    def resolve(self, arguments: BaseModel, _: ActionPlanningContext) -> ResolvedAction:
+        identifier = skill_name_resource_identifier(
+            self.catalog.catalog_sha256,
+            cast(SkillLoadToolInput, arguments).name,
+            getattr(arguments, "path", None),
+        )
+        resource = canonical_action_resource(kind="external", access="read", identifier=identifier)
+        return ResolvedAction(resources=(resource,))
+
+    def load(self, arguments: BaseModel) -> BaseModel:
+        name = cast(SkillLoadToolInput, arguments).name
+        return SkillLoadInput(
+            catalog_sha256=self.catalog.catalog_sha256,
+            name=name,
+            expected_manifest_sha256=self.registry.resolve(self.catalog, name).manifest_sha256,
+        )
+
+    def resource(self, arguments: BaseModel) -> BaseModel:
+        parsed = cast(SkillResourceToolInput, arguments)
+        manifest = self.registry.resolve(self.catalog, parsed.name)
+        try:
+            return SkillResourceReadInput(
+                catalog_sha256=self.catalog.catalog_sha256,
+                name=parsed.name,
+                expected_manifest_sha256=manifest.manifest_sha256,
+                path=parsed.path,
+            )
+        except ValidationError:
+            raise KernelError("skill_resource_path_denied", "Skill资源路径无效") from None
+
+
+def _agent_tool(
+    requests: _NamedSkillRequests,
+    guard: SecretLeakGuard,
+    descriptor: ToolDescriptor,
+    model: type[BaseModel],
+    operation: str,
+    complete_request: Callable[[BaseModel], BaseModel],
+) -> TrustedActionDefinition:
+    binding = build_trusted_tool_binding(
+        source="skill",
+        source_id=requests.catalog.catalog_id,
+        tool=descriptor.name,
+        tool_version=descriptor.version,
+        tool_fingerprint=tool_fingerprint(descriptor),
+        input_schema_sha256=canonical_digest(descriptor.input_schema),
+        effect_class=EffectClass.READ_ONLY,
+        risk_level=RiskLevel.LOW,
+        recovery_mode="none",
+        executor_id=f"skill.{operation}",
+    )
+    executor = _SkillExecutor(requests.registry, operation, guard, complete_request)
+    return TrustedActionDefinition(binding, model, requests.resolve, executor)
+
+
+def _agent_descriptor(name: str, description: str, model: type[BaseModel]) -> ToolDescriptor:
+    return ToolDescriptor(
+        name=name,
+        version=SKILL_AGENT_TOOL_VERSION,
+        description=description,
+        input_schema=model.model_json_schema(),
+        effect_class=EffectClass.READ_ONLY,
+        risk_level=RiskLevel.LOW,
+        requires_idempotency=False,
+        requires_approval=False,
+        supports_reconciliation=False,
+        supports_parallel_calls=True,
+    )
+
+
+def build_skill_agent_tools(
+    registry: SkillRegistry,
+    catalog: SkillCatalogSnapshot,
+    *,
+    protected_secret_values: tuple[bytes, ...] = (),
+) -> SkillAgentTools:
+    """为冻结目录构造模型工具，工具合同不随目录内容变化。"""
+
+    checked = SkillCatalogSnapshot.model_validate_json(catalog.model_dump_json())
+    if registry.catalog(digest=checked.catalog_sha256) != checked:
+        raise KernelError("skill_catalog_mismatch", "Skill Action目录与运行时不一致")
+    guard = SecretLeakGuard(tuple(bytes(value) for value in protected_secret_values))
+    requests = _NamedSkillRequests(registry, checked)
+    load = _agent_descriptor(
+        SKILL_LOAD_TOOL,
+        "Load the full instructions of an installed skill by name.",
+        SkillLoadToolInput,
+    )
+    resource = _agent_descriptor(
+        SKILL_RESOURCE_TOOL,
+        "Read one text file listed in the resources of a loaded skill.",
+        SkillResourceToolInput,
+    )
+    return SkillAgentTools(
+        descriptors=(load, resource),
+        definitions=(
+            _agent_tool(requests, guard, load, SkillLoadToolInput, "load", requests.load),
+            _agent_tool(
+                requests,
+                guard,
+                resource,
+                SkillResourceToolInput,
+                "read_resource",
+                requests.resource,
+            ),
         ),
     )
 

@@ -10,6 +10,7 @@ import pytest
 
 from harnessix.exec_cli import approval_policy
 from harnessix.processes.supervisor_capabilities import probe_posix_process_capability
+from harnessix.product_config.agent_context import _NATIVE_EXECUTION_INSTRUCTIONS
 from harnessix.product_config.native_process import (
     attest_native_process_profile,
     native_process_binding,
@@ -117,3 +118,9 @@ async def test_host_command_runs_only_after_a_human_approval(tmp_path: Path) -> 
             ("workspace", "write"),
             ("network", "connect"),
         }
+
+
+def test_native_instructions_route_requested_commits_through_host_commands() -> None:
+    assert "run git add and git commit through host_command" in _NATIVE_EXECUTION_INSTRUCTIONS
+    assert "unless the user asks" in _NATIVE_EXECUTION_INSTRUCTIONS
+    assert "Never push." in _NATIVE_EXECUTION_INSTRUCTIONS

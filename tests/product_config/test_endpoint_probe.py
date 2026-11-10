@@ -7,6 +7,9 @@ from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
+import pytest
+
+from harnessix.product_config import endpoint_probe
 from harnessix.product_config.endpoint_probe import probe_chat_endpoint
 
 
@@ -67,6 +70,31 @@ def test_probe_warns_on_stringified_arrays_and_fails_on_missing_calls_or_model()
     with _endpoint(["other"], {}) as (url, _):
         results = probe_chat_endpoint(url, "m", "k")
     assert [(item.check, item.status) for item in results] == [("model", "failed")]
+
+
+@pytest.mark.parametrize(
+    ("host", "direct"),
+    [("127.0.0.1", True), ("192.168.1.20", True), ("gpu.lan", True), ("api.example.com", False)],
+)
+def test_probe_skips_environment_proxy_only_for_loopback_and_private_hosts(
+    monkeypatch: pytest.MonkeyPatch, host: str, direct: bool
+) -> None:
+    handlers: list[tuple[object, ...]] = []
+
+    class Opener:
+        def open(self, *_args: object, **_kwargs: object) -> object:
+            raise OSError("stop after choosing the route")
+
+    def build_opener(*args: object) -> Opener:
+        handlers.append(args)
+        return Opener()
+
+    monkeypatch.setattr(endpoint_probe.urllib.request, "build_opener", build_opener)
+
+    with pytest.raises(OSError):
+        endpoint_probe._request(f"https://{host}/v1/models", "key", None, 1.0)
+
+    assert bool(handlers[0]) is direct
 
 
 def test_probe_reports_an_unreachable_endpoint() -> None:

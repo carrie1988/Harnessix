@@ -17,9 +17,11 @@ from harnessix.product_config.action_contracts import (
 from harnessix.product_config.contracts import ProductConfigV2
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
+    ConfigurationDraft,
     ProductPreflightCheck,
     ProductPreflightReport,
 )
+from harnessix.product_config.wizard import build_product_config
 from tests.product_config.conftest import write_config
 from tests.product_config.test_migration_and_store import legacy_body
 
@@ -210,6 +212,58 @@ def test_profile_dependency_and_secret_failures_remain_distinct(
     secret_checks = _checks(missing_secret)
     assert secret_checks["product_provider_dependencies"].status == "passed"
     assert secret_checks["product_provider_secrets"].code == "secret_unavailable"
+
+
+@pytest.mark.parametrize(
+    ("base_url", "self_hosted", "key", "status", "code"),
+    [
+        ("http://127.0.0.1:8000/v1", False, "local", "failed", "self_hosted_key_too_short"),
+        (
+            "http://192.168.1.20:8000/v1",
+            True,
+            "local",
+            "failed",
+            "self_hosted_key_too_short",
+        ),
+        (
+            "http://127.0.0.1:8000/v1",
+            False,
+            "0123456789abcdef",
+            "passed",
+            "product_self_hosted_key_length_ready",
+        ),
+        (
+            "https://api.example.test/v1",
+            False,
+            "short",
+            "passed",
+            "product_self_hosted_key_length_ready",
+        ),
+    ],
+)
+def test_self_hosted_placeholder_key_must_be_long_enough(
+    tmp_path: Path, base_url: str, self_hosted: bool, key: str, status: str, code: str
+) -> None:
+    config = build_product_config(
+        ConfigurationDraft(
+            provider_kind="openai_chat",
+            base_url=base_url,
+            model="local-model",
+            self_hosted=self_hosted,
+            environment_variable="PRIMARY_API_KEY",
+        )
+    )
+    path = write_config(tmp_path / "config.json", config)
+
+    report = run_product_preflight(
+        _request(tmp_path, path),
+        dependency_finder=_dependencies,
+        environment={**_ENVIRONMENT, "PRIMARY_API_KEY": key},
+    )
+
+    check = _checks(report)["product_self_hosted_key_length"]
+    assert (check.status, check.code) == (status, code)
+    assert key not in report.model_dump_json()
 
 
 def test_workspace_and_state_boundaries_fail_closed(

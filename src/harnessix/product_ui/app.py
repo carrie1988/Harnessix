@@ -47,6 +47,7 @@ class ProductApp(App[CloseReport]):
         Binding("ctrl+n", "new_thread", "新建会话"),
         Binding("ctrl+r", "reconnect", "重新连接"),
         Binding("ctrl+a", "approval", "审批"),
+        Binding("ctrl+e", "toggle_auto_accept", "自动接受修改"),
         Binding("ctrl+u", "question", "回答"),
         Binding("ctrl+x", "cancel_turn", "取消Turn"),
         Binding("ctrl+s", "steer_turn", "补充Turn"),
@@ -186,6 +187,9 @@ class ProductApp(App[CloseReport]):
 
     def action_approval(self) -> None:
         self._start_interaction(self._presenter.approval, "approval")
+
+    def action_toggle_auto_accept(self) -> None:
+        self._start_interaction(self._presenter.toggle_auto_accept, "toggle-auto-accept")
 
     def action_question(self) -> None:
         self._start_interaction(self._presenter.question, "question")

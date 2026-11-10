@@ -7,7 +7,7 @@ from typing import Literal, Self
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from harnessix.execution.contracts import canonical_digest
-from harnessix.models.config import ModelHTTPConfig
+from harnessix.models.config import with_validated_base_url
 from harnessix.product_config.action_contracts import ProductActionCapabilityReport
 from harnessix.product_config.contracts import (
     ConfigurationDiagnosticReport,
@@ -67,11 +67,13 @@ class ConfigurationDraft(ProductConfigContract):
     context_window_tokens: int | None = Field(
         default=None, ge=8192, le=2_097_152, exclude_if=lambda value: value is None
     )
+    # 用户显式声明这是自己部署的内网端点：允许明文HTTP并套用本地模型预设。
+    self_hosted: bool = Field(default=False, exclude_if=lambda value: value is False)
 
-    @field_validator("base_url")
+    @model_validator(mode="before")
     @classmethod
-    def valid_base_url(cls, value: str) -> str:
-        return ModelHTTPConfig.validate_url(value)
+    def valid_base_url(cls, data: object) -> object:
+        return with_validated_base_url(data, private_network_field="self_hosted")
 
     @field_validator("secret_version")
     @classmethod

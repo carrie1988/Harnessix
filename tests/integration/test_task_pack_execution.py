@@ -13,6 +13,7 @@ import pytest
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import (
     ToolCallContent,
+    ToolCallRejectionContent,
     ToolResultContent,
     TrustedActionApprovalRequestContent,
 )
@@ -227,7 +228,7 @@ async def test_task_pack_case_runs_two_trials_through_formal_agent_campaign_and_
     assert result.report.campaign.summary.known_cost_amount == "0"
     assert provider_factory.opened_run_ids == set(campaign.run_ids)
     assert len(provider_factory.providers) == 2
-    assert [len(provider.requests) for provider in provider_factory.providers] == [6, 6]
+    assert [len(provider.requests) for provider in provider_factory.providers] == [5, 5]
     assert all(item.automated_approval_decisions == 3 for item in result.report.transcripts)
     assert all(item.human_intervention_count == 0 for item in result.report.transcripts)
     assert all(item.outcome == "passed" for item in result.report.tests)
@@ -248,7 +249,7 @@ async def test_task_pack_recovers_from_patch_before_failed_baseline_through_real
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """真实Runtime先持久拒绝越序Patch，再沿同一Turn取得失败基线并完成任务。"""
+    """越序Patch在工具目录层被持久拒绝，同一Turn继续取得失败基线并完成任务。"""
 
     docker = _executable("docker")
     git = _executable("git")
@@ -296,31 +297,13 @@ async def test_task_pack_recovers_from_patch_before_failed_baseline_through_real
 
     case_root = tmp_path / "case"
     case_root.mkdir(mode=0o700)
-    rejected_approval_points = 0
-
-    def fault(point: str) -> None:
-        nonlocal rejected_approval_points
-        if point != "task_pack_runner.after_rejected_approval":
-            return
-        rejected_approval_points += 1
-        target = (
-            case_root
-            / "runs"
-            / str(patch_first_run_id)
-            / "workspace"
-            / case.task.allowed_changed_paths[0]
-        )
-        expected_bytes = provider_factory.providers[-1]._solution.before  # noqa: SLF001
-        assert expected_bytes is not None
-        assert target.read_bytes() == expected_bytes
-
-    executor = TaskPackCaseExecutor(loaded, git, docker, provider_factory, fault=fault)
+    executor = TaskPackCaseExecutor(loaded, git, docker, provider_factory)
     result = await executor(expected, campaign, case_root, CancelToken())
 
     assert result.reason == "completed" and result.report is not None
-    assert rejected_approval_points == 1
-    assert [len(provider.requests) for provider in provider_factory.providers] == [7, 6]
-    assert [item.automated_approval_decisions for item in result.report.transcripts] == [4, 3]
+    # 越序Patch在工具目录层被拒绝，不进入审批；其余步骤与正常路径相同。
+    assert [len(provider.requests) for provider in provider_factory.providers] == [6, 5]
+    assert [item.automated_approval_decisions for item in result.report.transcripts] == [3, 3]
     assert all(item.human_intervention_count == 0 for item in result.report.transcripts)
     assert all(item.outcome == "passed" for item in result.report.tests)
 
@@ -349,39 +332,33 @@ async def test_task_pack_recovers_from_patch_before_failed_baseline_through_real
         )
     assert thread is not None and len(thread.turns) == 1
     turn = thread.turns[0]
+    rejections = tuple(
+        item.content for item in turn.items if isinstance(item.content, ToolCallRejectionContent)
+    )
+    assert [(item.reason, item.model_step) for item in rejections] == [("unregistered_tool", 1)]
     approvals = tuple(
         item.content
         for item in turn.items
         if isinstance(item.content, TrustedActionApprovalRequestContent)
     )
     assert [approval.decision.outcome for approval in approvals if approval.decision] == [
-        ApprovalOutcome.REJECTED,
         ApprovalOutcome.APPROVED,
         ApprovalOutcome.APPROVED,
         ApprovalOutcome.APPROVED,
     ]
-    assert approvals[0].decision is not None
-    assert approvals[0].decision.reason == "Task Pack要求修改前先运行固定Profile并观察失败基线"
 
     patch_calls = tuple(
         item.content
         for item in turn.items
-        if isinstance(item.content, ToolCallContent)
-        and item.content.tool == "apply_patch_batch"
+        if isinstance(item.content, ToolCallContent) and item.content.tool == "apply_patch_batch"
     )
     results = {
         item.content.call_id: item.content
         for item in turn.items
         if isinstance(item.content, ToolResultContent)
     }
-    assert len(patch_calls) == 2
-    rejected, applied = (results[call.call_id] for call in patch_calls)
-    assert rejected.outcome == "failed"
-    assert rejected.error is not None and rejected.error.code == "approval_rejected"
-    assert rejected.patch is None and rejected.patch_batch is None
-    assert rejected.trusted_action is not None
-    assert rejected.trusted_action.state == "failed"
-    assert rejected.trusted_action.artifact_sha256 is None
+    assert len(patch_calls) == 1
+    applied = results[patch_calls[0].call_id]
     assert applied.outcome == "succeeded" and applied.trusted_action is not None
 
     def forbidden(*_args):

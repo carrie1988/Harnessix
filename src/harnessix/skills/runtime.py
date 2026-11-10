@@ -217,7 +217,7 @@ class SkillRegistry:
         self,
         catalog: SkillCatalogSnapshot,
         name: str,
-        expected_manifest_sha256: str,
+        expected_manifest_sha256: str | None = None,
     ) -> SkillManifestSnapshot:
         if catalog.catalog_id != self._catalog_id:
             raise KernelError("skill_catalog_mismatch", "Skill目录不属于当前运行时")
@@ -230,7 +230,7 @@ class SkillRegistry:
         if not matches:
             raise KernelError("skill_not_found", "Skill不存在")
         selected = matches[0]
-        if selected.manifest_sha256 != expected_manifest_sha256:
+        if expected_manifest_sha256 not in {None, selected.manifest_sha256}:
             raise KernelError("skill_contract_changed", "Skill调用绑定的清单摘要不一致")
         return selected
 

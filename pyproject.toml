@@ -1,6 +1,6 @@
 [project]
 name = "harnessix"
-version = "1.0.0rc1"
+version = "0.10.0b1"
 description = "面向生产级 Coding Agent 的本地优先运行时与安全执行基础设施"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,11 +9,14 @@ license-files = ["LICENSE"]
 authors = [{ name = "Zhang Jinhui" }]
 dependencies = [
     "aiosqlite>=0.21,<1",
+    "anthropic>=1.3,<2",
     "google-re2==1.1.20251105",
     "httpx>=0.28,<1",
     "mcp>=2.2,<3",
+    "openai>=2.54,<3",
     "pydantic>=2.11,<3",
     "pyyaml>=6,<7",
+    "textual>=8.2,<9",
 ]
 
 [project.optional-dependencies]
@@ -75,6 +78,8 @@ line-length = 100
 target-version = "py312"
 # 已冻结的诊断脚本是原始证据，不自动改写；活动源码与Secret扫描仍完整覆盖。
 extend-exclude = [
+    # 已跑完的SWE-bench单次实验脚本随预注册与结果冻结，不再改写。
+    "benchmarks/swebench/**/*.py",
     "docs/validation/**/diagnostics/*.py",
     "docs/validation/**/installation/*.py",
     # 原始验证宿主脚本按固定manifest封存；活动实现与测试不适用此例外。

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import os
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
@@ -249,16 +249,22 @@ def test_saved_local_is_revoked_and_late_chunk_corruption_never_returns_prefix(h
 
 
 def test_default_trace_and_wire_match_frozen_reader(history):
-    directory = os.environ.get("HARNESSIX_CODEC_FROZEN_DIR")
-    assert directory is not None, "验收必须提供旧实现原件，不能跳过 oracle"
-    path = Path(directory) / "src/harnessix/workspace/parent_closure_codec.py"
+    # 引入纯计算端口之前的最后一版读取实现，作为默认路径的对照原件。
+    relative = "src/harnessix/workspace/parent_closure_codec.py"
+    frozen_source = subprocess.run(
+        ("git", "show", f"b5244e28^:{relative}"),
+        cwd=Path(__file__).resolve().parents[2],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
     function = next(
         node
-        for node in ast.parse(path.read_text()).body
+        for node in ast.parse(frozen_source).body
         if isinstance(node, ast.FunctionDef) and node.name == "read_workspace_parent_closure"
     )
     namespace = dict(vars(module))
-    exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), "exec"), namespace)
+    exec(compile(ast.Module(body=[function], type_ignores=[]), relative, "exec"), namespace)
     trace = []
 
     def read(digest):

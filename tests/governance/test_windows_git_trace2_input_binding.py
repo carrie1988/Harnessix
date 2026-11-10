@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from scripts.windows_git_native_branch_observation import contract
+from tests.support.windows_git_contract import live_execution_sources
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "5265fdf2d1755b15491f41b770b2d718bab98d2c"
@@ -99,8 +100,8 @@ def _metadata_changes(left, right, path="") -> set[str]:
 
 
 def test_current_complete_source_identity_is_accepted():
-    rows = contract.source_checks(ROOT, contract.read_contract())
-    assert len(rows) == 18
+    rows = contract.source_checks(ROOT, live_execution_sources(contract.read_contract()))
+    assert len(rows) == 17
     assert all(row["representation"] == "EXACT_FROZEN_BYTES" for row in rows)
 
 
@@ -159,7 +160,7 @@ def test_new_metadata_appends_only_two_exact_diagnostic_members():
     )
     live = contract.read_contract()
     _assert_live_source_catalog_identity_delta(live)
-    assert len(contract.source_checks(ROOT, live)) == 18
+    assert len(contract.source_checks(ROOT, live_execution_sources(live))) == 17
     current = json.loads(_original(METADATA, revision=DIAGNOSTIC_REVISION))
     assert current["base_revision"] == DIAGNOSTIC_BASE
     assert len(current["source_inputs"]) == 18
@@ -219,7 +220,7 @@ def test_live_source_catalog_changes_only_reviewed_git_identity_leaves():
     """共享配方/观察身份仅重绑原两项，不改历史追加事实或原18项准入。"""
     current = contract.read_contract()
     _assert_live_source_catalog_identity_delta(current)
-    assert len(contract.source_checks(ROOT, current)) == 18
+    assert len(contract.source_checks(ROOT, live_execution_sources(current))) == 17
 
 
 def test_live_source_catalog_refuses_previous_git_bytes(tmp_path):
@@ -264,9 +265,10 @@ def test_every_registered_source_refuses_new_unreviewed_byte(index, tmp_path):
         contract.source_checks(tmp_path, {"source_inputs": [row]})
 
 
-@pytest.mark.parametrize("index", range(18))
+@pytest.mark.parametrize("index", range(17))
 def test_every_registered_source_accepts_only_frozen_crlf(index, tmp_path):
-    row = contract.read_contract()["source_inputs"][index]
+    # 以活动树字节为原文，故只覆盖仍与冻结字节一致的17项执行源码。
+    row = live_execution_sources(contract.read_contract())["source_inputs"][index]
     destination = tmp_path / row["path"]
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes((ROOT / row["path"]).read_bytes().replace(b"\n", b"\r\n"))

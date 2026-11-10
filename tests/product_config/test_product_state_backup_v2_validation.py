@@ -46,9 +46,7 @@ class _Protection:
     def publication_context(self) -> dict[str, object]:
         return {"scope_id": str(UUID(int=0)), "bindings": []}
 
-    def assert_public_json(
-        self, value: JsonValue, *, checkpoint: Callable[[], None]
-    ) -> None:
+    def assert_public_json(self, value: JsonValue, *, checkpoint: Callable[[], None]) -> None:
         checkpoint()
 
     def assert_public_jsonl(self, body: bytes, *, checkpoint: Callable[[], None]) -> None:
@@ -120,9 +118,7 @@ def _candidate(root: Path, case) -> _Candidate:
             capture_id=capture_id,
             store_genesis_epoch=catalog.genesis_epoch,
             prefix_revision=catalog.revision,
-            prefix_anchor_sha256=hashlib.sha256(
-                encode_git_prefix_catalog(catalog)
-            ).hexdigest(),
+            prefix_anchor_sha256=hashlib.sha256(encode_git_prefix_catalog(catalog)).hexdigest(),
             business_snapshot_sha256=hashlib.sha256(snapshot_body).hexdigest(),
         )
         return _Candidate(root, material.store_id, material.key_id, profile)

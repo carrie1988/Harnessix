@@ -58,9 +58,7 @@ from harnessix.trusted_actions.versioned_contracts import ActionRouteSnapshotV2
 
 
 def _invalid() -> KernelError:
-    return KernelError(
-        "git_business_association_invalid", "Git业务快照与原产品事实不一致"
-    )
+    return KernelError("git_business_association_invalid", "Git业务快照与原产品事实不一致")
 
 
 class _VerificationOnlyScope:

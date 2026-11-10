@@ -127,6 +127,11 @@
       ],
       "default": null,
       "title": "Context Window Tokens"
+    },
+    "self_hosted": {
+      "default": false,
+      "title": "Self Hosted",
+      "type": "boolean"
     }
   },
   "required": [

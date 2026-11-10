@@ -15,6 +15,7 @@ from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.models import ApprovalRequestContent, Budget, TurnStatus, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.usage import ModelUsageObserved
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import AnthropicConfig, ChatCapabilities, OpenAIChatConfig
@@ -317,6 +318,22 @@ async def test_http_and_sse_errors_are_bounded_and_redacted(
     assert_failed_attempts(events, ResponseFailed(code=expected, retryable=attempts > 1), attempts)
     assert len(requests) == attempts and all(w.closed for w in wires)
     assert CANARY not in repr(events) + caplog.text
+
+
+async def test_http_error_is_unbilled_and_read_failure_stays_unknown() -> None:
+    requests: list[httpx2.Request] = []
+
+    def handle(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request)
+        if len(requests) == 1:
+            return httpx2.Response(429, json={"error": {"type": "rate_limit_error"}})
+        raise httpx2.ReadError("connection dropped")
+
+    async with AnthropicProvider(config(), transport=httpx2.MockTransport(handle)) as provider:
+        events = [e async for e in provider.stream(model_request(), CancelToken())]
+
+    usage = [event.usage for event in events if isinstance(event, ModelUsageObserved)]
+    assert len(requests) == 2 and len(usage) == 1 and usage[0].input_tokens == 0
 
 
 async def test_explicit_credentials_and_retry_then_success(monkeypatch: pytest.MonkeyPatch) -> None:

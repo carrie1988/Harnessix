@@ -1,7 +1,7 @@
 ---
 doc_type: product-charter
 status: current
-version: 5
+version: 6
 code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
@@ -42,21 +42,21 @@ supersedes: []
 
 1.0采用以下约束：
 
-- 本地优先，首版本仅交付macOS（macOS only）；Linux和Windows版本交付已从当前任务中取消；
+- 本地优先，首版本交付macOS、Linux和Windows（2026-11-10用户决定）；Beta先在macOS和Linux开放，Windows须在1.0前完成同等验收；Windows上的命令不加沙箱、逐条批准；
 - 提供CLI/TUI、无界面的App Server和Python Agent SDK；
 - 单个 Workspace 对应一个明确的文件系统边界；
 - 支持交互式会话和一次性 Headless 任务；
 - 保留OpenAI-compatible与Anthropic两类Adapter和统一契约；正式模型支持按有限认证白名单，首发至少一份真实配置认证；
 - 支持读取、搜索、通用进程、多文件事务修改、Shell、Git、测试、Checkpoint和Rollback闭环；
 - 支持持久会话、恢复、取消、审批和上下文压缩；
-- 支持受控本地stdio MCP、项目指令和Skills/Hooks；远端HTTP MCP及OAuth进入1.1+；
+- 支持本机stdio MCP（用户逐个信任，工具调用走审批）、项目指令和Skills；Hooks不在1.0范围（2026-11-10用户决定）；远端HTTP MCP及OAuth进入1.1+；
 - 支持Host安全级别与至少一种Container隔离执行后端；
 - 高风险文件、进程、Git和外部副作用由内部Trusted Action Runtime统一治理；首发Git交付止于本地审查/Commit，公网Push由用户在Agent外执行。
-- 首发采用统一Wheel通道、有限macOS版本/架构、手动停机升级和同机同用户数据库/Key备份；多安装器、自动更新和跨机Key迁移不作为发布前置条件。
+- 首发采用统一Wheel通道、有限的macOS、Linux、Windows版本/架构、手动停机升级和同机同用户数据库/Key备份；多安装器、自动更新和跨机Key迁移不作为发布前置条件。
 
 当前范围、逐项处置和六个发布工作包以[首发范围收敛计划](changes/m09-to-v1-release-scope-convergence.md)为准；[ADR 0106](adr/0106-v1-release-scope-and-risk-based-gates.md)保留原范围决策。延期能力不能以实验性名义继续开放已知危险入口。
 
-Linux/Windows交付已从当前未完成任务、必需矩阵、R4/R5退出条件及R6依赖中删除，不标完成；不是延期必做项，不自动列入1.1或1.x，未来重启须单独立项，无当前必做承诺。已实现跨平台代码、历史测试及ADR历史保留，不再据旧三平台条款派生当前交付任务。
+2026-10-09曾把Linux/Windows交付移出首发；2026-11-10用户决定产品化须三平台全面支持，R4/R5/R6恢复按三平台矩阵执行，见[路线图](roadmap.md)第12节。已实现的跨平台代码和历史测试继续沿用，历史验收证据不自动继承到新候选。
 当前最高优先为BETA-001真实登录密码整改与测试验收的完整任务闭环，其次为macOS安装交付及其余R3/R4收口；不把R3/R4整体关闭或R4原生组件完成设为BETA-001启动前置。
 Mac支持资格按具体OS/CPU架构的原生证据逐项核定，不默认覆盖Intel与Apple Silicon。R3原完整20 Trial及原评分/限制、Mac安全/恢复和Beta真实业务验收等非平台门槛不变；当前R4未完成，商业发布仍为**NO-GO**。
 
@@ -123,10 +123,10 @@ Harnessix Code 1.0 必须满足：
 3. 保留至少两个Provider Adapter家族的统一契约；至少一份线上配置通过正式认证，其余不宣称商用模型支持；
 4. 支持会话恢复、用户取消、Tool 超时和上下文压缩；
 5. 具备Workspace边界、通用进程监督、命令审批、网络策略、Secret最小化注入和至少一种隔离执行后端；
-6. 支持受控本地stdio MCP、项目指令和Skills/Hooks；
+6. 支持本机stdio MCP（用户逐个信任，工具调用走审批）、项目指令和Skills；Hooks不在1.0范围；
 7. 有稳定、版本化的 App Server 协议；
 8. 有单元、契约、集成、端到端、故障注入和真实仓库 Eval；
-9. 仅提供按macOS版本/架构验收的原生核心流程、统一安装、当前认证候选升级、同机备份恢复、卸载、配置、诊断和安全文档；
+9. 提供按macOS、Linux、Windows版本/架构验收的原生核心流程、统一安装、当前认证候选升级、同机备份恢复、卸载、配置、诊断和安全文档；
 10. 提供用户数据导出、删除、保留及诊断脱敏能力；
 11. 使用既有固定Task Pack达到运行前冻结的真实质量门槛；报告Usage、时延、人工干预及显式适用的估算费用，未知不能报零；
 12. 复用仍适用的已关闭Soak，补受影响故障/安全回归；小批真实Beta和同一候选完整必要门禁通过。

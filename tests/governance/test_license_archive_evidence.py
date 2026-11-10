@@ -263,6 +263,76 @@ def test_review_is_bound_to_exact_archive_not_name(tmp_path: Path) -> None:
         build_report(lock, policy)
 
 
+def _lgpl_review(tmp_path: Path, **review: object) -> tuple[Path, dict]:
+    """主体BSD、附带LGPL正文的Archive（同pywin32的adodbapi）及其精确绑定收据。"""
+    from scripts.license_contracts import read_json
+
+    body = _wheel(
+        _metadata().replace(b"License-Expression: MIT", b"License: PSF"),
+        notice=b"GNU LESSER GENERAL PUBLIC LICENSE\nVersion 2.1\n",
+    )
+    lock, evidence, identity = _fixture(tmp_path, body)
+    record = read_json(evidence / "index.json")["entries"][0]
+    policy = _policy()
+    policy["reviews"] = [
+        {
+            "review_id": "sample-1.0-wheel",
+            "expression": "MIT AND LGPL-2.1-only",
+            "basis": "公开测试收据，不构成实际许可判断。",
+            "binding": {
+                **identity,
+                "metadata_sha256": record["metadata"]["sha256"],
+                "notice_sha256": sorted(n["sha256"] for n in record["notices"]),
+            },
+            **review,
+        }
+    ]
+    return lock, policy
+
+
+def test_archive_bound_exception_releases_only_that_exact_archive(tmp_path: Path) -> None:
+    from scripts.license_contracts import LicenseEvidenceError
+
+    lock, policy = _lgpl_review(tmp_path, excepted_atoms=["LGPL-2.1-only"])
+    entry = build_report(lock, policy)["entries"][0]
+    assert entry["status"] == "allow"
+    assert entry["reason"] == "license_archive_exception_allowed"
+    assert entry["review_id"] == "sample-1.0-wheel" and entry["notice_review_signals"]
+    assert "LGPL-2.1-only" in policy["deny"]
+
+    policy["reviews"][0]["binding"]["sha256"] = "0" * 64
+    with pytest.raises(LicenseEvidenceError, match="license_review_stale"):
+        build_report(lock, policy)
+
+
+def test_restricted_notice_still_blocks_a_review_without_an_exception(tmp_path: Path) -> None:
+    lock, policy = _lgpl_review(tmp_path)
+    entry = build_report(lock, policy)["entries"][0]
+    assert entry["status"] == "violation"
+    assert entry["reason"] == "license_notice_review_required"
+
+
+@pytest.mark.parametrize(
+    "excepted",
+    [
+        ["GPL-3.0-only"],
+        ["Apache-2.0"],
+        ["MIT"],
+        [],
+        ["LGPL-2.1-only", "LGPL-2.1-only"],
+        "LGPL-2.1-only",
+    ],
+)
+def test_exception_must_name_an_unallowed_atom_of_its_own_expression(
+    tmp_path: Path, excepted: object
+) -> None:
+    from scripts.license_contracts import LicenseEvidenceError
+
+    lock, policy = _lgpl_review(tmp_path, excepted_atoms=excepted)
+    with pytest.raises(LicenseEvidenceError, match="license_review_invalid"):
+        build_report(lock, policy)
+
+
 def test_explicit_spdx_cannot_be_replaced_by_review(tmp_path: Path) -> None:
     from scripts.license_contracts import LicenseEvidenceError, read_json
 
@@ -331,24 +401,32 @@ def test_cancelled_collection_and_scan_have_fixed_status(
     assert output.count("license_cancelled") == 2 and "Traceback" not in output
 
 
-def test_root_cli_check_is_readonly_and_returns_policy_failure(tmp_path: Path) -> None:
+def test_root_cli_check_is_readonly_and_fails_without_the_archive_exception(
+    tmp_path: Path,
+) -> None:
     import json
     import subprocess
     import sys
 
     root = Path(__file__).resolve().parents[2]
     committed = json.loads((root / "governance/license-scan-v2.json").read_bytes())
+    policy = json.loads((root / "governance/license-policy-v2.json").read_bytes())
+    policy["reviews"] = [r for r in policy["reviews"] if r["binding"]["name"] != "pywin32"]
+    stripped = tmp_path / "policy.json"
+    stripped.write_text(json.dumps(policy), encoding="utf-8")
     output = tmp_path / "report.json"
     output.write_bytes(b"{}\n")
     run = subprocess.run(
-        [sys.executable, "-m", "scripts.license_scan", "--check", "--output", str(output)],
+        [sys.executable, "-m", "scripts.license_scan", "--check", "--output", str(output)]
+        + ["--policy", str(stripped)],
         cwd=root,
         capture_output=True,
         timeout=30,
     )
     assert run.returncode == 1 and output.read_bytes() == b"{}\n"
-    assert committed["archive_count"] == 777 and committed["violation_count"] == 12
-    assert {e["name"] for e in committed["entries"] if e["status"] != "allow"} == {"pywin32"}
+    assert committed["violation_count"] == 0
+    blocked = {e["name"] for e in committed["entries"] if e["notice_review_signals"]}
+    assert blocked == {"pywin32"}
 
 
 @pytest.mark.parametrize(

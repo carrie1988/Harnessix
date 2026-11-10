@@ -34,7 +34,7 @@ async def test_last_callback_return_binding(case, tmp_path, monkeypatch, kind, m
             return True
 
     @contextmanager
-    def unchanged(*args):
+    def unchanged(*args, **kwargs):
         yield lambda: None
 
     monkeypatch.setattr(ledger, "require_git_review_host", lambda *args: lambda: None)

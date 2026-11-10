@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from email import policy as email_policy
 from email.parser import Parser
 from pathlib import PurePosixPath
@@ -128,13 +129,16 @@ def metadata_facts(
     }
 
 
+_REVIEW_KEYS = {"review_id", "expression", "basis", "binding"}
+
+
 def _validate_reviews(reviews: list) -> None:
     """收据必须使用精确身份合同，拒绝名称级或未知字段覆盖。"""
 
     for review in reviews:
         if (
             not isinstance(review, dict)
-            or set(review) != {"review_id", "expression", "basis", "binding"}
+            or set(review) - {"excepted_atoms"} != _REVIEW_KEYS
             or not isinstance(review["review_id"], str)
             or not re.fullmatch(r"[a-z0-9][a-z0-9.-]{0,79}", review["review_id"])
             or not isinstance(review["basis"], str)
@@ -184,6 +188,8 @@ def validate_policy(policy: dict) -> None:
                 raise LicenseEvidenceError("license_policy_invalid") from None
     if set(policy["allow"]) & set(policy["deny"]):
         raise LicenseEvidenceError("license_policy_invalid")
+    for review in policy.get("reviews", []):
+        _validate_archive_exception(review, policy["allow"])
     exceptions = policy.get("allow_exceptions", [])
     if (
         not isinstance(exceptions, list)
@@ -204,8 +210,41 @@ def validate_policy(policy: dict) -> None:
             raise LicenseEvidenceError("license_policy_invalid") from None
 
 
-def decide(expression: str, policy: dict) -> tuple[str, str, str | None]:
-    """AND/OR都要求所有原子获准；不自动选择OR分支来绕过拒绝策略。"""
+def _expression_atoms(canonical: str) -> list[str]:
+    tokens = re.sub(r"[()]", " ", canonical).split()
+    return [
+        token
+        for index, token in enumerate(tokens)
+        if token not in {"AND", "OR", "WITH"} and not (index and tokens[index - 1] == "WITH")
+    ]
+
+
+def _validate_archive_exception(review: dict, allow: list[str]) -> None:
+    """窄例外只能豁免该收据表达式里、白名单之外的原子（拒绝或未登记）；不按包名或全局放宽。"""
+
+    if "excepted_atoms" not in review:
+        return
+    excepted = review["excepted_atoms"]
+    try:
+        atoms = _expression_atoms(canonicalize_license_expression(review["expression"]))
+    except InvalidLicenseExpression:
+        raise LicenseEvidenceError("license_review_invalid") from None
+    if (
+        not isinstance(excepted, list)
+        or not excepted
+        or len(set(excepted)) != len(excepted)
+        or any(atom in allow or atom not in atoms for atom in excepted)
+    ):
+        raise LicenseEvidenceError("license_review_invalid")
+
+
+def decide(
+    expression: str, policy: dict, excepted: Sequence[str] = ()
+) -> tuple[str, str, str | None]:
+    """AND/OR都要求所有原子获准；不自动选择OR分支来绕过拒绝策略。
+
+    excepted只来自绑定精确Archive的人工收据，被豁免的原子单独标记为例外放行。
+    """
 
     try:
         canonical = canonicalize_license_expression(expression)
@@ -219,12 +258,14 @@ def decide(expression: str, policy: dict) -> tuple[str, str, str | None]:
         atoms.append(token)
         if index + 2 < len(tokens) and tokens[index + 1] == "WITH":
             exceptions.append(f"{token} WITH {tokens[index + 2]}")
-    if any(atom in policy["deny"] for atom in atoms):
+    if any(atom in policy["deny"] and atom not in excepted for atom in atoms):
         return "violation", "license_expression_denied", canonical
-    if not atoms or any(atom not in policy["allow"] for atom in atoms):
+    if not atoms or any(atom not in policy["allow"] and atom not in excepted for atom in atoms):
         return "violation", "license_expression_not_allowed", canonical
     if any(pair not in policy.get("allow_exceptions", []) for pair in exceptions):
         return "violation", "license_exception_not_allowed", canonical
+    if any(atom in excepted for atom in atoms):
+        return "allow", "license_archive_exception_allowed", canonical
     return "allow", "license_expression_allowed", canonical
 
 
@@ -243,8 +284,13 @@ def notice_signals(body: bytes, policy: dict) -> list[str]:
     return signals
 
 
-def reviewed_expression(record: dict, policy: dict, facts: dict) -> tuple[str, str, str | None]:
-    """人工解释也必须匹配完整Archive/元数据/通知摘要；旧版本收据不能移植。"""
+def reviewed_expression(
+    record: dict, policy: dict, facts: dict
+) -> tuple[str, str, str | None, tuple[str, ...]]:
+    """人工解释也必须匹配完整Archive/元数据/通知摘要；旧版本收据不能移植。
+
+    返回（表达式，来源，收据ID，窄例外原子）；收据已绑定全部通知摘要，例外即覆盖这些通知。
+    """
 
     identity = {
         key: record[key]
@@ -259,7 +305,7 @@ def reviewed_expression(record: dict, policy: dict, facts: dict) -> tuple[str, s
     if len(matches) > 1:
         raise LicenseEvidenceError("license_review_duplicate")
     if not matches:
-        return facts["declared_license"], facts["declaration_source"], None
+        return facts["declared_license"], facts["declaration_source"], None, ()
     review = matches[0]
     if (
         facts["declaration_source"] == "license_expression"
@@ -267,4 +313,5 @@ def reviewed_expression(record: dict, policy: dict, facts: dict) -> tuple[str, s
         or not review.get("review_id")
     ):
         raise LicenseEvidenceError("license_review_invalid")
-    return review["expression"], "archive_bound_review", review["review_id"]
+    excepted = tuple(review.get("excepted_atoms", ()))
+    return review["expression"], "archive_bound_review", review["review_id"], excepted

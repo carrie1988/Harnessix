@@ -32,7 +32,7 @@ def _cp1252_run(arguments: list[str]) -> subprocess.CompletedProcess[str]:
     ("name", "arguments", "message", "returncode"),
     [
         ("sbom_generate", ["--check"], "SBOM一致且Schema有效", 0),
-        ("license_scan", ["--check"], "许可证违规", 1),
+        ("license_scan", ["--check"], "许可证扫描通过", 0),
         ("secret_scan", ["--self-check"], "Secret扫描自检通过", 0),
         ("documentation_check", ["--help"], "门禁", 0),
         ("generate_specs", ["--help"], "usage:", 0),

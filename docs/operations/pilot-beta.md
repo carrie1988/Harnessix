@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 21
+version: 22
 code_revision: 5ac65db3da9a2ecdd572e8c1247d5a40ebabc860
 owners:
   - core
@@ -27,6 +27,8 @@ supersedes: []
 # Harnessix 单人先导 Beta 操作手册
 
 ## 1. 适用范围与候选状态
+
+本手册记录的是维护者单人先导时的严格流程，绑定的候选和“不启用Shell”等限制已过期。外部试用者请看[Beta快速上手](beta-quickstart.md)。
 
 单人先导由项目使用者本人完成，适用于尚无独立 Beta 开发者时的低风险试用准备、真实小任务和问题记录。本手册给出执行方法，不记录已完成的试用、测试通过或商业发布结果。
 

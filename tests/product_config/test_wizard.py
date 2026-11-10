@@ -12,6 +12,7 @@ import pytest
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import (
+    ModelProfile,
     ProductConfigSnapshot,
     product_config_digest,
 )
@@ -20,6 +21,7 @@ from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     _open_lock,
     build_product_config,
+    known_context_window,
     write_product_config,
 )
 
@@ -46,6 +48,118 @@ def test_builds_one_provider_config_without_reading_secret_value(
     assert config.providers[0].credential == config.secret_sources[0].secret
     assert config.secret_sources[0].environment_variable == "PRIMARY_API_KEY"
     assert canary not in config.model_dump_json()
+
+
+@pytest.mark.parametrize(
+    ("base_url", "model", "window"),
+    [
+        ("https://api.deepseek.com/v1", "deepseek-v4-pro", 1_000_000),
+        ("https://api.deepseek.com/v1", "deepseek-flash", 1_000_000),
+        ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-max", 1_000_000),
+        ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-27b", None),
+        ("https://api.example.test/v1", "deepseek-v4-pro", None),
+    ],
+)
+def test_known_context_windows_only_cover_verified_models(
+    base_url: str, model: str, window: int | None
+) -> None:
+    assert known_context_window(base_url, model) == window
+
+
+@pytest.mark.parametrize(
+    ("window", "thinking", "expected"),
+    [
+        (32_768, True, 4_096),
+        (262_144, True, 32_768),
+        (8_192, False, 2_559),
+        (None, True, 32_768),
+    ],
+)
+def test_small_context_windows_tighten_the_output_limit(
+    window: int | None, thinking: bool, expected: int
+) -> None:
+    draft = ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url="http://127.0.0.1:8000/v1",
+        model="local",
+        context_window_tokens=window,
+        output_token_parameter="max_tokens",
+        thinking_protocol="vllm_chat_template" if thinking else None,
+    )
+
+    profile = build_product_config(draft).profiles[0]
+    assert profile.max_output_tokens == expected
+    if window == 32_768:
+        assert profile.thinking == "off"
+
+
+def test_hand_written_profile_rejects_a_window_too_small_for_its_output() -> None:
+    profile = build_product_config(_draft()).profiles[0].model_dump(mode="json")
+
+    with pytest.raises(ValueError, match="上下文窗口"):
+        ModelProfile.model_validate_json(
+            json.dumps({**profile, "context_window_tokens": 32_768, "max_output_tokens": 32_768})
+        )
+
+
+def _self_hosted_draft(base_url: str) -> ConfigurationDraft:
+    return ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url=base_url,
+        model="qwen-local",
+        self_hosted=True,
+    )
+
+
+def test_declared_lan_endpoint_gets_the_local_model_presets() -> None:
+    config = build_product_config(_self_hosted_draft("http://192.168.1.20:8000/v1"))
+
+    provider, profile = config.providers[0], config.profiles[0]
+    assert provider.self_hosted and provider.pricing == "free"
+    assert provider.normalize_tool_arguments and provider.repair_tool_arguments
+    assert provider.stable_prompt_prefix
+    assert profile.timeout_seconds == 1800.0 and profile.io_timeout_seconds == 300.0
+    assert config.chain_pricing() == "free"
+
+
+def test_undeclared_private_https_endpoint_is_not_treated_as_free() -> None:
+    draft = ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url="https://llm-gateway.internal/v1",
+        model="gateway-model",
+    )
+
+    assert build_product_config(draft).providers[0].pricing == "unknown"
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    ["https://api.example.com/v1", "http://api.example.com/v1", "https://8.8.8.8/v1"],
+)
+def test_public_endpoint_cannot_be_declared_self_hosted(base_url: str) -> None:
+    with pytest.raises(ValueError):
+        build_product_config(_self_hosted_draft(base_url))
+
+
+def test_undeclared_lan_http_endpoint_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        ConfigurationDraft(
+            provider_kind="openai_chat",
+            base_url="http://192.168.1.20:8000/v1",
+            model="qwen-local",
+        )
+
+
+def test_loopback_endpoint_needs_no_declaration_and_keeps_its_fingerprint() -> None:
+    draft = ConfigurationDraft(
+        provider_kind="openai_chat",
+        base_url="http://127.0.0.1:8000/v1",
+        model="qwen-local",
+    )
+
+    provider = build_product_config(draft).providers[0]
+    assert provider.pricing == "free" and not provider.self_hosted
+    assert "self_hosted" not in provider.model_dump()
 
 
 def test_creates_private_canonical_config_and_self_validating_receipt(

@@ -55,10 +55,20 @@ class ProviderProbe:
 ProviderFactory = Callable[[str], AbstractAsyncContextManager[ProviderProbe]]
 
 
+def _is_unbilled_usage(event: ProviderEvent) -> bool:
+    return (
+        isinstance(event, ModelUsageObserved)
+        and event.usage.completeness == "complete"
+        and event.usage.input_tokens == 0
+        and event.usage.output_tokens == 0
+    )
+
+
 def assert_failed_attempts(
     events: Sequence[ProviderEvent], failure: ResponseFailed, count: int = 1
 ) -> None:
-    """没有语义响应/用量的失败，也必须完整记录每次尝试，不能仅滤掉元数据。"""
+    """没有语义响应的失败也必须完整记录每次尝试；确定未计费的尝试另带一条完整零用量。"""
+    events = [event for event in events if not _is_unbilled_usage(event)]
     assert events[-1] == failure
     assert len(events) == count * 2 + 1
     identities = set()

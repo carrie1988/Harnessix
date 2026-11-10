@@ -266,7 +266,7 @@ def test_completion_guard_is_explicit_and_strict():
 
 
 def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
-    """紧凑工具结果默认关闭、不序列化，向导不预设；显式开启时Provider发送文本工具结果。"""
+    """向导默认为OpenAI Chat开启紧凑工具结果；未开启时Provider发送JSON工具结果。"""
     protocol, omit = thinking_preset(LOCAL_VLLM, "qwen3.8-flash-next") or (None, False)
     local = build_product_config(
         _draft(
@@ -276,14 +276,15 @@ def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
             omit_tool_choice=omit,
         )
     )
-    assert "compact_tool_results" not in local.providers[0].model_dump()
-    assert _provider_config(local).tool_result_format == "json"
-    compact = local.model_copy(
+    assert local.providers[0].compact_tool_results is True
+    assert _provider_config(local).tool_result_format == "text"
+    plain = local.model_copy(
         update={
-            "providers": (local.providers[0].model_copy(update={"compact_tool_results": True}),)
+            "providers": (local.providers[0].model_copy(update={"compact_tool_results": False}),)
         }
     )
-    assert _provider_config(compact).tool_result_format == "text"
+    assert "compact_tool_results" not in plain.providers[0].model_dump()
+    assert _provider_config(plain).tool_result_format == "json"
     anthropic = {
         "provider_id": "primary",
         "kind": "anthropic",

@@ -46,6 +46,10 @@ from harnessix.product_config.runtime import (
     select_profile,
 )
 from harnessix.product_config.session_key import open_product_session_binding
+from harnessix.product_config.skill_composition import (
+    product_skill_sources,
+    skill_context_fragments,
+)
 from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sandbox.contracts import DEFAULT_CONTAINER_WORKSPACE
@@ -69,6 +73,8 @@ class _ProductRuntimeStartup:
     git_path: Path | None
     secrets: SecretProvider
     root_owner: ProductStateOwner
+    completion_guard: bool = False
+    continue_after_unknown_usage: bool = False
 
 
 def _is_link_or_junction(path: Path) -> bool:
@@ -311,6 +317,7 @@ async def _serve_product_stdio(
                         recovery_config=recovery_action,
                         output_redaction=public_scope,
                         root_owner=startup.root_owner,
+                        skill_sources=product_skill_sources(startup.workspace_root),
                     ) as action_owner:
                         config_store.save_action_recovery_scan(action_owner.recovery_scan)
                         config_store.save_action_recovery_report(action_owner.recovery)
@@ -349,6 +356,9 @@ async def _serve_product_stdio(
                             native_execution=native_execution,
                             enable_planning=True,
                             enable_regex_search=True,
+                            extra_fragments=skill_context_fragments(
+                                action_owner.skills, tools_visible=generic_execution
+                            ),
                         )
                         async with AgentRuntime(
                             sessions,
@@ -356,7 +366,7 @@ async def _serve_product_stdio(
                             scoped_tools=tools,
                             artifacts=artifacts,
                             public_output_protection=public_scope,
-                            trusted_actions=action_owner.gateway,
+                            trusted_actions=action_owner.agent_gateway,
                             approval_responder=action_owner.approval_responder,
                             async_context=context.context,
                             compaction=context.compaction,
@@ -367,7 +377,8 @@ async def _serve_product_stdio(
                                 provider.normalize_tool_arguments
                                 for provider in _active_providers(startup)
                             ),
-                            completion_guard=startup.config.config.completion_guard,
+                            completion_guard=startup.completion_guard,
+                            continue_after_unknown_usage=startup.continue_after_unknown_usage,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
@@ -426,6 +437,7 @@ async def run_product_stdio(
     git_executable: str | Path | None = None,
     action_config: ProductActionConfigV1 | None = None,
     zero_config_actions: bool = False,
+    unattended: bool = False,
 ) -> None:
     if action_config_path is not None and action_config is not None:
         raise KernelError("product_action_config_conflict", "不能同时传入Action配置文件和内存配置")
@@ -483,6 +495,11 @@ async def run_product_stdio(
             git_path=git_path,
             secrets=secrets,
             root_owner=owner,
+            completion_guard=unattended or loaded.config.completion_guard,
+            # 本地端点没有费用风险；付费交互模式下停止并交给用户决定是否继续。
+            continue_after_unknown_usage=(
+                unattended or loaded.config.chain_pricing(selection.selected_profile) == "free"
+            ),
         )
         await _serve_product_stdio(
             startup,

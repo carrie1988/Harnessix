@@ -41,6 +41,8 @@ AcceptanceFailure = _helpers.AcceptanceFailure
 require = _helpers.require
 _BASELINE_REVISION = "a4f7f33449bb897d84fe3a8e8262307943233fb4"
 _BASELINE_SHA256 = "5a6e144487dd79679f609b709743db176ee28bdca077084ac8901efdc9f2fe30"
+BASELINE_VERSION = "0.1.0"
+CANDIDATE_VERSION = "0.10.0b1"
 
 
 @dataclass(frozen=True)
@@ -79,7 +81,7 @@ def check_upgrade_pair(baseline: WheelIdentity, candidate: WheelIdentity) -> Non
     """验收固定不同版本对；同版本重装和稳定发行版本不能借本专项宣称通过。"""
     require(baseline.version != candidate.version, "upgrade_versions_equal")
     require(
-        (baseline.version, candidate.version) == ("0.1.0", "1.0.0rc1"),
+        (baseline.version, candidate.version) == (BASELINE_VERSION, CANDIDATE_VERSION),
         "upgrade_version_scope_invalid",
     )
 
@@ -117,7 +119,7 @@ def _environment(arguments: argparse.Namespace, wheel: Path, identity: WheelIden
             Path(__file__).with_name(filename).read_bytes() == committed,
             "upgrade_script_revision_mismatch",
         )
-    if identity.version == "1.0.0rc1":
+    if identity.version == CANDIDATE_VERSION:
         require(
             _helpers.check_package_members(wheel, source / "src/harnessix") == members,
             "acceptance_source_package_mismatch",

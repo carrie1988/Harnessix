@@ -111,6 +111,11 @@
       "minimum": 1,
       "title": "Max Chunks",
       "type": "integer"
+    },
+    "private_network_endpoint": {
+      "default": false,
+      "title": "Private Network Endpoint",
+      "type": "boolean"
     }
   },
   "required": [

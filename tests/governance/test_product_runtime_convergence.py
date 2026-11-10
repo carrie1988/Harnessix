@@ -192,7 +192,7 @@ def test_historical_action_docs_do_not_advertise_retired_runtime() -> None:
 
     contract = (ROOT / "docs" / "action-contract.md").read_text(encoding="utf-8")
     subsystem = (ROOT / "docs" / "subsystems" / "action-plane.md").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    readme = (ROOT / "docs" / "readme-milestone-history.md").read_text(encoding="utf-8")
     old_milestone = (ROOT / "docs" / "m1-worker-postgresql.md").read_text(encoding="utf-8")
     current_tool_contract = readme.split("## 当前已实现：Tool Contract与有界调度收口", 1)[1].split(
         "## 当前已实现：Context规划", 1

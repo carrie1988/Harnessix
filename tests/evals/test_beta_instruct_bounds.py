@@ -307,11 +307,7 @@ def test_independent_fingerprint_preserves_r3_and_next_configuration(tmp_path):
     r3 = BailianVerificationBounds(instruct.valid_from, instruct.valid_until, 3072)
     next_model = BailianBetaVerificationBounds(instruct.valid_from, instruct.valid_until, 3072)
     assert r3.model == MODEL == "qwen3.8-max"
-    assert (
-        r3.price_source
-        == PRICE_SOURCE
-        == "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
-    )
+    assert r3.price_source == PRICE_SOURCE == "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
     assert r3.guard_version == "harnessix.bailian-verification-request-guard/v3"
     assert r3.purpose == "engineering-suite-model-request"
     assert r3.maximum_input_tokens == 250_000

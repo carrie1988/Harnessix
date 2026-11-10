@@ -394,10 +394,9 @@ async def test_rollback_restores_original_large_or_binary_bytes_without_model_bo
             files=(
                 WorkspacePatchFile(
                     path="src/modified.py",
-                    operation="replace",
+                    # 大幅缩短文件的完整替换会被安全检查拒绝，删除同样需要回滚恢复原字节。
+                    operation="delete",
                     expected_sha256=hashlib.sha256(before).hexdigest(),
-                    content="short\n",
-                    mode=0o644,
                 ),
             )
         )

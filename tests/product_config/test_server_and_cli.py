@@ -478,11 +478,12 @@ async def test_product_server_catalog_includes_only_verified_process_profile(
             output = json.dumps(["sha256:" + "b" * 64, [image]]) + "\n"
         return subprocess.CompletedProcess(argv, 0, output, "")
 
-    def probe(profile, supervisor, secrets):
+    def probe(profile, supervisor, secrets, *, snapshot_root=None):
         return probe_product_process_profile(
             profile,
             supervisor,
             secrets,
+            snapshot_root=snapshot_root,
             probe_runner=runner,
         )
 

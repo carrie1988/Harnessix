@@ -187,11 +187,10 @@ def provider_context(provider):
     return context
 
 
-@pytest.mark.parametrize("task_version", [1, 2])
 async def test_campaign_runs_two_isolated_trials_persists_report_and_reopens(
     tmp_path: Path,
-    task_version: int,
 ) -> None:
+    task_version = 2
     config = execution_config(tmp_path, task_version=task_version)
     provider = CostedHistoricalFixProvider()
 
@@ -228,6 +227,24 @@ async def test_campaign_runs_two_isolated_trials_persists_report_and_reopens(
         config, allow_network=True, provider_factory=forbidden
     )
     assert reopened == result
+
+
+async def test_campaign_v1_task_is_reported_as_failing_its_frozen_token_budget(
+    tmp_path: Path,
+) -> None:
+    """v1的2万Token放不下预检预留，v2放宽预算正是为此；旧版本要如实记为预算失败。"""
+    config = execution_config(tmp_path, task_version=1)
+
+    result = await run_coding_eval_campaign(
+        config,
+        allow_network=True,
+        provider_factory=provider_context(CostedHistoricalFixProvider()),
+    )
+
+    report = read_eval_campaign_report(Path(config.work_root) / "campaign-report.json")
+    assert result.completed_trials == result.scheduled_trials == 2
+    assert report.summary.budget_failed_trials == 2
+    assert report.summary.passed_trials == 0
 
 
 async def test_plan_is_durable_before_provider_and_fee_limit_stops_next_trial(
@@ -373,9 +390,7 @@ def test_execution_config_rejects_retry_parallel_tools_and_source_child(tmp_path
     with pytest.raises(ValidationError):
         CodingEvalCampaignRunConfig.model_validate(body)
     body = config.model_dump(mode="python")
-    body["provider_config"] = config.provider_config.model_copy(
-        update={"enable_thinking": None}
-    )
+    body["provider_config"] = config.provider_config.model_copy(update={"enable_thinking": None})
     with pytest.raises(ValidationError, match="显式关闭思考模式"):
         CodingEvalCampaignRunConfig.model_validate(body)
     body = config.model_dump(mode="python")

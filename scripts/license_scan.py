@@ -53,9 +53,9 @@ def _archive_decision(
         for signal in notice_signals(blobs.read(notice), policy):
             signals.append({"sha256": notice["sha256"], "reason": signal})
     facts = metadata_facts(metadata, archive, record["metadata"]["member"], notices)
-    expression, source, review_id = reviewed_expression(record, policy, facts)
-    status, reason, canonical = decide(expression, policy)
-    if signals:
+    expression, source, review_id, excepted = reviewed_expression(record, policy, facts)
+    status, reason, canonical = decide(expression, policy, excepted)
+    if signals and not excepted:
         status, reason = "violation", "license_notice_review_required"
     return {
         **archive.identity(),

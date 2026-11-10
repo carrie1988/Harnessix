@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 5
+version: 6
 code_revision: c6c58b690095bb5be493144a8f9c89f13b4b74f3
 owners: [core]
 modules: [product, documentation]
@@ -120,6 +120,7 @@ flowchart LR
 | 为每个TM另建一套重复测试、覆盖尚未装配的新威胁面 | **剔除/延期** | 不重复现有控制；延期功能将来启用前补安全验收。 |
 | 0.9.4d远端MCP Streamable HTTP/OAuth | **延期1.1+** | 本地stdio MCP足够首发；正式入口须拒绝未支持远端配置。 |
 | 公网Git认证、known-hosts、凭据Helper装配与自动Push | **延期1.1+** | 用户审查后用自身Git客户端推送；本地Commit/回滚不删。 |
+| 内置Git Commit/Checkpoint交付链 | **延期1.1**（2026-11-09用户决定） | 1.0由用户批准的沙箱外`git commit`完成提交，已实现的交付代码保留。 |
 | macOS核心写入、进程、终端、持久Key与发行安装 | **必需，R4** | 仅对首发声明的macOS版本/架构逐项验收；Linux/Windows交付已从活动任务删除，不转为延期项。 |
 | macOS DMG/Homebrew及更多安装通道 | **延期** | 首发统一Wheel通道与可复现安装说明。 |
 | 更多macOS版本、CPU架构及Python 3.13正式发行矩阵 | **延期扩大** | 保留现有回归；首发正式目标有限且明确，不包含已取消的Linux/Windows交付。 |

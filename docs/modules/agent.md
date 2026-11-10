@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 40
-code_revision: 21bf2f474f6e29a92c2e8c5737e35b02eb7fce06
+version: 42
+code_revision: b35c46217aec51c154158e802bd35c8ccb122ff7
 owners:
   - core
 modules:
@@ -186,6 +186,10 @@ Runtime原样写入`ModelRequest.tool_notice`；目录说明在列出可执行�
 `provider_max_output_tokens`。`AgentRuntime(budget_capped_truncation=True)`时，仅当本步允许输出低于未压低上限、
 且本步已记账输出达到该允许值（证明约束来自预算而非更紧的Provider上限）才改记`budget_exceeded`；未压低上限的
 截断、未用满的截断或未知用量均保持原失败。回归见[截断归类测试](../../tests/agent/test_budget_capped_truncation.py)。
+
+## 当前增量：只读Trusted Action走串行路径（ADR 0125）
+
+`_parallel_read_prefix`现在跳过Trusted Action。这类工具必须先经`prepare`建立路由，直接进并行读路径会报`approval_mismatch`。压缩规划在默认策略下遇到费用未知即停止，只有无人值守宿主按预留额继续。
 
 ## 1. 文档摘要
 
@@ -954,6 +958,8 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 42 | `feat/p0-beta-readiness` | 2026-11-09 | 新增`continue_after_unknown_usage`：费用未知的尝试按已知单次最大消耗预留后继续，默认维持停止（ADR 0123第6节） |
+| 41 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅类型标注修复，行为不变 |
 | 14 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | 启动恢复改用Session全库单事务校验后仅恢复活跃Turn；多Thread三平台冻结候选及同Revision常规CI通过 |
 | 13 | `a81868cae5b8092d565a6f465e8a9441b0e1c67b` | 2026-09-20 | 记录Agent单一运行时边界由CI 35453082992完成Linux双版本、macOS、Windows、Container和文档全矩阵验收 |
 | 12 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 登记0.9.1f3独立Action Plane执行服务删除后的Agent边界：当前Process统一经Trusted Action进入，历史Process审批及WAITING_ACTION仅可读取且命令稳定拒绝 |

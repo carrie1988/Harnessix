@@ -1,5 +1,5 @@
 {
-  "archive_count": 777,
+  "archive_count": 811,
   "archive_reextraction_performed": false,
   "entries": [
     {
@@ -9059,6 +9059,1128 @@
       "status": "allow",
       "url": "https://files.pythonhosted.org/packages/e0/4d/f332313098c1de1b2d2ff91cf2674415cc7cddab2ca1b01ae29774bd5fdf/docstring_parser-0.18.0.tar.gz",
       "version": "0.18.0"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-a7bfaa2cf55d",
+      "sha256": "a7bfaa2cf55daf0c5c650e68526bb20b61e37d7f3ae53f6893013acc1c91c116",
+      "size_bytes": 591483,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/03/be/a8def96aa4a80b233e105767d22e3de961dcde5a04f0a05cb4f3ddb4df78/google_re2-1.1.20251105-1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-0bcba63ad3ea",
+      "sha256": "0bcba63ad3ea8926fb0c71bb5044e33d405bb9395f5b5444393cd5f28f0bf6d3",
+      "size_bytes": 491734,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/08/24/6ea87fe682e115ffd296e91eb5c5a266349d1ee8414ce8ece3f99ec1ac84/google_re2-1.1.20251105-1-cp313-cp313-win_amd64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-809c5fa5d082",
+      "sha256": "809c5fa5d08279413b29c2e2c5c528e85cd94a0e0fd897db595a0c09eeee2782",
+      "size_bytes": 591348,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/0d/1c/8b1ccbeade96a21435d55b5185cd6d9b2ceab5a9af998a4d9099e0540759/google_re2-1.1.20251105-1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-8314144eefee",
+      "sha256": "8314144eefeee7b88b742081c2038418f677e63901039ca9dbfbc0c5bb6d2911",
+      "size_bytes": 487037,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/0d/39/da66e4ca9be0c51546efc6fb39cf1683c4be8245d8199cb54a9808e8d5fa/google_re2-1.1.20251105-1-cp313-cp313-macosx_14_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-214c1accdc60",
+      "sha256": "214c1accdc60fff9ce1bf812b157147ca361844f496ed9e0d5f357b0e562ced8",
+      "size_bytes": 433773,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/14/ea/144bbc4b9359da89aec07b4c2a91a6bfe7119914885386577c665b07bb01/google_re2-1.1.20251105-1-cp314-cp314-win32.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-062313c309f9",
+      "sha256": "062313c309f93dfeb6966372f4c446580e98879133ec155522eea8aaf568a5cd",
+      "size_bytes": 491726,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/31/e9/5dd951c35acaabfe87c67228b9af2cdcd7779d9167edbe6b9094b8a8e529/google_re2-1.1.20251105-1-cp312-cp312-win_amd64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-64ee189ea857",
+      "sha256": "64ee189ea857f2126c5e42073cfa9b03e9f4cbaf073edbedb575059074841aa0",
+      "size_bytes": 642654,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/34/85/32ba71b06f3cf5f9856ae95b3d6463b971742453631a5ae2c5be338ea377/google_re2-1.1.20251105-1-cp313-cp313-win_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-cc151cf6a585",
+      "sha256": "cc151cf6a585d9ebe711da32b23683fcff40f78db8c8587c7f4b209ef4658809",
+      "size_bytes": 484719,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/5e/7f/7eb238bdcd06182b5f427afd305cf413b7cf4ea71047308bbf35912cf923/google_re2-1.1.20251105-1-cp314-cp314-macosx_13_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-79ce66403819",
+      "sha256": "79ce664038194a31bbcf422137f9607ae3d9946a5cff98cf0efbeb7f9411e64b",
+      "size_bytes": 483373,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/5f/ee/8b6f7d94bb689dafdf60de8dd8f8f6296ad40d4d15c933fcda4da7a3a06b/google_re2-1.1.20251105-1-cp314-cp314-macosx_15_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-558f144b26a9",
+      "sha256": "558f144b26a9555ae4e9467cc3aa3299a8ce13217f328b21ae326ca0633be19b",
+      "size_bytes": 642673,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/60/8d/c1afd29fc2cb475fd4c634f3d3c8099c0efb662362c10b27a9eaf11c9357/google_re2-1.1.20251105-1-cp312-cp312-win_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-83292e23963a",
+      "sha256": "83292e23963aa1b219d5f64a65365b0880448a6a060276027b55270bc5b18c7e",
+      "size_bytes": 482981,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/61/12/cfdbb92bed24af6474970a75a26145c424f98cfbcc633fdd185985f0efe0/google_re2-1.1.20251105-1-cp313-cp313-macosx_15_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-d8424e63a9ec",
+      "sha256": "d8424e63a9ec0fe5bde03d97876b2431f8a746af33eb475fa1ae39144bd05b2a",
+      "size_bytes": 433787,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/62/cf/7bdd7a1ae7828b613011da808eafec4da3132f43c3be6af5e0bd670ebe8b/google_re2-1.1.20251105-1-cp312-cp312-win32.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-b30f09b4d632",
+      "sha256": "b30f09b4d63249c72e65ccae4cbf6b331b48c22fc7cb439f1d85f347b9d07ceb",
+      "size_bytes": 485591,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/67/20/73b487538e9107c2fd96aed737e3f3890dfce3e292622e4ffb2f9c810ee5/google_re2-1.1.20251105-1-cp312-cp312-macosx_13_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "sdist",
+      "metadata": {
+        "member": "google_re2-1.1.20251105/PKG-INFO",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-sdist-1db14a292ee8",
+      "sha256": "1db14a292ee8303b91e91e7c37e05ac17d3c467f29416c79ac70a78be3e65bda",
+      "size_bytes": 11676,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/6b/60/805c654ba53d685513df955ee745f71920fe8e6a284faf0f9b9dc19b659c/google_re2-1.1.20251105.tar.gz",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-7e2186d2c904",
+      "sha256": "7e2186d2c90488c1e11895343941f35ca2f58e9ba6c6b034fd531abe22ef77cc",
+      "size_bytes": 517698,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/6d/62/eed28eab67f939f4b9383c47b1db11638ade6ac30785c15cb960de85ba43/google_re2-1.1.20251105-1-cp314-cp314-macosx_13_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-1d27f3a2a947",
+      "sha256": "1d27f3a2a947ec1f721d0f14f661108acfd4f4d34f357ce28db951cc036656e5",
+      "size_bytes": 643093,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/6f/d1/4adcfcb9c95e3d064c9f7aaf6cb3a4fc842d86115014b9d4094db4d465b5/google_re2-1.1.20251105-1-cp314-cp314-win_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-0b1458d9ca58",
+      "sha256": "0b1458d9ca588124cd61aa1bf5388a216e1247e7d474f8e5e1530498044f5c87",
+      "size_bytes": 572390,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/71/71/f927ddc7aef1b8d7ccc8a649c335d311f29f3dea658209e30e37720e4891/google_re2-1.1.20251105-1-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-28a46be978e5",
+      "sha256": "28a46be978e53c772139d0f5c9ba69f53563fcdd4225407e4d34d51208b828f1",
+      "size_bytes": 520285,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/75/dd/24ba65692dd58dca6ff178428551f4e9b776d1489a1251f5c8539e598baa/google_re2-1.1.20251105-1-cp313-cp313-macosx_14_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-5a4e5785bc30",
+      "sha256": "5a4e5785bc30d52ce655d805b07ad2d8a4905429a5f690ae9c2f1caa76665709",
+      "size_bytes": 510384,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/7f/14/6bfc6838bb6cb561824ac03deeab2bd11d5d9a93505f536c8fa2f6bd46c4/google_re2-1.1.20251105-1-cp312-cp312-macosx_15_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-2b7a3b90f747",
+      "sha256": "2b7a3b90f747130310d4b3b8e19ebb845d0d97c1deb63b36f76c7242dacbd736",
+      "size_bytes": 572446,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/8a/0a/6add090c917ee39f6f0be753037cafceb3bad904b424efc155fb38082635/google_re2-1.1.20251105-1-cp312-cp312-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-6d4d5fdadd32",
+      "sha256": "6d4d5fdadd329a2ed193463899d00ef2fd126172f36a4c01c9def271f19801b6",
+      "size_bytes": 491893,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/96/b3/74e301211699f1b650ba7690a3e4e52146ac4266fcd62f3ea0a945b9eda4/google_re2-1.1.20251105-1-cp314-cp314-win_amd64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-1920b15dc9b1",
+      "sha256": "1920b15dc9b1bdfeca5aa2c60900373c6f27cd1056d53cd299456ea5540a6fff",
+      "size_bytes": 510366,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/97/bf/5fc32ded9279e69a87b88d7261e7e77e2e26325d4e27ca1303a3215e430a/google_re2-1.1.20251105-1-cp313-cp313-macosx_15_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-9f3cf610e857",
+      "sha256": "9f3cf610e857a7d6f02916cf2b7fc159a5429b8bcb23164500d46e5e233f2924",
+      "size_bytes": 485549,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/a5/b9/c441722196598fc3de0f654606ad9975a968c71dc27f516b5a4c9ebb94fd/google_re2-1.1.20251105-1-cp313-cp313-macosx_13_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-9a77892c524b",
+      "sha256": "9a77892c524b8bdf3d47d7cad1cc2ac3a0108bdd65007ef4c02888fa46baf8ee",
+      "size_bytes": 518780,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/b9/9a/ca3a993bdb5dc6d5b2616b9657b2872a83d1827f8bd3ab50cd629eb751c7/google_re2-1.1.20251105-1-cp312-cp312-macosx_13_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-85feec3161ff",
+      "sha256": "85feec3161ffdc12f6b144e37a2f91f80b771c72ffadde60191e89a49f6d7e81",
+      "size_bytes": 573176,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/c4/9d/213dce5de401527369fb5af11096b18c06001d9eb71f3318fe5eba1ec706/google_re2-1.1.20251105-1-cp314-cp314-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-f3168d7bbac2",
+      "sha256": "f3168d7bbac247c862ea85b2f3c011d3a04bedcb6892b37f14d488f4133b206e",
+      "size_bytes": 519037,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/ca/fc/7a97ffd36d451e5a8bfaff2f9022b14807795d588f98227ff96e8da99856/google_re2-1.1.20251105-1-cp314-cp314-macosx_14_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-0476b07421b8",
+      "sha256": "0476b07421b8882b279d5ceb5b760c15c62d581ded95274697fc1227e3869ee6",
+      "size_bytes": 510167,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/d1/a6/16a09e03d1de128f821869e4252688c21319f5017d9209f4d0e71ea5c951/google_re2-1.1.20251105-1-cp314-cp314-macosx_15_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-9f7158afc982",
+      "sha256": "9f7158afc9825ac2654c6561aea94a1f7edb5b5b88e6e3639bb80bb817d102ac",
+      "size_bytes": 520225,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/d9/69/1db6742943c0ac254bfb7d8a37a5d3f73f016a65cfa1f84fe3a0451820f6/google_re2-1.1.20251105-1-cp312-cp312-macosx_14_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-a3ac51b28cbf",
+      "sha256": "a3ac51b28cbf25c100dfd8849212d878d7005d1d4a7e129a10789043c56b6021",
+      "size_bytes": 486966,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/df/37/b2e367987371514253ec9e514637f457deaacb7acc1c900814f3a6421e0f/google_re2-1.1.20251105-1-cp312-cp312-macosx_14_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-a21c2807bf4d",
+      "sha256": "a21c2807bf4d5d00f206a4ecb3b043aad674e28c451b697b740280f608872078",
+      "size_bytes": 518840,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/ea/87/cf588255e5ada1dfb555cc96de35be78438bb0b6faba64df5fe91cecc224/google_re2-1.1.20251105-1-cp313-cp313-macosx_13_0_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-a52cb204e49d",
+      "sha256": "a52cb204e49d20cdbb66faf394d57f476e96c39c23a328442ab0194fc6bd1a2b",
+      "size_bytes": 591386,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/f0/8c/23075e589038284c9487f41cde531d35873f9da622fb4ac7d1d97bd9086e/google_re2-1.1.20251105-1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "2742f9a93084f7dd51efa9b0d89326259cb20ad3e3af178d988e22ced94ed172",
+        "size_bytes": 2409
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "503bb3cc66bd5f0d070ca6bb7002aa678403279cf3a8de648f32b6ddfc940184",
+          "size_bytes": 1585
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-67c5c73d7ebc",
+      "sha256": "67c5c73d7ebcf3f0e0a3b528b41bd8c6c04900f1598aebf05bbdf15a06cf5f9a",
+      "size_bytes": 433807,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/f1/7f/858453ef689f6b9895cd02b466836a9d1a6e4ba535d1a275b01bf73baa1d/google_re2-1.1.20251105-1-cp313-cp313-win32.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-5320da07dc3b",
+      "sha256": "5320da07dc3b7ac7f407514f42ac17d67e771ac7c7562d449571185e6fb601b2",
+      "size_bytes": 482943,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/f4/0a/0747c92dbebe2c09a26bd7386d372b5c5a9926236b4f3d69bb8f15db05cb/google_re2-1.1.20251105-1-cp312-cp312-macosx_15_0_arm64.whl",
+      "version": "1.1.20251105"
+    },
+    {
+      "canonical_expression": "BSD-3-Clause",
+      "decision_source": "archive_bound_review",
+      "declaration_source": "review_required",
+      "declared_license": "UNKNOWN",
+      "declared_license_files": [
+        "LICENSE"
+      ],
+      "kind": "wheel",
+      "metadata": {
+        "member": "google_re2-1.1.20251105.dist-info/METADATA",
+        "sha256": "9d3015b2b49ea6747ab5c896fbb9160cf8a6c0fa01b12d914afb75a4402c2c56",
+        "size_bytes": 2353
+      },
+      "metadata_version": "2.4",
+      "name": "google-re2",
+      "notice_review_signals": [],
+      "notices": [
+        {
+          "member": "google_re2-1.1.20251105.dist-info/licenses/LICENSE",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "size_bytes": 1558
+        }
+      ],
+      "reason": "license_expression_allowed",
+      "registry": "https://pypi.org/simple",
+      "review_id": "google-re2-1.1.20251105-wheel-41be22359c3d",
+      "sha256": "41be22359c3dceb582937739b4365dd8e279de24ad0a5b10e653503abaff2ed7",
+      "size_bytes": 486421,
+      "status": "allow",
+      "url": "https://files.pythonhosted.org/packages/f7/16/a1e6768513f788bf9c67a1cfe379ef34a793983eee46e4b653e42b558b78/google_re2-1.1.20251105-1-cp314-cp314-macosx_14_0_arm64.whl",
+      "version": "1.1.20251105"
     },
     {
       "canonical_expression": "Apache-2.0",
@@ -20493,8 +21615,8 @@
       "version": "0.0.32"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -20602,18 +21724,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-b457f6d628a4",
       "sha256": "b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc",
       "size_bytes": 6914841,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/03/d9/77040d3b43df3f3be32ea289433d660d2727f5ba327bc73be835127d9d60/pywin32-312-cp312-cp312-win_amd64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -20721,18 +21843,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-c2f03a0f73f8",
       "sha256": "c2f03a0f73f804a13c2735b99392b0cd426bb4f2c4d0178e5ac966a0f21618d5",
       "size_bytes": 7025293,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/0f/cd/7e1de64a4a6f69c04214169657ccab0d93a670ea50e35eb8f489d7378249/pywin32-312-cp315-cp315-win_amd64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -20840,18 +21962,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-a4dd3a848290",
       "sha256": "a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e",
       "size_bytes": 7024157,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/21/82/3bf86d2e2808902013132e1ce905a7da0da53790f3836c64bf44d55e24f3/pywin32-312-cp314-cp314-win_amd64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -20959,18 +22081,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-a8597d28f267",
       "sha256": "a8597d28f267b39074aef51fa593530082b39cbe5a074226096857b1fed2dfb9",
       "size_bytes": 6840337,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/23/ed/4532e9388e65fa16b46776ef47ad631a64eda1631884488af707666350ed/pywin32-312-cp315-cp315-win_arm64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21078,18 +22200,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-7a27df850933",
       "sha256": "7a27df850933d16a8eabfbaeb73d52b273e2da667f80d70b01a89d1f6828d02c",
       "size_bytes": 6370184,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/2d/41/12fbfd7f36ed2146d8bc9de96c2741296bf0d490b98508496cff322e274c/pywin32-312-cp313-cp313-win32.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21197,18 +22319,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-dab4f65ac9c4",
       "sha256": "dab4f65ac9c4e48400a2a0530c46c3c579cd5905ecd11b80692373915269208b",
       "size_bytes": 6371877,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/83/ff/32aa7d2ed0ab12b323aaa64f9b75e6ad4f8fd09f9ccfc28c79414d46838d/pywin32-312-cp312-cp312-win32.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21316,18 +22438,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-59aba5d59408",
       "sha256": "59aba5d5940842075343a5ddc6b11f1cdf0d1567fe745290359dfbcc7c2eb831",
       "size_bytes": 6727640,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/84/37/c1697194092b76de9ed47ca124323f02c57ffc8a45c06f88a3d5acaf01eb/pywin32-312-cp313-cp313-win_arm64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21435,18 +22557,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-9fce94568364",
       "sha256": "9fce94568364e0155e6dfb781ac5d95903be8baf28670632beab1b523f300daa",
       "size_bytes": 6839598,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/a4/0e/73f6d6800b4f27655abd9e9f6aaeaefcddb2b946e4674efa2bab184a7f7b/pywin32-312-cp314-cp314-win_arm64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21554,18 +22676,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-c53e878d15a1",
       "sha256": "c53e878d15a1c44788082bfe712a905433473aa38f86375b7cf8b45e3acbaaf9",
       "size_bytes": 6914298,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/ba/db/36a78e3403099d31d9746d13fdcde5accc43c1155f375a34d15983a479a7/pywin32-312-cp313-cp313-win_amd64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21673,18 +22795,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-6017c58e12f6",
       "sha256": "6017c58e12f6809fbb0555b75df144c2922a9ffd18e4b9b5afa863b6c1a9d950",
       "size_bytes": 6727901,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/e3/cc/7b1ec671775756020a0ee7f4feeaf3c568f0ab86bd3900088cf986937a92/pywin32-312-cp312-cp312-win_arm64.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21792,18 +22914,18 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-5c1fbe4a937a",
       "sha256": "5c1fbe4a937a73ae9297384a3da38518cbc694c68ad8a809b2e19acd350f03ed",
       "size_bytes": 6471159,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/eb/61/caa39686032d2ebdd04ff0ab5cbe163126c0066d98e00c9018646e42393b/pywin32-312-cp315-cp315-win32.whl",
       "version": "312"
     },
     {
-      "canonical_expression": null,
-      "decision_source": "legacy_license_field",
+      "canonical_expression": "BSD-3-Clause AND LGPL-2.1-or-later AND LicenseRef-Scintilla AND MIT AND Python-2.0",
+      "decision_source": "archive_bound_review",
       "declaration_source": "legacy_license_field",
       "declared_license": "PSF",
       "declared_license_files": [
@@ -21911,12 +23033,12 @@
           "size_bytes": 476
         }
       ],
-      "reason": "license_notice_review_required",
+      "reason": "license_archive_exception_allowed",
       "registry": "https://pypi.org/simple",
-      "review_id": null,
+      "review_id": "pywin32-312-wheel-a77a90fbb688",
       "sha256": "a77a90fbb6881238d2ca9c6fd797b25817f3768fe78d214a90137ff055a75f5b",
       "size_bytes": 6468928,
-      "status": "violation",
+      "status": "allow",
       "url": "https://files.pythonhosted.org/packages/fc/2b/1f3cded5822fd49c02f40544cbb5f58c7cfd6b1694869fd476cb6170ee97/pywin32-312-cp314-cp314-win32.whl",
       "version": "312"
     },
@@ -27797,12 +28919,12 @@
       "version": "0.52.4"
     }
   ],
-  "evidence_index_sha256": "640395ac6ec642f7773024368074e8ba3a7b2dcd09e4429beaf549646c3e7ccb",
+  "evidence_index_sha256": "01c09d968b57efaac8dd6bcefed411ba82b71c88db46d2a9994f445c532d7645",
   "legal_rights_or_notice_completeness_claimed": false,
-  "lock_sha256": "44dc210e3294a6ab2b6456d0e62d3e38bfbd8dd7362bcfc92f5978878fb199dd",
-  "package_count": 74,
-  "policy_sha256": "5a0d17d2ca1963f93fb7e463e495cfb2ed15e321af70516eca96e9a43a29292b",
-  "project_sha256": "ba5fe71749748b17fcf36a77710dc37725d73401e3f3421225e4a1ca188404ad",
+  "lock_sha256": "7bf267d5b69a60a783990e14f8c9bd33fff92a46c1cdeca1fc37b497c4f9dec4",
+  "package_count": 75,
+  "policy_sha256": "b8e851c07d578e6986a12c6afb94f763548d0aebcb9435175343d33b0a1f83d7",
+  "project_sha256": "3f87aa083ebf517ef5cb54a6bea086788cdb50cbfc2dfc8848b4fcd2cb949fb1",
   "root": {
     "license": "AGPL-3.0-only",
     "license_file_sha256": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee",
@@ -27810,59 +28932,10 @@
     "source": {
       "editable": "."
     },
-    "version": "1.0.0rc1"
+    "version": "0.10.0b1"
   },
   "scope": "all_locked_distribution_archives",
   "spec_version": "harnessix.license-scan/v2",
-  "violation_count": 12,
-  "violations": [
-    {
-      "archive_sha256": "b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "c2f03a0f73f804a13c2735b99392b0cd426bb4f2c4d0178e5ac966a0f21618d5",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "a4dd3a848290ef724347b19f301045831d8e802fa4464f491b98b1e0a081432e",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "a8597d28f267b39074aef51fa593530082b39cbe5a074226096857b1fed2dfb9",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "7a27df850933d16a8eabfbaeb73d52b273e2da667f80d70b01a89d1f6828d02c",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "dab4f65ac9c4e48400a2a0530c46c3c579cd5905ecd11b80692373915269208b",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "59aba5d5940842075343a5ddc6b11f1cdf0d1567fe745290359dfbcc7c2eb831",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "9fce94568364e0155e6dfb781ac5d95903be8baf28670632beab1b523f300daa",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "c53e878d15a1c44788082bfe712a905433473aa38f86375b7cf8b45e3acbaaf9",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "6017c58e12f6809fbb0555b75df144c2922a9ffd18e4b9b5afa863b6c1a9d950",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "5c1fbe4a937a73ae9297384a3da38518cbc694c68ad8a809b2e19acd350f03ed",
-      "reason": "license_notice_review_required"
-    },
-    {
-      "archive_sha256": "a77a90fbb6881238d2ca9c6fd797b25817f3768fe78d214a90137ff055a75f5b",
-      "reason": "license_notice_review_required"
-    }
-  ]
+  "violation_count": 0,
+  "violations": []
 }

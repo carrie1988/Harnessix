@@ -27,6 +27,10 @@ _WORKSPACE_PATCH_PLANNING_FAILURES = frozenset(
 )
 
 
+class OfficialWorkspacePatchReview:
+    """标记产品内置Patch Review；只有它的预检失败才能关闭计划，下层无需导入产品组合。"""
+
+
 def workspace_patch_planning_rejection(
     binding: TrustedToolBinding,
     call: ToolCallContent,
@@ -34,11 +38,12 @@ def workspace_patch_planning_rejection(
 ) -> ToolResultContent | None:
     """把内置Patch规划期的确定性边界拒绝投影为可修正Tool Result。"""
 
-    if (
-        (binding.source, binding.source_id, binding.tool, binding.executor_id)
-        != ("builtin", "harnessix.product", "apply_patch_batch", "product.workspace-patch")
-        or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES
-    ):
+    if (binding.source, binding.source_id, binding.tool, binding.executor_id) != (
+        "builtin",
+        "harnessix.product",
+        "apply_patch_batch",
+        "product.workspace-patch",
+    ) or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
         return None
     return ToolResultContent(
         call_id=call.call_id,
@@ -75,10 +80,7 @@ def workspace_patch_preparation_rejection(
         != ("builtin", "harnessix.product", "apply_patch_batch", "product.workspace-patch")
     ):
         return None
-    # Review依赖Delivery/Router；延迟导入避免把产品组合引入Router启动链。
-    from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
-
-    if type(provider) is not WorkspacePatchReviewProvider:
+    if not isinstance(provider, OfficialWorkspacePatchReview):
         return None
     plan_id = route.plan.execution.plan_id
     current = router.status(plan_id)

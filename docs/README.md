@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 152
+version: 153
 code_revision: b182cf658dba40930bc8c8e0dc2123183da18dbd
 owners:
   - core
@@ -275,6 +275,7 @@ Git 产品接线已有原成功 Patch 来源、[只读 HEAD 基准](changes/m09-
 | [测试里程碑历史](testing-and-evals-milestone-history.md) | 冻结的历史验收记录 | 否 | 保留阶段数字与失败演进，不作为当前测试策略或发布状态 |
 | [部署与运维](deployment.md) | 运维聚合入口 | 是 | 只维护拓扑、跨组件硬约束和安装/配置/升级/恢复/诊断/平台入口 |
 | [部署里程碑历史](deployment-milestone-history.md) | 冻结的旧版本部署记录 | 否 | 保留0.3～0.8当时命令和升级证据，不作为当前手册 |
+| [README里程碑历史](readme-milestone-history.md) | 2026-11前的项目README | 否 | 保留各里程碑实现记录，不作为当前功能或状态事实源 |
 | `m03`～`m09`里程碑文档 | 历史增量设计 | 否 | 用于解释某阶段交付，不作为当前模块事实的唯一来源 |
 | [ADR索引](adr/README.md) | 决策历史 | 否 | 解释为什么选择，不重复当前实现全文 |
 | [源码研究索引](research/README.md) | 参考源码证据 | 否 | 不能直接成为Harnessix的产品契约 |
@@ -295,7 +296,7 @@ ADR回答“为什么这样选择”，源码研究回答“参考实现有什�
 - [测试里程碑历史](testing-and-evals-milestone-history.md)：DOC-1.5前冻结的阶段验收记录；
 - [受控模型Smoke指南](model-smoke.md)；
 - [部署与运维](deployment.md)：当前部署拓扑和统一入口；
-- [安装与制品](operations/installation.md)、[配置参考](operations/configuration.md)、[升级与回退](operations/upgrade-and-rollback.md)；
+- [安装与制品](operations/installation.md)、[配置参考](operations/configuration.md)、[接入自托管模型](operations/self-hosted-models.md)、[使用 Skills](operations/skills.md)、[Beta快速上手](operations/beta-quickstart.md)、[升级与回退](operations/upgrade-and-rollback.md)；
 - [故障恢复](operations/recovery.md)、[诊断与可观测性](operations/diagnostics.md)、[平台与运行环境](operations/platforms.md)、[真实Provider完整Suite运维](operations/provider-suite-baseline.md)；
 - [验证证据索引](validation/README.md)：真实Provider Smoke与Coding Eval证据谱系；
 - [威胁模型](threat-model.md)。
@@ -395,7 +396,7 @@ Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、
 固定`65d7323`的原生两项观察者实验及原未决恢复均通过，但112项组合步骤在79项通过后被CI进程期限截断。
 [完整集合分组](changes/m09-r1-single-child-reaper.md#10-原生验收进程分组与完整性)只调整37/75编排，
 所有112项、恢复断言、原步骤保护和产品期限保留；完整原生门禁尚未通过。
-[安装手册](operations/installation.md)现行操作使用内部1.0.0rc1及哈希锁定源码外环境，原历史版本事实不改写。
+[安装手册](operations/installation.md)现行操作使用预览版0.10.0b1及哈希锁定源码外环境，原历史版本事实不改写。
 
 
 [正式Git Review详设](changes/m09-r4-git-review.md)与[组件验收](validation/git-review-2026-10-07-v1/README.md)

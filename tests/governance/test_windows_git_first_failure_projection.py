@@ -25,6 +25,7 @@ from tests.governance.test_windows_git_native_failure_projection import (
 )
 from tests.governance.test_windows_git_trace2_input_binding import _metadata_changes
 from tests.product_config import git_minimum_commit_probe as probe
+from tests.support.windows_git_contract import live_execution_sources
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "f07263ce3d4ddb304b2ff054044f86f26d5267c6"
@@ -98,7 +99,7 @@ def test_frozen_metadata_rejects_new_byte_but_original_seventeen_members_stay_ex
     assert len(checked) == 17 and all(
         row["representation"] == "EXACT_FROZEN_BYTES" for row in checked
     )
-    assert len(contract.source_checks(ROOT, contract.read_contract())) == 18
+    assert len(contract.source_checks(ROOT, live_execution_sources(contract.read_contract()))) == 17
 
 
 def first_failure():

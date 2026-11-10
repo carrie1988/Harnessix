@@ -118,6 +118,25 @@ def test_only_existing_denied_paths_are_masked_by_real_target(tmp_path: Path) ->
     assert not any(".kube" in item for item in masks.directories)
 
 
+def test_nested_denied_paths_keep_only_the_outermost_mask(tmp_path: Path) -> None:
+    """外层遮盖已隐藏内层；再遮盖内层会让bwrap在只读空目录里建挂载点而启动失败。"""
+    home = tmp_path / "home"
+    runtime = home / ".harnessix/workspaces/abc/runtime"
+    runtime.mkdir(parents=True)
+    (home / ".harnessix/config.json").write_text("{}")
+    elsewhere = tmp_path / "state"
+    elsewhere.mkdir()
+    policy = _policy(
+        tmp_path,
+        protected_paths=(runtime, home / ".harnessix/config.json", elsewhere),
+    )
+    masks = denied_path_masks(policy)
+    assert masks.directories == tuple(
+        sorted((str((home / ".harnessix").resolve()), str(elsewhere.resolve())))
+    )
+    assert masks.files == ()
+
+
 def test_private_tmp_is_emptied_before_each_command(tmp_path: Path) -> None:
     policy = _policy(tmp_path)
     prepare_private_directories(policy)

@@ -16,6 +16,7 @@ from harnessix.agent.reducer import replay
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.session.sqlite import SQLiteSessionStore
+from tests.artifacts.helpers import latest_migration
 
 
 def old_database(path):
@@ -89,7 +90,7 @@ raise AssertionError("未到达退出点")
     assert child.returncode == 83, child.stderr
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_migrations").fetchone()[0] == (
-            30 if point == "after_commit" else 8
+            latest_migration() if point == "after_commit" else 8
         )
         assert list(db.execute("SELECT * FROM agent_threads").fetchone()) == fixture["snapshot"]
         assert [

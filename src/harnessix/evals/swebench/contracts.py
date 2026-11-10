@@ -158,6 +158,8 @@ class SweBenchPreRegistrationPlan(_SweBenchContract):
 
 
 def swebench_preregistration_plan_digest(plan: SweBenchPreRegistrationPlan) -> str:
+    """计算预注册计划不含自身摘要字段的规范内容摘要，用于运行前冻结校验。"""
+
     payload = plan.model_dump(
         mode="json",
         exclude={"plan_sha256"},

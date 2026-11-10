@@ -31,6 +31,7 @@ from harnessix.delivery.workspace_patch_errors import (
     is_workspace_patch_sha_mismatch,
 )
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot
+from harnessix.trusted_actions.preparation_rejection import OfficialWorkspacePatchReview
 from harnessix.workspace.paths import normalize_workspace_path
 
 _ACTION_REVIEW_NAMESPACE = UUID("2beb71e9-794e-4ffb-a789-f1d19fecc9f9")
@@ -47,7 +48,7 @@ def decode_workspace_patch_input(arguments: object) -> WorkspacePatchInput:
         raise KernelError("trusted_action_review_invalid", "Action Review参数不符合契约") from None
 
 
-class WorkspacePatchReviewProvider:
+class WorkspacePatchReviewProvider(OfficialWorkspacePatchReview):
     """先保存精确事务，再按稳定身份查询优先发布同一完整Review。"""
 
     def __init__(

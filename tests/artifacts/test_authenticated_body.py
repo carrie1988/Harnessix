@@ -119,7 +119,8 @@ async def test_migration30_does_not_resign_existing_keyed_artifact(tmp_path):
             "SELECT event_json FROM agent_events ORDER BY sequence"
         ).fetchall()
         db.execute("ALTER TABLE agent_artifacts DROP COLUMN publication_seal")
-        db.execute("DELETE FROM agent_migrations WHERE version=30")
+        # 迁移历史必须连续；31以后只是Reader版本标记，可随30一起重放。
+        db.execute("DELETE FROM agent_migrations WHERE version>=30")
     with protected() as scope:
         binding = SessionPublicationBinding(store_id, key_id, KEY, scope)
         try:

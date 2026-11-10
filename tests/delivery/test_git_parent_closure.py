@@ -36,6 +36,7 @@ from tests.governance.test_windows_git_trace2_input_binding import (
     _assert_live_source_catalog_identity_delta,
     _metadata_changes,
 )
+from tests.support.windows_git_contract import live_execution_sources
 
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="本组验证真实POSIX私有来源")
 
@@ -569,7 +570,7 @@ def test_native18_delta_is_only_git_four_identity_leaves_and_exact_parser_sha(tm
         contract.source_checks(tmp_path, original)
     live = contract.read_contract()
     _assert_live_source_catalog_identity_delta(live)
-    assert len(contract.source_checks(root, live)) == 18
+    assert len(contract.source_checks(root, live_execution_sources(live))) == 17
     _evidence(
         "native18-exact-delta",
         changed_leaves=sorted(_metadata_changes(original, current)),

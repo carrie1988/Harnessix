@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 from harnessix.product_config.action_contracts import (
     build_product_action_config,
     build_product_native_process_profile,
 )
+from harnessix.product_config.contracts import ProductConfigV2
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.wizard import build_product_config, thinking_preset
 from scripts.swebench_local_run import API_KEY_VARIABLE, MODEL, environment_presets
@@ -22,6 +24,19 @@ from scripts.swebench_local_run import API_KEY_VARIABLE, MODEL, environment_pres
 COMMAND_TIMEOUT_SECONDS = 900
 # 宿主模型服务的上下文窗口（vLLM --max-model-len）；未列出的模型沿用产品固定上限。
 CONTEXT_WINDOW_TOKENS = {MODEL: 262_144}
+EVAL_ALLOWED_OVERRIDES = frozenset({"completion_guard"})
+
+
+def apply_eval_overrides(
+    config: ProductConfigV2, overrides: Mapping[str, object]
+) -> ProductConfigV2:
+    """评测配置必须来自产品向导，只能覆盖白名单字段，保证测到的就是用户拿到的配置。"""
+
+    rejected = sorted(set(overrides) - EVAL_ALLOWED_OVERRIDES)
+    if rejected:
+        raise SystemExit(f"评测配置覆盖了白名单外的字段：{rejected}")
+    updated = config.model_copy(update=dict(overrides)).model_dump_json()
+    return type(config).model_validate_json(updated)
 
 
 def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off") -> str:
@@ -39,16 +54,9 @@ def product_config(relay_port: int, *, model: str = MODEL, thinking: str = "off"
         thinking=thinking,
         context_window_tokens=CONTEXT_WINDOW_TOKENS.get(model),
     )
-    config = build_product_config(draft)
-    # 评测组别显式开启紧凑工具结果与完成守卫（无人值守，纯文本提前收工改为补发继续提示）；
-    # 产品向导的默认值不变。替换后按JSON重新校验整份配置。
-    providers = tuple(
-        provider.model_copy(update={"compact_tool_results": True}) for provider in config.providers
-    )
-    updated = config.model_copy(
-        update={"providers": providers, "completion_guard": True}
-    ).model_dump_json()
-    return type(config).model_validate_json(updated).model_dump_json(indent=2)
+    # 协议运行器不经过`harnessix exec`，无人值守的完成守卫要在配置里开启。
+    config = apply_eval_overrides(build_product_config(draft), {"completion_guard": True})
+    return config.model_dump_json(indent=2)
 
 
 def action_config(language: str = "python") -> str:

@@ -8,7 +8,7 @@ import stat
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Never
+from typing import Literal, Never, cast
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -22,6 +22,8 @@ from harnessix.product_config.codec import (
     read_product_config_bytes,
 )
 from harnessix.product_config.contracts import (
+    CONTEXT_OVERHEAD_TOKENS,
+    THINKING_MIN_OUTPUT_TOKENS,
     EnvironmentSecretSourceConfig,
     ModelProfile,
     ProductConfigSnapshot,
@@ -77,6 +79,7 @@ _THINKING_LIMITS: dict[str, object] = {
 
 # 同机自托管端点：本地加速卡prefill慢且多会话共享副本，首字节在prefill完成后才到达，
 # 默认30秒首包/120秒单请求时限会把排队中的正常请求判为传输失败。
+_DEFAULT_MAX_OUTPUT_TOKENS = 4096
 _SELF_HOSTED_READ_TIMEOUT_SECONDS = 20
 _SELF_HOSTED_LIMITS: dict[str, object] = {
     "timeout_seconds": 1800.0,
@@ -84,12 +87,52 @@ _SELF_HOSTED_LIMITS: dict[str, object] = {
 }
 
 
-def thinking_preset(base_url: str, model: str) -> tuple[ThinkingProtocol, bool] | None:
+# 官方文档核对（2026-11-09）的按量调用上下文长度（Token）；未列出的端点和模型不预设。
+_KNOWN_CONTEXT_WINDOWS: tuple[tuple[str, tuple[str, ...], int], ...] = (
+    ("api.deepseek.com", ("deepseek-v4", "deepseek-flash"), 1_000_000),
+    ("dashscope.aliyuncs.com", ("deepseek-v4", "qwen3.8-max", "qwen3.8-flash"), 1_000_000),
+)
+
+
+def known_context_window(base_url: str, model: str) -> int | None:
+    """已核对端点与模型族的上下文窗口；其余返回None，沿用产品固定压缩上限。"""
+
+    host = urlsplit(base_url).hostname
+    for known_host, prefixes, window in _KNOWN_CONTEXT_WINDOWS:
+        if host == known_host and model.startswith(prefixes):
+            return window
+    return None
+
+
+def _allowed_output_tokens(window: int) -> int:
+    return (window - 1) // 2 - CONTEXT_OVERHEAD_TOKENS
+
+
+def _window_fits_thinking(window: int | None) -> bool:
+    return window is None or _allowed_output_tokens(window) >= THINKING_MIN_OUTPUT_TOKENS
+
+
+def _output_limits(window: int | None, *, thinking: bool) -> dict[str, object]:
+    """小窗口模型放不下默认输出上限时按窗口收紧，避免生成无法启动的配置。"""
+
+    limits: dict[str, object] = dict(_THINKING_LIMITS) if thinking else {}
+    if window is None:
+        return limits
+    allowed = _allowed_output_tokens(window)
+    current = cast(int, limits.get("max_output_tokens", _DEFAULT_MAX_OUTPUT_TOKENS))
+    if current > allowed:
+        limits["max_output_tokens"] = allowed
+    return limits
+
+
+def thinking_preset(
+    base_url: str, model: str, *, self_hosted: bool = False
+) -> tuple[ThinkingProtocol, bool] | None:
     """已求证端点与模型族的思考预设：（思考协议，是否不发送tool_choice）；其余端点不预设。"""
 
     host = urlsplit(base_url).hostname
-    if host in LOOPBACK_HOSTS:
-        # 同机自托管vLLM：思考开关经chat_template_kwargs交给模型对话模板。
+    if host in LOOPBACK_HOSTS or self_hosted:
+        # 自托管vLLM：思考开关经chat_template_kwargs交给模型对话模板。
         return "vllm_chat_template", False
     if host == "dashscope.aliyuncs.com" and model.startswith("deepseek-v4"):
         # 百炼DeepSeek的required/指定函数tool_choice经约束解码语法编译，间歇超时并返回400。
@@ -106,11 +149,18 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     secret = SecretReference(name=checked.secret_name, version=checked.secret_version)
     protocol = checked.thinking_protocol
     thinking = protocol is not None and checked.thinking != "off"
+    # 小窗口放不下思考所需的输出上限：未显式要求思考时自动关闭，而不是生成无法启动的配置。
+    thinking_auto_off = (
+        thinking
+        and checked.thinking is None
+        and not _window_fits_thinking(checked.context_window_tokens)
+    )
+    thinking = thinking and not thinking_auto_off
     output_token_parameter = checked.output_token_parameter or (
         "max_tokens" if protocol is not None else None
     )
-    # 同机自托管端点（如vLLM上的Qwen系）：还原被字符串化的工具参数，并按0元计价。
-    self_hosted = urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
+    # 自托管端点（本机回环或已声明的内网）：还原被字符串化的工具参数，并按0元计价。
+    self_hosted = checked.self_hosted or urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
     return ProductConfigV2(
         active_profile=checked.profile_id,
         # 同机自托管通常与推理、构建共用CPU：读工具放宽到20秒，避免大仓库搜索在负载下超时。
@@ -133,7 +183,9 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 normalize_tool_arguments=self_hosted,
                 repair_tool_arguments=self_hosted,
                 stable_prompt_prefix=self_hosted,
+                compact_tool_results=checked.provider_kind == "openai_chat",
                 pricing="free" if self_hosted else "unknown",
+                self_hosted=checked.self_hosted,
             ),
         ),
         profiles=(
@@ -142,9 +194,12 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     "profile_id": checked.profile_id,
                     "provider_id": checked.provider_id,
                     "model": checked.model,
-                    "thinking": checked.thinking,
+                    "thinking": "off" if thinking_auto_off else checked.thinking,
                     "context_window_tokens": checked.context_window_tokens,
-                    **(_THINKING_LIMITS if thinking else {}),
+                    # 云端限流和网络抖动很常见，只有确定未计费的失败才会重试到这个次数。
+                    "max_attempts": 4,
+                    "retry_delay_seconds": 1.0,
+                    **_output_limits(checked.context_window_tokens, thinking=thinking),
                     **(_SELF_HOSTED_LIMITS if self_hosted else {}),
                 }
             ),

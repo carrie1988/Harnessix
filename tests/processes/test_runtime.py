@@ -370,6 +370,8 @@ async def test_binding_change_rejected_before_spawn(tmp_path, change):
             cwd.rename(tmp_path / "old")
             cwd.mkdir()
         else:
+            # 同长度改写只能靠ctime发现，Linux的ctime精度是内核tick，先等过一个tick。
+            await asyncio.sleep(0.02)
             executable.write_text("#!/bin/sh\nexit 9\n")
         with pytest.raises(KernelError) as error:
             await host.run(ProcessRequest(program="fixture"), CancelToken())

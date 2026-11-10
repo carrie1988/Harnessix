@@ -15,6 +15,7 @@ import sys
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID, uuid4
@@ -31,8 +32,16 @@ from harnessix.product_ui.cli import (
     _server_command,
     _workspace,
 )
+from harnessix.product_ui.cost_estimate import (
+    ListPrice,
+    chain_list_price,
+    cost_upper_bound,
+    tokens_for_cost,
+)
+from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.turn_budget import turn_budget_for
+from harnessix.product_ui.workspace_trust import confirm_workspace_trust
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicBudget,
@@ -42,6 +51,7 @@ from harnessix.protocol.contracts import (
     PublicToolCallContent,
     PublicToolResultContent,
     ThreadView,
+    TurnView,
 )
 from harnessix.sdk import AgentClient, AgentSDKError, SubprocessAgentTransport
 
@@ -106,6 +116,11 @@ def _parser() -> argparse.ArgumentParser:
         help="宿主或进程中断后，用同一--state-directory恢复该Thread并跟随其Turn到终态",
     )
     parser.add_argument("--workspace", default=".", help="工作区目录")
+    parser.add_argument(
+        "--trust-workspace",
+        action="store_true",
+        help="本次运行信任工作区（不记录）；用于CI等无法交互确认的场景",
+    )
     parser.add_argument("--config", help="产品配置路径")
     parser.add_argument("--profile", help="模型Profile")
     parser.add_argument("--action-config", help="Action配置路径（启用容器命令等）")
@@ -115,6 +130,11 @@ def _parser() -> argparse.ArgumentParser:
         "--approval-mode", choices=("manual", "auto-edit", "auto"), default="manual"
     )
     # 未指定的预算项取产品默认；活动Profile链全为本地免费端点时累计token上限更高。
+    parser.add_argument(
+        "--max-cost",
+        type=_positive_decimal,
+        help="费用上限，单位是模型牌价的货币；只支持已核对牌价的模型，按输入单价折算成Token上限",
+    )
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--max-tokens", type=int)
     parser.add_argument("--timeout-seconds", type=float)
@@ -212,6 +232,22 @@ def _verification(items: Sequence[PublicItem]) -> dict[str, Any]:
     return {"status": status, "last_check": command}
 
 
+def _cost_summary(
+    turn: TurnView | None, pricing: str, list_price: ListPrice | None
+) -> dict[str, Any]:
+    """本地端点计0元；已核对牌价的模型附带上限估算，其余费用未知，不报零。"""
+
+    cost: dict[str, Any] = {"pricing": pricing, "amount_cny": 0 if pricing == "free" else None}
+    if turn is not None and list_price is not None and pricing != "free":
+        bound = cost_upper_bound(
+            list_price,
+            input_tokens=turn.usage.input_tokens,
+            output_tokens=turn.usage.output_tokens,
+        )
+        cost["upper_bound"] = {"currency": bound.currency, "amount": str(bound.amount)}
+    return cost
+
+
 def _summary(
     cli: ThinAgentCLI,
     thread: ThreadView,
@@ -221,6 +257,7 @@ def _summary(
     elapsed: float,
     changed: list[str] | None,
     pricing: Literal["free", "unknown"] = "unknown",
+    list_price: ListPrice | None = None,
 ) -> dict[str, Any]:
     turn = thread.latest_turn
     items = cli.recorded_items()
@@ -247,7 +284,7 @@ def _summary(
         "model_steps": None if turn is None else turn.model_steps,
         "usage": None if turn is None else turn.usage.model_dump(),
         # 本地自托管端点计0元；其他端点不公开价格，费用未知。
-        "cost": {"pricing": pricing, "amount_cny": 0 if pricing == "free" else None},
+        "cost": _cost_summary(turn, pricing, list_price),
         "approval_mode": mode,
         "approvals": approvals,
         "final_answer": answers[-1] if answers else None,
@@ -267,9 +304,20 @@ class _Launch:
     mode: ApprovalMode
     quiet: bool
     pricing: Literal["free", "unknown"] = "unknown"
+    list_price: ListPrice | None = None
     events: Path | None = None
     resume_thread: UUID | None = None
     sandbox: str | None = None
+
+
+def _positive_decimal(value: str) -> Decimal:
+    try:
+        amount = Decimal(value)
+    except InvalidOperation:
+        raise argparse.ArgumentTypeError("必须是正数") from None
+    if not amount.is_finite() or amount <= 0:
+        raise argparse.ArgumentTypeError("必须是正数")
+    return amount
 
 
 def _or[T](value: T | None, default: T) -> T:
@@ -293,6 +341,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         else _default_state_directory(workspace)
     )
     command = _server_command(
+        unattended=True,
         config=config,
         action_config=_action_config(arguments.action_config),
         profile=arguments.profile,
@@ -302,9 +351,17 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
     )
     pricing = _chain_pricing(config, arguments.profile)
     defaults = turn_budget_for(pricing)
+    list_price = chain_list_price(config, arguments.profile)
+    max_tokens = arguments.max_tokens
+    if arguments.max_cost is not None:
+        if list_price is None:
+            print("--max-cost 只支持已核对牌价的模型，请改用 --max-tokens", file=sys.stderr)
+            return None
+        from_cost = tokens_for_cost(list_price, arguments.max_cost)
+        max_tokens = from_cost if max_tokens is None else min(max_tokens, from_cost)
     budget = PublicBudget(
         max_steps=_or(arguments.max_steps, defaults.max_steps),
-        max_tokens=_or(arguments.max_tokens, defaults.max_tokens),
+        max_tokens=_or(max_tokens, defaults.max_tokens),
         timeout_seconds=_or(arguments.timeout_seconds, defaults.timeout_seconds),
         max_output_chars=_or(arguments.max_output_chars, defaults.max_output_chars),
         max_tool_calls_per_step=_or(
@@ -319,6 +376,7 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
         mode=arguments.approval_mode,
         quiet=arguments.quiet,
         pricing=pricing,
+        list_price=list_price,
         events=Path(arguments.events_file).absolute() if arguments.events_file else None,
         resume_thread=arguments.resume_thread,
         sandbox=sandbox_status_line(preflight),
@@ -379,6 +437,13 @@ async def _run_turn(launch: _Launch) -> tuple[ThinAgentCLI, ThreadView, bool]:
 
 def exec_main(argv: Sequence[str] | None = None) -> None:
     arguments = _parser().parse_args(list(sys.argv[1:] if argv is None else argv))
+    if not confirm_workspace_trust(
+        Path(arguments.workspace).absolute(), assume_trusted=arguments.trust_workspace
+    ):
+        raise SystemExit(EXIT_NOT_READY)
+    arguments.git_executable = detected_git_executable(
+        arguments.git_executable, Path(arguments.workspace).absolute()
+    )
     summary: dict[str, Any] | None = None
     try:
         launch = _prepare(arguments)
@@ -394,6 +459,7 @@ def exec_main(argv: Sequence[str] | None = None) -> None:
             elapsed=time.monotonic() - started,
             changed=_changed_paths(launch.workspace, arguments.git_executable),
             pricing=launch.pricing,
+            list_price=launch.list_price,
         )
         completed = thread.latest_turn is not None and thread.latest_turn.status == "completed"
         code = (

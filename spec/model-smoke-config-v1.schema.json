@@ -50,7 +50,7 @@
       "type": "integer"
     },
     "max_tokens": {
-      "default": 2048,
+      "default": 8192,
       "maximum": 8192,
       "minimum": 1,
       "title": "Max Tokens",

@@ -5,6 +5,7 @@ import json
 import logging
 from contextlib import aclosing
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import httpx
@@ -21,7 +22,9 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
+from harnessix.models._provider_io import retry_after_seconds
 from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
 from harnessix.models.contracts import (
     ResponseCompleted,
@@ -238,6 +241,74 @@ async def test_status_mapping_and_no_sdk_retries(
     assert_failed_attempts(events, ResponseFailed(code=expected, retryable=attempts > 1), attempts)
     assert len(requests) == attempts
     assert CANARY not in repr(events) + caplog.text
+
+
+def _usage_of(events: list[object]) -> list[UsageObservation]:
+    return [event.usage for event in events if isinstance(event, ModelUsageObserved)]
+
+
+async def test_http_error_is_unbilled_and_honours_retry_after(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    delays: list[float] = []
+    real_sleep = asyncio.sleep
+
+    async def record_sleep(seconds: float) -> None:
+        delays.append(seconds)
+        await real_sleep(0)
+
+    monkeypatch.setattr("harnessix.models.openai_chat.asyncio.sleep", record_sleep)
+    requests: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if len(requests) == 1:
+            return httpx.Response(429, headers={"retry-after": "7"}, json={"error": {}})
+        return response(WireStream(text_frames()))
+
+    async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
+        events = [e async for e in provider.stream(model_request(), CancelToken())]
+
+    assert isinstance(events[-1], ResponseCompleted)
+    first_usage = _usage_of(events)[0]
+    assert first_usage.completeness == "complete" and first_usage.input_tokens == 0
+    assert delays == [7.0]
+
+
+async def test_connection_failure_before_sending_is_unbilled() -> None:
+    requests: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if len(requests) == 1:
+            raise httpx.ConnectError("refused")
+        return response(WireStream(text_frames()))
+
+    async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
+        events = [e async for e in provider.stream(model_request(), CancelToken())]
+
+    assert _usage_of(events)[0].input_tokens == 0
+
+
+async def test_read_failure_after_sending_stays_unknown() -> None:
+    def handle(_request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadError("connection dropped")
+
+    async with OpenAIChatProvider(config(), transport=httpx.MockTransport(handle)) as provider:
+        events = [e async for e in provider.stream(model_request(), CancelToken())]
+
+    assert isinstance(events[-1], ResponseFailed)
+    assert _usage_of(events) == []
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [("3", 3.0), ("600", 60.0), ("soon", 0.0), (None, 0.0), ("-5", 0.0)],
+)
+def test_retry_after_is_bounded(header: str | None, expected: float) -> None:
+    headers = {} if header is None else {"retry-after": header}
+    error = SimpleNamespace(response=SimpleNamespace(headers=httpx.Headers(headers)))
+    assert retry_after_seconds(error) == expected  # type: ignore[arg-type]
 
 
 async def test_retry_then_success_and_credential_isolation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -632,7 +703,7 @@ def test_configuration_fails_without_exposing_credentials(
     "url",
     [
         "http://api.example.com/v1",
-        "http://192.168.130.247:18002/v1",
+        "http://192.168.1.20:18002/v1",
         "http://127.0.0.2:18002/v1",
         "https://a:b@example.com/v1",
         "https://example.com/?key=x",
@@ -651,6 +722,43 @@ def test_endpoint_constraints(url: str) -> None:
 )
 def test_plain_http_is_allowed_only_for_loopback_endpoints(url: str) -> None:
     assert config(base_url=url).base_url == url
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://192.168.1.20:8000/v1",
+        "http://10.0.0.5/v1",
+        "http://172.16.3.4/v1",
+        "http://100.92.0.7:18002/v1",
+        "http://[fd00::1]:8000/v1",
+        "http://gpu01:8000/v1",
+        "http://gpu.lan/v1",
+    ],
+)
+def test_declared_private_endpoint_allows_plain_http(url: str) -> None:
+    assert config(base_url=url, private_network_endpoint=True).base_url == url
+    with pytest.raises(ValueError):
+        config(base_url=url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://8.8.8.8/v1",
+        "http://api.example.com/v1",
+        "http://127.0.0.2:18002/v1",
+        "http://172.32.0.1/v1",
+        "http://100.128.0.1/v1",
+    ],
+)
+def test_declared_private_endpoint_still_rejects_public_plain_http(url: str) -> None:
+    with pytest.raises(ValueError):
+        config(base_url=url, private_network_endpoint=True)
+
+
+def test_private_endpoint_flag_stays_out_of_default_serialization() -> None:
+    assert "private_network_endpoint" not in config().model_dump()
 
 
 @pytest.mark.parametrize("cancel_body", [False, True])

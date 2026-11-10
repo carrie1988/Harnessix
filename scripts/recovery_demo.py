@@ -118,6 +118,7 @@ def main() -> None:
     )
     state = scratch / "state"
     common = [
+        "--trust-workspace",
         "--workspace",
         str(workspace),
         "--config",

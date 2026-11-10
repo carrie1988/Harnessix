@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import replace
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -11,17 +12,21 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
+from harnessix.product_ui.approval_automation import ApprovalAutomation
 from harnessix.product_ui.controller import (
     CreateThreadIntent,
     ProductController,
     StartRequest,
     SubmitPromptIntent,
+    ToggleAutoAcceptIntent,
 )
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interactions import (
+    ApprovalBinding,
     ApprovalEvidenceStatus,
     CancelTurnIntent,
     LoadApprovalEvidenceIntent,
+    PendingApproval,
     RespondApprovalIntent,
     RespondQuestionIntent,
     SteerTurnIntent,
@@ -120,6 +125,116 @@ async def test_controller_approval_uses_evidence_and_one_prepared_command(
             assert stale.value.code == "approval_stale"
             assert store.state().next_command_sequence == before + 1
             await controller.close(deadline_seconds=2)
+
+
+def _read_step(path: str, index: int) -> list[object]:
+    return [
+        ResponseStarted(response_id=f"response-{index}"),
+        ToolCallCompleted(call_id=f"call-{index}", tool="test.read", arguments={"path": path}),
+        ResponseCompleted(finish_reason="tool_calls"),
+    ]
+
+
+async def test_session_rule_auto_approves_only_identical_calls(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+    requests = SQLiteProtocolRequestStore(sessions.path)
+    tools = RecordingTools(approval=True)
+    provider = ScriptedProvider(
+        [
+            _read_step("a", 1),
+            _read_step("a", 2),
+            _read_step("b", 3),
+            answer("完成"),
+        ]
+    )
+    async with AgentRuntime(sessions, provider, tools) as runtime:
+
+        def transport() -> InProcessAgentTransport:
+            return InProcessAgentTransport(
+                AgentProtocolServer(
+                    AgentApplicationService(
+                        runtime,
+                        sessions,
+                        requests,
+                        workspace=workspace.resolve(),
+                    )
+                )
+            )
+
+        with ClientStateStore(
+            tmp_path / "client",
+            workspace_identity=str(workspace.resolve()),
+        ) as store:
+            controller = ProductController(RecoverableAgentSession(store, transport))
+            await controller.start(StartRequest(workspace=str(workspace)))
+            await controller.dispatch(CreateThreadIntent())
+            await controller.dispatch(SubmitPromptIntent("读取文件"))
+            waiting = await _wait_for_turn(controller, "waiting_approval")
+            first = pending_approval(waiting.thread_view)
+            assert first is not None
+            await controller.dispatch(LoadApprovalEvidenceIntent(first.binding))
+            await controller.dispatch(
+                RespondApprovalIntent(first.binding, outcome="approved", remember_for_session=True)
+            )
+
+            # 第二次调用相同，自动批准；第三次参数不同，仍需人工处理。
+            async with asyncio.timeout(10):
+                while True:
+                    try:
+                        pending = pending_approval(controller.state.thread_view)
+                    except ProductUIError:
+                        pending = None
+                    if pending is not None and '"b"' in pending.arguments_json:
+                        break
+                    await asyncio.sleep(0.02)
+            assert len(tools.calls) == 2
+            assert controller.state.auto_accept_edits is False
+            await controller.dispatch(ToggleAutoAcceptIntent())
+            assert controller.state.auto_accept_edits is True
+            await controller.close(deadline_seconds=2)
+
+
+def _pending(approval_type: str, arguments: str = "{}") -> PendingApproval:
+    return PendingApproval(
+        binding=ApprovalBinding(uuid4(), uuid4(), uuid4(), uuid4(), "a" * 64),
+        approval_type=approval_type,  # type: ignore[arg-type]
+        policy_version="v1",
+        tool="tool",
+        tool_version="1",
+        effect_class="non_idempotent_write",
+        arguments_json=arguments,
+        diff_artifact=None,
+    )
+
+
+def test_auto_accepting_edits_never_covers_commands() -> None:
+    automation = ApprovalAutomation()
+    assert not automation.allows(_pending("patch_batch"))
+
+    automation.remember(_pending("patch"))
+
+    assert automation.auto_accept_edits
+    assert automation.allows(_pending("patch_batch"))
+    assert not automation.allows(_pending("process"))
+
+
+def test_session_rule_for_commands_needs_identical_arguments() -> None:
+    automation = ApprovalAutomation()
+    automation.remember(_pending("process", '{"command":"npm test"}'))
+
+    assert automation.allows(_pending("process", '{"command":"npm test"}'))
+    assert not automation.allows(_pending("process", '{"command":"rm -rf /"}'))
+    assert not automation.auto_accept_edits
+
+
+def test_each_approval_is_only_attempted_once() -> None:
+    automation = ApprovalAutomation()
+    pending = _pending("process")
+
+    assert automation.claim_attempt(pending)
+    assert not automation.claim_attempt(pending)
 
 
 async def test_controller_question_rejects_invalid_answer_before_command(

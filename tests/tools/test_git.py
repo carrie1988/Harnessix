@@ -157,9 +157,7 @@ async def test_git_review_fails_without_partial_output_when_either_read_fails(
             operations.append(operation)
             if operation == failed_operation:
                 raise ReadToolError("io_failed")
-        return await original_run(
-            runtime, arguments, cancel, repository_check=repository_check
-        )
+        return await original_run(runtime, arguments, cancel, repository_check=repository_check)
 
     monkeypatch.setattr(GitReadRuntime, "_run", fail_selected)
     async with CodingToolRuntime(tmp_path, git_executable=_git()) as tools:
@@ -261,9 +259,7 @@ async def test_git_review_cancellation_after_status_never_returns_partial_output
         if "diff" in arguments:
             diff_started.set()
             await release.wait()
-        return await original_run(
-            runtime, arguments, cancel, repository_check=repository_check
-        )
+        return await original_run(runtime, arguments, cancel, repository_check=repository_check)
 
     monkeypatch.setattr(GitReadRuntime, "_run", block_diff)
     async with CodingToolRuntime(tmp_path, git_executable=_git()) as tools:
@@ -298,9 +294,7 @@ async def test_git_review_close_waits_for_whole_active_aggregate(
         if "diff" in arguments:
             diff_started.set()
             await release.wait()
-        return await original_run(
-            runtime, arguments, cancel, repository_check=repository_check
-        )
+        return await original_run(runtime, arguments, cancel, repository_check=repository_check)
 
     monkeypatch.setattr(GitReadRuntime, "_run", block_diff)
     tools = CodingToolRuntime(tmp_path, git_executable=_git())

@@ -54,8 +54,7 @@ def _require_delete_journal_candidate(
     """在SQLite打开前拒绝WAL格式，避免只读打开为WAL候选创建共享内存边车。"""
     control.checkpoint()
     if any(
-        os.path.lexists(tree.path / (GIT_DATABASE + suffix))
-        for suffix in _SQLITE_SIDECAR_SUFFIXES
+        os.path.lexists(tree.path / (GIT_DATABASE + suffix)) for suffix in _SQLITE_SIDECAR_SUFFIXES
     ):
         raise invalid_state()
     with tree.open_file(GIT_DATABASE) as descriptor:

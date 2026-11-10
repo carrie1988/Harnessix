@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 1
+version: 2
 code_revision: bf10c9d6ffea373f1a6e39fc8621b65d08133e03
 owners:
   - core
@@ -21,6 +21,7 @@ supersedes: []
 - 状态：已接受
 - 日期：2026-09-09
 - 决策范围：Harnessix Code 0.8.5
+- 范围更新（2026-11-10，用户决定）：Hook部分不进入1.0产品。现有Hook运行时没有产品入口，代码与测试保留；Skill部分按[ADR 0125](0125-skill-product-wiring.md)接入。Beta收集到真实需求后再决定Hook形态。
 
 ## 背景
 
