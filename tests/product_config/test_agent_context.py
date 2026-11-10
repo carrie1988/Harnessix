@@ -19,9 +19,9 @@ from harnessix.domain.models import ToolDescriptor
 from harnessix.models.contracts import ModelRequest
 from harnessix.product_config.agent_context import (
     CODING_INSTRUCTIONS_VERSION,
-    PRODUCT_CONTEXT_INPUT_LIMIT,
     build_product_agent_context,
 )
+from harnessix.product_config.context_budget import PRODUCT_CONTEXT_INPUT_LIMIT
 from harnessix.secrets.publication import MAX_SCAN_BYTES
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.runtime import CodingToolRuntime

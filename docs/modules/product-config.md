@@ -293,8 +293,8 @@ Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`Wor
 ### 1.1 正式Coding Context装配
 
 默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
-[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source。
-输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），历史达到窗口三分之一时压缩、压到六分之一（较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时），摘要预留至多为压缩目标的四分之一（上限20480字节），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source，
+输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），历史达到窗口三分之一时压缩、压到六分之一（较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时），摘要预留至多为压缩目标的四分之一（上限20480字节），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
 Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
 
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、

@@ -14,9 +14,9 @@ from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.product_config.agent_context import (
     CODING_INSTRUCTIONS,
     CODING_INSTRUCTIONS_VERSION,
-    PRODUCT_CONTEXT_INPUT_LIMIT,
     build_product_agent_context,
 )
+from harnessix.product_config.context_budget import PRODUCT_CONTEXT_INPUT_LIMIT
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.context.test_compaction_runtime import SequenceProvider, accounted_text
 from tests.product_config.test_agent_context import _request

@@ -5,9 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from harnessix.context.compaction_contracts import CompactionPolicy
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
-from harnessix.context.contracts import ContextFragment, ContextFragmentKind, ContextLimits
+from harnessix.context.contracts import ContextFragment, ContextFragmentKind
 from harnessix.context.engine import ContextEngine
 from harnessix.context.sources import (
     EnvironmentContextSource,
@@ -15,8 +14,7 @@ from harnessix.context.sources import (
     SourcedContextEngine,
     WorkspaceContextSource,
 )
-from harnessix.product_config.contracts import CONTEXT_OVERHEAD_TOKENS
-from harnessix.secrets.publication import MAX_SCAN_BYTES
+from harnessix.product_config.context_budget import product_context_budget
 
 CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v22"
 _OPTIONAL_CODING_INSTRUCTIONS_VERSION = "harnessix.coding-instructions/v23"
@@ -93,14 +91,6 @@ are unknown, do not replay the command blindly. Respect cancellation and remaini
 Before delivery, review actual changes with git_review (or git_status and git_diff), including
 new untracked files. Report observed checks and any remaining environment or verification gaps.
 """
-PRODUCT_CONTEXT_INPUT_LIMIT = 262_144
-# 估算器按UTF-8字节计（一个字节至多一个Token）。声明了模型窗口时按每Token 3字节换算：
-# 实测代码与英文约3.5～4字节/Token（第10百分位3.53），偶发超窗由Provider超限后的被动压缩兜底。
-_WINDOW_UTF8_BYTES_PER_TOKEN = 3
-_CONTEXT_OVERHEAD_TOKENS = CONTEXT_OVERHEAD_TOKENS
-# 出站模型请求整体须通过公开输出保护扫描，其规范JSON至多MAX_SCAN_BYTES。估算已含历史、可执行工具
-# 与指令的规范JSON；请求另带稳定线上目录与信封字段，为其保留四分之一扫描容量。
-_REQUEST_INPUT_CAP = MAX_SCAN_BYTES * 3 // 4
 _PLANNING_INSTRUCTIONS = (
     "For multi-step coding work, use update_plan to track investigation, implementation, "
     "tests and review. Keep it short and place it after other tools in the same response; "
@@ -306,55 +296,6 @@ def _coding_instructions(
 
 
 @dataclass(frozen=True, slots=True)
-class _InputBudget:
-    """Context输入上限与压缩阈值；除摘要输出Token外，单位与估算器一致（UTF-8字节）。"""
-
-    input_limit: int
-    compaction_trigger: int
-    compaction_target: int
-    summary_output_tokens: int
-    summary_reserve: int
-
-
-def _input_budget(context_window_tokens: int | None, max_output_tokens: int) -> _InputBudget:
-    """声明窗口时在三分之一处压缩、压到六分之一；未声明窗口时沿用固定输入上限与原摘要容量。
-
-    较低的压缩点限制长任务的单次请求规模、累计输入与单次摘要耗时。
-    换算后的窗口与输入上限不超过出站请求扫描容量的四分之三，大窗口不会产生无法发出的请求。
-    声明窗口时摘要预留至多占压缩目标的四分之一（上限20480字节），
-    摘要输出按每Token约4字节另加封装换算，至多4096 Token。
-    """
-    if context_window_tokens is None:
-        return _InputBudget(
-            input_limit=PRODUCT_CONTEXT_INPUT_LIMIT,
-            compaction_trigger=PRODUCT_CONTEXT_INPUT_LIMIT // 2,
-            compaction_target=PRODUCT_CONTEXT_INPUT_LIMIT // 4,
-            summary_output_tokens=2048,
-            summary_reserve=12_288,
-        )
-    if (
-        type(context_window_tokens) is not int
-        or context_window_tokens <= 2 * (max_output_tokens + _CONTEXT_OVERHEAD_TOKENS)
-        or context_window_tokens > 2_097_152
-    ):
-        raise ValueError("模型上下文窗口须大于两倍输出上限与1536之和，且不超过2097152 Token")
-    window = min(context_window_tokens * _WINDOW_UTF8_BYTES_PER_TOKEN, _REQUEST_INPUT_CAP)
-    compaction_target = window // 6
-    summary_reserve = min(20_480, compaction_target // 4)
-    return _InputBudget(
-        input_limit=min(
-            (context_window_tokens - max_output_tokens - _CONTEXT_OVERHEAD_TOKENS)
-            * _WINDOW_UTF8_BYTES_PER_TOKEN,
-            _REQUEST_INPUT_CAP,
-        ),
-        compaction_trigger=window // 3,
-        compaction_target=compaction_target,
-        summary_output_tokens=min(4096, summary_reserve // 5),
-        summary_reserve=summary_reserve,
-    )
-
-
-@dataclass(frozen=True, slots=True)
 class ProductAgentContext:
     """保存一个宿主工作区的Context Planner与统一自动压缩策略。"""
 
@@ -386,7 +327,7 @@ def build_product_agent_context(
     """产品和正式评测复用同一策略；输入上限是宿主估算边界，声明模型窗口时按窗口换算。"""
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1_000_000:
         raise ValueError("产品Context输出预留必须为1到1000000 Token")
-    budget = _input_budget(context_window_tokens, max_output_tokens)
+    budget = product_context_budget(context_window_tokens, max_output_tokens)
     if type(native_execution) is not bool or (native_execution and not generic_execution):
         raise ValueError("本机命令指令只能与通用执行一起使用")
     if type(generic_execution) is not bool or (
@@ -437,12 +378,8 @@ def build_product_agent_context(
         raise ValueError("产品可选预测试开关必须是布尔值")
     if allow_optional_pre_edit_profile and require_pre_edit_profile is not False:
         raise ValueError("可选预测试不能同时启用强制修改前基线")
-    limits = ContextLimits(
-        context_window_tokens=budget.input_limit + max_output_tokens + _CONTEXT_OVERHEAD_TOKENS,
-        reserved_output_tokens=max_output_tokens,
-    )
     engine = ContextEngine(
-        limits,
+        budget.context_limits(max_output_tokens),
         (
             ContextFragment(
                 kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
@@ -579,14 +516,5 @@ def build_product_agent_context(
                 EnvironmentContextSource(workspace),
             ),
         ),
-        compaction=CompactionRuntimeConfig(
-            policy=CompactionPolicy(
-                target_history_tokens=budget.compaction_target,
-                summary_reserve_tokens=budget.summary_reserve,
-                max_summary_input_tokens=budget.input_limit,
-                retain_recent_groups=2,
-            ),
-            trigger_history_tokens=budget.compaction_trigger,
-            max_summary_output_tokens=min(max_output_tokens, budget.summary_output_tokens),
-        ),
+        compaction=budget.compaction_runtime(max_output_tokens),
     )

@@ -343,11 +343,7 @@ async def _serve_product_stdio(
                             for profile in startup.actions.config.native_process_profiles
                             if profile.backend != "external_boundary"
                         )
-                        chain = [
-                            profile
-                            for profile in startup.config.config.profiles
-                            if profile.profile_id in startup.profile.profile_chain
-                        ]
+                        chain = _active_profiles(startup)
                         context = build_product_agent_context(
                             tools.workspace_root,
                             max_output_tokens=max(profile.max_output_tokens for profile in chain),
@@ -401,14 +397,15 @@ async def _serve_product_stdio(
                             )
 
 
+def _active_profiles(startup: _ProductRuntimeStartup) -> list[ModelProfile]:
+    """当前Profile链（含Fallback）的Profile定义，按配置顺序；Context策略与Provider选项由此派生。"""
+    chain = set(startup.profile.profile_chain)
+    return [profile for profile in startup.config.config.profiles if profile.profile_id in chain]
+
+
 def _active_providers(startup: _ProductRuntimeStartup) -> tuple[ProviderDefinition, ...]:
     """当前Profile链（含Fallback）实际使用的Provider定义。"""
-    chain = set(startup.profile.profile_chain)
-    used = {
-        profile.provider_id
-        for profile in startup.config.config.profiles
-        if profile.profile_id in chain
-    }
+    used = {profile.provider_id for profile in _active_profiles(startup)}
     return tuple(
         provider for provider in startup.config.config.providers if provider.provider_id in used
     )
