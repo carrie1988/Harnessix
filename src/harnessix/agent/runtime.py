@@ -134,6 +134,11 @@ from harnessix.agent.tool_call_groups import (
     validate_exclusive_tool_groups,
 )
 from harnessix.agent.tool_rejections import rejection_result
+from harnessix.agent.truncation_recovery import (
+    recoverable_truncation,
+    recovery_switch,
+    truncation_notice_events,
+)
 from harnessix.agent.trusted_action_runtime import (
     action_definitions,
     action_name_owned,
@@ -312,6 +317,7 @@ class AgentRuntime:
         completion_guard: bool = False,
         continue_after_unknown_usage: bool = False,
         approval_responder: ApprovalResponder | None = None,
+        recover_truncated_replies: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -362,6 +368,7 @@ class AgentRuntime:
             raise KernelError("invalid_runtime_configuration", "完成守卫开关必须是布尔值")
         # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
         self._completion_guard = completion_guard
+        self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
         # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._continue_after_unknown_usage = continue_after_unknown_usage is True
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -2126,7 +2133,9 @@ class AgentRuntime:
                     )
                 raise KernelError(failure.code, failure.message) from None
 
-    async def _close_model_step(self, request: ModelRequest) -> TurnStatus:
+    async def _close_model_step(
+        self, request: ModelRequest, *, truncated: bool = False
+    ) -> TurnStatus:
         """在线程CAS内决定完成或消费运行中Steering，避免终结竞态。"""
 
         history_ids = {item.item_id for item in request.history}
@@ -2147,13 +2156,14 @@ class AgentRuntime:
                 and item.content.model_step == request.step
                 for item in turn.items
             )
-            notice = (
-                completion_notice(turn, request.step, step_reply(turn.items, history_ids))
-                if self._completion_guard and not steered and not rejected
-                else None
-            )
+            notice_events: list[EventDraft] = []
+            if truncated and not steered:
+                notice_events = truncation_notice_events(turn, request.step)
+            elif self._completion_guard and not steered and not rejected:
+                notice = completion_notice(turn, request.step, step_reply(turn.items, history_ids))
+                notice_events = completion_notice_events(request.turn_id, request.step, notice)
             # 宿主补发与用户Steering同为新用户输入，按Steering语义重入下一步。
-            steered = steered or notice is not None
+            steered = steered or bool(notice_events)
             target = TurnStatus.PREPARING_CONTEXT if steered or rejected else TurnStatus.FINALIZING
             reason: Literal["normal", "steering", "tool_rejection"] = (
                 "steering" if steered else "tool_rejection" if rejected else "normal"
@@ -2161,7 +2171,7 @@ class AgentRuntime:
             updated = await self.store.append(
                 request.thread_id,
                 [
-                    *completion_notice_events(request.turn_id, request.step, notice),
+                    *notice_events,
                     EventDraft(
                         turn_id=request.turn_id,
                         payload=TurnStateChanged(status=target, reason=reason),
@@ -2449,27 +2459,17 @@ class AgentRuntime:
                     tool_notice=tool_selection.notice,
                 )
                 try:
-                    await self._sample(
+                    truncated = await self._sample(
                         request,
                         token,
                         estimated_input_tokens,
                         exclusive_tool_groups=tool_selection.exclusive_tool_groups,
                     )
                 except KernelError as error:
-                    if (
-                        error.code == "provider_max_output_tokens"
-                        and self._budget_capped_truncation
-                        and allowed_output_tokens < output_token_limit
-                    ):
-                        failed = get_turn(await self.store.get_thread(thread_id), turn_id)
-                        # 本步输出用满被预算压低的上限才算预算耗尽；截断提案从未执行。
-                        if (
-                            failed.usage.output_tokens - turn.usage.output_tokens
-                            >= allowed_output_tokens
-                        ):
-                            raise KernelError(
-                                "budget_exceeded", "剩余Token预算压低的输出上限截断了模型响应"
-                            ) from None
+                    if error.code == "provider_max_output_tokens":
+                        await self._reject_lowered_cap(
+                            thread_id, turn, allowed_output_tokens, output_token_limit
+                        )
                     if error.code != "provider_context_overflow" or self._compaction is None:
                         raise
                     failed = get_turn(await self.store.get_thread(thread_id), turn_id)
@@ -2489,6 +2489,10 @@ class AgentRuntime:
                     )
                     reactive_compaction_required = True
                     continue
+                if truncated:
+                    await self._reject_lowered_cap(
+                        thread_id, turn, allowed_output_tokens, output_token_limit
+                    )
                 turn = get_turn(await self.store.get_thread(thread_id), turn_id)
                 if anchored_on_rewrite:
                     require_input_within_bound(turn, request.step, estimated_input_tokens)
@@ -2497,7 +2501,7 @@ class AgentRuntime:
                     raise KernelError("budget_exceeded", "Provider 报告的 Token 用量超过预算")
                 if not calls:
                     token.checkpoint()
-                    target = await self._close_model_step(request)
+                    target = await self._close_model_step(request, truncated=truncated)
                     if target == TurnStatus.PREPARING_CONTEXT:
                         continue
                     return await self._finish(thread_id, turn_id, TurnStatus.COMPLETED, None)
@@ -2974,7 +2978,7 @@ class AgentRuntime:
         estimated_input_tokens: int,
         *,
         exclusive_tool_groups: tuple[tuple[str, ...], ...] = (),
-    ) -> None:
+    ) -> bool:
         with self._telemetry.operation(
             "model",
             thread_id=request.thread_id,
@@ -2985,7 +2989,7 @@ class AgentRuntime:
             protection = await begin_text_step(self._public_output_protection, token)
             failed = True
             try:
-                await self._sample_events(
+                truncated = await self._sample_events(
                     request,
                     token,
                     protection,
@@ -2995,6 +2999,7 @@ class AgentRuntime:
                 failed = False
             finally:
                 close_text_step(protection, failed=failed)
+            return truncated
 
     async def _sample_events(
         self,
@@ -3004,9 +3009,10 @@ class AgentRuntime:
         estimated_input_tokens: int,
         *,
         exclusive_tool_groups: tuple[tuple[str, ...], ...] = (),
-    ) -> None:
+    ) -> bool:
         """验证Provider事件顺序和预算并持久投影；开放尝试在异常或取消时保守结算。"""
         started = False
+        truncated = False
         completed: ResponseCompleted | None = None
         texts = ModelTextPublication(request, token, protection, self._commit, self._emit_delta)
         call_ids: set[str] = set()
@@ -3160,7 +3166,14 @@ class AgentRuntime:
                         raise
                     if not attempt_mode:
                         record_usage(snapshot)
-                    if event.finish_reason not in {"completed", "tool_calls"}:
+                    if event.finish_reason not in {"completed", "tool_calls"} and not (
+                        truncated := recoverable_truncation(
+                            event.finish_reason,
+                            call_ids,
+                            texts.has_content,
+                            self._recover_truncated_replies,
+                        )
+                    ):
                         raise KernelError("provider_" + event.finish_reason, "模型未正常完成")
                     if bool(call_ids) != (event.finish_reason == "tool_calls"):
                         raise KernelError("invalid_provider_output", "停止原因与 Tool Call 不一致")
@@ -3272,6 +3285,18 @@ class AgentRuntime:
             await self._commit(request.thread_id, request.turn_id, payloads)
             for _proposal in proposals:
                 self._fault("runtime.after_tool_call")
+        return truncated
+
+    async def _reject_lowered_cap(
+        self, thread_id: UUID, before: Turn, allowed: int, limit: int
+    ) -> None:
+        """本步输出用满被剩余预算压低的上限时，截断归因于预算耗尽而非Provider上限。"""
+        if not self._budget_capped_truncation or allowed >= limit:
+            return
+        after = get_turn(await self.store.get_thread(thread_id), before.turn_id)
+        # 本步输出用满被预算压低的上限才算预算耗尽；截断提案从未执行。
+        if after.usage.output_tokens - before.usage.output_tokens >= allowed:
+            raise KernelError("budget_exceeded", "剩余Token预算压低的输出上限截断了模型响应")
 
     async def _finish(
         self,

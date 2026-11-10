@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 2
+version: 3
 code_revision: 01e5e888e49e7a39fc1ac191b690f5d3b84e41c5
 owners: [core]
 modules: [agent, models, context, tools, product_config]
@@ -17,6 +17,7 @@ related_tests:
   - tests/product_config/test_thinking_config.py
   - tests/app_server/test_rejection_sdk_chain.py
   - tests/protocol/test_rejection_protocol_v2.py
+  - tests/agent/test_truncation_recovery.py
 supersedes: []
 ---
 
@@ -83,3 +84,26 @@ week-1本地模型holdout中期分析（Verified A2x4前41次尝试）显示：7
   - 截断导致的调用结构损坏（缺少ID或名称）。
 
   这两类仍按原有规则失败，可能需要新的事件版本时再另行决策。
+
+## 4. v3修订（2026-11-10）：纯文本截断补发提示继续
+
+**背景。** dev25正式对照中，xarray-4356的第36步写了约1.95万字符的推导，用满每步4096输出上限，
+整个Turn以`provider_max_output_tokens`失败；截断时模型正在自查补丁（当时补丁确实有误）。
+201个Harbor试次中只出现这一次，但一次就作废整题；10月v45一轮也因同一原因整轮停止。
+
+**决策（用户2026-11-10批准）。**
+- 运行时新增开关`recover_truncated_replies`（默认关闭，产品服务端开启，交互与无人值守相同）。
+- 开启后，以`max_output_tokens`结束、没有任何工具调用且有正文的步骤不再让Turn失败：
+  - 正文照常作为助手消息落账，用量照常记账，本步不执行任何东西；
+  - 宿主补发一条英文提示（用户消息Item），说明回复被截断、什么都没执行，要求简短继续并调用工具，
+    按Steering语义重入下一步，占用原有的步数与Token预算；
+  - 连续截断最多补发两次，第三次连续截断，或步骤、Token预算已用尽时，仍以`provider_max_output_tokens`失败；
+    中间有一步正常结束即重新计数。
+- 被剩余预算压低的输出上限截断仍归为预算耗尽（`budget_capped_truncation`），不补发提示。
+- 截断的工具调用、没有正文的截断仍按本ADR第2节原规则处理。
+
+**不新增事件类型。** 补发提示复用完成守卫（ADR 0124）的用户消息Item形状，身份由Turn与步骤派生
+（`harnessix.truncation-recovery/v1`），判定只读本Turn已持久化的补发Item，重放确定；
+截断这一事实由补发Item本身留下审计记录。实现见`harnessix.agent.truncation_recovery`，
+测试见`tests/agent/test_truncation_recovery.py`。
+

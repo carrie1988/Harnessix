@@ -114,7 +114,11 @@ def completion_notice_events(turn_id: UUID, step: int, notice: str | None) -> li
     """补发提示的用户消息Item事件；notice为None时为空。"""
     if notice is None:
         return []
-    item_id = completion_notice_item_id(turn_id, step)
+    return host_notice_events(turn_id, completion_notice_item_id(turn_id, step), notice)
+
+
+def host_notice_events(turn_id: UUID, item_id: UUID, notice: str) -> list[EventDraft]:
+    """宿主补发提示落为一条已完成的用户消息Item；身份由调用方按Turn与步骤派生，重放确定。"""
     content = TextContent(kind="user_message", text=notice)
     return [
         EventDraft(turn_id=turn_id, payload=ItemStarted(item_id=item_id, content=content)),
