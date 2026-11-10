@@ -44,7 +44,7 @@ supersedes: []
 
 - 状态栏在进展之后显示活动Profile的首选模型（`cost_estimate.chain_model_name`，经`ProductController`构造参数传入`ProductControllerState.model`）。
 - [`diff_view.py`](../../src/harnessix/product_ui/diff_view.py)把每个文件的`diff`头换成“── 路径 ──”分隔行，并跳过首个`@@`之前的`---`/`+++`/`index`等文件头行；文件内容里以`---`开头的删除行不受影响。
-- `HelpScreen(None)`显示静态使用说明；`InteractionPresenter.help`只在有最近错误码时显示错误条目。此前没有错误时回落到`product_internal_failure`，新用户按“帮助”看到的是内部错误说明。
+- `HelpScreen(None)`显示静态使用说明（中文段落内不放空格：Rich按空格折行，长中文串会整体移到下一行，247实测“审批：Agent”后断行）；`InteractionPresenter.help`只在有最近错误码时显示错误条目。此前没有错误时回落到`product_internal_failure`，新用户按“帮助”看到的是内部错误说明。
 
 ## 当前增量：终端界面易用性第二轮（0.10.0b4）
 
