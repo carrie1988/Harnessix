@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 26
+version: 27
 code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
@@ -114,6 +114,13 @@ Provider私有分词器。Chat Provider逐位置比较本次与上一视图的�
 目录与预算说明移到标记之后。只改变内容块形态与顺序，不改变文本；未配置时字段不序列化，旧配置指纹不变。
 DashScope兼容端点以`prompt_tokens_details.cache_creation_input_tokens`报告显式缓存创建，[流解析](../../src/harnessix/models/_chat_stream.py)
 仅在OpenAI字段缺失时接受该非负整数，使分区价格可计。回归见[前缀缓存测试](../../tests/models/test_prompt_cache.py)。
+
+### 守卫判为不是答复的回复不原样回放
+
+[`messages_for`](../../src/harnessix/models/_history.py)先经完成守卫的`without_non_answers`处理历史：紧跟“不是答复”类宿主提示的结构化乱码（JSON对象、截断片段、写成文本的工具调用）换成固定短占位，防止模型照抄
+（[Agent模块§13.4](agent.md#134-完成守卫显式开启)，ADR 0124第2版）。Chat与Anthropic两个mapper共用这一视图；
+消息条数、工具调用配对与`ModelRequest.history`不变，占位不长于原文，输入估算保持保守。
+回归见[守卫测试](../../tests/agent/test_completion_guard.py)。
 
 ### 累计预算反馈
 
@@ -828,6 +835,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 27 | `feat/r2-guard` | 2026-11-11 | 出站历史映射把完成守卫判为不是答复的结构化乱码换成短占位（ADR 0124第2版） |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
 | 25 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 同步主线：工具结果文本支持命令输出预览v4，去除了终端转义序列时注明“terminal escape sequences removed”，内容为空且未截断的流不再显示；纯文本回复在输出上限处截断改由运行时的截断恢复处理（ADR 0109第3版） |
 | 22 | `feat/p0-beta-readiness` | 2026-11-09 | HTTP错误响应或连接未建立的尝试报告完整零用量；重试遵循`Retry-After`，上限60秒 |

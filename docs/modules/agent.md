@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 46
+version: 47
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -569,22 +569,40 @@ sequenceDiagram
 
 ### 13.4 完成守卫（显式开启）
 
-模型一步没有工具调用即被视为最终答复。无人值守任务里，小模型偶尔只写一句进展、照抄上下文摘要JSON
-或编造错误JSON就停下，任务以空补丁结束。[`completion_guard`](../../src/harnessix/agent/completion_guard.py)
-在`_close_model_step`的同一Thread CAS内判定（仅当本步既无Steering也无目录拒绝）：
+模型一步没有工具调用即被视为最终答复。无人值守任务里，小模型偶尔只写一句进展、照抄上下文摘要、
+输出一段截断的JSON或把工具调用写进正文就停下，任务以空补丁结束。
+[`completion_guard`](../../src/harnessix/agent/completion_guard.py)在`_close_model_step`的同一Thread CAS内判定
+（仅当本步既无Steering也无目录拒绝）。回复形态由纯文本模块[`reply_shape`](../../src/harnessix/agent/reply_shape.py)
+给出，它不读Turn状态，也不解析或执行正文里的调用。自上而下取第一条成立的规则：
 
 | 本步回复 | 处理 |
 |---|---|
-| 空正文、JSON对象或含上下文摘要标记 | 补发“不是答复，继续用工具”提示 |
+| 整条回复是只包着文本的线上外壳（`{"type":"text","text":…}`、内容块数组、助手消息外壳） | 去壳，按壳内正文继续判定；持久化的回复不变 |
+| 空正文；照抄宿主记录（上下文摘要、占位）；整条回复是一个JSON对象 | 补发“不是答复，继续用工具”提示 |
+| 以JSON记录开头却无法解析（截断或写坏）；行首工具调用标记（`<tool_call>`等）后没有完整JSON | 补发“回复被截断、什么都没执行，请改小后经工具接口重发”提示 |
+| 整条回复是带工具调用的线上外壳；行首工具调用标记后跟着完整JSON | 补发“工具调用被写成了文本，请改用真正的工具调用”提示；宿主不执行正文里的调用 |
 | 上一步是对补发的回应 | 照常完成（以下两行不再判定） |
-| 回复宣布还要继续：去掉行首Markdown标记后以“next step”“let me”“I'll”“下一步”“让我”“我将”等开头，或以半角/全角冒号结尾 | 补发“刚才宣布了下一步却没有工具调用”提示；与是否已有补丁无关 |
+| 回复宣布还要继续：去掉行首Markdown标记后以“next step”“let me”“I'll”“下一步”“让我”“我将”等开头，以半角/全角冒号结尾，或结尾句说了自己的下一步（“my next step”“let me”“I'll”“I need”“让我”“我将”等；“Let me know…”与泛指的“next step”不算） | 补发“刚才宣布了下一步却没有工具调用”提示；与是否已有补丁无关 |
 | 本Turn尚无成功补丁（Trusted Action `patch_batch`或旧补丁效果） | 补发“尚未修改代码”提示；模型再次给出纯文本结论即照常完成 |
 | 其他 | 照常完成 |
 
+前四行是结构判定，每次都补发；后两行靠措辞与状态推断，问一次即止。补发次数随可观察状态变化：看不出未完成迹象时
+每Turn至多2次（`BASE_COMPLETION_NOTICES`）；本Turn尚无成功补丁、最新计划有未完成步骤，或最近一次工具结果不是成功，
+任一成立即放宽到硬上限6次（`MAX_COMPLETION_NOTICES`）。硬上限与状态无关，守卫必然终止；步骤或Token预算已用尽时不补发。
+每条提示末尾写明剩余模型调用次数（“Model calls left in this task: at most N.”）：产品路径的Provider包装
+（`SafeFallbackProvider`）不实现输入估算端口，逐请求的预算说明不会发送，守卫因此在自己的提示里给出这一宿主已知的事实。
+
 补发提示以用户消息Item持久化（身份`uuid5(turn_id, "harnessix.completion-guard/v1:<step>")`，正文以
 `[Harnessix host notice]`开头），并以`TurnStateChanged(reason="steering")`重入，沿用§13.3的Event v19
-语义，事件版本不变。每个Turn最多补发两次；步骤或Token预算已用尽时不补发。产品配置`completion_guard`
-默认关闭（ADR 0124），`harnessix exec`默认开启；Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+语义，事件版本不变。产品配置`completion_guard`默认关闭（ADR 0124第2版），`harnessix exec`默认开启；
+Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+
+**历史占位。** 判为不是答复的结构化乱码留在历史里会被模型照抄。`without_non_answers`在出站映射处
+（[`messages_for`](../../src/harnessix/models/_history.py)）把它换成固定短占位：只替换紧跟“不是答复”类提示、
+形态仍是JSON对象、截断片段或写成文本的调用、且比占位长的助手消息；照抄宿主记录的回复不替换（与宿主投影的
+上下文摘要无法区分）。持久Item、模型历史检查记录与重放不变，出站输入只减不增。判定只看相邻的两条历史消息，因此对较早Turn与
+Fork继承的历史同样生效；由多条助手消息拼成的回复不替换。回归见[守卫测试](../../tests/agent/test_completion_guard.py)
+与[形态测试](../../tests/agent/test_reply_shape.py)。
 
 ## 14. 取消、超时和关闭
 
@@ -979,6 +997,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 47 | `feat/r2-guard` | 2026-11-11 | 完成守卫第2版（ADR 0124）：截断或写成文本的工具调用不算完成，只包着文本的外壳去壳判定，继续意图检测扩展到结尾句，补发次数随状态在2～6次间变化，提示写明剩余模型调用次数，结构化乱码在出站历史里换成占位 |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |
 | 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 136
+version: 137
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -701,7 +701,7 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `secret_sources` | 1～32 | 按Secret名称排序，名称唯一，环境变量唯一 |
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
-| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
+| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示，每Turn的补发次数随未完成迹象在2～6次间变化、有硬上限（见Agent模块§13.4，ADR 0124第2版），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
 | `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
 
 每个Profile都独立展开整条Fallback链并验证：
@@ -2274,6 +2274,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 137 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
 | 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |
