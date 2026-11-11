@@ -1,0 +1,688 @@
+{
+ "spec": "harnessix.round2.task-list/v1",
+ "dataset": "SWE-bench/SWE-bench_Multilingual",
+ "source_parquet": "data/test-00000-of-00001.parquet",
+ "source_parquet_sha256": "92abca7cb527b41a9f66d03a26ce441ff7319e3a49f985998fd56be4bb9b08b2",
+ "selection": {
+  "script": "scripts/select_swebench_multilingual_round2.py",
+  "seed": 20261111,
+  "excluded": "benchmarks/swebench/week1-local/multilingual40.json",
+  "order_per_language": [
+   "test",
+   "dev",
+   "reserve"
+  ],
+  "max_per_repository_per_split": 2,
+  "leak_filter": "own-PR link or embedded diff in problem statement",
+  "image_filter": "official swebench/sweb.eval.x86_64.* image present on Docker Hub",
+  "substitution": "gold patch fails offline -> first unused reserve of the language"
+ },
+ "tasks": [
+  {
+   "instance_id": "projectlombok__lombok-2792",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-2792:latest",
+   "digest": "sha256:fe8e2cd45d90a306da5a22f60380cf68e729f70db0aac3cbacfeea6edc6ee562",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3486",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3486:latest",
+   "digest": "sha256:7ea6ca0e8d238df0b850472ebf36d58c10837b791aca3244399262733e018159",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "axios__axios-6539",
+   "repo": "axios/axios",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.axios_1776_axios-6539:latest",
+   "digest": "sha256:a0bfe8bcd541c85cce28fc1f21c58b26d53a1cf1ea482b9b253ee80f3440d5cb",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "facebook__docusaurus-10130",
+   "repo": "facebook/docusaurus",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.facebook_1776_docusaurus-10130:latest",
+   "digest": "sha256:e48084f281e6363e77c1cbde079d6f54ee26e94250e79370eef4ac92cb616542",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "gin-gonic__gin-1805",
+   "repo": "gin-gonic/gin",
+   "language": "go",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.gin-gonic_1776_gin-1805:latest",
+   "digest": "sha256:a473041934092bc0e4578aac00375175f780676f3f84f6ee0ca7927808dfbc5a",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "gin-gonic__gin-3741",
+   "repo": "gin-gonic/gin",
+   "language": "go",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.gin-gonic_1776_gin-3741:latest",
+   "digest": "sha256:97f695249048d35cb099e7f853402e2c1282507a26429383b7da9f44b1bacef8",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "tokio-rs__tokio-6724",
+   "repo": "tokio-rs/tokio",
+   "language": "rust",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_tokio-6724:latest",
+   "digest": "sha256:b54c1f7e51f01e853ab052e72f78dd1739473771dbda908d47218f94e1f608e6",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "fmtlib__fmt-1683",
+   "repo": "fmtlib/fmt",
+   "language": "c/c++",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.fmtlib_1776_fmt-1683:latest",
+   "digest": "sha256:7308abbea932b26f5d97901ddc751a598d0ff8ca483ce294caf2c7a779b06b31",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "laravel__framework-53914",
+   "repo": "laravel/framework",
+   "language": "php",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.laravel_1776_framework-53914:latest",
+   "digest": "sha256:a2600f3ac7219e983f18e6ae292daea5ced7052457f3e9bdb817441e401ac8b5",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13687",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "dev",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13687:latest",
+   "digest": "sha256:c87fc86c9b436cfcab79197e6da066e0483b6661993bc881414a4ae29490dcca",
+   "origin": "week1-dev"
+  },
+  {
+   "instance_id": "javaparser__javaparser-4561",
+   "repo": "javaparser/javaparser",
+   "language": "java",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.javaparser_1776_javaparser-4561:latest",
+   "digest": "sha256:3316cfc354d448a3afe21f24ae411b45e292c478a2659381d3087012a451e577"
+  },
+  {
+   "instance_id": "google__gson-1100",
+   "repo": "google/gson",
+   "language": "java",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.google_1776_gson-1100:latest",
+   "digest": "sha256:81d72b4d462ff11479095c619e9160a31c7de2ad0ce2faa179816b553148d6d2"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3674",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3674:latest",
+   "digest": "sha256:f6cdd41045fe8d3f9182eb5fd8d24e76ed2e032b23d238384725f03ca6dbc03c"
+  },
+  {
+   "instance_id": "apache__lucene-12196",
+   "repo": "apache/lucene",
+   "language": "java",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.apache_1776_lucene-12196:latest",
+   "digest": "sha256:3cb3f4a2cbd5d26e21cc9858d6de12d582ff28714010824b29cc47ea7b9a84cc"
+  },
+  {
+   "instance_id": "apache__lucene-12022",
+   "repo": "apache/lucene",
+   "language": "java",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.apache_1776_lucene-12022:latest",
+   "digest": "sha256:18d94859ef0f839d64aef5be75eb3c4785c7de07de970a1c7104973fa8530ef6"
+  },
+  {
+   "instance_id": "apache__druid-13704",
+   "repo": "apache/druid",
+   "language": "java",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.apache_1776_druid-13704:latest",
+   "digest": "sha256:3451b80cd2d12999eafe56d69156bb2d982bf86590cb48f89dcbbcdebba6c3bf"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3312",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3312:latest",
+   "digest": "sha256:04b64aa488d96af23eb7648a5a025596de7341074e31d99c0147ea212e4649a6"
+  },
+  {
+   "instance_id": "google__gson-1093",
+   "repo": "google/gson",
+   "language": "java",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.google_1776_gson-1093:latest",
+   "digest": "sha256:55e9e9af1c066fb1335269f8a6549b1242d6bb86c7d127ee6cde7dddb129f828"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3594",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3594:latest",
+   "digest": "sha256:e301020a2ff52ec4f370c9460c01f598ec910db1b2102591f5e8e1ffc701313b"
+  },
+  {
+   "instance_id": "google__gson-2158",
+   "repo": "google/gson",
+   "language": "java",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.google_1776_gson-2158:latest",
+   "digest": "sha256:70bab59965c52f3e29d335b2a841257004556a46326f98a3cdb8ab608036ba36"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3326",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3326:latest",
+   "digest": "sha256:611b1e84684c7d83414839fc80571e62bae90ce09de413c41ba372259c075aaa"
+  },
+  {
+   "instance_id": "projectlombok__lombok-3479",
+   "repo": "projectlombok/lombok",
+   "language": "java",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3479:latest",
+   "digest": "sha256:28c977b4afa5dac4a5559bb403dec6c879362dc8baf27b9b8959b2ef7cd08ccb"
+  },
+  {
+   "instance_id": "axios__axios-4738",
+   "repo": "axios/axios",
+   "language": "typescript/javascript",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.axios_1776_axios-4738:latest",
+   "digest": "sha256:92a75714e64a22d50bf456f6c99bf051360a54bf6417eb28deadedb7aae8a09b"
+  },
+  {
+   "instance_id": "preactjs__preact-2757",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-2757:latest",
+   "digest": "sha256:fc8103f14b8cc67f19965789df6beddf7cb9576be869e228c5a06f1a8d74f41e"
+  },
+  {
+   "instance_id": "vuejs__core-11739",
+   "repo": "vuejs/core",
+   "language": "typescript/javascript",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.vuejs_1776_core-11739:latest",
+   "digest": "sha256:e6781528fd770c63294dd2f6def9bd98a4c457eed62755f99c496d346ed107f3"
+  },
+  {
+   "instance_id": "facebook__docusaurus-9183",
+   "repo": "facebook/docusaurus",
+   "language": "typescript/javascript",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.facebook_1776_docusaurus-9183:latest",
+   "digest": "sha256:39613108947e31ae391740b6345098378cabc846973abb59d6e2bcb93aca38a3"
+  },
+  {
+   "instance_id": "preactjs__preact-3763",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-3763:latest",
+   "digest": "sha256:40ec5e3e9ab1f9390a1e0537800f4378d5a7f3f36d5d63098b58539b10f87d5c"
+  },
+  {
+   "instance_id": "immutable-js__immutable-js-2005",
+   "repo": "immutable-js/immutable-js",
+   "language": "typescript/javascript",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.immutable-js_1776_immutable-js-2005:latest",
+   "digest": "sha256:d038a276cb975ddfbb1a6b13fe9c8260fb22a0145c8605bb2a477a4d75ee5549"
+  },
+  {
+   "instance_id": "preactjs__preact-4152",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-4152:latest",
+   "digest": "sha256:b421912ab8a495594d471e2670efcb8883a04e34ab0c130c0ae5b8e17e6b3d9d"
+  },
+  {
+   "instance_id": "preactjs__preact-3345",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-3345:latest",
+   "digest": "sha256:ed733da51b0a7f17ae9121b01a5bf0ce17a20f3cea49e7a566bba7595a24b7d6"
+  },
+  {
+   "instance_id": "axios__axios-4731",
+   "repo": "axios/axios",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.axios_1776_axios-4731:latest",
+   "digest": "sha256:e75f3f2f1e91fbd09a00bd14a4c807dab210d58a5d7395b595cf65314d092bb1"
+  },
+  {
+   "instance_id": "axios__axios-5316",
+   "repo": "axios/axios",
+   "language": "typescript/javascript",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.axios_1776_axios-5316:latest",
+   "digest": "sha256:245ddca14b8418a8cabfe058686f5d83c81474a0e5a1e99510499b8333a5f589"
+  },
+  {
+   "instance_id": "preactjs__preact-4436",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-4436:latest",
+   "digest": "sha256:e128a63fb93027d117b05545e2e4df002eb6ab601e4abbb3f62f697d876ce91f"
+  },
+  {
+   "instance_id": "preactjs__preact-3010",
+   "repo": "preactjs/preact",
+   "language": "typescript/javascript",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.preactjs_1776_preact-3010:latest",
+   "digest": "sha256:e8aa1e355221d42235e7beb1d83c902b1ca9f40112af090d4d87e60b3f69366d"
+  },
+  {
+   "instance_id": "prometheus__prometheus-14861",
+   "repo": "prometheus/prometheus",
+   "language": "go",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.prometheus_1776_prometheus-14861:latest",
+   "digest": "sha256:0a80435621930cb1c45767db4b2f396e2dee354a1b8bc1823c6dd6f2550dfa34"
+  },
+  {
+   "instance_id": "caddyserver__caddy-6051",
+   "repo": "caddyserver/caddy",
+   "language": "go",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.caddyserver_1776_caddy-6051:latest",
+   "digest": "sha256:e00d6b08d28440e39ab1c83e8938d5cc7764ece0c3af1e37f8ee4942fc687f71"
+  },
+  {
+   "instance_id": "hashicorp__terraform-34900",
+   "repo": "hashicorp/terraform",
+   "language": "go",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.hashicorp_1776_terraform-34900:latest",
+   "digest": "sha256:b8aa67662428008ca959aaf3f87a0046780e8d7eee550146127c41634731c0cf"
+  },
+  {
+   "instance_id": "caddyserver__caddy-6288",
+   "repo": "caddyserver/caddy",
+   "language": "go",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.caddyserver_1776_caddy-6288:latest",
+   "digest": "sha256:a8e21581dfa80e83301412315a58c72e7f7eac9139741b60215b388b1b742351"
+  },
+  {
+   "instance_id": "hashicorp__terraform-34814",
+   "repo": "hashicorp/terraform",
+   "language": "go",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.hashicorp_1776_terraform-34814:latest",
+   "digest": "sha256:43ffb61511d2b42c78d58b11f9f9e69d49b1017f19cbf11612f6be5493501703"
+  },
+  {
+   "instance_id": "prometheus__prometheus-12874",
+   "repo": "prometheus/prometheus",
+   "language": "go",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.prometheus_1776_prometheus-12874:latest",
+   "digest": "sha256:4ee3b99d17b0f8d92b9e99f019bfeef5b907075972ec058592512d444593e0e0"
+  },
+  {
+   "instance_id": "caddyserver__caddy-6115",
+   "repo": "caddyserver/caddy",
+   "language": "go",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.caddyserver_1776_caddy-6115:latest",
+   "digest": "sha256:7a69fd026f7b8fec2d3f9535169c1caa800b0149b96e2834ff1f5409e83929de"
+  },
+  {
+   "instance_id": "caddyserver__caddy-5870",
+   "repo": "caddyserver/caddy",
+   "language": "go",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.caddyserver_1776_caddy-5870:latest",
+   "digest": "sha256:24f0edf9189587c03a8fd82e762752beef54910f006b6faebd10c82fa2ef26c4"
+  },
+  {
+   "instance_id": "gin-gonic__gin-3227",
+   "repo": "gin-gonic/gin",
+   "language": "go",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.gin-gonic_1776_gin-3227:latest",
+   "digest": "sha256:f4131ded4cdefee07e3f24001039556c7197186ca45042bfdadd4474504c6cf1"
+  },
+  {
+   "instance_id": "hashicorp__terraform-34580",
+   "repo": "hashicorp/terraform",
+   "language": "go",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.hashicorp_1776_terraform-34580:latest",
+   "digest": "sha256:80b84b3055027773cb132dbe34fad7d96cd04a555ebb8b3eb16356b6a4d5f14b"
+  },
+  {
+   "instance_id": "caddyserver__caddy-4774",
+   "repo": "caddyserver/caddy",
+   "language": "go",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.caddyserver_1776_caddy-4774:latest",
+   "digest": "sha256:6bb2b27fcf73cc42fef88f73e24dd0277c6327efb438ec87c9071b6bf6a8dc98"
+  },
+  {
+   "instance_id": "caddyserver__caddy-5626",
+   "repo": "caddyserver/caddy",
+   "language": "go",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.caddyserver_1776_caddy-5626:latest",
+   "digest": "sha256:d4d7cd4fc663263e4ef24f0ae47eabfa6175b76266234a03f5c21d32b527f54e"
+  },
+  {
+   "instance_id": "sharkdp__bat-3108",
+   "repo": "sharkdp/bat",
+   "language": "rust",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.sharkdp_1776_bat-3108:latest",
+   "digest": "sha256:957bf1e1012e7691cc197b68387dab7757dcb46a025ea2e88cc4a7c81035c022"
+  },
+  {
+   "instance_id": "tokio-rs__tokio-4867",
+   "repo": "tokio-rs/tokio",
+   "language": "rust",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_tokio-4867:latest",
+   "digest": "sha256:f76ed4286a51ccd47adcad9490034be2176bb680df0ae40174696987e5786a69"
+  },
+  {
+   "instance_id": "uutils__coreutils-6731",
+   "repo": "uutils/coreutils",
+   "language": "rust",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.uutils_1776_coreutils-6731:latest",
+   "digest": "sha256:71f41acf6d079a00c32d5a4ef7095317daf80fdf2428621cfde8c6b7cadad7cc"
+  },
+  {
+   "instance_id": "astral-sh__ruff-15626",
+   "repo": "astral-sh/ruff",
+   "language": "rust",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.astral-sh_1776_ruff-15626:latest",
+   "digest": "sha256:ccd3b40fdf101208073de57c87e5c7efa30ca47543c8f6e75dbbe848b529110b"
+  },
+  {
+   "instance_id": "tokio-rs__axum-1730",
+   "repo": "tokio-rs/axum",
+   "language": "rust",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_axum-1730:latest",
+   "digest": "sha256:67c573f22265133e0eba6f3f3119330674c494a109ea9eb77e4c37d2c1f2e3ae"
+  },
+  {
+   "instance_id": "tokio-rs__tokio-4384",
+   "repo": "tokio-rs/tokio",
+   "language": "rust",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_tokio-4384:latest",
+   "digest": "sha256:c807b1019c11ca83fdbb22b8b159df0fb64f3b380ccea7b5b33b3404cc0e5e4e"
+  },
+  {
+   "instance_id": "astral-sh__ruff-15543",
+   "repo": "astral-sh/ruff",
+   "language": "rust",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.astral-sh_1776_ruff-15543:latest",
+   "digest": "sha256:d31eaf463779b61366773e9c7a96b74d2737b43d22bed44e3e32af4e7012eea3"
+  },
+  {
+   "instance_id": "jqlang__jq-2919",
+   "repo": "jqlang/jq",
+   "language": "c/c++",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.jqlang_1776_jq-2919:latest",
+   "digest": "sha256:d51ae0380271440dab8d0bbecf97043396a3ae9d94f63f351b584e7bf55ce35a"
+  },
+  {
+   "instance_id": "fmtlib__fmt-3158",
+   "repo": "fmtlib/fmt",
+   "language": "c/c++",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.fmtlib_1776_fmt-3158:latest",
+   "digest": "sha256:fe29fa41cc4472fc08743e959d9d13163a4533e416d671737a557a90bef835cf"
+  },
+  {
+   "instance_id": "valkey-io__valkey-790",
+   "repo": "valkey-io/valkey",
+   "language": "c/c++",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.valkey-io_1776_valkey-790:latest",
+   "digest": "sha256:ce69436e1baec0b0ca7a45a6c6c1b0021294b0a192f1865cb16a8336b29b2c27"
+  },
+  {
+   "instance_id": "micropython__micropython-13569",
+   "repo": "micropython/micropython",
+   "language": "c/c++",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.micropython_1776_micropython-13569:latest",
+   "digest": "sha256:d5fbef47ba7545c1754a0380cd2ca9b0a2d45a7c37f42953297b354dc59f6aa5"
+  },
+  {
+   "instance_id": "jqlang__jq-2750",
+   "repo": "jqlang/jq",
+   "language": "c/c++",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.jqlang_1776_jq-2750:latest",
+   "digest": "sha256:adfc1cecf66fe4beafdf3c7ba3e429e87b5fa98d507c0a3bb5b34252d1b06dad"
+  },
+  {
+   "instance_id": "nlohmann__json-4237",
+   "repo": "nlohmann/json",
+   "language": "c/c++",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.nlohmann_1776_json-4237:latest",
+   "digest": "sha256:0205d3782787e5fe96acae1548700554421f91ae2ad8a9d77834297a1c51e5ab"
+  },
+  {
+   "instance_id": "redis__redis-10764",
+   "repo": "redis/redis",
+   "language": "c/c++",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.redis_1776_redis-10764:latest",
+   "digest": "sha256:6ae9417789e0b11a75d7fd1f8b01235b737c3aecb4b38fa21bee49f7d4a350ac"
+  },
+  {
+   "instance_id": "php-cs-fixer__php-cs-fixer-7663",
+   "repo": "php-cs-fixer/php-cs-fixer",
+   "language": "php",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.php-cs-fixer_1776_php-cs-fixer-7663:latest",
+   "digest": "sha256:48b46e3ab9ebb5867c3a1099b6f22998029d28bbfdf827c0be52ddc549b58c34"
+  },
+  {
+   "instance_id": "php-cs-fixer__php-cs-fixer-8256",
+   "repo": "php-cs-fixer/php-cs-fixer",
+   "language": "php",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.php-cs-fixer_1776_php-cs-fixer-8256:latest",
+   "digest": "sha256:999a0908269829696a3fb54e74729d29d35d3463e9e9dac2e40bb095e4912d0a"
+  },
+  {
+   "instance_id": "phpoffice__phpspreadsheet-3940",
+   "repo": "phpoffice/phpspreadsheet",
+   "language": "php",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.phpoffice_1776_phpspreadsheet-3940:latest",
+   "digest": "sha256:517aa0fab1b6df9d8b9b0a52b4bcd1d98a6eecbf66c188b3ea66a8d3be00cdfe"
+  },
+  {
+   "instance_id": "phpoffice__phpspreadsheet-3469",
+   "repo": "phpoffice/phpspreadsheet",
+   "language": "php",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.phpoffice_1776_phpspreadsheet-3469:latest",
+   "digest": "sha256:13e015efe86e9c6cb16131df323affd981bea89b426f53b1a39d17e0fdfce973"
+  },
+  {
+   "instance_id": "briannesbitt__carbon-2665",
+   "repo": "briannesbitt/carbon",
+   "language": "php",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.briannesbitt_1776_carbon-2665:latest",
+   "digest": "sha256:31ff1b5af40d4d715483e7085ba7e237546bff8622c84f7d3c347e1ae821cba0"
+  },
+  {
+   "instance_id": "php-cs-fixer__php-cs-fixer-8064",
+   "repo": "php-cs-fixer/php-cs-fixer",
+   "language": "php",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.php-cs-fixer_1776_php-cs-fixer-8064:latest",
+   "digest": "sha256:2f02327c5ae169d358d0de6bd472820795315651220c02adef2de515e7e82269"
+  },
+  {
+   "instance_id": "briannesbitt__carbon-2813",
+   "repo": "briannesbitt/carbon",
+   "language": "php",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.briannesbitt_1776_carbon-2813:latest",
+   "digest": "sha256:22ea52286f6f0879575b87314797ba4f478e8a5b96734e706d187926d2902591"
+  },
+  {
+   "instance_id": "fluent__fluentd-3328",
+   "repo": "fluent/fluentd",
+   "language": "ruby",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.fluent_1776_fluentd-3328:latest",
+   "digest": "sha256:eeb67408ad550eb5cb927b3f9ddbb8a470786c441b893aebf6e28437c71b9393"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13375",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13375:latest",
+   "digest": "sha256:efbc31bdd21f3fa765fdd428414ee5c4fdf01f48e00305509147856644598a50"
+  },
+  {
+   "instance_id": "fluent__fluentd-3641",
+   "repo": "fluent/fluentd",
+   "language": "ruby",
+   "split": "test",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.fluent_1776_fluentd-3641:latest",
+   "digest": "sha256:bf8bbc479cb3402f7660849b54c020b9ba9700a04630e98cf95865ebbecf4fbc"
+  },
+  {
+   "instance_id": "fastlane__fastlane-20975",
+   "repo": "fastlane/fastlane",
+   "language": "ruby",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.fastlane_1776_fastlane-20975:latest",
+   "digest": "sha256:62120c06273144eb08855137a2c613a46840a6610ef264a4045522bf579028ce"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13479",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "dev",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13479:latest",
+   "digest": "sha256:4f397b39b8f5c497c487a6b828ea33cf249e671f4c80d70a9e1b14911ed91a69"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13424",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13424:latest",
+   "digest": "sha256:2a0606f94f9aa2db33ece32ee65bfad6897935ba041f4ee52fce8f85633f4285"
+  },
+  {
+   "instance_id": "rubocop__rubocop-13362",
+   "repo": "rubocop/rubocop",
+   "language": "ruby",
+   "split": "reserve",
+   "origin": "round2",
+   "image": "swebench/sweb.eval.x86_64.rubocop_1776_rubocop-13362:latest",
+   "digest": "sha256:4e954ec2c9dd40874668a5a6495ab748ed84da6f2fea2cde00f4fccb25a502b0"
+  }
+ ]
+}
