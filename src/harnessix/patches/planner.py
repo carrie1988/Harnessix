@@ -65,20 +65,47 @@ def _read_image(
         raise KernelError(f"patch_{code}", "Patch 前镜像读取未完成") from None
 
 
+def _line_number(before: bytes, offset: int) -> int:
+    return before.count(b"\n", 0, offset) + 1
+
+
 def _missing_anchor_message(before: bytes, old: bytes, new: bytes) -> str:
     """锚点缺失时给出可行动的定位事实：改动是否已在文件中、首个锚点行是否仍存在及其行号。"""
-    message = "精确编辑锚点不存在"
-    if new.strip() and before.find(new) >= 0:
-        return f"{message}；new_text已原样存在于当前文件，此编辑可能已经应用，请先read_file核对"
+    message = "old_text was not found in the file"
+    applied = before.find(new) if new.strip() else -1
+    if applied >= 0:
+        return (
+            f"{message}, but its new_text is already there at line "
+            f"{_line_number(before, applied)}: this edit looks already applied, so remove it "
+            "and resend the other edits"
+        )
     first = next((line.strip() for line in old.splitlines() if line.strip()), b"")
     lines = [line.strip() for line in before.splitlines()]
     numbers = [index + 1 for index, line in enumerate(lines) if first and line == first]
     if not numbers:
-        return f"{message}；old_text首个非空行不在当前文件中，请先read_file取得当前内容"
+        return (
+            f"{message}, and neither was its first non-blank line; read_file the part you "
+            "want to change and copy old_text from the current text"
+        )
     shown = ", ".join(str(number) for number in numbers[:5])
     return (
-        f"{message}；old_text首个非空行出现在当前文件第{shown}行，但其后内容不一致"
-        "（可能已被此前的Patch修改），请read_file该区域后按当前文本重写old_text"
+        f"{message}: its first non-blank line is at line {shown}, but the lines after it differ "
+        "from the file (an earlier patch may have changed them); read_file from that line and "
+        "copy old_text from the current text"
+    )
+
+
+def _ambiguous_anchor_message(before: bytes, old: bytes) -> str:
+    """锚点不唯一时给出各处行号：模型按行号补上相邻行即可唯一定位。"""
+    numbers: list[str] = []
+    start = before.find(old)
+    while start >= 0 and len(numbers) < 5:
+        numbers.append(str(_line_number(before, start)))
+        start = before.find(old, start + 1)
+    more = " and more" if start >= 0 else ""
+    return (
+        f"old_text matches more than one place (lines {', '.join(numbers)}{more}); add the "
+        "line before or after the place you mean to old_text and new_text until it matches once"
     )
 
 
@@ -88,26 +115,41 @@ def _edit_ranges(
     operation: ReadOperation,
     max_bytes: int,
 ) -> list[tuple[int, int, bytes]]:
-    ranges: list[tuple[int, int, bytes]] = []
-    for edit in edits:
+    """每条拒绝以edits下标开头：模型只需改正这一处，其余编辑原样重发。"""
+    located: list[tuple[int, int, bytes, int]] = []
+    for index, edit in enumerate(edits):
         _checkpoint(operation)
         old, new = edit.old_text.encode(), edit.new_text.encode()
         start = before.find(old)
         if start < 0:
-            raise KernelError("patch_context_not_found", _missing_anchor_message(before, old, new))
+            raise KernelError(
+                "patch_context_not_found",
+                f"edits[{index}]: {_missing_anchor_message(before, old, new)}",
+            )
         if before.find(old, start + 1) >= 0:
-            raise KernelError("patch_ambiguous_context", "编辑锚点不唯一，请提供更完整上下文")
-        ranges.append((start, start + len(old), new))
-    ranges.sort(key=lambda item: item[0])
-    end, size = 0, len(before)
-    for start, stop, new in ranges:
+            raise KernelError(
+                "patch_ambiguous_context",
+                f"edits[{index}]: {_ambiguous_anchor_message(before, old)}",
+            )
+        located.append((start, start + len(old), new, index))
+    located.sort(key=lambda item: item[0])
+    end, previous, size = 0, 0, len(before)
+    for start, stop, new, index in located:
         if start < end:
-            raise KernelError("patch_overlapping_edits", "编辑区间重叠")
-        end = stop
+            raise KernelError(
+                "patch_overlapping_edits",
+                f"edits[{previous}] and edits[{index}] overlap: both old_text cover line "
+                f"{_line_number(before, start)}; merge them into one edit",
+            )
+        end, previous = stop, index
         size += len(new) - (stop - start)
     if size > max_bytes:
-        raise KernelError("patch_limit_exceeded", "Patch 完整后镜像超限")
-    return ranges
+        raise KernelError(
+            "patch_limit_exceeded",
+            "the file would exceed the patch size limit after these edits; make the change "
+            "smaller or use the command tool",
+        )
+    return [(start, stop, new) for start, stop, new, _ in located]
 
 
 def apply_exact_edits(
@@ -134,7 +176,10 @@ def apply_exact_edits(
     chunks.append(before[offset:])
     after = b"".join(chunks)
     if before == after:
-        raise KernelError("patch_no_change", "Patch 未产生内容变化")
+        raise KernelError(
+            "patch_no_change",
+            "these edits leave the file exactly as it is; remove this entry or change new_text",
+        )
     return after
 
 

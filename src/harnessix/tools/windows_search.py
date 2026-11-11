@@ -10,7 +10,7 @@ from harnessix.tools import search
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.files import _decode
 from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher
-from harnessix.tools.patterns import PathPattern
+from harnessix.tools.patterns import PathPattern, select_included
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
     MAX_SEARCH_DEPTH,
@@ -395,13 +395,11 @@ def grep_files(
 
     matcher = build_line_matcher(args, operation)
     fallback = search.LiteralFallback.start(args, operation, capture)
-    scan, pattern, records = _scan_for(args), search.grep_include(args), _Records(args)
+    scan, records = _scan_for(args), _Records(args)
     matches: list[GrepMatch] = []
     root = port.path(args.path)
-    for candidate in _collect(port, args, operation, scan):
+    for candidate in select_included(_collect(port, args, operation, scan), args, root):
         operation.checkpoint()
-        if not pattern.matches(relative_path(candidate.path, root)):
-            continue
         loaded = _load_text(port, candidate, operation, scan)
         if loaded is not None:
             observed, text = loaded

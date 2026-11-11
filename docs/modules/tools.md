@@ -459,6 +459,22 @@ Harnessix/Codex状态目录、SSH/AWS/GnuPG目录、`.env`变体、常见私钥�
 无法改道时保留原有`read_artifact`提示。修复只影响返回多少，
 不改变路径、工作区边界或权限；Call Item保留模型原始参数，对外公布的input_schema不变。
 
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。** 新增：`start_line`、`offset`
+接受纯数字字符串（位置不截断）；`read_file`上的`context_lines`按`lines_before`处理；`anchor`允许制表符（以制表符缩进的
+源码行原样作锚点曾被当作控制字符拒绝）；`glob`从工作区根出发、`pattern`以字面目录开头时把字面目录移到`path`
+（如`crates/split/*`改为从`crates/split`起找`*`），结果相同但不再因仓库其余部分的条目数触发扫描上限——默认忽略的目录、
+不合法的pattern不移，字面目录不存在时由空结果变为`tool_not_found`。`read_artifact`的数字字符串分页在提案阶段修复（见Agent模块）。
+
+失败说明改为写给模型的英文，仍不回显路径、查询值或文件内容：`ReadErrorCode`全部有对应说明（`wrong_file_type`、
+`invalid_utf8`、`binary_file`、`offset_out_of_range`、`page_changed`、`workspace_changed`、`io_failed`原来只有
+“工作区读取未完成”），`read_artifact`区分不存在、过期与偏移越界。界面按错误码另行展示用户文案（见Product UI模块）。
+
+Grep的`include`（[`patterns.select_included`](../../src/harnessix/tools/patterns.py)，POSIX与原生读取端共用）：
+`path`是单个文件时不应用`include`；起点下有文件却没有一个匹配`include`时返回`tool_no_files_searched`，
+不再返回`scan_complete: true`的空结果。评测中990次成功搜索有30次一个文件也没读，模型把空结果读成了“文件里没有”。
+两条语义以`grep_include`规则进入各Grep合同摘要；`glob`、`read_file`、`list_files`的Descriptor不变。
+回归见[include测试](../../tests/tools/test_grep_include.py)与[参数修复测试](../../tests/tools/test_argument_repair.py)。
+
 ### 9.2 打开与竞态检查
 
 Runtime启动时严格解析根目录并通过从`/`逐段`O_NOFOLLOW|O_DIRECTORY`打开根FD，保存设备/inode身份。
@@ -1221,6 +1237,14 @@ POSIX沿同一FD，Windows沿同一稳定观察；其他语言、伪声明或无
 数组元素、本地`$defs`引用），不在公开合同内的位置整条不报告；文本只取内置结构错误（缺失、多余字段、字面量、类型、长度、范围）
 及`harnessix_`前缀的固定措辞自定义错误，其余只报“取值不符合合同”；被子位置覆盖的父级汇总错误不重复，最多8条，不含调用值。
 Workspace Patch按操作给出固定字段要求（如“create需要path、content、mode（420或493），不得提供expected_sha256、edits”）。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。** 反馈改为英文，下文引用的
+中文措辞是修订前的原文。消息形如
+`… Problems: files[0].edits[1]: old_text and new_text are identical, …. Required fields: files; missing required fields: none; allowed fields: files, spec_version. Fix the listed fields …`：
+具体问题（`Problems`、`Type mismatch`、`Out of range`、`Constraint`）排在字段清单之前。新增三点：没有字段位置的调用级规则
+（同一路径出现两次、正文总量超限）改为`harnessix_`固定措辞并自带`files[i]`下标，原来整条被丢弃、模型只得到字段清单；
+Workspace Patch的操作形状按实际缺少与多余的字段生成（如`this replace entry is missing expected_sha256`），
+判定条件不变；数组或对象字段收到字符串时提示发送JSON值本身。仍不回显任何调用值。
 
 2026-11-09修订（holdout步数分析）：模型在`files[0]`多带`"content_sha256": null`时，旧消息只报
 “files：Tuple should have at least 1 item after validation, not 0”。原因不是联合/判别校验：Pydantic在全部元素无效后

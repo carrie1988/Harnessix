@@ -128,7 +128,8 @@ async def test_page_without_revision_returns_bounded_correction(tmp_path, name, 
         result = await execute(tools, name, **arguments)
     assert result.error.code == "tool_expected_revision_required"
     assert result.error.message == (
-        f"{name}后续页必须携带上一成功结果的revision作为expected_revision"
+        f"Later pages of {name} need expected_revision set to the revision of the "
+        "previous successful page"
     )
     assert "private-canary" not in result.model_dump_json()
 

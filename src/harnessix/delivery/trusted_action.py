@@ -40,6 +40,11 @@ from harnessix.delivery.workspace_patch_compact import (
 )
 from harnessix.delivery.workspace_patch_errors import (
     _sha_mismatch_error,
+    locating_patch_file,
+    target_exists_error,
+    target_missing_error,
+    unexecuted_planning_error,
+    unsafe_full_replace_error,
     workspace_patch_preparation_error,
     workspace_patch_preparation_timeout_error,
 )
@@ -279,9 +284,7 @@ class WorkspacePatchTransactionPlanner:
                 raise
             # 来源文件带setuid/setgid/sticky位、路径与磁盘名称只差大小写，都是确定性拒绝；
             # 此时只读了工作区，未写入任何文件。
-            raise workspace_patch_preparation_error(
-                error.code, f"{error.message}；本次Patch未执行，工作区没有变化"
-            ) from None
+            raise unexecuted_planning_error(error) from None
         except ReadToolError as error:
             if error.code != "timeout":
                 raise
@@ -381,35 +384,45 @@ def _desired_files(
     if platform == "posix":
         # 先于存在性判定：A.txt指向已有a.txt时应提示改用磁盘名称，而不是报“目标已存在”。
         reject_case_aliases(root, [path for path, _ in files])
+    positions = _file_positions(proposal, platform)
     for path, item in files:
         check()
-        _require_target_presence_before_planning(root, path, platform, item.operation)
-        if item.operation == "delete":
-            desired[path] = DesiredWorkspaceFile(None)
-            continue
-        if item.operation == "replace":
-            # 先于无变化判定核对SHA：内容相同但SHA过期是可纠正的SHA不符，而非未绑定的无变化。
-            current, _mode = _read_existing_file(root, path, platform, checkpoint=check)
-            if hashlib.sha256(current).hexdigest() != item.expected_sha256:
-                raise _sha_mismatch_error()
-        if item.operation != "edit":
-            desired[path] = DesiredWorkspaceFile((item.content or "").encode("utf-8"), item.mode)
-            continue
-        # edit保留现有文件的真实权限（含0664、0777等），见ADR 0068第2版。
-        before, mode = _read_existing_file(
-            root,
-            path,
-            platform,
-            checkpoint=check,
-        )
+        with locating_patch_file(positions[path]):
+            desired[path] = _desired_file(root, path, platform, item, operation, check)
+    return desired
+
+
+def _file_positions(proposal: WorkspacePatchInput, platform: PlatformKind) -> dict[str, int]:
+    """规范路径在模型所发files数组中的下标；拒绝消息用它指出出错的是哪一项。"""
+    return {
+        normalize_workspace_path(item.path, platform): index
+        for index, item in enumerate(proposal.files)
+    }
+
+
+def _desired_file(
+    root: Path,
+    path: str,
+    platform: PlatformKind,
+    item: WorkspacePatchFile,
+    operation: ReadOperation,
+    check: Callable[[], None],
+) -> DesiredWorkspaceFile:
+    """一个文件项的目标内容与权限；edit与replace先按expected_sha256核对当前文件。"""
+    _require_target_presence_before_planning(root, path, platform, item.operation)
+    if item.operation == "delete":
+        return DesiredWorkspaceFile(None)
+    if item.operation != "create":
+        # replace先于无变化判定核对SHA：内容相同但SHA过期是可纠正的SHA不符，而非未绑定的无变化。
+        before, mode = _read_existing_file(root, path, platform, checkpoint=check)
         if hashlib.sha256(before).hexdigest() != item.expected_sha256:
             raise _sha_mismatch_error()
-        assert item.edits is not None
-        desired[path] = DesiredWorkspaceFile(
-            _apply_workspace_exact_edits(before, item.edits, operation),
-            mode,
-        )
-    return desired
+        if item.operation == "edit":
+            assert item.edits is not None
+            # edit保留现有文件的真实权限（含0664、0777等），见ADR 0068第2版。
+            edited = _apply_workspace_exact_edits(before, item.edits, operation)
+            return DesiredWorkspaceFile(edited, mode)
+    return DesiredWorkspaceFile((item.content or "").encode("utf-8"), item.mode)
 
 
 def _require_target_presence_before_planning(
@@ -428,23 +441,9 @@ def _require_target_presence_before_planning(
     except (OSError, ReadToolError):
         return
     if operation == "create" and exists:
-        raise _target_exists_error()
+        raise target_exists_error()
     if operation != "create" and not exists:
-        raise _target_missing_error(operation)
-
-
-def _target_exists_error() -> KernelError:
-    return workspace_patch_preparation_error(
-        "workspace_patch_target_exists",
-        "create目标已存在；请read_file后用edit或replace，或先delete",
-    )
-
-
-def _target_missing_error(operation: str) -> KernelError:
-    return workspace_patch_preparation_error(
-        "workspace_patch_target_missing",
-        f"{operation}目标不是现有普通文件；新文件请用create",
-    )
+        raise target_missing_error(operation)
 
 
 def _apply_workspace_exact_edits(
@@ -465,7 +464,8 @@ def _apply_workspace_exact_edits(
     except ReadToolError as error:
         raise workspace_patch_preparation_error(
             "workspace_patch_edit_source_invalid",
-            f"edit目标不是受支持的UTF-8文本：{error.code}",
+            f"edit needs a UTF-8 text file within the size limit, this file is not "
+            f"({error.code}); change it with the command tool instead",
         ) from None
     except KernelError as error:
         if error.code not in {
@@ -545,8 +545,10 @@ def _validate_transaction(
         or tuple(item.path for item in transaction.mutations) != tuple(expected)
     ):
         raise KernelError("delivery_action_mismatch", "Delivery计划未绑定原Action计划")
+    positions = _file_positions(proposal, transaction.source.platform)
     for mutation in transaction.mutations:
-        _validate_mutation(expected[mutation.path], mutation, read_blob)
+        with locating_patch_file(positions[mutation.path]):
+            _validate_mutation(expected[mutation.path], mutation, read_blob)
 
 
 def _validate_mutation(
@@ -574,10 +576,7 @@ def _validate_mutation(
     else:
         expected_body = (item.content or "").encode("utf-8")
         if item.operation == "replace" and len(expected_body) * 4 < mutation.before.size * 3:
-            raise workspace_patch_preparation_error(
-                "workspace_patch_unsafe_full_replace",
-                "完整替换会删除现有文件超过四分之一；请改用唯一锚定的edit或显式delete",
-            )
+            raise unsafe_full_replace_error(len(expected_body), mutation.before.size)
         after_valid = (
             mutation.after.presence == "file"
             and mutation.after.sha256 == hashlib.sha256(expected_body).hexdigest()
@@ -593,9 +592,9 @@ def _require_target_presence(item: WorkspacePatchFile, mutation: WorkspaceMutati
 
     if item.operation == "create":
         if mutation.before.presence != "absent":
-            raise _target_exists_error()
+            raise target_exists_error()
     elif mutation.before.presence != "file":
-        raise _target_missing_error(item.operation)
+        raise target_missing_error(item.operation)
 
 
 def _request_id(plan_id: UUID) -> str:

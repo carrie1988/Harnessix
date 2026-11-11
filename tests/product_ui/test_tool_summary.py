@@ -126,3 +126,63 @@ def test_sandbox_auto_approvals_are_hidden_and_user_decisions_are_explained() ->
     assert approval_text(_approval("harnessix-code-local-user")) == "已批准"
     rejected = _approval("harnessix-code-local-user", "rejected", "不要借用别人的身份")
     assert approval_text(rejected) == "已拒绝：不要借用别人的身份"
+
+
+def _failed(code: str, message: str) -> PublicToolResultContent:
+    return PublicToolResultContent(
+        call_id=uuid4(),
+        outcome="failed",
+        error=PublicFailure(code=code, message=message, retryable=False, category="tool"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("code", "model_message", "shown"),
+    [
+        (
+            "tool_not_found",
+            "Path not found. Paths are relative to the workspace root; confirm the path with "
+            "glob or list_files before retrying",
+            "失败：路径不存在：先用glob或list_files确认相对工作区根的路径（tool_not_found）",
+        ),
+        (
+            "patch_ambiguous_context",
+            "files[1].edits[1]: old_text matches more than one place (lines 1, 3); add the line "
+            "before or after the place you mean",
+            "失败：编辑锚点不唯一，请提供更完整上下文（patch_ambiguous_context）",
+        ),
+        (
+            "workspace_patch_precondition_failed",
+            "files[0]: expected_sha256 does not match the current file",
+            "失败：expected_sha256不匹配；请重新调用目标文件的read_file，"
+            "仅使用digest_status=complete时的content_sha256，禁止猜测摘要"
+            "（workspace_patch_precondition_failed）",
+        ),
+    ],
+)
+def test_english_model_diagnostics_keep_the_reason_users_saw_before(
+    code: str, model_message: str, shown: str
+) -> None:
+    """读取、搜索与修改文件的失败说明改为写给模型的英文后，对话记录里的原因不变（ADR 0129）。"""
+    assert tool_result_text(_failed(code, model_message)) == shown
+
+
+def test_failures_that_are_still_chinese_or_unknown_are_shown_as_before() -> None:
+    # 同一错误码的其他来源仍是中文说明时照原样截取首句，不套用上表。
+    legacy = _failed("patch_limit_exceeded", "Patch 完整前镜像超限")
+    assert tool_result_text(legacy) == "失败：Patch 完整前镜像超限（patch_limit_exceeded）"
+    other = _failed("file_missing", "目标文件不存在。请先创建")
+    assert tool_result_text(other) == "失败：目标文件不存在（file_missing）"
+
+
+def test_every_english_read_failure_has_a_user_reason() -> None:
+    """读工具每条写给模型的英文说明都有对应的用户文案，不会把英文诊断直接显示给用户。"""
+    from harnessix.product_ui import tool_summary
+    from harnessix.tools import runtime
+
+    messages = {f"tool_{code}": text for code, text in runtime._READ_ERROR_MESSAGES.items()}
+    messages |= runtime._ARTIFACT_ERROR_MESSAGES
+    assert messages.keys() <= tool_summary._USER_REASONS.keys()
+    for code, message in messages.items():
+        assert message.isascii(), code
+        assert message[:24] not in tool_result_text(_failed(code, message))

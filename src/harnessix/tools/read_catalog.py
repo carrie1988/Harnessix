@@ -34,6 +34,7 @@ from harnessix.tools.git_contracts import (
     GitStatusInput,
     GitStatusOutput,
 )
+from harnessix.tools.patterns import GREP_INCLUDE_RULE
 from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
     ArchivedGrepOutput,
@@ -265,6 +266,8 @@ def _binding_rules(
             enable_regex_search=binding.input_model is RegexGrepInput,
             snapshot_grep=binding.input_model is GrepSnapshotInput,
         )
+        if issubclass(binding.input_model, GrepInput):
+            rules["grep_include"] = GREP_INCLUDE_RULE
         if binding.output_model is GrepSnapshotOutput:
             rules["snapshot"] = {
                 "spec_version": "harnessix.grep-snapshot/v1",

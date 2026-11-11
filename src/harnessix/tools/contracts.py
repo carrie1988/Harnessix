@@ -18,18 +18,21 @@ MAX_RESULT_BYTES = 60000
 READ_TIMEOUT_SECONDS = 5
 Revision = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 
-# 仅向模型公开正式合同的固定规则，不转发ValidationError正文或调用值。
+# 仅向模型公开正式合同的固定规则（英文，写给模型），不转发ValidationError正文或调用值。
 READ_ARGUMENT_CONSTRAINT_HINTS = MappingProxyType(
     {
-        "harnessix_read_anchor_single_line": "anchor必须是不含换行或控制字符的单行字面量",
-        "harnessix_read_anchor_utf8_limit": "anchor的UTF-8编码不得超过256字节",
-        "harnessix_read_anchor_page_mode": "启用anchor时请省略start_line（默认值为1）",
-        "harnessix_read_anchor_required": "lines_before仅可在anchor非空时使用",
+        "harnessix_read_anchor_single_line": (
+            "anchor must be one line of literal text without line breaks or control characters "
+            "(tabs are allowed)"
+        ),
+        "harnessix_read_anchor_utf8_limit": "anchor must be at most 256 UTF-8 bytes",
+        "harnessix_read_anchor_page_mode": "omit start_line when anchor is given",
+        "harnessix_read_anchor_required": "lines_before needs a non-empty anchor",
         "harnessix_definition_anchor_required": (
-            "definition视图必须使用实际def/class声明的唯一anchor"
+            "view=definition needs anchor set to the unique def/class header line"
         ),
         "harnessix_definition_header_only": (
-            "definition视图请使用lines_before=0，原文范围请用text视图"
+            "view=definition needs lines_before=0; use view=text for a range of source lines"
         ),
     }
 )
@@ -88,7 +91,8 @@ class ReadFileInputV3(ReadFileInputV2):
                 code = "harnessix_read_anchor_required"
                 raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
             return self
-        if any(ord(char) < 32 or ord(char) == 127 for char in self.anchor):
+        # 制表符是源码行的正常缩进（Go、Makefile），锚点按行内子串匹配，放行不影响单行约束。
+        if any((ord(char) < 32 and char != "\t") or ord(char) == 127 for char in self.anchor):
             code = "harnessix_read_anchor_single_line"
             raise PydanticCustomError(code, READ_ARGUMENT_CONSTRAINT_HINTS[code])
         if len(self.anchor.encode("utf-8")) > 256:
@@ -278,6 +282,7 @@ ReadErrorCode = Literal[
     "anchor_ambiguous",
     "anchor_outside_page",
     "definition_unavailable",
+    "no_files_searched",
     "io_failed",
     "timeout",
 ]

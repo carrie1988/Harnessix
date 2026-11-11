@@ -1801,8 +1801,18 @@ Descriptor明确说明完整正文不是Diff；两类Adapter原样发布同一Sc
 调用组发布前，Agent的[提案阶段调用修复](../../src/harnessix/agent/call_repair.py)只做可唯一确定的改写：
 外层单文件字段并入`files`、只有edits时补`operation=edit`、去掉edit上的默认mode与null content、文本权限`"420"`/`"0644"`
 换算为整数。edit的`expected_sha256`缺失或过期、而每段`old_text`都在当前文件中唯一出现时，宿主读取当前文件补上其
-SHA-256：精确锚定已证明模型看到的是要改的当前内容，规划与执行前仍按该SHA核对（TOCTOU照旧拒绝）。replace与delete
-仍要求模型给出正确SHA，不由宿主补齐。修复后的规范参数才进入审批、审计与执行，对外Schema不变。
+SHA-256：精确锚定已证明模型看到的是要改的当前内容，规划与执行前仍按该SHA核对（TOCTOU照旧拒绝）。
+修复后的规范参数才进入审批、审计与执行，对外Schema不变。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。**
+replace与delete缺`expected_sha256`时，宿主补上本线程历史中模型最近一次读到的该文件摘要（不是当前文件的摘要），
+随后与模型给出的SHA走同一条核对路径；模型给出的SHA不改写。未执行拒绝的说明改为写给模型的英文，并指出出错项在
+`files`中的下标：[`workspace_patch_errors.py`](../../src/harnessix/delivery/workspace_patch_errors.py)的
+`locating_patch_file`在`_desired_files`与`_validate_transaction`逐文件处理时记下下标，
+[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)在公开边界用
+`located_patch_message`加上`files[i]`前缀——SHA不符与无变化仍重建固定正文，只附加经校验的下标。
+精确编辑的拒绝再带`edits[j]`与宿主核对到的行号（[`patches/planner.py`](../../src/harnessix/patches/planner.py)），
+整文件替换过短给出两边字节数。事务原子性、来源标记、Route关闭顺序与恢复语义不变。
 
 [操作Schema详设](../changes/m09-r3-workspace-patch-operation-schema.md)说明原真实失败、
 字段矩阵和身份兼容。Schema/描述改变Tool Fingerprint及Binding，但不改变字段导出、Tool版本或数据表。

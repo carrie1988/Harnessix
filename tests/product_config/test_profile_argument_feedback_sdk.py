@@ -149,15 +149,16 @@ async def test_sdk_eight_invalid_calls_then_correct_profile_require_new_approval
                         assert len(failures) == 8
                         assert all(
                             f.error.code == "tool_invalid_arguments"
-                            and "允许字段：profile, selectors" in f.error.message
-                            and "禁止额外字段" in f.error.message
+                            and "allowed fields: profile, selectors. " in f.error.message
+                            and "Fields outside the schema are rejected." in f.error.message
                             for f in failures
                         )
                         assert len(provider.requests) == 9 and process.run_calls == 0
                         for request in provider.requests[1:]:
                             assert any(
                                 isinstance(item.content, ToolResultContent)
-                                and "允许字段：profile, selectors" in item.content.error.message
+                                and "allowed fields: profile, selectors. "
+                                in item.content.error.message
                                 for item in request.history
                                 if isinstance(item.content, ToolResultContent)
                                 and item.content.error

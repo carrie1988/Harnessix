@@ -30,9 +30,10 @@ def test_decoder_rejection_reports_only_registered_field_facts(
             actions.plan(call, context(root))
         assert failure.value.code == "tool_invalid_arguments"
         message = failure.value.message
-        assert "必填字段：path；" in message
-        assert f"缺少必填字段：{'无' if 'path' in arguments else 'path'}；" in message
-        assert "允许字段：path。" in message
+        assert "Required fields: path; " in message
+        missing = "none" if "path" in arguments else "path"
+        assert f"missing required fields: {missing}; " in message
+        assert "allowed fields: path. " in message
         assert "PRIVATE" not in message
         assert executor.calls == executor.reconciliations == 0
         _assert_preflight_stores(tmp_path)
@@ -55,7 +56,7 @@ def test_sensitive_field_rejection_precedes_field_feedback(tmp_path: Path) -> No
             actions.plan(call, context(root))
         assert failure.value.code == "raw_secret_rejected"
         assert "PRIVATE_VALUE" not in failure.value.message
-        assert "必填字段" not in failure.value.message
+        assert "equired fields" not in failure.value.message
         assert executor.calls == executor.reconciliations == 0
         _assert_preflight_stores(tmp_path)
     finally:
@@ -87,8 +88,8 @@ def test_feedback_uses_frozen_explicit_schema_not_generic_model(
         with pytest.raises(KernelError) as failure:
             actions.plan(call, context(root))
         assert failure.value.code == "tool_invalid_arguments"
-        assert "缺少必填字段：public_name" in failure.value.message
-        assert "允许字段：public_name。" in failure.value.message
+        assert "missing required fields: public_name; " in failure.value.message
+        assert "allowed fields: public_name. " in failure.value.message
         assert "path" not in failure.value.message and "PRIVATE" not in failure.value.message
         assert executor.calls == executor.reconciliations == 0
         _assert_preflight_stores(tmp_path)

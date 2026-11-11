@@ -11,20 +11,32 @@ from harnessix.delivery.workspace_patch_errors import (
     is_workspace_patch_no_change,
     is_workspace_patch_preparation_error,
     is_workspace_patch_sha_mismatch,
+    located_patch_message,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
 from harnessix.trusted_actions.router import TrustedActionRouter
 
-_WORKSPACE_PATCH_PLANNING_FAILURES = frozenset(
-    {
-        "delivery_metadata_unsupported",
-        "delivery_path_denied",
-        "workspace_patch_cwd_unsupported",
-        "workspace_path_denied",
-        "workspace_platform_unsupported",
-    }
-)
+# 规划期的确定性边界拒绝及其写给模型的英文说明；Router已按固定码表归一，这里不读取内部消息。
+_WORKSPACE_PATCH_PLANNING_FAILURES = {
+    "delivery_metadata_unsupported": (
+        "A file mode in files is not supported on this platform (Windows has no executable "
+        "mode); use mode 420"
+    ),
+    "delivery_path_denied": (
+        "A path in files cannot be written by a patch: it is the workspace root, repeats "
+        "another entry, or is protected (for example .git or .env files). Fix that path and "
+        "resend"
+    ),
+    "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
+    "workspace_path_denied": (
+        "A path in files is not a workspace path. apply_patch_batch only writes files inside "
+        "the workspace, addressed relative to its root (for example src/app.py, never an "
+        "absolute path or one containing ..); write files elsewhere, such as temporary "
+        "directories, with the command tool"
+    ),
+    "workspace_platform_unsupported": "apply_patch_batch is not supported on this platform",
+}
 
 
 class OfficialWorkspacePatchReview:
@@ -48,7 +60,9 @@ def workspace_patch_planning_rejection(
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",
-        error=AgentFailure(code=rejection.code, message=rejection.message),
+        error=AgentFailure(
+            code=rejection.code, message=_WORKSPACE_PATCH_PLANNING_FAILURES[rejection.code]
+        ),
     )
 
 
@@ -90,12 +104,16 @@ def workspace_patch_preparation_rejection(
         or router.approval(plan_id) is not None
     ):
         return None
+    # SHA不符与无变化重建固定正文，不沿用实例上的消息；三类拒绝都只附加已校验的files下标。
+    reported: KernelError = rejection
     if is_workspace_patch_sha_mismatch(rejection):
-        failure = WorkspacePatchPreconditionError().to_failure()
+        reported = WorkspacePatchPreconditionError()
     elif is_workspace_patch_no_change(rejection):
-        failure = WorkspacePatchNoChangeError().to_failure()
-    else:
-        failure = AgentFailure(code=rejection.code, message=rejection.message)
+        reported = WorkspacePatchNoChangeError()
+    failure = AgentFailure(
+        code=reported.code,
+        message=located_patch_message(reported.message, rejection.file_index),
+    )
     closed = router.decide(
         plan_id,
         ApprovalDecision(
