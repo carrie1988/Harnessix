@@ -663,7 +663,7 @@
       "max_decision_complexity": 27
     },
     "harnessix.workspace.windows:WindowsWorkspaceRoot": {
-      "max_lines": 231,
+      "max_lines": 232,
       "max_decision_complexity": 0
     }
   },

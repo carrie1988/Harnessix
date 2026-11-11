@@ -2,7 +2,7 @@
 doc_type: module-design
 status: current
 version: 18
-code_revision: 65301a12cf639702aec30cd18835d6dd3d149737
+code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
 modules:
@@ -49,7 +49,7 @@ supersedes: []
 ## 当前增量：Windows固定目录不再阻止目录内改名（0.10.0b12）
 
 - 2026-11-11 Windows 11实机：`harnessix code`运行期间，工作区根目录与工作区状态目录内的改名一律WinError 32（共享冲突）。[`WindowsWorkspaceRoot`](../../src/harnessix/workspace/windows.py)在对象存活期间持有根目录句柄，状态宿主锁也固定状态目录的父目录，这些句柄此前只共享读；向目录内改名需要该目录允许共享写。后果：TUI写客户端状态（临时文件改名）失败，每次提交任务都报`client_state_write_failed`；npm、`uv lock`、IDE安全保存等“写临时文件再改名”的工具在项目根目录同样失败。
-- 现在打开路径链时，目录句柄（各级父目录与根本身）共享读和写、不共享删除：其他程序可在目录内新建、改名条目，目录本身仍不能被改名、删除或换成Junction，根身份与Reparse复核不变；文件句柄仍只共享读。Windows原生回归测试见`tests/tools/test_windows_native_runtime.py`。
+- 只放开长期持有的根句柄：`WindowsWorkspaceRoot(..., allow_renames_inside=True)`的根目录句柄共享读写、不共享删除，用于会话读工具的工作区根（[`windows_read_port.session_workspace_root`](../../src/harnessix/tools/windows_read_port.py)）和服务端状态宿主锁固定的状态父目录；其他程序可在根目录内新建、改名，根本身仍不能被改名、删除或换成Junction。默认（交付事务等短时固定）保持只共享读，期间根目录内也不能改名，`test_empty_parent_chain_is_pinned_before_any_temporary_creation`的保证不变；中间父段只取属性权限，不参与共享冲突。Windows原生回归测试见`tests/tools/test_windows_native_runtime.py`。
 
 ## 1. 模块摘要
 

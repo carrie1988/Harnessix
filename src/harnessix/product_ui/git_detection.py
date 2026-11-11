@@ -60,5 +60,5 @@ def detected_git_executable(explicit: str | None, workspace: Path) -> str | None
     found = shutil.which("git")
     if found is not None and os.name == "nt":
         chosen = bindable_windows_git(Path(found), validate_windows_git)
-        found = None if chosen is None else str(chosen)
+        found = None if chosen is None else found if chosen == Path(found) else str(chosen)
     return found if found is not None and _git_runs(found) else None

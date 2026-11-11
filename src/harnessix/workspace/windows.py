@@ -23,9 +23,10 @@ _INVALID_HANDLE = ctypes.c_void_p(-1).value
 _FILE_READ_DATA = 0x0001
 _FILE_READ_ATTRIBUTES = 0x0080
 _FILE_SHARE_READ = 0x00000001
-# 目录句柄共享读写、不共享删除：用户的编辑器与构建工具仍可在目录内新建、改名文件（只共享读时，
-# 持有工作区根句柄期间根目录内改名一律WinError 32，2026-11-11实机），目录本身仍不能被改名、删除
-# 或换成Junction。文件句柄只共享读。
+# 长期持有的根句柄（会话读工具的工作区根、服务端的状态目录）共享读写、不共享删除：用户的编辑器
+# 与构建工具仍可在根目录内新建、改名文件（只共享读时整个会话期间根目录内改名一律WinError 32，
+# 2026-11-11实机），根本身仍不能被改名、删除或换成Junction。交付事务等短时固定仍只共享读，期间
+# 禁止根目录内改名；文件句柄只共享读。
 _DIRECTORY_SHARE = _FILE_SHARE_READ | 0x00000002
 _OPEN_EXISTING = 3
 _FILE_ATTRIBUTE_READONLY = 0x00000001
@@ -247,7 +248,8 @@ def _observe_opened(
 class WindowsWorkspaceRoot:
     """Windows句柄链端口；逐段拒绝Reparse Point并禁止检查后重命名。"""
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, allow_renames_inside: bool = False) -> None:
+        self._allow_renames_inside = allow_renames_inside
         if os.name != "nt":
             raise KernelError("workspace_platform_unsupported", "Windows端口只能在Windows运行")
         self._kernel32 = ctypes.__dict__["WinDLL"]("kernel32", use_last_error=True)
@@ -349,7 +351,7 @@ class WindowsWorkspaceRoot:
                 handle = self._open(
                     candidate,
                     data=data and index == len(paths) - 1,
-                    directory=index < len(paths) - 1 or normalized == ".",
+                    directory=self._allow_renames_inside and normalized == ".",
                 )
                 handles.append(handle)
                 info = self._information(handle)

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 135
-code_revision: 008485773f840df8a920cf750480a8a363761167
+version: 136
+code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
 modules:
@@ -115,6 +115,10 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
+
+## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
+
+- Windows上服务端运行期间，[`state_owner_windows.open_state_owner`](../../src/harnessix/product_config/state_owner_windows.py)一直固定状态父目录（即工作区状态目录）；此前该句柄只共享读，TUI以“临时文件再改名”保存客户端状态时WinError 32，每次提交任务都报`client_state_write_failed`（2026-11-11实机）。现以`allow_renames_inside=True`固定：允许目录内改名，目录本身、锚点与锁文件的身份复核不变。
 
 ## 当前增量：服务商菜单与智谱端点（0.10.0b11）
 
@@ -2270,6 +2274,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
 | 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |
 | 133 | `384ff28d` 增量 | 2026-11-10 | 百炼qwen3.8系列套用思考型传输限额；产品入口以当前活动指针作为切换前提，改配置后工作区不再无法打开（0.10.0b8） |

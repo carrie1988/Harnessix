@@ -37,7 +37,8 @@ def prepare_state_parent(state_root: Path) -> None:
 def open_state_owner(state_root: Path, anchor: Path) -> Iterator[tuple[int, Callable[[], None]]]:
     """不持有待恢复Root的句柄；只固定根外父链和私有锚点，允许未来停机Root切换。"""
     with ExitStack() as resources:
-        root = WindowsWorkspaceRoot(state_root.parent)
+        # 宿主运行期间一直固定状态父目录：允许TUI在同一目录内原子改名客户端状态。
+        root = WindowsWorkspaceRoot(state_root.parent, allow_renames_inside=True)
         resources.callback(root.close)
         files = WindowsKeyFiles(root)
         resources.callback(files.close)

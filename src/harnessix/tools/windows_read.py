@@ -16,10 +16,9 @@ from harnessix.tools.contracts import (
 )
 from harnessix.tools.search_contracts import GlobInput, GlobOutput, GrepInput, GrepOutput
 from harnessix.tools.windows_file_read import list_files, read_file, read_file_snapshot
-from harnessix.tools.windows_read_port import WindowsReadPort, WindowsRoot
+from harnessix.tools.windows_read_port import WindowsReadPort, WindowsRoot, session_workspace_root
 from harnessix.tools.windows_search import glob_files, grep_files
 from harnessix.tools.workspace import ReadOperation
-from harnessix.workspace.windows import WindowsWorkspaceRoot
 
 
 class WindowsReadRuntime:
@@ -30,7 +29,7 @@ class WindowsReadRuntime:
         root: Path,
         *,
         denied_paths: tuple[str, ...] = (),
-        root_factory: Callable[[Path], WindowsRoot] = WindowsWorkspaceRoot,
+        root_factory: Callable[[Path], WindowsRoot] = session_workspace_root,
     ) -> None:
         self._port = WindowsReadPort(
             root,

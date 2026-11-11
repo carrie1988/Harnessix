@@ -89,6 +89,12 @@ def file_revision(port: WindowsReadPort, path: str, observed: Observation) -> st
     )
 
 
+def session_workspace_root(root: Path) -> WindowsWorkspaceRoot:
+    """会话期间一直持有的工作区根：用户的编辑器与构建工具仍可在根目录内新建、改名文件。"""
+
+    return WindowsWorkspaceRoot(root, allow_renames_inside=True)
+
+
 class WindowsReadPort:
     """封装路径策略、Handle观察和跨观察一致性判断。"""
 
@@ -97,7 +103,7 @@ class WindowsReadPort:
         root: Path,
         *,
         denied_paths: tuple[str, ...],
-        root_factory: Callable[[Path], WindowsRoot] = WindowsWorkspaceRoot,
+        root_factory: Callable[[Path], WindowsRoot] = session_workspace_root,
     ) -> None:
         self.policy = WorkspaceReadPolicy(denied_paths)
         self.root_handle = root_factory(root)

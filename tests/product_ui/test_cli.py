@@ -151,6 +151,8 @@ def test_git_is_detected_only_inside_a_repository(
     plain.mkdir()
     monkeypatch.setattr(git_detection.shutil, "which", lambda _name: "/opt/bin/git")
     monkeypatch.setattr(git_detection, "_git_runs", lambda _path: True)
+    # Windows上PATH里的git还要通过产品绑定校验，这里只测探测逻辑本身。
+    monkeypatch.setattr(git_detection, "validate_windows_git", lambda _path: None)
 
     assert git_detection.detected_git_executable(None, repository) == "/opt/bin/git"
     assert git_detection.detected_git_executable(None, repository / "src") == "/opt/bin/git"

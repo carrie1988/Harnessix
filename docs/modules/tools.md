@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: eecf8d1ca90d6b51547386fbc1171f513830646d
+version: 21
+code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
 modules:
@@ -87,6 +87,10 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 正则解释会静默无命中，回退把这类查询变为可用结果而不改变显式`match_mode=literal`的语义。
 
 # Coding Tool Runtime模块设计
+
+## 当前增量：会话期间不再锁住工作区根目录内的改名（0.10.0b12）
+
+- Windows读工具在会话期间持有工作区根句柄；此前该句柄只共享读，用户的编辑器与构建工具在项目根目录“写临时文件再改名”一律WinError 32（2026-11-11实机）。[`WindowsReadPort`](../../src/harnessix/tools/windows_read_port.py)与`WindowsReadRuntime`默认改用`session_workspace_root`，以`allow_renames_inside=True`打开根：允许根目录内新建、改名，根本身仍不能被改名、删除或换成Junction；读取文件仍逐个以只共享读的句柄打开并复核身份。详见[Workspace模块设计](workspace.md)。
 
 ### 当前源码读取：显式UTF-8分页，不截断证据
 
@@ -1083,6 +1087,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 21 | `0a05e8c3` 增量 | 2026-11-11 | Windows读工具的会话根允许根目录内改名，根本身仍固定（0.10.0b12） |
 | 20 | `5702881f267ad6b5e4ea3092e6578f8c9105ad08` | 搜索预览整行放得下时返回整行，只有超长行才截取窗口，模型不必为抄写编辑锚点重读文件；读工具把POSIX工作区根目录的绝对路径按挂载点映射，根目录之外与`..`越界仍拒绝 |
 | 12 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | Git Diff固定追加`--full-index`，使跨副本完整正文SHA-256不依赖`core.abbrev`；完整Blob OID按实际Git对象格式输出且不限40位，不改变Schema、评分或容量；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |
 | 10 | `75c4b7ddfe91824bcb667023c003e4aad18992e4` | 同步Python3.13的Git平台输入测试夹具、仓库边界负例及模拟验证范围；生产代码和公共合同不变 |

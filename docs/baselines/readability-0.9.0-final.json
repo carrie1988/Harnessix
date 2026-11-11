@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 614,
-    "physical_lines": 129359,
-    "logical_lines": 113124,
+    "physical_lines": 129367,
+    "logical_lines": 113127,
     "documented_modules": 614,
     "classes": 1208,
     "documented_classes": 619,
-    "functions": 5071,
-    "documented_functions": 1666,
+    "functions": 5072,
+    "documented_functions": 1667,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1954,8 +1954,8 @@
       "path": "src/harnessix/workspace/windows.py",
       "qualname": "WindowsWorkspaceRoot",
       "kind": "class",
-      "line": 247,
-      "lines": 231,
+      "line": 248,
+      "lines": 232,
       "documented": true
     }
   ],
