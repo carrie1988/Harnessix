@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 137
-code_revision: b86793a7fdd3f883727b7483ee0db2a6fc055153
+version: 138
+code_revision: dd13503bbc02d44036f3b8c4735c7a18e3da7232
 owners:
   - core
 modules:
@@ -115,6 +115,10 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
+
+## 当前增量：Windows命令运行前补上`ProgramFiles(x86)`（0.10.0b14）
+
+- 用户决定（2026-11-11，方案A）：执行计划的环境变量名合同不允许括号且已冻结，`ProgramFiles(x86)`不能随环境继承（0.10.0b13起不再继承）。[`native_shells.POWERSHELL_ARGUMENTS`](../../src/harnessix/product_config/native_shells.py)的固定前缀在设置UTF-8输出之后增加一句`${env:ProgramFiles(x86)}=[Environment]::GetFolderPath('ProgramFilesX86');`，由PowerShell向系统查询该目录并在命令运行前补上，不依赖继承的环境。合同与Schema不变。0.10.0b13及更早版本写入显式配置的参数仍被`fixed_shell`接受。Windows实机用真实PowerShell命令验证读到的值与系统一致。
 
 ## 当前增量：启动前失败归为确定未执行（0.10.0b13）
 
@@ -2278,6 +2282,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 138 | `dd13503b` 增量 | 2026-11-11 | PowerShell固定前缀补上`ProgramFiles(x86)`；旧参数仍接受（0.10.0b14） |
 | 137 | `b86793a7` 增量 | 2026-11-11 | 启动前的环境与进程规格错误归为确定未执行（0.10.0b13） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |

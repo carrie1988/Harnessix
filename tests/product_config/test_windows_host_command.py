@@ -163,3 +163,28 @@ async def test_powershell_nonzero_exit_is_a_failure(tmp_path: Path) -> None:
         result = _result(await case.approve_and_resume())
         assert result.outcome == "failed"
         assert result.error is not None and result.error.code == "process_nonzero_exit"
+
+
+def test_profiles_written_before_the_program_files_prefix_are_still_accepted() -> None:
+    legacy = POWERSHELL_ARGUMENTS[:-1] + ("[Console]::OutputEncoding=[Text.Encoding]::UTF8;",)
+    program = r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+    assert legacy != POWERSHELL_ARGUMENTS
+    assert fixed_shell(program, legacy, "host")
+    assert fixed_shell(program, POWERSHELL_ARGUMENTS, "host")
+
+
+@windows_only
+async def test_powershell_commands_can_read_program_files_x86(tmp_path: Path) -> None:
+    # 变量名带括号，不能随执行计划的环境继承；由固定前缀向系统查询后补上（用户决定A，2026-11-11）。
+    from tests.product_config.test_native_process_action import _native_case, _result
+
+    program = windows_powershell(os.environ)
+    assert program is not None
+    cmd = "Set-Content -Path out.txt -Value ${env:ProgramFiles(x86)} -NoNewline"
+    async with _native_case(
+        tmp_path, cmd, _powershell_profile(program), environ=dict(os.environ)
+    ) as case:
+        result = _result(await case.approve_and_resume())
+        assert result.outcome == "succeeded", result
+        written = (case.workspace / "out.txt").read_text(encoding="utf-8")
+        assert written == os.environ["ProgramFiles(x86)"]

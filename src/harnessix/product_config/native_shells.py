@@ -20,14 +20,17 @@ NATIVE_PROGRAM_PATTERN = (
 )
 _POSIX_SHELLS = frozenset({"sh", "bash", "dash", "zsh"})
 _POWERSHELLS = frozenset({"powershell.exe", "pwsh.exe"})
+_POWERSHELL_OPTIONS = ("-NoLogo", "-NoProfile", "-NonInteractive", "-Command")
+_UTF8_OUTPUT = "[Console]::OutputEncoding=[Text.Encoding]::UTF8;"
 # 不加载用户配置、不交互；输出按UTF-8编码，与其他平台的输出解码一致。
+# 执行计划的环境变量名合同不允许括号，ProgramFiles(x86)不能随环境继承（见sandbox/native_policy）；
+# 命令运行前由PowerShell向系统查询该目录并补上，Visual Studio等工具链脚本照常能读到。
 POWERSHELL_ARGUMENTS = (
-    "-NoLogo",
-    "-NoProfile",
-    "-NonInteractive",
-    "-Command",
-    "[Console]::OutputEncoding=[Text.Encoding]::UTF8;",
+    *_POWERSHELL_OPTIONS,
+    _UTF8_OUTPUT + "${env:ProgramFiles(x86)}=[Environment]::GetFolderPath('ProgramFilesX86');",
 )
+# 0.10.0b13及更早版本写入显式配置的参数，仍然接受。
+_LEGACY_POWERSHELL_ARGUMENTS = (*_POWERSHELL_OPTIONS, _UTF8_OUTPUT)
 
 
 def fixed_shell(program: str, arguments: tuple[str, ...], backend: str) -> bool:
@@ -37,7 +40,7 @@ def fixed_shell(program: str, arguments: tuple[str, ...], backend: str) -> bool:
         return PurePosixPath(program).name in _POSIX_SHELLS and arguments in {("-c",), ("-lc",)}
     return (
         PureWindowsPath(program).name.lower() in _POWERSHELLS
-        and arguments == POWERSHELL_ARGUMENTS
+        and arguments in (POWERSHELL_ARGUMENTS, _LEGACY_POWERSHELL_ARGUMENTS)
         and backend == "host"
     )
 
