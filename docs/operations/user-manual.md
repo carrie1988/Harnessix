@@ -293,7 +293,7 @@ harnessix code configure [新的完整参数] --replace \
 
 改完配置后直接打开已有的工作区即可，新配置会在下次启动时生效，之前的会话照常保留（0.10.0b8 起；更早的版本会显示“连接中断……server_closed”）。
 
-使用百炼 qwen3.8 系列时，0.10.0b8 起配置会为它默认的思考过程留出更长的等待时间。用更早版本配置过的，升级后重新运行一次 `configure`（带 `--replace`）即可，否则让 Agent 写较长的代码时可能出现“连不上模型服务”。
+使用百炼 qwen3.8 系列时，Harnessix 会为它默认的思考过程留出更长的等待时间（空闲读取 180 秒、单次请求 900 秒）。0.10.0b9 起，用更早版本配置过的也会自动使用这组时间，无需重新配置；你自己改过的等待时间保持不变。
 
 ### 4.7 configure 参数一览
 
@@ -871,6 +871,7 @@ uv tool uninstall harnessix
 # 安装与信息
 uv tool install harnessix                  # 安装
 uv tool upgrade harnessix                  # 升级
+harnessix --version                         # 已安装版本（0.10.0b9 起）
 harnessix --help                            # 全部命令
 harnessix license                           # 许可证
 

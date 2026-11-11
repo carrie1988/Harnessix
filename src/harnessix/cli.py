@@ -5,12 +5,24 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
+from importlib.metadata import PackageNotFoundError, version
 
 from harnessix.licensing import render_license_notice
 
 
+def _installed_version() -> str:
+    try:
+        return version("harnessix")
+    except PackageNotFoundError:
+        return "未知（未以包形式安装）"
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Harnessix Code")
+    # 用户习惯先试`--version`；此前它报“缺少子命令”（2026-11-10 macOS实测）。
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"harnessix {_installed_version()}"
+    )
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("model-smoke", help="运行显式启用的固定场景模型验收")
     subcommands.add_parser(

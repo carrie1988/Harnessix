@@ -40,6 +40,7 @@ from harnessix.product_config.contracts import (
     diagnostic_report_digest,
     effective_thinking,
 )
+from harnessix.product_config.reasoning_models import effective_timeouts
 from harnessix.product_config.store import SQLiteProductConfigStore
 from harnessix.secrets.provider import (
     EnvironmentSecretProvider,
@@ -216,6 +217,16 @@ def default_provider_factory(
 
         protocol = definition.thinking_protocol
         thinking = effective_thinking(profile, definition)
+        io_timeout, timeout = (
+            (profile.io_timeout_seconds, profile.timeout_seconds)
+            if definition.self_hosted
+            else effective_timeouts(
+                definition.base_url,
+                profile.model,
+                profile.io_timeout_seconds,
+                profile.timeout_seconds,
+            )
+        )
         return OpenAIChatProvider(
             OpenAIChatConfig(
                 base_url=definition.base_url,
@@ -223,8 +234,8 @@ def default_provider_factory(
                 api_key_env="HARNESSIX_MANAGED_PROVIDER_SECRET",
                 capabilities=capabilities,
                 max_output_tokens=profile.max_output_tokens,
-                timeout_seconds=profile.timeout_seconds,
-                io_timeout_seconds=profile.io_timeout_seconds,
+                timeout_seconds=timeout,
+                io_timeout_seconds=io_timeout,
                 max_attempts=profile.max_attempts,
                 retry_delay_seconds=profile.retry_delay_seconds,
                 max_request_bytes=profile.max_request_bytes,

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 133
+version: 134
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -114,6 +114,10 @@ related_tests:
   - tests/product_config/test_activation_precondition.py
 supersedes: []
 ---
+
+## 当前增量：旧配置自动使用思考型等待时间（0.10.0b9）
+
+- 用户升级到0.10.0b8后没有重新运行`configure`，配置仍是旧向导写下的空闲读取30秒、单请求120秒，写带注释的长代码时仍报“连不上模型服务”。[`reasoning_models.effective_timeouts`](../../src/harnessix/product_config/reasoning_models.py)在构造Provider时，只把默认思考模型（百炼qwen3.8系列）的这组旧默认值按180秒、900秒使用；用户改过的值、其他模型、自托管端点和输出上限等参数都不变。`reasons_by_default`移到同一模块，向导与运行时共用。
 
 ## 当前增量：默认思考模型的传输限额与改配置后的切换（0.10.0b8）
 
@@ -2259,6 +2263,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |
 | 133 | `384ff28d` 增量 | 2026-11-10 | 百炼qwen3.8系列套用思考型传输限额；产品入口以当前活动指针作为切换前提，改配置后工作区不再无法打开（0.10.0b8） |
 | 132 | `6a2fd39272ef2bba6fee5108bff577c0154183a9` | 2026-11-10 | Windows沙箱外命令（W2）：[`native_shells.py`](../../src/harnessix/product_config/native_shells.py)集中Shell规则，POSIX仍为sh/bash/dash/zsh加`-c`/`-lc`，Windows只允许沙箱外`powershell.exe`或`pwsh.exe`配固定参数（不加载配置、不交互、UTF-8输出）；零配置在Windows上生成`host_command.host-shell`，Windows Process Owner只证明沙箱外命令；环境继承增加Windows系统与用户目录变量 |
 | 131 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 本机MCP（ADR 0127）：`mcp_config.py`解析`~/.harnessix/mcp.json`并计算信任指纹，`mcp_trust.py`保存信任，`mcp_status.py`汇总状态供`harnessix mcp`、`code doctor`和会话启动共用，`mcp_composition.py`把工具按需审批接入；`extension_composition.py`把Skill与MCP作为一个扩展资源交给Action运行时；`private_json.py`供工作区信任与MCP信任共用私有原子写入 |

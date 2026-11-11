@@ -38,6 +38,7 @@ from harnessix.product_config.product_contracts import (
     ConfigurationWriteReceipt,
     configuration_write_receipt_digest,
 )
+from harnessix.product_config.reasoning_models import reasons_by_default
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,17 +141,6 @@ def thinking_preset(
     if host == "api.deepseek.com" and model.startswith(("deepseek-v4", "deepseek-flash")):
         return "deepseek_thinking_type", False
     return None
-
-
-def reasons_by_default(base_url: str, model: str) -> bool:
-    """已求证在服务端默认思考的云端模型：请求不加思考参数，但传输限额须按思考配置放宽。
-
-    百炼qwen3.8系列默认推送思考内容（2026-11-10实测flash与max），且产品写文件工具的参数要整段
-    生成完才一次发出；代码较长时流中静默常超过默认30秒空闲读取，被当成连接中断。
-    """
-
-    host = urlsplit(base_url).hostname
-    return host == "dashscope.aliyuncs.com" and model.startswith("qwen3.8")
 
 
 def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:

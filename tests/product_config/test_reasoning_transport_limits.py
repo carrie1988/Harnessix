@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from harnessix.product_config.product_contracts import ConfigurationDraft
+from harnessix.product_config.reasoning_models import effective_timeouts
+from harnessix.product_config.runtime import default_provider_factory
 from harnessix.product_config.wizard import build_product_config, reasons_by_default
 
 BAILIAN = "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -39,3 +41,18 @@ def test_other_cloud_models_keep_the_default_limits() -> None:
         assert profile.io_timeout_seconds == 30
         assert profile.timeout_seconds == 120
         assert profile.max_output_tokens == 4096
+
+
+def test_configs_written_before_b8_get_the_longer_timeouts_without_reconfiguring() -> None:
+    # 用户升级到0.10.0b8后未重新配置，旧向导写下的30秒/120秒仍导致写文件那一步超时。
+    provider, profile = _profile(BAILIAN, "qwen3.8-flash")
+    legacy = profile.model_copy(update={"io_timeout_seconds": 30.0, "timeout_seconds": 120.0})
+    built = default_provider_factory(provider, legacy, "sk-test-key")
+    assert (built.config.io_timeout_seconds, built.config.timeout_seconds) == (180.0, 900.0)
+    assert built.config.max_output_tokens == legacy.max_output_tokens
+
+
+def test_user_chosen_timeouts_and_other_models_are_left_alone() -> None:
+    assert effective_timeouts(BAILIAN, "qwen3.8-flash", 60.0, 120.0) == (60.0, 120.0)
+    assert effective_timeouts(BAILIAN, "qwen-plus", 30.0, 120.0) == (30.0, 120.0)
+    assert effective_timeouts("https://api.openai.com/v1", "gpt-test", 30, 120) == (30, 120)
