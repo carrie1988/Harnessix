@@ -125,6 +125,97 @@ _HELP: Final = {
         _DIAGNOSTICS,
     ),
 }
+_KEPT = "本轮已停止；之前完成的修改仍保留在工作区。"
+_RESEND = "处理后重新发送任务即可继续。"
+# 任务（Turn）以错误结束时F1显示的条目；按错误码静态选择，不回显模型服务返回的原文。
+_TURN_HELP: Final = {
+    entry.code: entry
+    for entry in (
+        ProductErrorHelp(
+            "provider_authentication",
+            "模型服务拒绝了 API Key",
+            "API Key 填错、已过期，或没有使用该模型的权限。",
+            "本轮没有执行任何操作。",
+            "改正环境变量或配置中的 Key，用 harnessix code doctor --probe-model 核对，"
+            "然后重新打开 Harnessix 再发送任务。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "provider_rate_limit",
+            "模型服务限流",
+            "请求太频繁，或账户的额度、并发达到上限。",
+            _KEPT,
+            "稍等片刻再发送任务；经常出现时检查服务商的额度和并发限制。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "provider_transport",
+            "连不上模型服务",
+            "网络不通、代理设置不对，或服务地址填错。",
+            _KEPT,
+            "检查网络和代理（HTTPS_PROXY 或配置里的代理地址），用 harnessix code doctor "
+            "--probe-model 核对。" + _RESEND,
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "provider_internal",
+            "模型服务内部错误",
+            "模型服务暂时故障。",
+            _KEPT,
+            "稍后重新发送任务；持续出现时换用其他模型或联系服务商。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "provider_context_overflow",
+            "对话超出模型的上下文长度",
+            "会话累积的内容超过了模型能处理的长度。",
+            _KEPT,
+            "按 Ctrl+N 新建会话，简要说明之前的进展后继续。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "provider_max_output_tokens",
+            "模型单次输出达到长度上限",
+            "一次要生成的内容太长。",
+            _KEPT,
+            "让 Agent 分步完成，或把任务拆小后重新发送。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "budget_exceeded",
+            "本轮 Token 用量达到上限",
+            "任务较大，本轮用量超过了设定的上限。",
+            _KEPT,
+            "直接发送“继续”开始新一轮；需要时在配置里调高上限。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "time_budget_exceeded",
+            "本轮运行时间达到上限",
+            "任务较大，本轮耗时超过了设定的上限。",
+            _KEPT,
+            "直接发送“继续”开始新一轮；需要时在配置里调高上限。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "uncertain_effect",
+            "操作结果无法确认",
+            "某个修改或命令执行时被中断，或者结果没能确认。",
+            "Harnessix 不会自动重做这一步，以免重复修改。",
+            "先用 git status、git diff 查看工作区的实际改动，再告诉 Agent 当前情况并继续。",
+            _DIAGNOSTICS,
+        ),
+    )
+}
+_TURN_HELP["provider_provider_internal"] = _TURN_HELP["provider_internal"]
+_TURN_FAILED: Final = ProductErrorHelp(
+    "turn_failed",
+    "上一轮任务未完成",
+    "任务以错误结束，对话记录里有具体说明。",
+    "之前完成的修改仍保留在工作区，未完成的步骤不会自动重试。",
+    "按对话记录中的说明处理后重新发送任务；需要排查时运行 harnessix code doctor。",
+    _DIAGNOSTICS,
+)
 _CONNECTION_CODES: Final = frozenset(
     {
         "connection_not_ready",
@@ -145,3 +236,15 @@ def product_error_help(code: str | None) -> ProductErrorHelp:
     if code is not None and code in _HELP:
         return _HELP[code]
     return _HELP["product_internal_failure"]
+
+
+def current_error_help(
+    notice_code: str | None, turn_status: str | None, turn_error_code: str | None
+) -> ProductErrorHelp | None:
+    """F1当前该显示的错误条目：先看连接等通知，再看本会话最近一轮的失败；都没有时返回None。"""
+
+    if notice_code is not None:
+        return product_error_help(notice_code)
+    if turn_status in {"failed", "interrupted"} and turn_error_code is not None:
+        return _TURN_HELP.get(turn_error_code, _TURN_FAILED)
+    return None

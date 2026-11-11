@@ -9,7 +9,7 @@ from textual.app import App
 from textual.timer import Timer
 
 from harnessix.product_ui.controller import ProductController, ToggleAutoAcceptIntent
-from harnessix.product_ui.error_help import product_error_help
+from harnessix.product_ui.error_help import current_error_help, product_error_help
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_screens import (
     ApprovalScreen,
@@ -122,10 +122,17 @@ class InteractionPresenter:
             await self._controller.dispatch(SteerTurnIntent(control.binding, text))
 
     async def help(self, code: str | None = None) -> None:
-        """有最近错误时显示其原因和处理办法，否则显示使用说明。"""
+        """有错误时显示原因和处理办法（含本会话最近一轮的任务失败），否则显示使用说明。"""
 
-        notice = self._controller.state.last_notice
-        code = code or (None if notice is None else notice.code)
-        await self._app.push_screen_wait(
-            HelpScreen(None if code is None else product_error_help(code))
+        state = self._controller.state
+        turn = None if state.thread_view is None else state.thread_view.current_turn
+        item = (
+            product_error_help(code)
+            if code is not None
+            else current_error_help(
+                None if state.last_notice is None else state.last_notice.code,
+                None if turn is None else turn.status,
+                None if turn is None or turn.error is None else turn.error.code,
+            )
         )
+        await self._app.push_screen_wait(HelpScreen(item))
