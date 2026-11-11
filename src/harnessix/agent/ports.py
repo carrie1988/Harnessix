@@ -73,6 +73,16 @@ class ModelToolCallAdmission(Protocol):
     def admit_call(self, turn: Turn, call: ToolCallContent) -> AgentFailure | None: ...
 
 
+class ToolStepNoticeSource(Protocol):
+    """一步的工具结果全部落账后，宿主要告诉模型的已观察事实；没有则为None。
+
+    结论只依赖Thread持久事实（不读模型历史视图，压缩后不变），恢复重放得到相同结论；
+    只是模型提示，不授予执行权限，也不改写已落账的工具结果。
+    """
+
+    def step_notice(self, thread: Thread, turn: Turn) -> str | None: ...
+
+
 class NoTools:
     def definitions(self) -> tuple[ToolDescriptor, ...]:
         return ()

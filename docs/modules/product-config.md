@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 137
+version: 138
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0111-native-process-sandbox-backends.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
   - docs/adr/0134-default-working-habits-and-thin-eval-template.md
+  - docs/adr/0135-command-ledger-step-notices.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
   - tests/product_config/test_optional_pre_edit_profile.py
@@ -116,6 +117,7 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
   - tests/product_config/test_generic_execution_context.py
   - tests/product_config/test_working_habits.py
+  - tests/product_config/test_command_ledger.py
 supersedes: []
 ---
 
@@ -140,6 +142,22 @@ supersedes: []
   [外部边界指令](../../tests/product_config/test_generic_execution_context.py)、
   [评测模板](../../tests/integrations/test_swebench_task_template.py)。离线测试只证明指令按设计送达，不证明模型遵循；
   效果由评测对照确认。
+
+## 当前增量：命令账本（ADR 0135）
+
+- **问题**：模型改坏了原本通过的检查后把失败归咎于环境，或把同一份补丁应用又回滚、原地重复同一条验证命令直到步数用尽；每条命令的结果和每次补丁事务宿主都已落账，却从不说明。
+- **行为**：[`command_ledger.CommandLedgerNotices`](../../src/harnessix/product_config/command_ledger.py)实现Agent内核的`ToolStepNoticeSource`，每步工具结果落账后从本Thread各Turn的原始Item推导，只为刚结束的这一步给出事实：
+
+  | 事实 | 判定 | 说明内容 |
+  |---|---|---|
+  | 回归 | 同一工具、同一规范化命令文本的上一次有退出码的运行以0退出，其后至少一次补丁或回滚成功，本次非零退出 | 通过发生在第几步（或更早的Turn）、其间最近3次补丁的`transaction_id`与路径；回滚工具通过验证时提示最近一次可回滚或收窄 |
+  | 补丁反复 | 成功回滚所指向的补丁，其`diff_sha256`已被回滚过一次 | 同一份补丁已应用并回滚2次及其路径 |
+  | 原地重复 | 同一条命令第3次得到相同退出码与相同stdout/stderr观察摘要，其间没有补丁或回滚成功 | 该命令已得到3次逐字节相同的结果 |
+
+- **只说明一次**：回归只看紧邻的上一次运行，命令重新通过之前不重复，从未通过的命令永远不说明，失败早于补丁的不归到补丁上；另两类只在次数恰好到阈值的那一步给出。
+- **范围**：只含`exec_command.*`与`host_command.*`；`command_ledger_notices(verified)`在没有通过验证的命令工具时返回`None`，固定Profile流程不启用。超时或被终止的运行不算退出；失败或结果未知的补丁不算工作区变化；Fork继承的历史不进账本。
+- **边界**：不读取输出正文。检查的退出码被`| tail`、`; echo exit=$?`掩盖时没有“通过变失败”的事实可说；Shell命令自己对工作区的修改不被观察。
+- **装配**：[`server.py`](../../src/harnessix/product_config/server.py)以`step_notices=command_ledger_notices(verified)`注入，没有新增配置字段。
 
 ## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
 
@@ -2304,6 +2322,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 138 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
 | 137 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
