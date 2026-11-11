@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9,6 +10,10 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config import state_backup_windows as port
+
+# Windows上无盘符的“/private”不算绝对路径，发布会在校验路径时提前拒绝；按当前平台取绝对路径。
+PRIVATE = Path(os.path.abspath("/private"))
+OTHER = Path(os.path.abspath("/other"))
 
 
 @pytest.mark.parametrize(
@@ -18,7 +23,7 @@ from harnessix.product_config import state_backup_windows as port
 def test_publication_keeps_original_parent_source_and_nonreplace_contract(monkeypatch, scenario):
     calls, closed = [], []
     root = SimpleNamespace(
-        path=Path("/private"),
+        path=PRIVATE,
         _kernel32=SimpleNamespace(CloseHandle=lambda value: closed.append("source")),
         close=lambda: closed.append("root"),
         _open_chain=lambda *args, **kwargs: ([1, 2], "bound"),
@@ -47,7 +52,7 @@ def test_publication_keeps_original_parent_source_and_nonreplace_contract(monkey
         return SimpleNamespace(security=security, close=lambda: closed.append("security"))
 
     def source(path, *, delete):
-        assert path == Path("/private/source") and delete is True
+        assert path == PRIVATE / "source" and delete is True
         return None if scenario == "missing" else 3
 
     def rename(handle, name, *, replace):
@@ -66,11 +71,11 @@ def test_publication_keeps_original_parent_source_and_nonreplace_contract(monkey
     monkeypatch.setattr(port, "WindowsKeyFiles", files)
     monkeypatch.setattr(port, "WindowsFileOperations", lambda kernel: operations)
     if scenario in {"file", "directory"}:
-        port.publish_private_object(Path("/private/source"), Path("/private/target"))
+        port.publish_private_object(PRIVATE / "source", PRIVATE / "target")
         assert calls == ["ntfs", "verify-root" if scenario == "directory" else "verify", "rename"]
     else:
         with pytest.raises(KernelError):
-            port.publish_private_object(Path("/private/source"), Path("/private/target"))
+            port.publish_private_object(PRIVATE / "source", PRIVATE / "target")
         assert ("rename" in calls) is (scenario == "rename-fails")
     assert closed == (
         ["security", "parents", "root"]
@@ -82,9 +87,9 @@ def test_publication_keeps_original_parent_source_and_nonreplace_contract(monkey
 @pytest.mark.parametrize(
     "source,target",
     [
-        ("source", "/private/target"),
-        ("/private/source", "target"),
-        ("/other/source", "/private/target"),
+        (Path("source"), PRIVATE / "target"),
+        (PRIVATE / "source", Path("target")),
+        (OTHER / "source", PRIVATE / "target"),
     ],
 )
 def test_publication_rejects_unbound_or_other_parent_before_open(monkeypatch, source, target):
@@ -93,4 +98,4 @@ def test_publication_rejects_unbound_or_other_parent_before_open(monkeypatch, so
 
     monkeypatch.setattr(port, "WindowsWorkspaceRoot", forbidden)
     with pytest.raises(KernelError, match="产品备份文件"):
-        port.publish_private_object(Path(source), Path(target))
+        port.publish_private_object(source, target)

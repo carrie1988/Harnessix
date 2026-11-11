@@ -20,7 +20,7 @@ from typing import Any
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.preflight import run_product_preflight
-from harnessix.product_config.state_owner import product_state_owner
+from harnessix.product_config.state_owner import product_state_owner, state_owner_anchor
 from harnessix.product_ui.cli import (
     _default_config,
     _default_state_directory,
@@ -81,14 +81,27 @@ def delete_workspace_state(root: Path, fingerprint: str, *, confirm: str) -> Non
         if not runtime.is_dir():
             shutil.rmtree(target)
             return
+        # 持锁期间删除锁目录以外的全部数据；Windows不能删除仍被打开的锁文件和被固定的目录，
+        # 释放锁后再删除锁目录与工作区目录本身（2026-11-11 Windows实机：此前一律删除失败）。
+        anchor = state_owner_anchor(runtime).name
         with product_state_owner(runtime):
-            shutil.rmtree(target)
+            for entry in target.iterdir():
+                if entry.name != anchor:
+                    _remove(entry)
+        shutil.rmtree(target)
     except KernelError as error:
         if error.code == "product_state_busy":
             raise ProductUIError("data_workspace_busy", "该工作区正在运行，请先退出") from None
         raise ProductUIError("data_delete_failed", "无法锁定该工作区的状态") from None
     except OSError:
         raise ProductUIError("data_delete_failed", "删除数据时发生文件错误") from None
+
+
+def _remove(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
 
 
 def thread_diagnostics(thread: ThreadView) -> dict[str, object]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import stat
 from pathlib import Path
 
@@ -28,7 +29,9 @@ def test_confirmation_is_remembered_and_covers_subdirectories(tmp_path: Path) ->
 
     assert is_trusted(workspace, store) and is_trusted(workspace / "src", store)
     assert not is_trusted(tmp_path, store)
-    assert stat.S_IMODE(store.stat().st_mode) == 0o600
+    # Windows以ACL保护私有文件，st_mode不表示访问权限。
+    if os.name == "posix":
+        assert stat.S_IMODE(store.stat().st_mode) == 0o600
     assert _confirm(workspace, store, read_answer=lambda _prompt: pytest.fail("不应再次询问"))
 
 
