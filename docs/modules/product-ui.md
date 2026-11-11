@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: b3bf0da1df361de8862e4d68097475b8ac6083c6
+version: 39
+code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - product
 modules:
@@ -41,6 +41,13 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：`--thinking`不再静默失效（0.10.0b15）
+
+- Beta反馈HX-03：[`configure_cli`](../../src/harnessix/product_ui/configure_cli.py)的`_thinking_options`在`--thinking-protocol auto`且端点没有默认预设时，把协议留空，`--thinking off`被原样写入却到不了模型。
+- 现在用户显式写了`--thinking`而预设没有协议时，先查[`explicit_thinking_switch`](../../src/harnessix/product_config/wizard.py)（见[产品配置模块设计](product-config.md)）；查到就启用该协议，设置随请求发出。
+- 仍然没有协议时拒绝配置（`product_configure_invalid`，退出码2，不写文件），提示三条出路：去掉`--thinking`、用`--thinking-protocol`指定开关格式、或在确认模型本身不思考时用`--thinking-protocol none`。此前`tool_steps`/`every_step`在这种情况下只得到“配置向导参数不符合契约”，`off`则被静默接受。
+- 显式的`--thinking-protocol none`加`--thinking off`照常接受：不发送任何思考参数。未写`--thinking`时行为不变。
 
 ## 当前增量：沙箱外命令减少询问（ADR 0128，0.10.0b14）
 
@@ -1105,6 +1112,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 39 | `80fb499a` 增量 | 2026-11-11 | `configure`：显式`--thinking`按已求证开关生效，无开关可用时拒绝并给出出路（0.10.0b15，Beta反馈HX-03） |
 | 38 | `b3bf0da1` 增量 | 2026-11-11 | 沙箱外命令：只读免询问、保存前缀规则、查看与撤销（ADR 0128，0.10.0b14） |
 | 37 | `acd37114` 增量 | 2026-11-11 | Windows上`data delete`持锁删除锁目录外数据、释放后删除余下目录（0.10.0b13） |
 | 36 | `00848577` 增量 | 2026-11-10 | 配置向导先选服务商（DeepSeek、阿里云百炼、智谱）和模型，成功后说明下一步；`--json`保留机器格式（0.10.0b11） |

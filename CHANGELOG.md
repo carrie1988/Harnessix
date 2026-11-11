@@ -6,6 +6,11 @@
 
 - Agent 正在运行命令或准备修改时按 Ctrl+S 补充要求，本轮会以“Action Artifact发布时Session已变化（sequence_conflict）”失败，或被报成“操作结果无法确认”而中断。现在补充的要求会被保留，当前这一步照常完成，Agent 在下一步看到补充内容
 - 按 Ctrl+X 取消正在运行的命令后，界面显示“已中断”和“操作结果无法确认”，并附带一条内部错误（trusted_action_output_failed）。实际上命令已被终止、结果是确定的。现在显示“已取消”，取消前命令已经输出的内容会保留，下一轮可以接着用
+- 配置百炼的 `qwen3.8-flash`、`qwen3.8-max` 时加 `--thinking off` 不起作用：配置里写着关闭，模型仍然思考，输出上限较小时一轮的输出额度会全部用在思考上、什么也没做成。现在 `--thinking` 的设置会真正发给模型
+
+### 改变
+
+- `harnessix code configure` 遇到没有已核对思考开关的服务时，不再悄悄接受 `--thinking`，而是提示去掉该参数、用 `--thinking-protocol` 指定开关格式，或在确认模型本身不思考时用 `--thinking-protocol none`。没写 `--thinking` 的配置不受影响
 
 ## 0.10.0b14（2026-11-11）
 

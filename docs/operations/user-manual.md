@@ -347,7 +347,7 @@ harnessix code configure [新的完整参数] --replace \
 | `--context-window-tokens` | 上下文窗口（Token）。已知云模型自动填写；自托管模型建议填写 |
 | `--self-hosted` | 声明为自己部署的内网端点 |
 | `--proxy-url` | 经本机 HTTP 代理访问 |
-| `--thinking` | 思考模式：`tool_steps`（只在工具步骤思考）、`every_step`、`off` |
+| `--thinking` | 思考模式：`tool_steps`（只在工具步骤思考）、`every_step`、`off`。百炼的 `qwen3.8-max`、`qwen3.8-flash` 默认会思考，想关闭就加 `--thinking off`；没有已核对思考开关的服务会拒绝这个参数并提示怎么改 |
 | `--thinking-protocol` | 思考参数格式：`auto`（默认，按已知服务预设）、`none`、`dashscope_enable_thinking`、`deepseek_thinking_type` |
 | `--tool-choice` | 是否发送 `tool_choice`：`auto`、`send`、`omit` |
 | `--output-token-parameter` | 输出上限参数名：`max_completion_tokens` 或 `max_tokens` |

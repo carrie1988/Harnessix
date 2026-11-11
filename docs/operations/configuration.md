@@ -345,7 +345,7 @@ uv run harnessix code configure \
   --non-interactive
 ```
 
-思考设置：`--thinking-protocol`默认`auto`，只对已求证的端点与模型族预设并默认只在工具步骤思考——百炼`dashscope.aliyuncs.com`上的`deepseek-v4*`（DashScope `enable_thinking`，并不发送`tool_choice`）与`api.deepseek.com`上的`deepseek-v4*`/`deepseek-flash*`（`thinking.type`）；其余端点不发送思考参数。预设Profile的输出上限为32768、SSE帧80000、响应12 MiB、请求超时900秒、I/O超时180秒。`--thinking off|every_step|tool_steps`覆盖思考模式，`--thinking-protocol none`不发送思考参数，`--tool-choice send|omit`覆盖工具选择预设。
+思考设置：`--thinking-protocol`默认`auto`，只对已求证的端点与模型族预设并默认只在工具步骤思考——百炼`dashscope.aliyuncs.com`上的`deepseek-v4*`（DashScope `enable_thinking`，并不发送`tool_choice`）与`api.deepseek.com`上的`deepseek-v4*`/`deepseek-flash*`（`thinking.type`）；其余端点不发送思考参数。预设Profile的输出上限为32768、SSE帧80000、响应12 MiB、请求超时900秒、I/O超时180秒。`--thinking off|every_step|tool_steps`覆盖思考模式，`--thinking-protocol none`不发送思考参数，百炼上的`qwen3.8-max*`、`qwen3.8-flash*`在服务端默认思考：不写`--thinking`时不发送思考参数；写了`--thinking`时自动使用DashScope `enable_thinking`开关，设置才会到达模型。其余没有已核对开关的端点写`--thinking`会被拒绝，并提示改用`--thinking-protocol`显式指定或去掉该参数。`--tool-choice send|omit`覆盖工具选择预设。
 
 命令只接收环境变量**名称**，不会提示或读取Key值。成功输出`ConfigurationWriteReceipt` JSON，其中只有操作、旧/新Source
 摘要、Config摘要、时间和Receipt摘要。默认新建；替换必须同时携带：

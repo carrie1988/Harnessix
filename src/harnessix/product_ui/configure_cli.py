@@ -29,6 +29,7 @@ from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     auto_tool_choice_only,
     current_config_digest,
+    explicit_thinking_switch,
     known_context_window,
     thinking_preset,
     write_product_config,
@@ -41,6 +42,12 @@ from harnessix.product_ui.startup_failure import api_key_setup_text
 _MANUAL_API_KEY_ENV = "MODEL_API_KEY"
 _OTHER_VENDOR = "其他兼容 OpenAI 接口的服务（手动填写地址和模型名）"
 _OTHER_MODEL = "手动输入其他模型名"
+_THINKING_WITHOUT_SWITCH = (
+    "这个服务和模型没有已核对的思考开关，--thinking 的设置到不了模型。"
+    "请去掉 --thinking；或用 --thinking-protocol 指定开关格式"
+    "（dashscope_enable_thinking 或 deepseek_thinking_type）；"
+    "确认模型本身不思考时，用 --thinking-protocol none"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,16 +328,25 @@ def _draft(arguments: argparse.Namespace, endpoint: _Endpoint) -> ConfigurationD
 def _thinking_options(
     arguments: argparse.Namespace, endpoint: _Endpoint, *, self_hosted: bool
 ) -> dict[str, object]:
-    """把思考相关参数解析为草案字段：auto只对已求证端点预设，显式值优先。"""
+    """把思考相关参数解析为草案字段：auto只对已求证端点预设，显式值优先。
 
+    用户写了--thinking而没有任何协议能把它送达模型时拒绝配置，不生成一份设置不生效的文件。
+    """
+
+    openai_chat = endpoint.provider_kind == "openai_chat"
     preset = (
         thinking_preset(endpoint.base_url, endpoint.model, self_hosted=self_hosted)
-        if endpoint.provider_kind == "openai_chat"
+        if openai_chat
         else None
     )
     protocol = arguments.thinking_protocol
     if protocol == "auto":
         protocol = preset[0] if preset is not None else None
+        if protocol is None and arguments.thinking is not None:
+            if openai_chat:
+                protocol = explicit_thinking_switch(endpoint.base_url, endpoint.model)
+            if protocol is None:
+                raise ProductUIError("product_configure_invalid", _THINKING_WITHOUT_SWITCH)
     elif protocol == "none":
         protocol = None
     endpoint_omits = (preset is not None and preset[1]) or auto_tool_choice_only(endpoint.base_url)

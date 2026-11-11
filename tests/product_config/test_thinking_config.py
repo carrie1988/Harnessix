@@ -19,7 +19,11 @@ from harnessix.product_config.contracts import (
 )
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.runtime import default_provider_factory
-from harnessix.product_config.wizard import build_product_config, thinking_preset
+from harnessix.product_config.wizard import (
+    build_product_config,
+    explicit_thinking_switch,
+    thinking_preset,
+)
 from harnessix.product_ui.configure_cli import configure_main
 
 BAILIAN = "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -311,3 +315,80 @@ def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
     }
     with pytest.raises(ValidationError):
         ProviderDefinition.model_validate(anthropic)
+
+
+@pytest.mark.parametrize(
+    ("base_url", "model", "expected"),
+    [
+        (BAILIAN, "qwen3.8-flash", "dashscope_enable_thinking"),
+        (BAILIAN, "qwen3.8-max-0902", "dashscope_enable_thinking"),
+        # 同系列里只能思考的型号没有可用的开关。
+        (BAILIAN, "qwen3.8-2.4t-a95b", None),
+        # 默认就预设协议的模型族由thinking_preset负责。
+        (BAILIAN, "deepseek-v4-pro-0813", None),
+        ("https://api.openai.test/v1", "qwen3.8-flash", None),
+    ],
+)
+def test_explicit_switch_covers_only_verified_default_reasoning_models(base_url, model, expected):
+    assert explicit_thinking_switch(base_url, model) == expected
+
+
+def _configure(path: Path, *arguments: str) -> ProductConfigV2:
+    configure_main(["--config", str(path), "--non-interactive", *arguments])
+    return load_product_config(path).config
+
+
+_BAILIAN_QWEN = ("--vendor", "bailian", "--model", "qwen3.8-flash")
+_UNKNOWN_ENDPOINT = (
+    "--provider-kind",
+    "openai_chat",
+    "--base-url",
+    "https://llm.example.com/v1",
+    "--model",
+    "some-model",
+)
+
+
+@pytest.mark.parametrize(("mode", "enabled"), [("off", False), ("every_step", True)])
+def test_an_explicit_thinking_mode_reaches_bailian_qwen(tmp_path, capsys, mode, enabled):
+    """Beta反馈HX-03：该模型在服务端默认思考，--thinking off曾被写进配置却从未发给模型。"""
+    config = _configure(tmp_path / "config.json", *_BAILIAN_QWEN, "--thinking", mode)
+    capsys.readouterr()
+    provider, profile = config.providers[0], config.profiles[0]
+    assert provider.thinking_protocol == "dashscope_enable_thinking"
+    assert not provider.omit_tool_choice
+    assert effective_thinking(profile, provider) == mode
+    wire = _provider_config(config)
+    assert wire.enable_thinking is enabled and wire.output_token_parameter == "max_tokens"
+
+
+def test_bailian_qwen_without_a_thinking_flag_still_sends_no_thinking_parameter(tmp_path, capsys):
+    config = _configure(tmp_path / "config.json", *_BAILIAN_QWEN)
+    capsys.readouterr()
+    assert config.providers[0].thinking_protocol is None
+    assert _provider_config(config).enable_thinking is None
+
+
+@pytest.mark.parametrize("mode", ["off", "tool_steps"])
+def test_a_thinking_flag_no_switch_can_carry_is_refused_with_the_way_out(tmp_path, capsys, mode):
+    path = tmp_path / "config.json"
+    with pytest.raises(SystemExit) as failed:
+        _configure(path, *_UNKNOWN_ENDPOINT, "--thinking", mode)
+    assert failed.value.code == 2 and not path.exists()
+    err = capsys.readouterr().err
+    assert err.startswith("配置没有完成：这个服务和模型没有已核对的思考开关")
+    assert "--thinking-protocol none" in err and "dashscope_enable_thinking" in err
+
+
+def test_thinking_off_with_protocol_none_means_no_thinking_parameter(tmp_path, capsys):
+    config = _configure(
+        tmp_path / "config.json",
+        *_UNKNOWN_ENDPOINT,
+        "--thinking",
+        "off",
+        "--thinking-protocol",
+        "none",
+    )
+    capsys.readouterr()
+    assert config.providers[0].thinking_protocol is None
+    assert _provider_config(config).enable_thinking is None

@@ -147,6 +147,21 @@ def thinking_preset(
     return None
 
 
+def explicit_thinking_switch(base_url: str, model: str) -> ThinkingProtocol | None:
+    """服务端默认思考、但已求证可用参数开关的模型族；只在用户显式指定思考档位时启用。
+
+    默认配置仍不发送思考参数（见reasoning_models）；用户写了--thinking却没有协议可用时，
+    设置不会到达模型，这里给出让它生效的协议。
+    """
+
+    host = urlsplit(base_url).hostname
+    # 百炼文档（2026-11-11核对）：qwen3.8-max与qwen3.8-flash是混合思考、默认开启，
+    # 可用enable_thinking关闭；同系列另有只能思考的型号，因此只列已核对的型号前缀。
+    if host == "dashscope.aliyuncs.com" and model.startswith(("qwen3.8-max", "qwen3.8-flash")):
+        return "dashscope_enable_thinking"
+    return None
+
+
 def auto_tool_choice_only(base_url: str) -> bool:
     """端点只接受tool_choice=auto：不发送tool_choice，强制选择改由可执行集收窄约束。"""
 
