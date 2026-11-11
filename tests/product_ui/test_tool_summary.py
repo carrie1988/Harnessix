@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import pytest
 
+from harnessix.agent.tool_rejections import rejection_result
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
     PublicApprovalDecision,
@@ -61,16 +62,42 @@ def test_plan_updates_are_left_to_the_plan_lines() -> None:
     assert tool_call_text(_call("update_plan", steps=[])) is None
 
 
-def test_results_hide_model_facing_hints() -> None:
-    hint = "检查已运行并以非零退出，不是启动失败。diagnostic_preview已完整展示stdout/stderr诊断正文"
+@pytest.mark.parametrize(
+    ("code", "hint", "shown"),
+    [
+        (
+            "process_nonzero_exit",
+            "The command ran and exited with a non-zero status; this is not a launch failure.",
+            "失败：命令以非零状态退出",
+        ),
+        (
+            "process_timeout",
+            "The command reached the time limit and was terminated, so it did not finish.",
+            "失败：命令超时",
+        ),
+        (
+            "tool_invalid_arguments",
+            "A plan needs 1 to 8 steps; this one has 9.",
+            "失败：参数无效，Agent 会调整后重试",
+        ),
+        # 目录拒绝的持久结果不变；给模型的英文反馈只在模型线协议视图里。
+        (
+            "unknown_tool",
+            rejection_result(uuid4()).error.message,
+            "失败：工具未注册（unknown_tool）",
+        ),
+    ],
+)
+def test_results_hide_model_facing_hints(code: str, hint: str, shown: str) -> None:
     failed = PublicToolResultContent(
         call_id=uuid4(),
         outcome="failed",
-        error=PublicFailure(
-            code="process_nonzero_exit", message=hint, retryable=False, category="tool"
-        ),
+        error=PublicFailure(code=code, message=hint, retryable=False, category="tool"),
     )
-    assert tool_result_text(failed) == "失败：命令以非零状态退出"
+    assert tool_result_text(failed) == shown
+
+
+def test_successful_command_shows_its_exit_code() -> None:
     passed = PublicToolResultContent(
         call_id=uuid4(), outcome="succeeded", output={"returncode": 0, "state": "exited"}
     )

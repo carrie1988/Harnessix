@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
 related_tests:
   - tests/models/test_current_tool_catalog.py
   - tests/context/test_compaction_wire_prepay.py
@@ -34,6 +35,7 @@ related_tests:
   - tests/models/test_chat_mapping.py
   - tests/models/test_anthropic_mapping.py
   - tests/models/test_tool_alias_identity.py
+  - tests/models/test_rejection_feedback.py
   - tests/models/test_attempt_usage.py
   - tests/models/test_attempt_crash_recovery.py
   - tests/models/test_billing_metadata.py
@@ -47,6 +49,20 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：可读工具别名与目录拒绝的英文反馈（ADR 0136）
+
+- **别名。** [`tool_alias`](../../src/harnessix/models/_history.py)只把`[A-Za-z0-9_-]`以外的字符换成下划线并截到64字符
+  （`exec_command.testbed`→`exec_command_testbed`）；[`tool_aliases`](../../src/harnessix/models/_history.py)对一份目录给出
+  一一映射，多个原名替换后相同时，合法原名保留自己的名字，其余加`_`与SHA-256(原名UTF-8)前8位。原先带32位摘要的56字符别名
+  在一次评测的58个试次里被抄错45次，并让1,358个Shell步骤每步多输出约35个Token。
+- **共用一份映射。** 工具定义与反向目录（`wire_directory`，两个映射共用，冲突或重名整体拒绝）、强制工具选择与目录说明里的
+  强制别名（`wire_aliases`）、历史重放（目录外的旧工具若与本次别名相同则加后缀）都取自同一份目录映射。响应仍只匹配本次
+  反向目录：注册原名、大小写变体、旧摘要别名与拒绝哨兵都成为目录拒绝。会话只保存注册原名，旧会话直接以新别名重放。
+- **目录拒绝的反馈。** 持久结果仍是每个原因一份的固定文本；`messages_for`在模型线协议上把已配对拒绝结果的`error.message`
+  换成[`rejection_feedback`](../../src/harnessix/agent/tool_rejections.py)的英文说明（调用未执行、原名称与参数不保留、
+  用本次提供的工具的准确名字重发）。说明只由拒绝原因决定，不含目录内容，历史正文不随目录变化。
+- 回归见[别名测试](../../tests/models/test_tool_alias_identity.py)与[拒绝反馈测试](../../tests/models/test_rejection_feedback.py)。
 
 ## 当前增量：思考内容转发（0.10.0b9）
 
@@ -335,7 +351,7 @@ connect/read/write/proxy/protocol failure及核验状态码408/409；SDK连接�
 flowchart TD
     H[Completed Agent Items] --> Pair[Validate tool call and result pairing]
     Pair --> Canon[Provider neutral messages]
-    Canon --> Alias[Stable hx tool aliases]
+    Canon --> Alias[Readable tool aliases]
     Alias --> OAI[OpenAI messages and tools]
     Alias --> ANT[Anthropic messages blocks and tools]
     I[Prepared instructions] --> OAI
@@ -350,12 +366,13 @@ flowchart TD
 2. Tool Call ID在历史中唯一，Result必须唯一配对，连续Result组不能被其他消息打断；
 3. Assistant文本与同轮Tool Call聚合为一条中立Assistant消息；
 4. Tool Result正文只包含`outcome/output/error/diff_artifact`的规范JSON；
-5. 工具名按`hx_ + ASCII语义片段前27字符 + _ + SHA-256(原名UTF-8)前32位`形成稳定可读别名；
-6. Tool Schema顶层必须为Object；别名不能冲突；请求JSON UTF-8字节不得超过配置上限。
+5. 工具名只把ASCII字母、数字、下划线和连字符以外的字符替换为下划线并截到64字符；合法原名不变（ADR 0136）；
+6. Tool Schema顶层必须为Object；目录内别名一一对应；请求JSON UTF-8字节不得超过配置上限。
 
-语义片段只保留ASCII字母、数字、下划线和连字符，其他字符替换为下划线；摘要不做Unicode规范化。
-持久`ToolCallContent.tool`仍是原内部名称，历史和当前目录使用同一纯函数投影，不重写旧事件。
-响应只能匹配当前反向目录，不回退旧别名、大小写或正文工具标记；碰撞仍在发送前整体拒绝。
+同一目录内多个原名替换后相同时，合法原名保留自己的名字，其余改为“可读片段前55字符 + `_` + SHA-256(原名UTF-8)前8位”；
+摘要不做Unicode规范化，映射只由目录内的名字集合决定。加后缀后仍相同或原名重复的目录在发送前整体拒绝。
+持久`ToolCallContent.tool`仍是原内部名称，历史和当前目录使用同一份目录映射投影，不重写旧事件。
+响应只能匹配当前反向目录，不回退注册原名、旧别名、大小写或正文工具标记。
 别名不是隐私屏障或授权凭据，Descriptor描述本来就包含原工具名。
 完整流程、字段、伪代码及失败边界见[原生工具身份与执行详设](../changes/m09-r3-native-tool-invocation.md)。
 
@@ -762,6 +779,7 @@ estimate_cost(attempt, price, verified_context):
 |---|---|---|---|---|---|
 | Provider端口与事件 | [`contracts.py`](../../src/harnessix/models/contracts.py) | `ModelRequest`、`ProviderEvent`、`ModelProvider` | [`provider.py`](../../tests/contracts/provider.py) | `ProviderContract.test_text_and_usage`、`test_tool_fragments` | 双Adapter统一语义 |
 | History配对 | [`_history.py`](../../src/harnessix/models/_history.py) | `messages_for`、`tool_alias` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_parallel_history_and_stable_aliases`、`test_invalid_history_fails_explicitly` | 配对、并行组和稳定别名 |
+| 目录别名映射 | [`_history.py`](../../src/harnessix/models/_history.py) | `tool_aliases`、`wire_directory`、`wire_aliases` | [`test_tool_alias_identity.py`](../../tests/models/test_tool_alias_identity.py) | `test_names_that_collide_after_replacement_get_a_short_exact_suffix`、`test_catalog_without_a_one_to_one_alias_mapping_is_rejected` | 可读别名、冲突后缀和一一对应 |
 | OpenAI请求映射 | [`_chat_mapping.py`](../../src/harnessix/models/_chat_mapping.py) | `build_request` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_instructions_are_a_separate_leading_system_message`、`test_explicit_thinking_mode_is_forwarded_as_provider_extra_body`、`test_invalid_request_is_rejected_before_network` | System、Tool、显式思考开关和请求预算 |
 | Anthropic请求映射 | [`_anthropic_mapping.py`](../../src/harnessix/models/_anthropic_mapping.py) | `build_request` | [`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_parallel_results_form_one_user_message`、`test_instructions_use_anthropic_system_field` | Block结构和消息角色 |
 | HTTP配置 | [`config.py`](../../src/harnessix/models/config.py) | `ModelHTTPConfig`、`ChatCapabilities` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_endpoint_constraints`、`test_https_endpoint_constraints` | HTTPS、能力和数值边界 |
@@ -922,7 +940,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   （DeepSeek）；`explicit_tail`另在前缀末端打标记。
 - 开启`repair_tool_arguments`后，修复后仍不是JSON对象的调用不再使整个响应以协议失败结束，而是产生
   `ToolCallRejected(reason="invalid_arguments_json")`：与未注册工具相同的无名称、无参数、无执行能力拒绝，配对固定结果
-  `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。
+  `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”；模型线协议上显示为
+  ADR 0136的英文反馈），模型在原预算内重发。
 - 开启`repair_tool_arguments`且以`length`结束时若已有流式工具调用，同样按上述规则形成调用组（截断的调用成为
   `invalid_arguments_json`拒绝，完整调用照常提交），终态记为`tool_calls`，由目录拒绝重入；无工具调用的纯文本截断仍以
   `max_output_tokens`失败。本地vLLM在输出用满上限时常把半截调用以`tool_calls`/`stop`结束，两条路径结果一致（ADR-0109）。

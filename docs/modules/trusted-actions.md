@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 46
+version: 47
 code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
@@ -19,7 +19,9 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
 related_tests:
+  - tests/trusted_actions/test_process_preview_projection.py
   - tests/product_config/test_git_review_fresh_owner.py
   - tests/product_config/test_git_fresh_owner_reader.py
   - tests/trusted_actions/test_runtime_owner_observer.py
@@ -52,6 +54,17 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：命令非零退出与超时的英文说明（ADR 0136）
+
+- [`_process_failure_feedback`](../../src/harnessix/trusted_actions/agent_gateway_output.py)只处理Process族（`run_profile.*`、
+  `exec_command.*`、`host_command.*`）经Owner验证投影后的失败结果，把`error.message`换成给模型的英文说明：
+  - `process_nonzero_exit`：命令已运行并以非零状态退出、不是启动失败；预览完整时不必再读Artifact，否则按引用分页读取。
+  - `process_timeout`：命令到达时限被终止、没有跑完；复合命令里尚未开始的部分没有执行；继续之前先检查命令留下的状态。
+    只陈述这一通用事实，不识别具体命令。一次评测里测试命令挂到时限被终止，同一命令中排在后面的恢复步骤没有执行，
+    原说明只有“Trusted Action未成功”，模型两步后才发现修改不在工作区。
+- 错误码、输出、效果证据与审计不变。两个错误码在界面有固定文案，界面不读这段文字；其他失败仍用通用说明。
+- 回归见[预览投影测试](../../tests/trusted_actions/test_process_preview_projection.py)。
 
 ## 当前增量：策略 v2 与沙箱外命令身份（ADR 0113）
 

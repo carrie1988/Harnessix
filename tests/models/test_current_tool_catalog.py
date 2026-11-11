@@ -15,7 +15,7 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKENS
 from harnessix.agent.models import TextContent, ToolCallRejectionContent, ToolResultContent, Usage
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS
-from harnessix.agent.tool_rejections import rejection_result
+from harnessix.agent.tool_rejections import rejection_feedback, rejection_result
 from harnessix.models._anthropic_mapping import build_request as anthropic_request
 from harnessix.models._chat_input_anchor import CompletedChatInput
 from harnessix.models._chat_mapping import build_request as chat_request
@@ -187,12 +187,18 @@ def test_catalog_changes_only_feedback_and_advertisement_not_native_history(kind
     assert uses[1]["function"]["arguments"] == "{}"
     assert [m["tool_call_id"] for m in native[2:]] == [use["id"] for use in reversed(uses)]
     result = json.loads(native[2]["content"])
-    assert result == rejection_result(request.history[2].content.call_id).model_dump(
+    persisted = rejection_result(request.history[2].content.call_id).model_dump(
         mode="json", include={"outcome", "output", "error", "diff_artifact"}
     )
+    # 线上只把固定结果的说明换成给模型的英文反馈；它不含目录内容，所以上面的历史不随目录变化。
+    assert result["error"].pop("message") == rejection_feedback("unregistered_tool")
+    assert persisted["error"].pop("message") == "工具未注册"
+    assert result == persisted
 
 
-# 本改动前从两个 mapper 的精确 UTF-8 wire 捕获，覆盖工具、指令和预算反馈。
+# 目录说明引入前从两个 mapper 的精确 UTF-8 wire 捕获，覆盖工具、指令和预算反馈；
+# 当时test.read的别名带32位摘要，ADR 0136起为可读别名，这是线上字节的唯一差别。
+LEGACY_TEST_READ_ALIAS = "hx_test_read_" + hashlib.sha256(b"test.read").hexdigest()[:32]
 LEGACY_WIRE_SHA256 = {
     ("chat", "plain"): "b6e9eae6f7ee9b1746abe33b694539870888fddd4e9e6bcb205fd5a9e8811a80",
     ("chat", "tools"): "d6c81f73d2c00dc4a911ea142878af9aca7db7645637d6267c917bcee3ca4de8",
@@ -221,7 +227,10 @@ def test_first_request_without_tool_history_keeps_legacy_wire_bytes(kind, mode):
         )
     body, _ = build(kind, request)
     assert CATALOG_PREFIX not in system_text(kind, body)
-    assert hashlib.sha256(encode_json(body).encode()).hexdigest() == LEGACY_WIRE_SHA256[kind, mode]
+    wire = encode_json(body)
+    assert LEGACY_TEST_READ_ALIAS not in wire
+    legacy_wire = wire.replace('"name":"test_read"', f'"name":"{LEGACY_TEST_READ_ALIAS}"')
+    assert hashlib.sha256(legacy_wire.encode()).hexdigest() == LEGACY_WIRE_SHA256[kind, mode]
 
 
 def history_prefix(request: ModelRequest) -> ModelRequest:

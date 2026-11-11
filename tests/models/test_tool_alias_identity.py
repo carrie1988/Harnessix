@@ -23,7 +23,12 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.models import _anthropic_mapping, _chat_mapping
-from harnessix.models._history import InvalidModelRequest, messages_for, tool_alias
+from harnessix.models._history import (
+    InvalidModelRequest,
+    messages_for,
+    tool_alias,
+    tool_aliases,
+)
 from harnessix.models.anthropic import AnthropicProvider
 from harnessix.models.config import AnthropicConfig, OpenAIChatConfig
 from harnessix.models.contracts import (
@@ -43,15 +48,26 @@ from tests.models.test_chat_mapping import call, item
 ASCII_STEM_CHARACTERS = string.ascii_letters + string.digits + "_-"
 
 
+def digest8(name: str) -> str:
+    return hashlib.sha256(name.encode("utf-8")).hexdigest()[:8]
+
+
+def legacy_hashed_alias(name: str) -> str:
+    """ADR 0136之前的别名：hx_加可读片段前27字符加32位摘要。"""
+    stem = re.sub(r"[^A-Za-z0-9_-]", "_", name) or "tool"
+    return f"hx_{stem[:27]}_{hashlib.sha256(name.encode()).hexdigest()[:32]}"
+
+
 @pytest.mark.parametrize(
-    ("name", "stem"),
+    ("name", "alias"),
     [
         ("", "tool"),
         ("read_file", "read_file"),
-        ("run_profile", "run_profile"),
-        ("namespace.read_file", "namespace_read_file"),
         ("run-profile", "run-profile"),
         ("AZ_az09-", "AZ_az09-"),
+        # 评测中的Shell工具：56字符、以32位十六进制结尾的旧别名被抄错45次。
+        ("exec_command.testbed", "exec_command_testbed"),
+        ("namespace.read_file", "namespace_read_file"),
         ("test.read", "test_read"),
         ("a b/c:d\t\n", "a_b_c_d__"),
         ("工具/读取", "_____"),
@@ -60,21 +76,14 @@ ASCII_STEM_CHARACTERS = string.ascii_letters + string.digits + "_-"
         ("Ａ１", "__"),
         ("😀", "_"),
         ("café.Read", "caf__Read"),
-        ("a" * 27, "a" * 27),
-        ("a" * 28, "a" * 27),
-        ("prefix" * 100, ("prefix" * 5)[:27]),
+        ("x" * 64, "x" * 64),
+        ("x" * 65, "x" * 64),
+        ("prefix." * 100, ("prefix_" * 10)[:64]),
     ],
 )
-def test_alias_has_readable_stem_and_exact_original_utf8_digest(name: str, stem: str) -> None:
-    alias = tool_alias(name)
-    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name):
-        assert alias == name
-        return
-    digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:32]
-    assert alias == f"hx_{stem}_{digest}"
-    assert alias.startswith("hx_") and alias.isascii()
-    assert re.fullmatch(r"hx_[A-Za-z0-9_-]+_[0-9a-f]{32}", alias)
-    assert len(alias.encode("ascii")) <= 63
+def test_alias_only_replaces_characters_the_wire_does_not_accept(name: str, alias: str) -> None:
+    assert tool_alias(name) == alias
+    assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", alias)
     assert tool_alias(name) == alias
 
 
@@ -82,9 +91,7 @@ def test_alias_has_readable_stem_and_exact_original_utf8_digest(name: str, stem:
     "code", [code for code in range(128) if chr(code) not in ASCII_STEM_CHARACTERS]
 )
 def test_each_disallowed_ascii_character_is_replaced_once(code: int) -> None:
-    name = "a" + chr(code) + "Z"
-    digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:32]
-    assert tool_alias(name) == f"hx_a_Z_{digest}"
+    assert tool_alias("a" + chr(code) + "Z") == "a_Z"
 
 
 def test_each_allowed_ascii_character_is_preserved_without_case_repair() -> None:
@@ -93,42 +100,61 @@ def test_each_allowed_ascii_character_is_preserved_without_case_repair() -> None
         assert tool_alias(name) == name
 
 
+def test_catalog_without_collisions_uses_the_readable_aliases_unchanged() -> None:
+    names = ("read_file", "exec_command.testbed", "run_profile.unit", "Read_File", "READ_FILE")
+    assert tool_aliases(names) == {
+        "read_file": "read_file",
+        "exec_command.testbed": "exec_command_testbed",
+        "run_profile.unit": "run_profile_unit",
+        "Read_File": "Read_File",
+        "READ_FILE": "READ_FILE",
+    }
+
+
 @pytest.mark.parametrize(
-    ("first", "second"),
+    ("names", "expected"),
     [
-        ("test.read", "test_read"),
-        ("a" * 27 + "_one", "a" * 27 + "_two"),
-        ("a" * 500 + "x", "a" * 500 + "y"),
-        ("工具", "读取"),
-        ("é", "è"),
-        ("é", "e\u0301"),
-        ("Read_File", "read_file"),
-        ("READ_FILE", "read_file"),
-        ("?", "!"),
-        ("\x00", "\x01"),
+        # 合法原名保留自己的名字，另一个加后缀。
+        (("test.read", "test_read"), {"test_read": "test_read"}),
+        (("a.b", "a/b"), {}),
+        (("工具", "读取"), {}),
+        (("é", "è", "plain"), {"plain": "plain"}),
+        (("x" * 64 + "one", "x" * 64 + "two"), {}),
+        (("x" * 64, "x" * 65), {"x" * 64: "x" * 64}),
+        (("?", "!"), {}),
+        (("\x00", "\x01"), {}),
     ],
 )
-def test_distinct_full_names_keep_distinct_digest_identity(first: str, second: str) -> None:
-    assert tool_alias(first) != tool_alias(second)
-    for name in (first, second):
-        if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name):
-            assert tool_alias(name) == name
+def test_names_that_collide_after_replacement_get_a_short_exact_suffix(
+    names: tuple[str, ...], expected: dict[str, str]
+) -> None:
+    aliases = tool_aliases(names)
+    assert len(set(aliases.values())) == len(names)
+    for name in names:
+        alias = aliases[name]
+        assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", alias)
+        if name in expected:
+            assert alias == expected[name]
         else:
-            assert tool_alias(name)[-32:] == hashlib.sha256(name.encode("utf-8")).hexdigest()[:32]
+            assert alias == f"{tool_alias(name)[:55]}_{digest8(name)}"
+    # 映射只由名字集合决定：换顺序、重复计算结果相同。
+    assert tool_aliases(reversed(names)) == aliases == tool_aliases(names)
 
 
-@pytest.mark.parametrize("length", [1, 26, 27, 28, 64, 65, 256, 10000])
-def test_ascii_byte_limit_preserves_canonical_or_bounded_fallback(length: int) -> None:
-    alias = tool_alias("x" * length)
-    if length <= 64:
-        assert alias == "x" * length
-    else:
-        assert alias.startswith("hx_" + "x" * 27 + "_")
-        assert len(alias.encode("ascii")) == 63
+def test_suffix_is_only_spent_on_the_names_that_collide() -> None:
+    aliases = tool_aliases(("a.b", "a_b", "exec_command.testbed"))
+    assert aliases == {
+        "a.b": f"a_b_{digest8('a.b')}",
+        "a_b": "a_b",
+        "exec_command.testbed": "exec_command_testbed",
+    }
 
 
-def test_rejection_history_marker_is_not_advertised_as_a_canonical_tool() -> None:
-    assert tool_alias("harnessix_rejected_tool_v1") != "harnessix_rejected_tool_v1"
+@pytest.mark.parametrize("name", ["harnessix_rejected_tool_v1", "harnessix.rejected.tool.v1"])
+def test_rejection_history_marker_is_never_advertised_as_a_tool(name: str) -> None:
+    marker = "harnessix_rejected_tool_v1"
+    assert tool_alias(name) == f"{marker}_{digest8(name)}"
+    assert tool_aliases((name,)) == {name: f"{marker}_{digest8(name)}"}
 
 
 def build_for(kind: str, request: ModelRequest) -> tuple[dict[str, Any], dict[str, str]]:
@@ -166,7 +192,14 @@ def test_tool_directory_and_history_share_alias_without_mutating_contracts(kind:
         }
     )
     before = request.model_dump_json()
-    expected = [tool_alias(name) for name in names]
+    aliases = tool_aliases(names)
+    expected = [aliases[name] for name in names]
+    assert len(set(expected)) == len(names)
+    assert [aliases[name] for name in ("read_file", "test_read", "Read_File")] == [
+        "read_file",
+        "test_read",
+        "Read_File",
+    ]
     history = messages_for(request)
     assert [entry["function"]["name"] for entry in history[1]["tool_calls"]] == expected
     body, reverse_names = build_for(kind, request)
@@ -190,31 +223,75 @@ def test_tool_directory_and_history_share_alias_without_mutating_contracts(kind:
 
 
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
-def test_alias_collision_still_rejects_the_request(
-    kind: str, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "names",
+    [
+        # 加后缀后的别名恰好是另一个已注册的合法原名：无法一一对应，整体拒绝。
+        ("test.read", "test_read", f"test_read_{digest8('test.read')}"),
+        ("test.read", "test.read"),
+    ],
+    ids=["suffixed-alias-is-registered", "duplicate-name"],
+)
+def test_catalog_without_a_one_to_one_alias_mapping_is_rejected(
+    kind: str, names: tuple[str, ...]
 ) -> None:
     request = model_request(with_tools=True)
-    request = request.model_copy(
-        update={
-            "tools": (
-                request.tools[0],
-                request.tools[0].model_copy(update={"name": "test.other"}),
-            )
-        }
-    )
-    mapping = _chat_mapping if kind == "openai" else _anthropic_mapping
-    monkeypatch.setattr(mapping, "tool_alias", lambda _: "hx_collision_fixture")
-    with pytest.raises(InvalidModelRequest, match="工具名称或输入 Schema 无效"):
-        build_for(kind, request)
-
-
-@pytest.mark.parametrize("kind", ["openai", "anthropic"])
-def test_canonical_name_colliding_with_fallback_is_rejected(kind: str) -> None:
-    request = model_request(with_tools=True)
-    names = ("test.read", tool_alias("test.read"))
     definitions = tuple(request.tools[0].model_copy(update={"name": name}) for name in names)
     with pytest.raises(InvalidModelRequest, match="工具名称或输入 Schema 无效"):
         build_for(kind, request.model_copy(update={"tools": definitions}))
+
+
+def test_forced_choice_and_catalog_note_use_the_catalog_alias_of_a_colliding_name() -> None:
+    request = model_request(with_tools=True)
+    definitions = tuple(
+        request.tools[0].model_copy(update={"name": name}) for name in ("test.read", "test_read")
+    )
+    invoked = call().model_copy(update={"tool": "test.read"})
+    request = request.model_copy(
+        update={
+            "tools": definitions,
+            "tool_choice": "required",
+            "forced_tool": "test.read",
+            "history": (
+                *request.history,
+                item(invoked),
+                item(ToolResultContent(call_id=invoked.call_id, outcome="succeeded")),
+            ),
+        }
+    )
+    suffixed = f"test_read_{digest8('test.read')}"
+    chat, chat_names = build_for("openai", request)
+    assert chat_names == {suffixed: "test.read", "test_read": "test_read"}
+    assert chat["tool_choice"] == {"type": "function", "function": {"name": suffixed}}
+    assert f'Tool choice: forced ("{suffixed}")' in chat["messages"][0]["content"]
+    assert chat["messages"][2]["tool_calls"][0]["function"]["name"] == suffixed
+    anthropic, anthropic_names = build_for("anthropic", request)
+    assert anthropic_names == chat_names
+    assert anthropic["tool_choice"]["name"] == suffixed
+    assert f'Tool choice: forced ("{suffixed}")' in anthropic["system"]
+
+
+def test_history_call_to_a_tool_outside_the_catalog_never_reads_as_a_current_tool() -> None:
+    request = model_request(with_tools=True)
+    calls = tuple(call().model_copy(update={"tool": name}) for name in ("old.read", "gone.tool"))
+    request = request.model_copy(
+        update={
+            "tools": (request.tools[0].model_copy(update={"name": "old_read"}),),
+            "history": (
+                *request.history,
+                *(item(invoked) for invoked in calls),
+                *(
+                    item(ToolResultContent(call_id=invoked.call_id, outcome="succeeded"))
+                    for invoked in calls
+                ),
+            ),
+        }
+    )
+    projected = [entry["function"]["name"] for entry in messages_for(request)[1]["tool_calls"]]
+    # old.read替换后与当前目录的old_read相同，加后缀；gone.tool不冲突，保持可读。
+    assert projected == [f"old_read_{digest8('old.read')}", "gone_tool"]
+    _, names = build_for("openai", request)
+    assert names == {"old_read": "old_read"}
 
 
 async def test_persisted_original_tool_name_survives_both_wire_projections(tmp_path: Path) -> None:
@@ -243,17 +320,30 @@ async def test_persisted_original_tool_name_survives_both_wire_projections(tmp_p
         }
     )
     for kind in ("openai", "anthropic"):
-        _, reverse_names = build_for(kind, request)
-        assert reverse_names[tool_alias("test.read")] == "test.read"
+        body, reverse_names = build_for(kind, request)
+        assert reverse_names == {"test_read": "test.read"}
+        # 会话只保存原名：旧版本写入的历史在新版本下直接以可读别名重放，线上不再出现旧摘要别名。
+        assert legacy_hashed_alias("test.read") not in repr(body)
+    replayed = messages_for(request)[1]["tool_calls"]
+    assert [entry["function"]["name"] for entry in replayed] == ["test_read"]
     assert original_calls[0].tool == "test.read"
     assert await reopened.get_thread(thread.thread_id) == persisted
     assert [event.model_dump_json() for event in await reopened.events(thread.thread_id)] == before
 
 
 @pytest.mark.parametrize("kind", ["openai", "anthropic"])
-@pytest.mark.parametrize("logical_name", ["test.read", "read_file"])
+@pytest.mark.parametrize("logical_name", ["test.read", "read_file", "exec_command.testbed"])
 @pytest.mark.parametrize(
-    "identity", ["current", "unknown", "legacy_hash", "wrong_case", "not_in_directory", "raw_name"]
+    "identity",
+    [
+        "current",
+        "unknown",
+        "legacy_hash",
+        "previous_hashed_alias",
+        "wrong_case",
+        "not_in_directory",
+        "raw_name",
+    ],
 )
 async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
     kind: str, logical_name: str, identity: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -264,6 +354,7 @@ async def test_actual_sdk_stream_accepts_only_current_exact_directory_alias(
         "current": tool_alias(logical_name),
         "unknown": "hx_unknown_fixture",
         "legacy_hash": "hx_" + hashlib.sha256(logical_name.encode()).hexdigest()[:60],
+        "previous_hashed_alias": legacy_hashed_alias(logical_name),
         "wrong_case": tool_alias(logical_name).upper(),
         "not_in_directory": tool_alias("test.other"),
         "raw_name": logical_name,

@@ -194,16 +194,25 @@ async def test_nonzero_feedback_only_consumes_verified_visible_preview(
         assert result.output == (projected if delivery == "owner" else outcome.output)
         assert result.trusted_action.artifact_sha256 == outcome.artifact_sha256
         assert result.trusted_action.origin == ("recovery" if recovery else "execution")
-        if delivery == "owner" and case not in {"v1", "timeout", "unknown"}:
-            assert "不是启动失败" in result.error.message
-            assert "test diagnostic" not in result.error.message
+        message = result.error.message
+        if delivery == "owner" and case == "timeout":
+            # 评测实例：测试命令挂到时限被终止（exited/-15/timeout），同一条命令里排在后面的恢复
+            # 步骤从未执行，原结果只说“Trusted Action未成功”，模型两步后才发现修改不在工作区。
+            # 反馈明说命令没有跑完、复合命令的后续部分没有执行；只陈述通用事实，不识别具体命令。
+            assert message.isascii()
+            assert "did not finish" in message and "never ran" in message
+            assert "non-zero status" not in message and "test diagnostic" not in message
+        elif delivery == "owner" and case not in {"v1", "unknown"}:
+            assert message.isascii()
+            assert "exited with a non-zero status; this is not a launch failure" in message
+            assert "test diagnostic" not in message
             if case == "complete":
-                assert "无需仅为重复诊断读取Artifact" in result.error.message
+                assert "do not read the artifact for the same output" in message
             else:
-                assert "按原Artifact引用有界读取" in result.error.message
-                assert "无需" not in result.error.message
+                assert "read the referenced artifact in bounded pages" in message
+                assert "do not read" not in message
         else:
-            assert result.error.message == "Trusted Action未成功；详细事实请查询审计记录"
+            assert message == "Trusted Action未成功；详细事实请查询审计记录"
         assert actions.events(initial.plan.execution.plan_id) == events and executor.calls == 1
     finally:
         plans.close()

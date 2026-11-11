@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 48
+version: 49
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -22,6 +22,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
   - docs/adr/0135-command-ledger-step-notices.md
+  - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -51,6 +52,21 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：计划调用位置与给模型的英文反馈（ADR 0136）
+
+- **计划调用位置。** 一次评测里`update_plan`被拒28次，其中24次是“先`update_plan`、再一个其他调用”：计划Item只能在整组调用
+  结算后进入准备阶段时与结果同事务发布，旧规则因此要求模型把它写在最后。现在模型可以写在任意位置：
+  [`plan_calls_last`](../../src/harnessix/agent/planning.py)在`_sample_events`形成持久调用组时把计划调用稳定移到其余调用之后，
+  其余调用保持模型给出的相对顺序；事件、Reducer与计划结果合同不变。同一响应有多个计划调用时只记录最后一个，较早的以
+  `tool_invalid_arguments`说明原因；未启用内置规划时同名工具不重排。
+- **计划的说明与错误。** 工具说明与全部校验错误改为英文，形状与字段错误仍附完整合法调用示例；界面对
+  `tool_invalid_arguments`显示固定文案，不受影响。工具说明变化使`update_plan`的工具指纹变化：升级前的会话在模型再次更新计划
+  之前，压缩不再固定旧的计划调用组。
+- **目录拒绝的反馈。** [`tool_rejections.rejection_feedback`](../../src/harnessix/agent/tool_rejections.py)给出每个拒绝原因的
+  英文说明，只在模型线协议视图中替换固定结果的`message`（见[Model Runtime](models.md)）；持久固定结果、追加与重放校验、界面
+  显示不变。执行时已无定义的已登记调用复用同一份固定未注册结果。
+- 回归见[计划工具测试](../../tests/agent/test_planning_tool.py)与[拒绝反馈测试](../../tests/models/test_rejection_feedback.py)。
 
 ## 当前增量：思考预览（0.10.0b9）
 
@@ -87,11 +103,12 @@ ModelRequest、Provider Wire或Session公共合同。Kernel验证规则只能引
 ## 可选原生规划控制（默认关闭）
 
 [`planning.py`](../../src/harnessix/agent/planning.py)复用Plan契约，一次受保护CAS发布短结果、
-准备状态和模型自报计划；末尾规则、取消／期限、输出上限和崩溃恢复不授予Workspace权限。
+准备状态和模型自报计划；取消／期限、输出上限和崩溃恢复不授予Workspace权限。
+计划调用由宿主排到持久调用组末尾（ADR 0136），模型可把它写在响应的任意位置。
 缺少`step_id`的步骤按位置补齐（不改已给出的ID、不制造重复；回放时同样补齐，压缩Pin仍能识别最新计划），
-被拒时失败说明指出具体违反的规则（步骤数、重复ID、多个进行中、字节上限、字段或位置），不回显参数值；
-参数形状或步骤字段错误（常见为只发单个步骤或漏写`description`）另附一份固定的完整合法调用示例，
-并说明每次调用都发送整份计划；工具合同、Schema与版本不变。
+被拒时英文失败说明指出具体违反的规则（步骤数、重复ID、多个进行中、字节上限、字段，或同一响应里有更晚的计划调用），
+不回显参数值；参数形状或步骤字段错误（常见为只发单个步骤或漏写`description`）另附一份固定的完整合法调用示例，
+并说明每次调用都发送整份计划；Schema与版本不变。
 完整契约及源码／测试映射统一见[规划候选设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)。
 [`test_planning_tool.py`](../../tests/agent/test_planning_tool.py)的离线绿灯不构成真实编码验收。
 
@@ -1020,6 +1037,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 49 | `feat/r2-protocol` | 2026-11-11 | 计划调用可写在一次响应的任意位置，由宿主排到持久调用组末尾；计划校验错误与被拒调用的反馈改为英文（ADR 0136） |
 | 48 | `feat/r2-guard` | 2026-11-11 | 完成守卫第2版（ADR 0124）：截断或写成文本的工具调用不算完成，只包着文本的外壳去壳判定，继续意图检测扩展到结尾句，补发次数随状态在2～6次间变化，提示写明剩余模型调用次数，结构化乱码在出站历史里换成占位 |
 | 47 | `feat/r2-regress` 增量 | 2026-11-11 | 新增工具步骤说明端口：一步的工具结果落账后，注入的来源可补发一条宿主事实说明（ADR 0135） |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
