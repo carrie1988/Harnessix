@@ -46,11 +46,14 @@ class ExactEdit(ReadContract):
         if self.old_text == self.new_text:
             raise PydanticCustomError(
                 "harnessix_exact_edit_no_change",
-                "编辑必须改变内容：old_text与new_text完全相同；若当前文本已是期望内容则无需再改该处",
+                "old_text and new_text are identical, so this edit changes nothing; delete this "
+                "edit if the file already has the text you want, otherwise put the intended "
+                "text in new_text",
             )
         if len(text_bytes(self.old_text)) + len(text_bytes(self.new_text)) > MAX_EDIT_BYTES:
             raise PydanticCustomError(
-                "harnessix_exact_edit_too_large", "单编辑 UTF-8 大小超限；请拆成更小的编辑"
+                "harnessix_exact_edit_too_large",
+                "this edit exceeds the UTF-8 size limit; split it into smaller edits",
             )
         return self
 

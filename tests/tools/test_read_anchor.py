@@ -72,7 +72,7 @@ async def test_exact_anchor_page_has_full_raw_digest_and_continuation(tmp_path, 
     [
         {"anchor": ""},
         {"anchor": True},
-        {"anchor": "tab\there"},
+        {"anchor": "bell\x07here"},
         {"anchor": "中" * 86},
         {"anchor": "x", "lines_before": True},
         {"anchor": "x", "lines_before": 1.0},
@@ -86,9 +86,10 @@ async def test_invalid_anchor_contract_fails_before_io(tmp_path, monkeypatch, ar
     assert result.error.code == "tool_invalid_arguments" and result.output is None
 
 
-# 换行与回车由参数修复取第一行（见test_argument_repair），其余控制字符照常拒绝。
+# 换行与回车由参数修复取第一行（见test_argument_repair），制表符是合法的行内缩进，
+# 其余控制字符照常拒绝。
 @pytest.mark.parametrize(
-    "control", [chr(i) for i in range(32) if chr(i) not in "\n\r"] + [chr(127)]
+    "control", [chr(i) for i in range(32) if chr(i) not in "\n\r\t"] + [chr(127)]
 )
 async def test_anchor_control_feedback_identifies_rule_without_echoing_values(
     tmp_path, monkeypatch, control
@@ -98,7 +99,7 @@ async def test_anchor_control_feedback_identifies_rule_without_echoing_values(
     async with CodingToolRuntime(tmp_path) as tools:
         result = await execute(tools, path="PRIVATE_PATH", anchor=private_anchor)
     assert result.error.code == "tool_invalid_arguments" and result.output is None
-    assert "anchor必须是不含换行或控制字符的单行字面量" in result.error.message
+    assert "anchor must be one line of literal text" in result.error.message
     assert "PRIVATE" not in result.error.model_dump_json()
     assert len(result.error.message) <= 2000
 
@@ -106,7 +107,7 @@ async def test_anchor_control_feedback_identifies_rule_without_echoing_values(
 @pytest.mark.parametrize(
     ("arguments", "hint"),
     [
-        ({"anchor": "中" * 86}, "anchor的UTF-8编码不得超过256字节"),
+        ({"anchor": "中" * 86}, "anchor must be at most 256 UTF-8 bytes"),
     ],
 )
 async def test_anchor_cross_field_feedback_is_specific_without_io(
@@ -263,3 +264,17 @@ async def test_omitted_anchor_preserves_v2_behavior_and_native_snapshot(tmp_path
             assert getattr(page, field) == found.output[field]
     finally:
         native.close()
+
+
+async def test_tab_indented_line_is_a_valid_anchor(tmp_path):
+    # 回归（gin-gonic__gin-4003__8Moka8R）：以制表符缩进的源码行原样作锚点，曾被当作控制字符拒绝。
+    (tmp_path / "gin.go").write_bytes(
+        b"package gin\n\nfunc serve() {\n\tif engine.HandleMethodNotAllowed {\n\t\treturn\n\t}\n}\n"
+    )
+    async with CodingToolRuntime(tmp_path) as tools:
+        result = await execute(
+            tools, path="gin.go", anchor="\tif engine.HandleMethodNotAllowed {", lines_before=1
+        )
+    assert result.outcome == "succeeded"
+    assert result.output["start_line"] == 3
+    assert result.output["text"].splitlines()[1] == "\tif engine.HandleMethodNotAllowed {"

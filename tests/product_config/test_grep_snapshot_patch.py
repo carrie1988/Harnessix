@@ -145,7 +145,7 @@ async def test_stale_or_revision_snapshot_is_rejected_without_approval_or_effect
         assert denied.status is TurnStatus.COMPLETED
         assert output.outcome == "failed" and output.trusted_action is None
         assert output.error is not None
-        assert output.error.code == CODE and output.error.message == MESSAGE
+        assert output.error.code == CODE and output.error.message == f"files[0]: {MESSAGE}"
         assert not output.error.retryable
         assert not any(
             isinstance(item.content, TrustedActionApprovalRequestContent) for item in denied.items

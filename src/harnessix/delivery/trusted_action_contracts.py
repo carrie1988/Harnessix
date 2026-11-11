@@ -34,13 +34,41 @@ MAX_WORKSPACE_ACTION_REVIEW_BYTES = 1024 * 1024
 MAX_REVIEW_CHUNK_CHARACTERS = 3000
 
 
-# 每种操作的固定字段要求；只陈述合同，不含调用值，可直接作为模型反馈。
-_OPERATION_SHAPES = {
-    "create": "create需要path、content、mode（420或493），不得提供expected_sha256、edits",
-    "replace": "replace需要path、expected_sha256、content、mode（420或493），不得提供edits",
-    "edit": "edit需要path、expected_sha256、edits，不得提供content、mode",
-    "delete": "delete需要path、expected_sha256，不得提供content、edits、mode",
+# 每种操作必须给出与不得给出的字段，以及写给模型的一句用法；反馈只含操作名与字段名，不含调用值。
+_OPERATION_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...], str]] = {
+    "create": (
+        ("content", "mode"),
+        ("expected_sha256", "edits"),
+        "create writes a new file from its complete content with mode 420 or 493",
+    ),
+    "replace": (
+        ("expected_sha256", "content", "mode"),
+        ("edits",),
+        "replace rewrites a whole file from its complete new content with mode 420 or 493; "
+        "to change part of a file use operation edit with edits",
+    ),
+    "edit": (
+        ("expected_sha256", "edits"),
+        ("content", "mode"),
+        "edit changes parts of an existing file through edits (old_text/new_text pairs) "
+        "and keeps the file mode",
+    ),
+    "delete": (("expected_sha256",), ("content", "edits", "mode"), "delete removes one file"),
 }
+_SHA_SOURCE = "expected_sha256 is the content_sha256 that read_file returned for this file"
+
+
+def _operation_shape_problem(item: WorkspacePatchFile) -> str | None:
+    required, forbidden, usage = _OPERATION_FIELDS[item.operation]
+    missing = [name for name in required if getattr(item, name) is None]
+    unexpected = [name for name in forbidden if getattr(item, name) is not None]
+    if not missing and not unexpected:
+        return None
+    found = [f"is missing {', '.join(missing)}"] if missing else []
+    if unexpected:
+        found.append(f"must not include {', '.join(unexpected)}")
+    hints = [usage, *([_SHA_SOURCE] if "expected_sha256" in missing else [])]
+    return f"this {item.operation} entry {' and '.join(found)}; {'; '.join(hints)}"
 
 
 class WorkspacePatchFile(ContractModel):
@@ -124,50 +152,29 @@ class WorkspacePatchFile(ContractModel):
         try:
             body = value.encode("utf-8", errors="strict")
         except UnicodeError:
-            raise ValueError("Workspace Patch正文必须是合法UTF-8") from None
+            raise _content_error() from None
         if len(body) > MAX_WORKSPACE_PATCH_INPUT_BYTES or any(
             (ord(character) < 32 and character not in "\t\r\n") or ord(character) == 127
             for character in value
         ):
-            raise ValueError("Workspace Patch正文超过上限或包含控制字符")
+            raise _content_error()
         return value
 
     @model_validator(mode="after")
     def operation_shape(self) -> Self:
-        if self.operation == "create":
-            valid = (
-                self.expected_sha256 is None
-                and self.content is not None
-                and self.edits is None
-                and self.mode is not None
-            )
-        elif self.operation == "replace":
-            valid = (
-                self.expected_sha256 is not None
-                and self.content is not None
-                and self.edits is None
-                and self.mode is not None
-            )
-        elif self.operation == "edit":
-            valid = (
-                self.expected_sha256 is not None
-                and self.content is None
-                and self.edits is not None
-                and self.mode is None
-            )
-        else:
-            valid = (
-                self.expected_sha256 is not None
-                and self.content is None
-                and self.edits is None
-                and self.mode is None
-            )
-        if not valid:
-            raise PydanticCustomError(
-                "harnessix_workspace_patch_operation_shape",
-                _OPERATION_SHAPES[self.operation],
-            )
+        problem = _operation_shape_problem(self)
+        if problem is not None:
+            raise PydanticCustomError("harnessix_workspace_patch_operation_shape", problem)
         return self
+
+
+def _content_error() -> PydanticCustomError:
+    # 固定措辞的harnessix_错误可原样反馈给模型（参数反馈白名单），不含输入值。
+    return PydanticCustomError(
+        "harnessix_workspace_patch_content_invalid",
+        "content must be valid UTF-8 text of at most 512 KiB without control characters "
+        "other than tab, CR and LF",
+    )
 
 
 class WorkspacePatchInput(ContractModel):
@@ -183,7 +190,6 @@ class WorkspacePatchInput(ContractModel):
 
     @model_validator(mode="after")
     def bounded_unique_files(self) -> Self:
-        paths = [item.path for item in self.files]
         total = sum(
             len((item.content or "").encode("utf-8"))
             + sum(
@@ -192,10 +198,21 @@ class WorkspacePatchInput(ContractModel):
             )
             for item in self.files
         )
-        if len(paths) != len(set(paths)):
-            raise ValueError("Workspace Patch不能重复定位同一路径")
+        first_use: dict[str, int] = {}
+        for index, item in enumerate(self.files):
+            first = first_use.setdefault(item.path, index)
+            if first != index:
+                raise PydanticCustomError(
+                    "harnessix_workspace_patch_duplicate_path",
+                    f"files[{first}] and files[{index}] target the same path; a path may appear "
+                    "only once per call, so put every change to that file into one entry",
+                )
         if total > MAX_WORKSPACE_PATCH_INPUT_BYTES:
-            raise ValueError("Workspace Patch正文总量超过上限")
+            raise PydanticCustomError(
+                "harnessix_workspace_patch_too_large",
+                "content, old_text and new_text together exceed 512 KiB; "
+                "send the changes in several smaller calls",
+            )
         return self
 
 

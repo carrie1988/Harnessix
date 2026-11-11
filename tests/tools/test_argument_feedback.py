@@ -36,8 +36,8 @@ from tests.tools.test_paging_feedback import _result_payloads
     "tool,arguments,required",
     [
         ("read_file", {}, "path"),
-        ("list_files", {"limit": True}, "无"),
-        ("glob", {"pattern": None}, "无"),
+        ("list_files", {"limit": True}, "none"),
+        ("glob", {"pattern": None}, "none"),
         ("grep", {}, "query"),
         ("grep", {"query": "PRIVATE_QUERY", "context_lines": -987654321}, "query"),
         ("read_artifact", {}, "artifact_id"),
@@ -71,11 +71,11 @@ async def test_invalid_arguments_use_registered_fields_without_io(
     assert result.outcome == "failed" and result.output is None
     assert result.error.code == "tool_invalid_arguments"
     assert result.error.category == "tool" and not result.error.retryable
-    assert f"必填字段：{required}" in result.error.message
-    assert f"允许字段：{fields}" in result.error.message
+    assert f"Required fields: {required}; " in result.error.message
+    assert f"allowed fields: {fields}. " in result.error.message
     assert len(result.error.message) <= 2000
     if tool == "grep" and "context_lines" in arguments:
-        assert "context_lines 应满足 ≥ 0、≤ 3" in result.error.message
+        assert "context_lines must be >= 0 and <= 3" in result.error.message
         assert "987654321" not in result.error.message and "PRIVATE" not in result.error.message
 
 
@@ -97,8 +97,8 @@ async def test_present_invalid_fields_are_not_missing_and_values_are_not_echoed(
     async with CodingToolRuntime(tmp_path) as tools:
         result = await tools.execute(call(tools, **arguments), CancelToken())
     assert result.error.code == "tool_invalid_arguments"
-    expected = "无" if "path" in arguments else "path"
-    assert f"缺少必填字段：{expected}" in result.error.message
+    expected = "none" if "path" in arguments else "path"
+    assert f"missing required fields: {expected}; " in result.error.message
     # 不符合标识符规则的未知键及嵌套在值里的键都不回显。
     assert "PRIVATE_FIELD_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
     assert "PRIVATE_VALUE_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
@@ -115,7 +115,8 @@ async def test_unknown_top_level_field_is_named_but_its_value_is_not_echoed(tmp_
         )
     assert result.error.code == "tool_invalid_arguments"
     assert (
-        "校验位置：content_sha256：合同未定义该字段，请删除（此处允许字段：" in result.error.message
+        "Problems: content_sha256: not a field of this contract, remove it (allowed here: "
+        in result.error.message
     )
     assert "PRIVATE_VALUE_NEVER_IN_FEEDBACK" not in result.error.model_dump_json()
 
@@ -226,9 +227,9 @@ async def test_sdk_artifact_feedback_new_call_actual_read_and_replay(
         elif step == 3:
             failure = results[-1]["error"]
             assert failure["code"] == "tool_invalid_arguments"
-            missing = "无" if "artifact_id" in invalid else "artifact_id"
-            assert f"缺少必填字段：{missing}" in failure["message"]
-            assert "允许字段：artifact_id, limit, offset" in failure["message"]
+            missing = "none" if "artifact_id" in invalid else "artifact_id"
+            assert f"missing required fields: {missing}; " in failure["message"]
+            assert "allowed fields: artifact_id, limit, offset. " in failure["message"]
             tool, arguments = (
                 "read_artifact",
                 {"artifact_id": results[0]["output"]["artifact"]["artifact_id"]},
@@ -315,13 +316,13 @@ async def test_sdk_artifact_feedback_new_call_actual_read_and_replay(
             "grep",
             {"query": "needle", "context_lines": -1},
             {"query": "needle", "context_lines": 3},
-            "context_lines 应满足 ≥ 0、≤ 3",
+            "context_lines must be >= 0 and <= 3",
         ),
         (
             "read_file",
-            {"path": "example.py", "anchor": "PRIVATE_SOURCE_TEXT\tneedle"},
+            {"path": "example.py", "anchor": "PRIVATE_SOURCE_TEXT\x07needle"},
             {"path": "example.py", "anchor": "needle"},
-            "anchor必须是不含换行或控制字符的单行字面量",
+            "anchor must be one line of literal text",
         ),
     ],
 )

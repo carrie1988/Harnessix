@@ -98,4 +98,4 @@ async def test_review_preparation_timeout_is_recoverable_feedback_not_unknown_ef
     result = results[-1]
     assert result.outcome == "failed"
     assert result.error.code == "workspace_patch_preparation_timeout"
-    assert "本次Patch未执行，工作区没有变化" in result.error.message
+    assert "the patch was not executed and the workspace is unchanged" in result.error.message

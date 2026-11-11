@@ -55,9 +55,11 @@ from tests.trusted_actions.test_agent_gateway import (
 )
 
 CODE = "workspace_patch_precondition_failed"
+# 固定英文正文前带出错文件项在files中的下标；本文件的坏SHA用例把出错项放在不同位置。
 MESSAGE = (
-    "expected_sha256不匹配；请重新调用目标文件的read_file，"
-    "仅使用digest_status=complete时的content_sha256，禁止猜测摘要"
+    "expected_sha256 does not match the current file, which changed after that digest was read; "
+    "call read_file on this file and resend with the content_sha256 it returns "
+    "(digest_status=complete), never a guessed digest"
 )
 
 
@@ -162,7 +164,10 @@ async def test_proven_no_change_rejects_before_approval_or_execution(
         output = result(turn)
         assert turn.status is TurnStatus.COMPLETED and output.outcome == "failed"
         assert output.error.code == "delivery_no_change" and not output.error.retryable
-        assert output.error.message == "Workspace事务包含无变化文件"
+        assert output.error.message == (
+            "files[0]: the file already has exactly this content, so nothing would change; "
+            "remove this entry and resend the remaining files"
+        )
         assert "internal-no-change-canary" not in turn.model_dump_json()
         assert not any(
             isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
@@ -309,11 +314,14 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
             monkeypatch.setattr(
                 "harnessix.delivery.trusted_action._validate_mutation", tampered_validation
             )
-        thread, turn, call = await patch_turn(runtime, provider, root, bad_proposal(operation))
+        proposal = bad_proposal(operation)
+        thread, turn, call = await patch_turn(runtime, provider, root, proposal)
         output = result(turn)
         assert turn.status is TurnStatus.COMPLETED
         assert output.outcome == "failed" and output.trusted_action is None
-        assert output.error.code == CODE and output.error.message == MESSAGE
+        # 消息指出出错的是files中的哪一项，模型只需重读并改正该文件的SHA。
+        index = [item.operation for item in proposal.files].index(operation)
+        assert output.error.code == CODE and output.error.message == f"files[{index}]: {MESSAGE}"
         assert not output.error.retryable
         assert not any(
             isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
