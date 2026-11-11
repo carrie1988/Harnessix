@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 136
+version: 137
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -17,6 +17,7 @@ related_adrs:
   - docs/adr/0121-external-boundary-native-process-profile.md
   - docs/adr/0111-native-process-sandbox-backends.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0134-default-working-habits-and-thin-eval-template.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
   - tests/product_config/test_optional_pre_edit_profile.py
@@ -113,8 +114,32 @@ related_tests:
   - tests/product_config/test_reasoning_transport_limits.py
   - tests/product_config/test_activation_precondition.py
   - tests/product_ui/test_configure_vendors.py
+  - tests/product_config/test_generic_execution_context.py
+  - tests/product_config/test_working_habits.py
 supersedes: []
 ---
+
+## 当前增量：默认工作习惯指令（ADR 0134）
+
+- **内容**：[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)的`_WORKING_HABITS`是运行时指令片段
+  `harnessix.working-habits/v1`，约1.2 KiB，六条习惯各带适用场合：
+  1. 带工具调用的回复先用一句话写出当前判断或下一步；
+  2. 报告的问题先复现，方式取代价最低且走到真实代码的那种（项目自己的测试运行器里的临时测试，或小脚本，仓库内外均可），代价高时先改后验，改后重跑同一个复现；
+  3. 改动前后各运行一次离改动最近的已有测试，改动前通过、改动后失败的是回归，除非用户明确要求了这一行为变化；
+  4. 优先采用与代码库里同类情况（兄弟选项、函数或命令，已有约定）一致的改法并完整照做，修根因而不是只修报告的例子，不加无关内容；
+  5. 报告的情况与这些测试通过即完成，不为没人提出的情况扩展或重写，发现的其他问题写进最终答复；
+  6. 结束前只清理自己创建的临时文件，不动、不还原开始前就有的内容。
+- **装配**：`generic_execution=True`（容器、本机沙箱、外部边界三种命令执行方式）时附带同一片段；它与命令在哪里执行无关，
+  所以不复制进三份执行指令，单独升版本。Context按来源名排序，片段排在执行指令之后。
+  没有命令工具的固定阶段编码工作流不附带，其指令与版本不变。
+- **协调**：外部边界指令升为`harnessix.external-boundary-execution-instructions/v3`，删除“临时文件只放/tmp”一句
+  （它禁止在仓库内用项目自己的测试方式复现）；通用指令v6与本机指令v4不变。
+- **评测与产品**：这些习惯此前只写在评测任务模板里，用户得不到。现在模型的做法只由产品默认指令决定，
+  评测任务模板`swebench-task-v4.j2`只含题目与评测自身的事实，不再是评测与产品的差异来源；评测对产品配置的覆盖见§10。
+- **回归**：[片段装配与文字](../../tests/product_config/test_working_habits.py)、
+  [外部边界指令](../../tests/product_config/test_generic_execution_context.py)、
+  [评测模板](../../tests/integrations/test_swebench_task_template.py)。离线测试只证明指令按设计送达，不证明模型遵循；
+  效果由评测对照确认。
 
 ## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
 
@@ -159,7 +184,7 @@ supersedes: []
 - **零配置**：
   - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
-- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v4`（v4起要求工具调用之间的进度说明也使用用户的语言；提交时缺少Git作者身份就询问用户，不得沿用历史里其他人的身份）；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v4`（v4起要求工具调用之间的进度说明也使用用户的语言；提交时缺少Git作者身份就询问用户，不得沿用历史里其他人的身份）；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v3`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同；v3按ADR 0134删除“临时文件只放/tmp”）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。三者之后都附带同一份工作习惯片段`harnessix.working-habits/v1`（ADR 0134）。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
@@ -703,6 +728,11 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
 | `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
 | `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
+
+评测对产品配置的覆盖只有上表的`completion_guard`与`compaction`，以及评测Profile放宽的单步输出上限
+（[`harnessix_configs.py`](../../integrations/harbor/harnessix_configs.py)的`EVAL_PROFILE_OVERRIDES`）；
+运行器一侧的差异（自动审批、预算、任务命令环境）见[评测接入](../operations/evaluation-integrations.md)。
+模型的做法不在差异之列：工作习惯是产品默认指令（ADR 0134），评测任务模板只含题目与评测自身的事实。
 
 每个Profile都独立展开整条Fallback链并验证：
 
@@ -2274,6 +2304,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 137 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
 | 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |
