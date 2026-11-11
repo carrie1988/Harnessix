@@ -4,6 +4,7 @@
 
 ### 修复
 
+- Windows 上终端界面提交任务一律失败，提示“客户端状态写入失败”；同时 Harnessix 运行期间，项目根目录里“写临时文件再改名”的操作（npm、`uv lock`、IDE 安全保存等）会报“文件被另一个进程占用”。原因是 Harnessix 固定目录时不允许别的程序在目录里改名；现在允许，目录本身仍受保护
 - Linux 上缺少 API Key 时，提示把 `export` 加到 `~/.bash_profile`，而 Linux 的 bash 平时读取 `~/.bashrc`，照做后新终端仍找不到 Key；现在按平台给出正确的文件（macOS：`~/.zshrc` 或 `~/.bash_profile`；Linux：`~/.bashrc` 或 `~/.zshrc`）
 
 ## 0.10.0b11（2026-11-11）

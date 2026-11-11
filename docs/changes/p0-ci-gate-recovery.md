@@ -81,6 +81,7 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
 - **Git用户观察的读取超时**：本地读取时限到期此前被报成“来源发生变化”（复核时）或“路径无效”（初次捕获时），现报`git_user_observation_timeout`（可重试）。时限仍为5秒，与执行时快照复核共用，按用户决定不放宽。
+- **Windows固定目录的共享方式（0.10.0b12）**：目录句柄由只共享读改为共享读写、不共享删除，目录内改名不再因Harnessix持有句柄而失败；目录本身仍不能被改名、删除或替换，见[Workspace模块设计](../modules/workspace.md)。
 - **macOS僵尸进程组**：停止命令时组长已退出、尚未回收，`killpg`返回EPERM，此前记为`cleanup_failed`（结局未知）；现先回收组长再发信号，组内无其他成员即按已停止处理。组内仍有存活成员时行为不变，见[进程模块设计](../modules/processes.md)。
 
 ## 6. 持久化与事务
@@ -114,6 +115,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
 Windows原生验证步骤（`windows-trusted-execution`）的第一步在GitHub Windows Runner上用时约2分57秒（134项全部通过），3分钟步骤时限在pytest收尾时到期，整步判失败，其后的Windows产品测试（`tests/product_ui`、`tests/product_config`等）全部被跳过，Windows实际没有产品级CI覆盖。0.10.0b12把五个原生验证步骤的时限统一放宽到10分钟；该任务仍不进入发布门禁（用户已批准门禁不等待Windows完整套件）。
+0.10.0b12修正Windows固定目录阻止目录内改名（见[Workspace模块设计](../modules/workspace.md)）：`WindowsWorkspaceRoot`增加1行（230→231），即`_open_chain`告诉`_open`当前段是否为目录；共享方式常量及原因说明放在模块级，类内不再重复。
 0.10.0b11修正macOS停止命令被误报为清理失败（见[进程模块设计](../modules/processes.md)）：`posix_owner._Owner`增加2行（421→423），即`_request_stop`与`_escalate_if_needed`发信号前各回收一次已退出组长。原因说明放在模块函数`_signal_group`的文档里，类内只留调用。
 0.10.0b9实时显示模型思考内容（见[Agent模块设计](../modules/agent.md)“思考预览”）：思考增量从适配器经运行时、协议到界面逐层接入，判断与发布放在新模块`reasoning_preview.py`，各热点只留最小接线。`agent/runtime.py`增加5行（3475→3480）：导入1行，`_sample_events`交给预览2行（287行、复杂度88），`_summary_text`忽略思考增量2行（238行、复杂度53），`AgentRuntime`随之3191→3195。`protocol/contracts.py`增加2行（656→658），即客户端与服务端各一个能力字段。`AgentProtocolServer`增加3行（196→199）：按连接记录能力、握手赋值、透传查询。`AgentApplicationService`增加5行（425→430）：查询参数与过滤。`ChatStream`与`feed`各增加1行（162→163、74→75），提取逻辑在模块函数`_reasoning`。
 0.10.0b8让Agent在上一轮被用户取消后补一条宿主说明（见[Agent模块设计](../modules/agent.md)“取消后的宿主说明”）：`agent/runtime.py`增加2行（3473→3475），`AgentRuntime`增加1行（3190→3191），即`_accept`里追加说明事件的1行和导入1行。判断与事件构造放在新模块`cancelled_turn_notice.py`，与完成守卫的宿主提示复用同一机制。

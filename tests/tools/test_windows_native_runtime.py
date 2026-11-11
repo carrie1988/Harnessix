@@ -194,3 +194,25 @@ async def test_windows_runtime_close_rejects_followup_calls(tmp_path: Path) -> N
     with pytest.raises(KernelError) as closed:
         await tools.execute(request, CancelToken())
     assert closed.value.code == "tool_runtime_closed"
+
+
+def test_a_pinned_workspace_root_still_lets_other_programs_rename_files(tmp_path: Path) -> None:
+    # 2026-11-11 Windows 11实机：持有工作区根句柄期间根目录内改名一律WinError 32，TUI写客户端
+    # 状态失败；npm、uv lock、IDE安全保存等“写临时文件再改名”的工具同样失败。
+    from harnessix.workspace.windows import WindowsWorkspaceRoot
+
+    (tmp_path / "package-lock.json").write_bytes(b"{}")
+    root = WindowsWorkspaceRoot(tmp_path)
+    try:
+        (tmp_path / ".package-lock.json.tmp").write_bytes(b'{"lockfileVersion": 3}')
+        os.replace(tmp_path / ".package-lock.json.tmp", tmp_path / "package-lock.json")
+        assert (tmp_path / "package-lock.json").read_bytes() == b'{"lockfileVersion": 3}'
+        (tmp_path / "sub").mkdir()
+        os.replace(tmp_path / "sub", tmp_path / "renamed")
+        # 根目录本身仍被固定：不能改名，防止替换成Junction或其他目录。
+        with pytest.raises(PermissionError):
+            os.replace(tmp_path, tmp_path.parent / (tmp_path.name + "-moved"))
+    finally:
+        root.close()
+    os.replace(tmp_path, tmp_path.parent / (tmp_path.name + "-moved"))
+    os.replace(tmp_path.parent / (tmp_path.name + "-moved"), tmp_path)

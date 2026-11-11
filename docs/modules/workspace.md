@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 17
-code_revision: a2ca7bfa387074cbacc85744c3ee0ed4c75b200c
+version: 18
+code_revision: 65301a12cf639702aec30cd18835d6dd3d149737
 owners:
   - core
 modules:
@@ -45,6 +45,11 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：Windows固定目录不再阻止目录内改名（0.10.0b12）
+
+- 2026-11-11 Windows 11实机：`harnessix code`运行期间，工作区根目录与工作区状态目录内的改名一律WinError 32（共享冲突）。[`WindowsWorkspaceRoot`](../../src/harnessix/workspace/windows.py)在对象存活期间持有根目录句柄，状态宿主锁也固定状态目录的父目录，这些句柄此前只共享读；向目录内改名需要该目录允许共享写。后果：TUI写客户端状态（临时文件改名）失败，每次提交任务都报`client_state_write_failed`；npm、`uv lock`、IDE安全保存等“写临时文件再改名”的工具在项目根目录同样失败。
+- 现在打开路径链时，目录句柄（各级父目录与根本身）共享读和写、不共享删除：其他程序可在目录内新建、改名条目，目录本身仍不能被改名、删除或换成Junction，根身份与Reparse复核不变；文件句柄仍只共享读。Windows原生回归测试见`tests/tools/test_windows_native_runtime.py`。
 
 ## 1. 模块摘要
 
@@ -1242,6 +1247,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 12 | `65301a12` 增量 | 2026-11-11 | Windows目录句柄共享读写、不共享删除：固定根期间目录内改名不再WinError 32（0.10.0b12） |
 | 11 | `9eff41b`基线及专项输入清单 | 2026-10-05 | 独立Snapshot v2完整父字典、原CAS全量Reader与只读再验证；原v1资源事实共享校验及原生父checkpoint；默认消费者新代际仍待联合接入 |
 | 10 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步完整资源请求私有准入提取、原容量合同、Snapshot请求序列P2测试缺口及固定0f Windows原生验收边界；Snapshot候选待新原生验证 |
 | 4 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 记录默认Patch规范资源、同源Snapshot、逐成员Fencing Lease及Windows省略边界 |

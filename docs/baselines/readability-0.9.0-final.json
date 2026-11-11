@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 614,
-    "physical_lines": 129354,
-    "logical_lines": 113122,
+    "physical_lines": 129359,
+    "logical_lines": 113124,
     "documented_modules": 614,
     "classes": 1208,
     "documented_classes": 619,
@@ -1954,8 +1954,8 @@
       "path": "src/harnessix/workspace/windows.py",
       "qualname": "WindowsWorkspaceRoot",
       "kind": "class",
-      "line": 243,
-      "lines": 230,
+      "line": 247,
+      "lines": 231,
       "documented": true
     }
   ],

@@ -23,6 +23,10 @@ _INVALID_HANDLE = ctypes.c_void_p(-1).value
 _FILE_READ_DATA = 0x0001
 _FILE_READ_ATTRIBUTES = 0x0080
 _FILE_SHARE_READ = 0x00000001
+# 目录句柄共享读写、不共享删除：用户的编辑器与构建工具仍可在目录内新建、改名文件（只共享读时，
+# 持有工作区根句柄期间根目录内改名一律WinError 32，2026-11-11实机），目录本身仍不能被改名、删除
+# 或换成Junction。文件句柄只共享读。
+_DIRECTORY_SHARE = _FILE_SHARE_READ | 0x00000002
 _OPEN_EXISTING = 3
 _FILE_ATTRIBUTE_READONLY = 0x00000001
 _FILE_ATTRIBUTE_DIRECTORY = 0x00000010
@@ -303,12 +307,12 @@ class WindowsWorkspaceRoot:
         self._kernel32.CloseHandle.argtypes = [pointer]
         self._kernel32.CloseHandle.restype = ctypes.c_int
 
-    def _open(self, path: Path, *, data: bool) -> int:
+    def _open(self, path: Path, *, data: bool, directory: bool = False) -> int:
         access = _FILE_READ_ATTRIBUTES | (_FILE_READ_DATA if data else 0)
         handle = self._kernel32.CreateFileW(
             _api_path(path),
             access,
-            _FILE_SHARE_READ,
+            _DIRECTORY_SHARE if directory else _FILE_SHARE_READ,
             None,
             _OPEN_EXISTING,
             _FILE_FLAG_BACKUP_SEMANTICS | _FILE_FLAG_OPEN_REPARSE_POINT,
@@ -345,6 +349,7 @@ class WindowsWorkspaceRoot:
                 handle = self._open(
                     candidate,
                     data=data and index == len(paths) - 1,
+                    directory=index < len(paths) - 1 or normalized == ".",
                 )
                 handles.append(handle)
                 info = self._information(handle)
