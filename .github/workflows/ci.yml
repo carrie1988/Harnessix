@@ -216,7 +216,7 @@ jobs:
           tests/product_config/test_git_delivery_source.py
           tests/product_config/test_git_delivery_source_sdk.py
           tests/product_config/test_server_and_cli.py::test_product_server_sdk_approves_review_and_applies_workspace_patch
-        timeout-minutes: 10
+        timeout-minutes: 3
       - name: 验证原生Git读取与取消回收
         run: >-
           uv run pytest tests/tools/test_windows_git.py
@@ -241,25 +241,25 @@ jobs:
           tests/workspace/test_windows_private_security_contracts.py
           tests/product_config/test_server_and_cli.py::test_windows_product_sdk_git_diff_uses_private_redacted_owner
           -vv -o faulthandler_timeout=60
-        timeout-minutes: 10
+        timeout-minutes: 3
       - name: 验证原生产品重启与State创建边界
         run: >-
           uv run pytest tests/benchmarks/test_soak_restart_child.py
           tests/benchmarks/test_soak_restart.py -vv -o faulthandler_timeout=60
-        timeout-minutes: 10
+        timeout-minutes: 3
       - name: 验证原生完整业务状态备份与观察者边界
         run: >-
           uv run pytest tests/product_config/test_product_state_backup.py
           tests/product_config/test_state_fixture_readiness.py
           -vv -o faulthandler_timeout=60
-        timeout-minutes: 10
+        timeout-minutes: 5
       - name: 验证原生完整业务状态恢复与元数据边界
         run: >-
           uv run pytest
           tests/product_config/test_product_state_restore.py
           tests/product_config/test_windows_metadata_contracts.py
           -vv -o faulthandler_timeout=60
-        timeout-minutes: 10
+        timeout-minutes: 5
       - run: uv run python scripts/readability_report.py --check --check-final-report --quiet
       - run: uv run python scripts/documentation_check.py
       - run: uv run python -c "import harnessix"
