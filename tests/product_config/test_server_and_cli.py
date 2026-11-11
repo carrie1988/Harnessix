@@ -1153,9 +1153,9 @@ async def test_product_server_gives_external_boundary_commands_their_own_instruc
         for item in json.loads(prepared.instructions or "")["fragments"]
         if item["kind"] == "runtime_instruction"
     }
-    external_source = "harnessix.external-boundary-execution-instructions/v2"
+    external_source = "harnessix.external-boundary-execution-instructions/v3"
     if asserted:
-        assert external_source in sources
+        assert external_source in sources and "harnessix.working-habits/v1" in sources
         assert not any(
             "generic-execution" in item or "native-execution" in item for item in sources
         )

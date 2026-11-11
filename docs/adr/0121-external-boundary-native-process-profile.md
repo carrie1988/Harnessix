@@ -115,7 +115,7 @@ supersedes: []
 
 ### 决策（用户决定14A）
 
-1. 外部边界使用独立指令`harnessix.external-boundary-execution-instructions/v1`（2026-11-10升为v2：同步通用指令v6关于命令Profile可省略的一句），只写在外部边界成立的事实：
+1. 外部边界使用独立指令`harnessix.external-boundary-execution-instructions/v1`（2026-11-10升为v2：同步通用指令v6关于命令Profile可省略的一句；2026-11-11升为v3：[ADR 0134](0134-default-working-habits-and-thin-eval-template.md)删除下文“临时文件放在`/tmp`”一条），只写在外部边界成立的事实：
    - 命令在任务环境中直接运行，从工作区根目录开始，Harnessix不另加容器或沙箱；
    - 每次调用是新的Shell，`cd`与导出的变量不跨调用保留；工作区、`/tmp`中的写入与安装的包都保留到后续调用；
    - 修改源码仍只通过受信补丁（`apply_patch_batch`），不用Shell命令改写；命令在工作区留下的文件不会消失，
