@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
@@ -82,10 +83,16 @@ def api_key_setup_text(names: Sequence[str]) -> str:
         persist = f'想以后打开终端都生效，改用 setx {variables[0]} "你的API Key"，再打开新终端。'
     else:
         commands = [f"export {name}=你的API Key" for name in variables]
-        persist = (
-            "想以后打开终端都生效，把上面这一行加到 ~/.zshrc（zsh）或 ~/.bash_profile（bash）末尾。"
-        )
+        persist = f"想以后打开终端都生效，把上面这一行加到 {_shell_profiles()} 末尾。"
     return "在当前终端设置 API Key：\n" + "\n".join("  " + c for c in commands) + "\n" + persist
+
+
+def _shell_profiles() -> str:
+    """登录时读取的Shell配置：macOS终端开登录Shell（bash读~/.bash_profile），Linux的bash读~/.bashrc。"""
+
+    if sys.platform == "darwin":
+        return "~/.zshrc（zsh）或 ~/.bash_profile（bash）"
+    return "~/.bashrc（bash）或 ~/.zshrc（zsh）"
 
 
 def _secret_variables(config: Path | None) -> tuple[str, ...]:

@@ -1,5 +1,11 @@
 # 更新记录
 
+## 0.10.0b12（预览版，未发布）
+
+### 修复
+
+- Linux 上缺少 API Key 时，提示把 `export` 加到 `~/.bash_profile`，而 Linux 的 bash 平时读取 `~/.bashrc`，照做后新终端仍找不到 Key；现在按平台给出正确的文件（macOS：`~/.zshrc` 或 `~/.bash_profile`；Linux：`~/.bashrc` 或 `~/.zshrc`）
+
 ## 0.10.0b11（2026-11-11）
 
 ### 修复

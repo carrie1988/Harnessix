@@ -41,6 +41,10 @@ supersedes: []
 
 # Product UI终端产品模块设计
 
+## 当前增量：按平台给出Shell配置文件（0.10.0b12）
+
+- 三平台对照测试发现：缺少API Key时[`startup_failure.api_key_setup_text`](../../src/harnessix/product_ui/startup_failure.py)在Linux上也提示`~/.bash_profile`，而Linux的bash交互Shell读`~/.bashrc`。现按`sys.platform`区分：macOS终端开登录Shell，提示`~/.zshrc`或`~/.bash_profile`；Linux提示`~/.bashrc`或`~/.zshrc`；Windows仍为PowerShell的`$env:`与`setx`。配置向导成功提示复用同一函数。
+
 ## 当前增量：Windows自动找到可用的Git（0.10.0b11）
 
 - Windows 11实机（Git for Windows 2.53默认安装）：PATH上的`cmd\git.exe`与`git-lfs.exe`、`mingw64\bin\git.exe`与`git-upload-pack.exe`等互为硬链接，产品Git绑定（`validate_windows_git_executable`）拒绝多硬链接EXE，`harnessix code`、`exec`与`doctor`都以`product_git_invalid`停止，用户装好就无法使用。[`git_detection.bindable_windows_git`](../../src/harnessix/product_ui/git_detection.py)在未显式指定时，依次尝试PATH上的git、同一安装的`bin\git.exe`和`mingw64\bin\git.exe`，取第一个能通过同一绑定校验的；绑定规则本身不变。修复提示补充“Windows 上用 Git 安装目录下的 bin\git.exe”。
