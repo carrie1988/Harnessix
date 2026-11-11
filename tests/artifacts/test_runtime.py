@@ -372,3 +372,26 @@ async def test_read_artifact_obeys_approval_before_storage_io(tmp_path, monkeypa
     assert result.outcome == ("succeeded" if approved else "failed")
     if not approved:
         assert result.error.code == "approval_rejected"
+
+
+async def test_read_artifact_takes_numeric_text_and_explains_a_missing_artifact(tmp_path):
+    # 回归（lucene-13494、javaparser-4538、preact-3567等5次）：offset与limit以数字字符串发出被拒；
+    # fmt-3729 wgLG5JX读取不存在的存档时只得到“读取未完成”。
+    store, artifacts, _, thread, turn = await exercise(tmp_path, count=3)
+    ref = results(turn)[0].output["artifact"]["artifact_id"]
+    async with CodingToolRuntime(tmp_path / "repo", artifacts=artifacts) as tools:
+        provider = ScriptedProvider(
+            [
+                step("read_artifact", artifact_id=ref, offset="0", limit="500"),
+                step("read_artifact", artifact_id="81e4a2b2-4b0e-5813-b272-017713800972"),
+                answer(),
+            ]
+        )
+        async with AgentRuntime(
+            store, provider, scoped_tools=tools, artifacts=artifacts
+        ) as runtime:
+            final = await runtime.run_turn(thread.thread_id, "读取归档", request_id="read")
+    paged, absent = results(final)
+    assert paged.outcome == "succeeded" and paged.output["artifact"]["records"] == 3
+    assert absent.error.code == "artifact_not_found"
+    assert absent.error.message.startswith("No stored output has this artifact_id")

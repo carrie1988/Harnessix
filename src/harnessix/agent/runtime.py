@@ -3209,8 +3209,8 @@ class AgentRuntime:
             proposals = [normalize_proposal(p, offered) for p in proposals]
         proposals = [repair_proposal(p, offered, reroute=reroute) for p in proposals]
         if isinstance(self._scoped_tools, CodingToolRuntime):
-            read = self._scoped_tools.read_workspace_file
-            proposals = [await fill_patch_preconditions(p, offered, read) for p in proposals]
+            files, seen = self._scoped_tools, request.history
+            proposals = [await fill_patch_preconditions(p, offered, files, seen) for p in proposals]
         completed_calls = tuple(
             proposal for proposal in proposals if isinstance(proposal, ToolCallCompleted)
         )
