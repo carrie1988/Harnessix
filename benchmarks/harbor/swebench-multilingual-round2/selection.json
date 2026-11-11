@@ -15,8 +15,15 @@
   "max_per_repository_per_split": 2,
   "leak_filter": "own-PR link or embedded diff in problem statement",
   "image_filter": "official swebench/sweb.eval.x86_64.* image present on Docker Hub",
-  "substitution": "gold patch fails offline -> first unused reserve of the language"
+  "substitution": "task cannot be evaluated -> first unused reserve of the language"
  },
+ "substitutions": [
+  {
+   "dropped": "tokio-rs__axum-1730",
+   "promoted": "tokio-rs__tokio-4384",
+   "reason": "Harbor task lists the seven target tests under PASS_TO_PASS, the dataset row under FAIL_TO_PASS"
+  }
+ ],
  "tasks": [
   {
    "instance_id": "projectlombok__lombok-2792",
@@ -472,7 +479,7 @@
    "instance_id": "tokio-rs__axum-1730",
    "repo": "tokio-rs/axum",
    "language": "rust",
-   "split": "dev",
+   "split": "dropped",
    "origin": "round2",
    "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_axum-1730:latest",
    "digest": "sha256:67c573f22265133e0eba6f3f3119330674c494a109ea9eb77e4c37d2c1f2e3ae"
@@ -481,7 +488,7 @@
    "instance_id": "tokio-rs__tokio-4384",
    "repo": "tokio-rs/tokio",
    "language": "rust",
-   "split": "reserve",
+   "split": "dev",
    "origin": "round2",
    "image": "swebench/sweb.eval.x86_64.tokio-rs_1776_tokio-4384:latest",
    "digest": "sha256:c807b1019c11ca83fdbb22b8b159df0fb64f3b380ccea7b5b33b3404cc0e5e4e"

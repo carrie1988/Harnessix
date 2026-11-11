@@ -5,14 +5,18 @@ tasks were analysed case by case, so they can no longer show whether a change ge
 script draws new tasks from the rest of the dataset with the same rules as the frozen script
 (language map, leak filter, official Docker Hub image), and adds a cap per repository.
 
-Per language, the shuffled pool is consumed in this order: test, dev, reserve. A task whose gold
-patch does not pass in the offline evaluation environment is replaced by the first unused reserve
-of the same language; that substitution is the only allowed change to the list.
+Per language, the shuffled pool is consumed in this order: test, dev, reserve. A task that cannot
+be evaluated (its gold patch does not pass in the offline environment, or its Harbor task
+disagrees with the dataset row) is replaced by the first unused reserve of the same language with
+the `substitute` command; that is the only allowed change to the list, and it is recorded.
 
 Requires pyarrow, which is not a project dependency. Docker Hub is reached through HTTPS_PROXY:
     HTTPS_PROXY=http://127.0.0.1:7892 python3 scripts/select_swebench_multilingual_round2.py \
-        test-00000-of-00001.parquet benchmarks/swebench/week1-local/multilingual40.json \
+        select test-00000-of-00001.parquet benchmarks/swebench/week1-local/multilingual40.json \
         benchmarks/harbor/swebench-multilingual-round2/selection.json
+    python3 scripts/select_swebench_multilingual_round2.py \
+        substitute benchmarks/harbor/swebench-multilingual-round2/selection.json \
+        <instance_id> "<reason>"
 """
 
 import hashlib
@@ -22,7 +26,6 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-import pyarrow.parquet as pq
 from select_swebench_multilingual_subset import docker_hub_digest, language_of, leaks_solution
 
 SEED = 20261111
@@ -71,7 +74,9 @@ def draw(pool: list[dict], quotas: dict[str, int]) -> list[tuple[str, dict, str]
     return picked
 
 
-def main(parquet_path: str, week1_path: str, out_path: str) -> None:
+def select(parquet_path: str, week1_path: str, out_path: str) -> None:
+    import pyarrow.parquet as pq  # noqa: PLC0415 - only the draw needs the dataset file
+
     week1 = json.loads(Path(week1_path).read_text(encoding="utf-8"))
     seen = {task["instance_id"] for task in week1["tasks"]}
     rows = pq.read_table(parquet_path).to_pylist()
@@ -118,8 +123,9 @@ def main(parquet_path: str, week1_path: str, out_path: str) -> None:
             "max_per_repository_per_split": MAX_PER_REPOSITORY,
             "leak_filter": week1["selection"]["leak_filter"],
             "image_filter": week1["selection"]["image_filter"],
-            "substitution": "gold patch fails offline -> first unused reserve of the language",
+            "substitution": "task cannot be evaluated -> first unused reserve of the language",
         },
+        "substitutions": [],
         "tasks": tasks,
     }
     Path(out_path).write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8")
@@ -129,5 +135,32 @@ def main(parquet_path: str, week1_path: str, out_path: str) -> None:
     print({split: dict(sorted(by.items())) for split, by in counts.items()})
 
 
+def substitute(selection_path: str, instance_id: str, reason: str) -> None:
+    """Drop one task and promote the first unused reserve of its language into its split."""
+    path = Path(selection_path)
+    document = json.loads(path.read_text(encoding="utf-8"))
+    dropped = next(task for task in document["tasks"] if task["instance_id"] == instance_id)
+    if dropped["split"] not in ("test", "dev"):
+        raise SystemExit(f"{instance_id} is not in the test or dev split")
+    reserve = next(
+        (
+            task
+            for task in document["tasks"]
+            if task["split"] == "reserve" and task["language"] == dropped["language"]
+        ),
+        None,
+    )
+    if reserve is None:
+        raise SystemExit(f"no unused {dropped['language']} reserve left")
+    reserve["split"] = dropped["split"]
+    dropped["split"] = "dropped"
+    document.setdefault("substitutions", []).append(
+        {"dropped": instance_id, "promoted": reserve["instance_id"], "reason": reason}
+    )
+    path.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8")
+    print(f"{instance_id} -> {reserve['instance_id']} ({reserve['split']})")
+
+
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    command, arguments = sys.argv[1], sys.argv[2:]
+    {"select": select, "substitute": substitute}[command](*arguments)
