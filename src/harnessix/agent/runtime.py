@@ -29,6 +29,7 @@ from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
+from harnessix.agent.compaction_calibration import calibrated_compaction, calibrated_limit
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.completion_guard import (
     completion_notice,
@@ -201,7 +202,10 @@ from harnessix.context.compaction_ledger_contracts import (
     CompactionUsageObserved,
 )
 from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
-from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
+from harnessix.context.compaction_runtime_contracts import (
+    CompactionRuntimeConfig,
+    CompactionTokenWindow,
+)
 from harnessix.context.compaction_window import build_compaction_window
 from harnessix.context.contracts import (
     ContextBuildInput,
@@ -326,6 +330,7 @@ class AgentRuntime:
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
         history_notes: bool = False,
+        compaction_window: CompactionTokenWindow | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -377,8 +382,9 @@ class AgentRuntime:
         # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
         self._completion_guard = completion_guard
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
-        # ADR 0132：宿主说明落为历史Item（request_notes），Provider不再逐请求附加。
+        # ADR 0132：宿主说明落为历史Item；压缩点按真实输入Token校准。
         self._history_notes = history_notes is True
+        self._token_window = compaction_window
         # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._continue_after_unknown_usage = continue_after_unknown_usage is True
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -1953,6 +1959,7 @@ class AgentRuntime:
             turn_id=thread.active_turn_id,
             model_step=prepared.inspection.model_step,
             workspace=thread.workspace,
+            input_limit_tokens=calibrated_limit(self._token_window, thread),
             history_documents=tuple(history_document(item) for item in prepared.history),
             tool_documents=tuple(
                 json.dumps(
@@ -2002,7 +2009,7 @@ class AgentRuntime:
                     thread,
                     model_step,
                     self._tool_result_view_policy,
-                    self._compaction.policy,
+                    calibrated_compaction(self._compaction, self._token_window, thread).policy,
                     token,
                     compaction_id=compaction_id,
                     anchors=planning_history_anchors(thread),
@@ -2340,6 +2347,7 @@ class AgentRuntime:
                                 turn_id=turn_id,
                                 model_step=model_step,
                                 workspace=thread.workspace,
+                                input_limit_tokens=calibrated_limit(self._token_window, thread),
                                 history_documents=tuple(history_document(item) for item in history),
                                 tool_documents=tuple(
                                     json.dumps(

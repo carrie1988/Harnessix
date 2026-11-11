@@ -91,6 +91,16 @@ def _copy_and_order(fragments: Sequence[ContextFragment]) -> tuple[ContextFragme
     )
 
 
+def _step_limits(limits: ContextLimits, calibrated_limit: int | None) -> ContextLimits:
+    """本步限额：调用方给出更大的校准输入上限时放宽窗口，输出预留与固定开销不变。"""
+    fixed = limits.available_input_tokens
+    if calibrated_limit is None or calibrated_limit <= fixed:
+        return limits
+    return limits.model_copy(
+        update={"context_window_tokens": limits.context_window_tokens + calibrated_limit - fixed}
+    )
+
+
 class ContextEngine:
     """只生成模型视图和无正文检查记录；不读取文件、环境或 Provider SDK。"""
 
@@ -142,8 +152,8 @@ class ContextEngine:
                 raise ValueError("Context Source 快照与动态 Fragment 不一致")
         history_tokens = sum(estimate_tokens(document) for document in request.history_documents)
         tool_tokens = sum(estimate_tokens(document) for document in request.tool_documents)
-        fixed_tokens = history_tokens + tool_tokens
-        available = self._limits.available_input_tokens
+        limits = _step_limits(self._limits, request.input_limit_tokens)
+        fixed_tokens, available = history_tokens + tool_tokens, limits.available_input_tokens
         if fixed_tokens > available:
             raise ContextPreparationError(
                 "context_budget_exceeded",
@@ -193,7 +203,7 @@ class ContextEngine:
             inspection = ContextInspection(
                 model_step=request.model_step,
                 estimator=CONTEXT_ESTIMATOR,
-                limits=self._limits,
+                limits=limits,
                 available_input_tokens=available,
                 history_tokens=history_tokens,
                 tool_tokens=tool_tokens,
@@ -206,7 +216,7 @@ class ContextEngine:
             inspection = ContextInspectionV3(
                 model_step=request.model_step,
                 estimator=CONTEXT_ESTIMATOR,
-                limits=self._limits,
+                limits=limits,
                 available_input_tokens=available,
                 history_tokens=history_tokens,
                 tool_tokens=tool_tokens,
@@ -221,7 +231,7 @@ class ContextEngine:
             inspection = ContextInspectionV2(
                 model_step=request.model_step,
                 estimator=CONTEXT_ESTIMATOR,
-                limits=self._limits,
+                limits=limits,
                 available_input_tokens=available,
                 history_tokens=history_tokens,
                 tool_tokens=tool_tokens,

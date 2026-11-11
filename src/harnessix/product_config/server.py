@@ -366,6 +366,7 @@ async def _serve_product_stdio(
                             approval_responder=action_owner.approval_responder,
                             async_context=context.context,
                             compaction=context.compaction,
+                            compaction_window=context.compaction_window,
                             summary_provider=bundle,
                             model_tool_view=None if generic_execution else CodingWorkflowToolView(),
                             enable_planning=True,

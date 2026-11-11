@@ -1146,6 +1146,32 @@ async def test_product_server_keeps_requests_append_only_for_stable_prefix_provi
     assert options["history_notes"] is stable_prefix
 
 
+@pytest.mark.parametrize("window", [None, 262_144])
+async def test_product_server_calibrates_compaction_only_for_declared_windows(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    window: int | None,
+) -> None:
+    """声明了模型窗口才把真实Token口径交给Runtime校准压缩点；未声明时沿用固定上限、不校准。"""
+    profiles = tuple(
+        profile.model_copy(update={"context_window_tokens": window}) for profile in config.profiles
+    )
+    options = await _served_runtime_options(
+        tmp_path,
+        ProductConfigV2.model_validate_json(
+            config.model_copy(update={"profiles": profiles}).model_dump_json()
+        ),
+        monkeypatch,
+    )
+    calibration = options["compaction_window"]
+    if window is None:
+        assert calibration is None
+    else:
+        assert calibration.window_tokens == window and calibration.trigger_divisor == 2
+        assert calibration.max_input_bytes == 786_432
+
+
 def test_native_command_backends_select_instructions_that_match_them() -> None:
     """只按实际验证通过的原生命令后端选择指令；外部边界从不得到本机沙箱指令。"""
     from harnessix.product_config.native_process import native_tool_name

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal, Self
 
 from pydantic import Field, model_validator
@@ -23,3 +24,18 @@ class CompactionRuntimeConfig(ContractModel):
         if self.trigger_history_tokens <= self.policy.target_history_tokens:
             raise ValueError("自动压缩触发阈值必须高于候选窗口目标")
         return self
+
+
+@dataclass(frozen=True, slots=True)
+class CompactionTokenWindow:
+    """声明的模型窗口（真实Token）：观测到真实输入用量后，据此校准估算器口径的压缩点与输入上限。
+
+    估算器按UTF-8字节计，字节与Token之比随内容与线上格式变化；固定比例只在没有观测时使用。
+    校准只放宽固定比例换算出的数值，换算后的输入上限不超过max_input_bytes。
+    """
+
+    window_tokens: int
+    input_limit_tokens: int
+    trigger_divisor: int
+    target_divisor: int
+    max_input_bytes: int
