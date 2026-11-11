@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
+version: 22
+code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
 modules:
@@ -498,7 +498,7 @@ Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避�
 | Session无活跃Runtime Owner | `artifact_runtime_required` | 否 | 无Artifact |
 | Artifact能力未装配 | `artifact_not_enabled` | 否 | Turn明确失败 |
 | 非Scoped入口返回Artifact | `artifact_scope_required` | 否 | 拒绝载荷 |
-| Thread Sequence变化（Action Review/Output发布时，同一Turn的Steering除外，见文末“Action Artifact发布与Steering”） | `sequence_conflict` | 否 | 当前事务回滚 |
+| Thread Sequence变化（Action Review/Output发布时，同一Turn的Steering除外，见文末“Action Artifact发布与用户介入”） | `sequence_conflict` | 否 | 当前事务回滚 |
 | Pending Call或批准错绑 | `tool_scope_mismatch`/`approval_mismatch` | 否 | 当前事务回滚 |
 | 单Turn/全局配额不足 | `artifact_quota_exceeded`或可选归档省略 | 否 | 标准结果失败；Batch/Process保留原事实 |
 | 引用与Preview超过输出预算 | `tool_output_too_large`或可选归档省略 | 否 | 不发布误导引用 |
@@ -827,6 +827,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 22 | `5d18bb3e` 增量 | 2026-11-11 | 取消收尾时照常发布已对账命令的终态输出：发布改用宿主核对作用域，取消运行中的命令得到确定的`process_cancelled`而不是`unknown`（0.10.0b15，Beta反馈HX-10） |
 | 21 | `dad55d32` 增量 | 2026-11-11 | Action Review/Output发布容忍执行期间的Steering，其余Session变化仍按`sequence_conflict`拒绝（0.10.0b15，Beta反馈HX-01） |
 | 20 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 动作输出存储识别命令输出预览v4（`trusted-process-output/v4`，预览为流的末尾），旧版本按`LEGACY_PREVIEW_VERSIONS`识别 |
 | 19 | `29402f7` 增量基础 | 2026-10-07 | 同步 Artifact 单件显式只读参数、prepared 全集 Evidence/ReadSet 与无外部回调的同步终端核验；不记录最终验收结论 |
@@ -898,7 +899,7 @@ action_review分支调用原[`protect_review_jsonl`](../../src/harnessix/agent/p
 [实际认证发布恢复](../../tests/product_config/test_git_delivery_review_controls.py)与
 [实际SDK消费](../../tests/product_config/test_git_delivery_review.py)。默认Git执行仍待独立接线验收。
 
-## Action Artifact发布与Steering（0.10.0b15）
+## Action Artifact发布与用户介入：Steering和取消（0.10.0b15）
 
 [`publish_action_review`](../../src/harnessix/artifacts/action_review_store.py)在规划审批材料时发布，[`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)在命令执行结束后发布；两者都拿调用方在规划或执行**之前**取得的Thread Sequence作为`expected_sequence`。命令可能运行数分钟，这期间用户可以提交Steering（ADR 0072第8条：当前Tool Result先完成，补充输入进入下一模型步骤）。
 
@@ -912,4 +913,16 @@ action_review分支调用原[`protect_review_jsonl`](../../src/harnessix/agent/p
 
 调用归属（`ToolExecutionScope.for_pending_call`）、审批匹配和配额仍在返回的当前Thread上逐项核对，授权条件没有放宽；通用[`publish`](../../src/harnessix/artifacts/sqlite.py)与Batch Diff的`append`由Runtime在Thread锁内以最新Sequence调用，不受影响，仍要求逐一相等。
 
-回归测试：[`test_action_user_interruptions.py`](../../tests/product_config/test_action_user_interruptions.py)覆盖命令执行期间与补丁规划期间的Steering，以及非Steering事件仍被拒绝的负控。
+回归测试：[`test_action_user_interruptions.py`](../../tests/product_config/test_action_user_interruptions.py)覆盖命令执行期间与补丁规划期间的Steering、非Steering事件仍被拒绝的负控，以及取消运行中命令后的确定终态。
+
+### 取消收尾时的输出结算
+
+用户取消正在运行的命令时，Runtime在`_finish`里对未结算调用做对账：进程已被终止，Router给出确定终态（`failed`/`process_cancelled`）和输出摘要，随后由Owner重建正文并经`publish_action_output`发布。此前发布沿用执行准入`ToolExecutionScope.for_pending_call`，它要求Turn处于`EXECUTING_TOOLS`；取消收尾时Turn已是`CANCELLING`，发布被`tool_scope_mismatch`拒绝，网关按输出阶段失败处理，确定的终态被降级为`unknown`，Turn以`uncertain_effect`中断（Beta反馈HX-10）。
+
+发布命令输出只是结算已经执行过的Process，不授予任何执行许可，因此改用宿主核对用的[`inspection_scope`](../../src/harnessix/agent/patching.py)：调用须属于当前活跃Turn且仍未结算，不限定Turn阶段；是否已批准、Plan是否匹配仍由`_require_approved_process_output`核对，未批准的调用不会因此获得发布资格。执行准入本身（`for_pending_call`）没有放宽。
+
+| 场景 | 此前 | 现在 |
+|---|---|---|
+| 取消运行中的命令 | Tool Result `unknown`（`trusted_action_output_failed`），Turn `interrupted`/`uncertain_effect` | Tool Result `failed`/`process_cancelled`并保留取消前的输出，Turn `cancelled` |
+| 命令正常结束 | 发布并结算 | 不变 |
+| 调用未批准或已结算 | 拒绝 | 不变 |

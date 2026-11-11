@@ -1,6 +1,6 @@
-"""用户在工具规划与执行期间的介入：补充输入（Steering）不能让审批材料或命令输出作废。
+"""用户在工具规划与执行期间的介入：补充输入（Steering）与取消都不能把已知结果变成未知。
 
-依据ADR 0072第8条：当前Tool Result先完成，补充输入进入下一模型步骤。
+Steering依据ADR 0072第8条：当前Tool Result先完成，补充输入进入下一模型步骤。
 """
 
 from __future__ import annotations
@@ -52,6 +52,7 @@ from harnessix.workspace.leases import WorkspaceLeaseStore
 from tests.agent.helpers import answer
 from tests.delivery.test_trusted_action_patch import _action_step, _approval, _proposal
 from tests.product_config.test_process_action import (
+    _CancellableRuntime,
     _fake_engine,
     _NoSecrets,
     _probe_runner,
@@ -269,3 +270,28 @@ async def test_steering_while_a_patch_is_prepared_keeps_its_review(
         assert completed.error is None and completed.status is TurnStatus.COMPLETED
         assert (root / "src/modified.py").read_bytes() == b"new\n"
         assert _user_messages(provider, 1) == ["修改文件", "顺便更新 README"]
+
+
+@posix_only
+async def test_cancelling_a_running_command_ends_cancelled_with_a_known_result(
+    tmp_path: Path,
+) -> None:
+    async with _approved_command(tmp_path, _CancellableRuntime) as run:
+        thread_id, turn_id = run.thread.thread_id, run.approved.turn_id
+        running = asyncio.create_task(run.agent.resume_turn(thread_id, turn_id))
+        await run.process.started.wait()
+        await run.agent.cancel(thread_id, turn_id)
+        ended = await running
+
+        # 进程已被终止并完成对账：这是确定的“已取消”，不是结果未知。
+        assert ended.status is TurnStatus.CANCELLED
+        assert ended.error is not None and ended.error.code == "cancelled"
+        result = _tool_result(ended)
+        assert result.outcome == "failed"
+        assert result.error is not None and result.error.code == "process_cancelled"
+        # 取消前命令已经产生的输出仍可读取，下一轮可以据此继续。
+        assert await run.output_text(result) == b"cancelled\n"
+        assert run.process.run_calls == 1 and len(run.provider.requests) == 1
+        assert replay(await run.sessions.events(thread_id)) == await run.sessions.get_thread(
+            thread_id
+        )

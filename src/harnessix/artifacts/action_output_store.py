@@ -12,7 +12,6 @@ import aiosqlite
 
 from harnessix.agent.approvals import approval_for, approval_matches
 from harnessix.agent.errors import KernelError
-from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.models import (
     ItemStatus,
     Thread,
@@ -21,6 +20,7 @@ from harnessix.agent.models import (
     TrustedActionApprovalRequestContent,
     Turn,
 )
+from harnessix.agent.patching import inspection_scope
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.action_publication_snapshot import action_publication_snapshot
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
@@ -217,7 +217,8 @@ async def publish_action_output(
             thread = await action_publication_snapshot(
                 session, database, thread_id, turn_id, expected_sequence, subject="Action输出"
             )
-            ToolExecutionScope.for_pending_call(thread, turn_id, call)
+            # 只结算已执行Process的终态，不授予执行许可；取消收尾时调用仍待结算，对账终态同样发布。
+            inspection_scope(thread, get_turn(thread, turn_id), call)
             _require_approved_process_output(thread, turn_id, call, process_id)
             await check_quota(database, thread_id, turn_id, candidate.size_bytes)
             await insert_artifact(
