@@ -13,7 +13,9 @@ import pytest
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config import git_user_source_files as source_files
+from harnessix.tools.contracts import ReadToolError
 from harnessix.workspace import snapshot
+from harnessix.workspace.native_observation_io import NativeReadOperation
 
 pytestmark = pytest.mark.skipif(os.name not in {"posix", "nt"}, reason="需要实际原生宿主")
 _OID = b"a" * 40
@@ -659,3 +661,19 @@ def test_actual_windows_root_handle_port(repository):
     with repository.pin() as pinned:
         assert all(isinstance(native, WindowsWorkspaceRoot) for native in pinned._roots)
         pinned.verify(lambda: None)
+
+
+def _local_read_timeout(_operation: NativeReadOperation) -> None:
+    raise ReadToolError("timeout")
+
+
+def test_a_local_read_timeout_is_reported_as_a_retryable_timeout(repository, monkeypatch):
+    # CI负载下复核时5秒本地读取时限到期，曾被报成“来源发生变化”；初次捕获时则被报成路径无效。
+    with repository.pin() as pinned:
+        monkeypatch.setattr(NativeReadOperation, "checkpoint", _local_read_timeout)
+        with pytest.raises(KernelError) as verifying:
+            pinned.verify(lambda: None)
+    with pytest.raises(KernelError) as capturing, repository.pin():
+        pytest.fail("读取超时不能成为基线")
+    for caught in (verifying, capturing):
+        assert caught.value.code == "git_user_observation_timeout" and caught.value.retryable

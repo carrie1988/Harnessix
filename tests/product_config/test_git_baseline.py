@@ -45,8 +45,16 @@ def command(root: Path, *arguments: str, input_body: bytes | None = None) -> byt
     }
     if os.name == "nt":
         environment.update(SystemRoot=os.environ["SystemRoot"], WINDIR=os.environ["SystemRoot"])
+    # 新版git在commit后会在后台自动维护（.git/objects/maintenance.lock），与复制、观察竞争。
     return subprocess.run(
-        (str(executable), "-c", "core.hooksPath=" + os.devnull, *arguments),
+        (
+            str(executable),
+            "-c",
+            "core.hooksPath=" + os.devnull,
+            "-c",
+            "maintenance.auto=false",
+            *arguments,
+        ),
         cwd=root,
         check=True,
         timeout=10,

@@ -67,8 +67,9 @@ def _run(root: Path, *arguments: str, input_data: bytes | None = None) -> bytes:
     if os.name == "nt":
         system_root = os.environ.get("SystemRoot", r"C:\Windows")
         environment.update({"SystemRoot": system_root, "WINDIR": system_root})
+    # 新版git在commit后会在后台自动维护（.git/objects/maintenance.lock），与复制、观察竞争。
     completed = subprocess.run(
-        [str(_git()), *arguments],
+        [str(_git()), "-c", "maintenance.auto=false", *arguments],
         cwd=root,
         env=environment,
         input=input_data,

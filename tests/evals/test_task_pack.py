@@ -395,6 +395,9 @@ def test_materialization_detects_changed_head(tmp_path: Path) -> None:
             "user.name=Test",
             "-c",
             "user.email=test@example.invalid",
+            # 不在后台运行自动维护，避免与随后的工作区检查竞争。
+            "-c",
+            "maintenance.auto=false",
             "commit",
             "-m",
             "change",

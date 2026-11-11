@@ -48,6 +48,16 @@ def _limit() -> KernelError:
     return KernelError("git_user_source_limit", "Git用户原生来源超过观察上限")
 
 
+def _timeout() -> KernelError:
+    """本地读取时限到期不是来源变化：系统繁忙时常见，如实报告并允许重试。"""
+
+    return KernelError(
+        "git_user_observation_timeout",
+        "读取Git元数据超时（系统繁忙时可能发生），请稍后重试",
+        retryable=True,
+    )
+
+
 class _SourceReadPolicy(WorkspaceReadPolicy):
     """共享工具策略禁止 .git；私有根仅开放固定来源，保留原生路径校验。"""
 
@@ -86,7 +96,13 @@ def _native_errors(control: _Checkpoint, *, verifying: bool) -> Iterator[None]:
         if isinstance(error, KernelError):
             if error.code == "workspace_snapshot_limit":
                 raise _limit() from None
-            if error.code in {"git_user_source_limit", "git_user_observation_changed"}:
+            if error.code == "workspace_timeout":
+                raise _timeout() from None
+            if error.code in {
+                "git_user_source_limit",
+                "git_user_observation_changed",
+                "git_user_observation_timeout",
+            }:
                 raise
             if verifying or error.code in {
                 "workspace_changed",
@@ -95,6 +111,8 @@ def _native_errors(control: _Checkpoint, *, verifying: bool) -> Iterator[None]:
             }:
                 raise _changed() from None
             raise invalid_git_user_paths() from None
+        if isinstance(error, ReadToolError) and error.code == "timeout":
+            raise _timeout() from None
         if isinstance(error, (OSError, ReadToolError, ValueError, RuntimeError)):
             raise (_changed() if verifying else invalid_git_user_paths()) from None
         raise
