@@ -104,6 +104,7 @@ from harnessix.agent.ports import (
     PatchRuntime,
     ScopedToolRuntime,
     ToolRuntime,
+    ToolStepNoticeSource,
     TrustedActionGateway,
 )
 from harnessix.agent.provider_stop import service_failure_stop, unknown_usage_stop
@@ -130,6 +131,7 @@ from harnessix.agent.runtime_recovery import (
     result_resume_safe,
 )
 from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
+from harnessix.agent.step_notices import append_step_notice
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.tool_call_groups import (
     require_exclusive_tool_calls,
@@ -324,6 +326,7 @@ class AgentRuntime:
         continue_after_unknown_usage: bool = False,
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
+        step_notices: ToolStepNoticeSource | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -476,6 +479,8 @@ class AgentRuntime:
             tool_result_view_policy or ToolResultViewPolicy()
         ).model_copy(deep=True)
         self._model_tool_view = model_tool_view
+        # 注入时，每步工具结果落账后补发来源推导出的宿主说明（step_notices模块）；默认不补发。
+        self._step_notices = step_notices
         self._compaction = compaction.model_copy(deep=True) if compaction is not None else None
         self._summary_provider = summary_provider
 
@@ -2522,6 +2527,7 @@ class AgentRuntime:
             waiting = await self._execute_calls(thread_id, turn_id, token)
             if waiting is not None:
                 return waiting
+            await append_step_notice(self, thread_id, turn_id)
 
     async def _execute_calls(
         self,
