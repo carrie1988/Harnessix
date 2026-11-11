@@ -117,7 +117,7 @@ P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
 Windows原生验证步骤（`windows-trusted-execution`）的第一步在GitHub Windows Runner上用时约2分57秒（134项全部通过），3分钟步骤时限在pytest收尾时到期，整步判失败，其后的Windows产品测试全部被跳过。曾尝试放宽时限，但该任务的步骤定义由治理测试冻结（`test_original_windows_core_steps_are_unchanged`等），属于原生验收边界的治理决策，已撤回，待用户决定；在此之前Windows产品级覆盖以Windows正式测试机实测为准。
 0.10.0b13发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交（见上文b12的文档门禁说明）。
-0.10.0b13修正Windows沙箱外命令（见[进程模块设计](../modules/processes.md)）：`product_config/process_action.py`增加2行（766→768），即把`execution_environment_denied`与`process_spec_invalid`列为确定未执行；二者都发生在建立Lease、创建进程之前，此前被报成效果未知并中止整轮。
+0.10.0b13修正Windows沙箱外命令（见[进程模块设计](../modules/processes.md)）：`product_config/process_action.py`增加2行（766→768），即把`execution_environment_denied`与`process_spec_invalid`列为确定未执行；二者都发生在建立Lease、创建进程之前，此前被报成效果未知并中止整轮。变量名合同不变（冻结），改为不继承`PROGRAMFILES(X86)`。
 0.10.0b12发布提交单独推送时，CI以上一次推送为文档门禁基准，升版本带来的SBOM、许可证证据与锁文件变化要求本文同步记录；此后升版本提交与本说明一起提交。
 0.10.0b12修正Windows长期持有的根句柄阻止目录内改名（见[Workspace模块设计](../modules/workspace.md)）：`WindowsWorkspaceRoot`增加2行（230→232），即保存构造参数`allow_renames_inside`，以及`_open_chain`告诉`_open`本次打开的是否为放开改名的根；共享方式常量及原因说明放在模块级。
 0.10.0b11修正macOS停止命令被误报为清理失败（见[进程模块设计](../modules/processes.md)）：`posix_owner._Owner`增加2行（421→423），即`_request_stop`与`_escalate_if_needed`发信号前各回收一次已退出组长。原因说明放在模块函数`_signal_group`的文档里，类内只留调用。

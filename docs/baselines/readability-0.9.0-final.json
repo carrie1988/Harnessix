@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 614,
-    "physical_lines": 129391,
-    "logical_lines": 113142,
+    "physical_lines": 129386,
+    "logical_lines": 113139,
     "documented_modules": 614,
     "classes": 1208,
     "documented_classes": 619,
@@ -1314,7 +1314,7 @@
       "path": "src/harnessix/processes/owner_protocol.py",
       "qualname": "ProcessOwnerCommand.command_shape",
       "kind": "function",
-      "line": 184,
+      "line": 183,
       "lines": 31,
       "documented": false,
       "decision_complexity": 23

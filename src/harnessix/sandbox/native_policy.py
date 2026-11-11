@@ -119,7 +119,8 @@ _INHERITED_NAMES = frozenset(
         "LOCALAPPDATA",
         "PROGRAMDATA",
         "PROGRAMFILES",
-        "PROGRAMFILES(X86)",
+        # 不继承PROGRAMFILES(X86)：执行计划的环境变量名合同（已冻结）不允许括号，继承它会使每条
+        # 命令在启动前被拒绝（2026-11-11 Windows实机）。需要时由合同新版本承载。
         "PROGRAMW6432",
         "COMMONPROGRAMFILES",
         "TEMP",

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 10
-code_revision: b86793a7fdd3f883727b7483ee0db2a6fc055153
+version: 9
+code_revision: 420f68f0fe78997bc38b7b8ec620772a16439cb9
 owners:
   - core
 modules:
@@ -31,10 +31,6 @@ supersedes: []
 ---
 
 # Harnessix Code Execution Plan模块设计
-
-## 当前增量：进程继承的环境变量名允许括号（0.10.0b13）
-
-- `EnvironmentBinding.name`改用共享规则`PROCESS_ENVIRONMENT_NAME_PATTERN`，允许括号：Windows沙箱外命令继承的系统变量`PROGRAMFILES(X86)`此前使绑定报`execution_environment_denied`，每条命令都失败（2026-11-11 Windows实机）。`ProcessOwnerStart`共用同一规则。旧计划与记录仍然有效；生成的执行计划等Schema随之更新。用户自定义的密钥注入目标名（`SecretVersionBinding.target`）仍不允许括号。
 
 ## 当前增量：`host_sandboxed` 绑定后端（ADR 0111）
 
@@ -1211,7 +1207,6 @@ ADR和里程碑资料描述决策及当时增量；本文维护`execution`包与
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 4 | `b86793a7` 增量 | 2026-11-11 | 继承环境变量名允许括号，与Process Owner共用规则（0.10.0b13） |
 | 3 | `e2d8c24b8a09518dc05a4ce113887800cbe4c9fa` | 2026-09-19 | 记录f2b Git Push直接消费Execution Approval、Action Audit及Remote事实由CI 35442924441验收关闭 |
 | 2 | `b835fcef06803bf0e957a59a50bd5535e127502b` | 2026-09-19 | 同步f2b Git Push直接消费Execution Approval、Action Audit状态及Remote事实的实现候选；等待全矩阵CI |
 | 1 | `8ab1d0380941206b7a5fddc52e780fe7b3f937bd` | 2026-09-12 | 建立Execution Plan现行事实源，覆盖v1/v2合同、规范摘要、环境/Secret、Sandbox/能力、Policy/Approval、SQLite持久化、消费方复核、恢复边界、安全、测试映射和已知限制 |

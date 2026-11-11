@@ -41,13 +41,8 @@ class ExecutionContract(ContractModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
 
 
-# 进程继承的环境变量名：Windows系统变量带括号（ProgramFiles(x86)），沙箱外PowerShell命令要继承它。
-# 执行计划绑定与Process Owner启动请求共用；用户自定义的Key变量名、预设名仍用不含括号的规则。
-PROCESS_ENVIRONMENT_NAME_PATTERN = r"^[A-Za-z_][A-Za-z0-9_()]{0,127}$"
-
-
 class EnvironmentBinding(ExecutionContract):
-    name: str = Field(pattern=PROCESS_ENVIRONMENT_NAME_PATTERN)
+    name: str = Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
     value_sha256: Revision
 
 

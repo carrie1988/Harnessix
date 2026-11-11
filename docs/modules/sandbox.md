@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 13
-code_revision: 420f68f0fe78997bc38b7b8ec620772a16439cb9
+version: 14
+code_revision: 7b35b73536861a2991e39984268b2a83dca10b41
 owners:
   - core
 modules:
@@ -36,6 +36,10 @@ supersedes: []
 ---
 
 # Sandbox模块设计
+
+## 当前增量：Windows沙箱外命令不继承`PROGRAMFILES(X86)`（0.10.0b13）
+
+- [`native_policy`](../../src/harnessix/sandbox/native_policy.py)的继承白名单去掉`PROGRAMFILES(X86)`：执行计划的环境变量名合同不允许括号，继承它会使Windows上每条沙箱外命令在启动前被拒绝（2026-11-11实机）。白名单内其余变量都符合合同，由`tests/execution/test_plans.py`在所有平台核对。POSIX不受影响。详见[进程模块设计](processes.md)。
 
 ## 当前增量：原生进程沙箱合同与探测（ADR 0111 第 1 步）
 
@@ -1453,6 +1457,7 @@ Sandbox构造逻辑，但只接收平台Owner能力证明，不创建Process Lea
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 8 | `7b35b735` 增量 | 2026-11-11 | Windows沙箱外命令不继承带括号的`PROGRAMFILES(X86)`（0.10.0b13） |
 | 7 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录无状态Doctor Attestation与正式Supervisor重复证明由CI 35439332019验收关闭 |
 | 6 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Doctor Attestation与正式Supervisor重复证明边界；等待关闭CI |
 | 5 | `4b28fa4010bf1f9590f86a3c2e639916043894c2` | 2026-09-19 | 记录默认固定Container Profile由CI 35434198163完成真实产品镜像与七任务验收 |
