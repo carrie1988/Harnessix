@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
-code_revision: 25f482e9dee8e1ef4ad7ec715626f4d17f18dbe9
+version: 7
+code_revision: b7c7eb01e7e75e8f94d90fa06aa9dbe5c9e973b2
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
@@ -327,9 +327,9 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      同一环境预设与900秒命令期限），模型经容器回环端口转发。命令走外部边界Profile，系统指令为
      `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版）。
    - 产品配置覆盖：product.json由产品向导生成，只允许`EVAL_ALLOWED_OVERRIDES`登记的字段，每项都是已知的评测与产品差异：
-     `completion_guard`开启（无人值守）；`compaction`为`third_window`（2026-11-09用户决定：产品默认改回窗口一半处压缩、
-     压到四分之一，评测为100步约600万Token的累计预算保留三分之一处压缩、压到六分之一，262144 Token窗口下触发262144字节、
-     目标131072字节，与改为可配置前一致）。
+     只有`completion_guard`开启（无人值守）。压缩点自ADR 0132起沿用产品默认（`half_window`，有真实用量后按真实输入Token校准）：
+     此前的`third_window`覆盖在Multilingual正式评测中实际于约5.3万Token（窗口的20%）触发，48次压缩约占全场12%的时间。
+     压缩变少后累计输入Token变多，运行规格里的`max_tokens`需要相应放宽。
    - 命令环境：外部边界命令只得到Profile声明的变量（基础环境`LANG=C`、`LC_ALL=C`、`PATH=/usr/bin:/bin`
      加预设），不继承容器环境，所以固定的Python `actions.json`只适用于Verified。多语言任务开启
      `task_command_environment`：安装阶段用容器内的集成包读取容器自身环境（生成器这一`docker exec`进程的

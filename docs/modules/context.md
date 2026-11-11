@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: b0f03b63893b9c038512a17e143477313c0f7ae7
+version: 15
+code_revision: d5ad78a8f229b922b83cb8194435d2d11bfd96b0
 owners:
   - core
 modules:
@@ -199,6 +199,13 @@ Context模块把该问题分成四层：纯规划器只处理受界文本；Sour
 
 `ContextBuildInput`最多8192份历史文档、256份Tool文档和8 MiB UTF-8总量。`ContextLimits`从Context
 Window减去Reserved Output、Provider Overhead和Safety Margin，至少保留一个输入单位。
+
+`ContextBuildInput.input_limit_tokens`（可选，ADR 0132）是调用方按真实输入用量校准的本步输入上限（估算器口径）：
+大于Planner固定上限时本步按它放宽窗口，输出预留与固定开销不变，检查记录里的`limits`与`available_input_tokens`
+是本步实际使用的数值；不大于固定上限或未给出时沿用固定上限。`CompactionTokenWindow`
+（[`compaction_runtime_contracts.py`](../../src/harnessix/context/compaction_runtime_contracts.py)）是声明的模型窗口的
+真实Token口径（窗口、输入上限、触发与目标分母、允许的最大输入字节数），只是数值载体；校准规则在Agent模块的
+`compaction_calibration`，`CompactionRuntimeConfig`合同与Schema不变。
 
 ## 5. 模块上下文与数据流
 
@@ -615,6 +622,7 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 15 | `d5ad78a8` 增量 | 2026-11-11 | `ContextBuildInput.input_limit_tokens`只放宽本步输入上限；新增`CompactionTokenWindow`（ADR 0132） |
 | 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
 | 1 | `6c5f310346afa3fa176f51707722467f46811b35` | 2026-09-12 | DOC-1.3 Wave A Context模块设计初版 |
 

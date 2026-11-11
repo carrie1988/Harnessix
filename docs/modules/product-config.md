@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 136
-code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
+version: 137
+code_revision: b7c7eb01e7e75e8f94d90fa06aa9dbe5c9e973b2
 owners:
   - core
 modules:
@@ -315,7 +315,11 @@ Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`Wor
 
 默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
 [`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source，
-输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），压缩点由顶层`compaction`选择：默认`half_window`在历史达到窗口一半时压缩、压到四分之一；`third_window`在三分之一时压缩、压到六分之一（单次请求与累计输入更小，但有损压缩更频繁、每次都要等摘要，只用于有累计Token预算的无人值守任务，Harbor评测组别显式选择）。摘要预留至多为压缩目标的四分之一（上限20480字节，`half_window`下即窗口的十六分之一），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（`half_window`触发393216字节、目标196608字节；`third_window`触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要，`compaction`不生效。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），压缩点由顶层`compaction`选择：默认`half_window`在历史达到窗口一半时压缩、压到四分之一；`third_window`在三分之一时压缩、压到六分之一（单次请求与累计输入更小，但有损压缩更频繁、每次都要等摘要，只用于有累计Token预算的无人值守任务；Harbor评测组别自ADR 0132起不再选择它，沿用产品默认）。摘要预留至多为压缩目标的四分之一（上限20480字节，`half_window`下即窗口的十六分之一），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（`half_window`触发393216字节、目标196608字节；`third_window`触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要，`compaction`不生效。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+
+固定的每Token 3字节只在还没有真实用量时使用（ADR 0132）。工具结果以紧凑文本发送时，估算字节与真实输入Token之比实测为4.3～6.7（Multilingual正式评测，中位5.35），按3换算的“窗口一半”实际在真实窗口的30%左右触发。声明窗口时`product_context_budget`另给出真实Token口径的窗口（`ProductAgentContext.compaction_window`），产品Server把它交给`AgentRuntime(compaction_window=...)`：Runtime用上一请求的Context检查与Provider报告的输入Token校准触发点、目标与输入上限，使触发时整个请求的真实输入约为窗口的一半。校准只放宽上述数值；输入上限仍不超过786432字节，触发点另在其下留出一次退避的余量（约为输入上限扣除工具定义与指令后的五分之四），观测比例按每Token 8字节封顶。262144 Token窗口按固定比例换算已等于该容量，所以比例高于约4.8时触发点落在窗口一半之前（中位比例下约11.8万Token，45%）。未声明窗口时不校准。
+
+产品Server在当前Profile链含`stable_prompt_prefix`的Provider时另开启`AgentRuntime(history_notes=True)`：预算与目录说明落为历史Item，请求只在末尾追加，服务端前缀缓存可以复用到上一请求末尾（见Agent模块“请求只追加与压缩点校准”）。
 Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
 
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
@@ -702,7 +706,7 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
 | `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
-| `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
+| `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设；Harbor评测组别不再覆盖它（ADR 0132），已登记的评测与产品差异只剩`completion_guard`、任务模板与每步输出上限 |
 
 每个Profile都独立展开整条Fallback链并验证：
 
@@ -2274,6 +2278,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 137 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
 | 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |

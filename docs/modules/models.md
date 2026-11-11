@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 26
-code_revision: af16bc871ed3f5809e992c587fde00479d42d870
+version: 27
+code_revision: 57dd7d7f90642e0198b33052a82bcd7021028a29
 owners:
   - core
 modules:
@@ -828,6 +828,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 27 | `57dd7d7f` 增量 | 2026-11-11 | `notes_in_history`：说明随历史持久化时各映射不再逐请求附加；持久目录说明正文`tool_catalog_update`（ADR 0132） |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
 | 25 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 同步主线：工具结果文本支持命令输出预览v4，去除了终端转义序列时注明“terminal escape sequences removed”，内容为空且未截断的流不再显示；纯文本回复在输出上限处截断改由运行时的截断恢复处理（ADR 0109第3版） |
 | 22 | `feat/p0-beta-readiness` | 2026-11-09 | HTTP错误响应或连接未建立的尝试报告完整零用量；重试遵循`Retry-After`，上限60秒 |
@@ -924,6 +925,14 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `stable_tail`布局下逐请求说明以末尾`user`消息（`[Harness note] `前缀）呈现：DeepSeek会把所有system消息并入开头，末尾system说明使
   前缀在指令后即分叉（实测命中0%～22%，改为user后接近100%）；指定函数的`tool_choice`会改写其提示渲染（Pro命中归零），
   该布局下改发`required`，由可执行集收窄与目录说明约束。
+- `ModelRequest.notes_in_history`（默认`false`，ADR 0132）：Runtime已把预算与目录说明写进历史时为真，`budget_instruction`与
+  `current_tool_catalog_instruction`返回空，OpenAI Chat的三种布局与Anthropic都不再逐请求附加说明，相邻请求的消息逐条是前缀关系；
+  `explicit_tail`的第二个缓存标记落在历史最后一条文本消息上。持久目录说明的正文由`tool_catalog_update`生成，与逐请求说明共用
+  拒绝哨兵、受限原因与选择约束的措辞，只把“本请求”换成“自本条起，直到更新的宿主说明替换它”。逐请求的末尾说明每次不同、
+  下一请求又被去掉，使服务端缓存只能复用到上一条说明之前（产品路径上只有目录说明，约150个Token；预算说明只在Provider实现
+  输入估算端口时生成，产品的`SafeFallbackProvider`不实现）。
+- 历史里的工具调用参数以紧凑JSON重发：键顺序、取值与非ASCII字符同模型的输出，原文里的空白不保留（保留原文需要变更
+  `ToolCallCompleted`与`ToolCallContent`合同）。回归见[`test_notes_in_history.py`](../../tests/models/test_notes_in_history.py)。
 
 ## 当前增量：百炼部署的DeepSeek（隐式缓存用量口径）
 
