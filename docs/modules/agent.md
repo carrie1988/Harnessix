@@ -174,9 +174,24 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 同一阶段修复Workspace Patch（标准与紧凑Schema解码到同一模型）：外层单文件字段并入`files`，补齐只有edits时的edit操作，
 去掉edit上的默认mode与null content，`content_sha256`并入`expected_sha256`；多文件、字段冲突、edit同时给出content或
 可执行权限等意图不明的写法原样保留。edit的SHA缺失或过期、而每段`old_text`都在当前文件中唯一出现时，经
-`CodingToolRuntime.read_workspace_file`读取当前文件（同一工作区边界与扫描上限）补上SHA-256；replace与delete不补。
+`CodingToolRuntime.read_workspace_file`读取当前文件（同一工作区边界与扫描上限）补上SHA-256。
 2026-11-08 holdout的65次补丁失败中，结构修复可解8次，另有6次缺SHA与15次SHA过期可由锚定补齐。回归见
 [调用修复测试](../../tests/agent/test_call_repair.py)与[产品路径补丁修复测试](../../tests/product_config/test_patch_call_repair.py)。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。** Multilingual评测的57次
+Patch参数拒绝中，离线重放有32次在下列修复后通过参数校验：
+
+- 结构修复新增：值为null的未知字段与文本`"null"`的mode视为未给出；create缺mode取420，delete去掉默认mode；文件项上的
+  `old_text`/`new_text`包成`edits`；`operation: replace`带`edits`而无`content`时取edit；同一路径的多个edit项
+  （SHA相同或只有部分给出）合并为一项。带值的未知字段、`old_text`与`new_text`相同的编辑不改，照常被拒并指出位置。
+- 前置条件补全新增两类事实，入口仍是`fill_patch_preconditions`：
+  [`file_observations.py`](../../src/harnessix/agent/file_observations.py)从本步发给模型的历史（`ModelRequest.history`）
+  取各文件最近一次完整内容SHA-256（`read_file`、带摘要的`grep`命中、Patch成功结果）。replace/delete缺SHA时补它
+  ——是模型读到的摘要而不是当前文件的，文件此后变化照常因SHA不符被拒；缺`path`而SHA恰好对应历史中唯一一个文件时补路径。
+  replace缺mode时经`CodingToolRuntime.workspace_file_mode`沿用现有文件的可执行位。模型给出的SHA与mode不改写。
+- 改道新增：`read_file`带着grep的`query`且全部字段都属于本步grep合同时改为`grep`；`read_artifact`的`offset`/`limit`
+  接受纯数字字符串并截到页上限。后者必须在调用形成前完成：存档分页核验按调用记录中的参数重算，执行时再修复会让
+  已成功的读取在核验时被判为`artifact_corrupt`。
 
 ## 当前增量：稳定线上工具目录（默认关闭）
 

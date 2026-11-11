@@ -129,7 +129,7 @@ supersedes: []
 
 ## 当前增量：对话记录用人话描述工具调用（0.10.0b2）
 
-[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)把工具调用、结果和审批转成一行说明，`rendering.py`改用它：命令显示“运行（沙箱内/沙箱外）：<命令首行>”，Patch显示涉及的文件，读写搜索显示目标；`update_plan`由计划行展示，不再重复。结果只显示“完成（退出码N）”或简短失败原因（常见错误码有中文说明，其余取错误信息首句并附错误码），不转述写给模型的诊断提示。审批行显示“等待你审批（Ctrl+A）”“已批准”“已拒绝：原因”，决定者以`harnessix:`开头的系统审批（沙箱策略自动放行）不展示。回归见`test_tool_summary.py`、`test_rendering.py`与`test_rejection_rendering.py`。
+[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)把工具调用、结果和审批转成一行说明，`rendering.py`改用它：命令显示“运行（沙箱内/沙箱外）：<命令首行>”，Patch显示涉及的文件，读写搜索显示目标；`update_plan`由计划行展示，不再重复。结果只显示“完成（退出码N）”或简短失败原因（常见错误码有中文说明，其余取错误信息首句并附错误码），不转述写给模型的诊断提示。读取、搜索与修改文件的失败说明自[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)起是写给模型的英文：`_USER_REASONS`按错误码保留用户此前看到的中文原因，只在收到英文说明时使用，同一错误码其他来源的中文说明照原样截取首句。审批行显示“等待你审批（Ctrl+A）”“已批准”“已拒绝：原因”，决定者以`harnessix:`开头的系统审批（沙箱策略自动放行）不展示。回归见`test_tool_summary.py`、`test_rendering.py`与`test_rejection_rendering.py`。
 
 ## 当前增量：首次输入即开始会话与输入框焦点
 
