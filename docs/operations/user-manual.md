@@ -23,7 +23,7 @@ supersedes: []
 
 # Harnessix Code 用户手册
 
-适用版本：`0.10.0b12`（预览版）
+适用版本：`0.10.0b13`（预览版）
 
 > **当前是预览版，不是正式商用版本，不提供任何担保。** 请只在可以通过 Git 回退的仓库里使用，并且只处理你有权发送给模型服务商的代码。
 
@@ -132,8 +132,8 @@ uv tool install harnessix
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
 - **国内网络：** 使用镜像，`uv tool install harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
-- **指定版本：** `uv tool install harnessix==0.10.0b12`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
-- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install ./harnessix-0.10.0b12-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
+- **指定版本：** `uv tool install harnessix==0.10.0b13`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
+- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install ./harnessix-0.10.0b13-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
 
 **从源码构建（开发者）：**
 
