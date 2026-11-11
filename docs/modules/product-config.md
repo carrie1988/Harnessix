@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 138
+version: 139
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -744,7 +744,7 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `secret_sources` | 1～32 | 按Secret名称排序，名称唯一，环境变量唯一 |
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
-| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
+| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示，每Turn的补发次数随未完成迹象在2～6次间变化、有硬上限（见Agent模块§13.4，ADR 0124第2版），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
 | `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
 
 评测对产品配置的覆盖只有上表的`completion_guard`与`compaction`，以及评测Profile放宽的单步输出上限
@@ -2322,6 +2322,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 139 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
 | 138 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
 | 137 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |

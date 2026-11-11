@@ -263,7 +263,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 
 - [ADR 0121：外部边界原生进程Profile](0121-external-boundary-native-process-profile.md)：不经容器在启动方提供的隔离边界内执行命令，须显式配置并由环境断言，执行计划如实记为host_guarded，工作区可写且改动保留；第2版起使用只写外部边界事实的独立系统指令。
 - [ADR 0123：服务方故障的如实归因](0123-provider-service-failure-attribution.md)：用量未知时仍停止付费请求，但服务方故障以原Provider错误码结束；评测记为基础设施失败，可重跑。
-- [ADR 0124：无人值守任务的完成守卫](0124-completion-guard-for-unattended-turns.md)：显式开启时，不像完成的纯文本回复（空、JSON、照抄摘要或尚未改过代码）改为宿主补发继续提示，每Turn至多两次；压缩保留当前Turn全部用户消息。
+- [ADR 0124：无人值守任务的完成守卫](0124-completion-guard-for-unattended-turns.md)：显式开启时，不像完成的纯文本回复（空、JSON、截断或写成文本的工具调用、照抄摘要、宣布下一步或尚未改过代码）改为宿主补发继续提示；第2版起次数随未完成迹象在2～6次间变化、提示写明剩余模型调用次数、结构化乱码在出站历史里换成占位；压缩保留当前Turn全部用户消息。
 - [ADR 0125：Skill的产品装配](0125-skill-product-wiring.md)：模型只给名称，宿主补齐摘要；目录快照只在进程内，工具合同不随Skill内容变化；没有Skill时产品行为不变。
 - [ADR 0126：会话历史的增量校验](0126-incremental-session-history-verification.md)：进程内缓存已验证的链前缀，游标读取只校验本次返回的事件，交付的数据仍全部经过认证；全量读取行为不变。
 - [ADR 0127：本机stdio MCP与逐个信任](0127-host-stdio-mcp-with-per-server-trust.md)：修订ADR 0073第2条；只读用户级`mcp.json`，逐个显式信任并绑定定义指纹，每次工具调用审批，仓库级配置与远端MCP不在1.0。

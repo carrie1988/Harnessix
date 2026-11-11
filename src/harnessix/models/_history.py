@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from typing import Any, Literal
 from uuid import UUID
 
+from harnessix.agent.completion_guard import without_non_answers
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     ItemStatus,
@@ -118,7 +119,7 @@ def messages_for(
     rejected: set[UUID] = set()
     seen: set[UUID] = set()
     taking_results = False
-    for item in request.history:
+    for item in without_non_answers(request.history):
         if item.status != ItemStatus.COMPLETED:
             raise InvalidModelRequest("History 含未完成 Item")
         content = item.content
