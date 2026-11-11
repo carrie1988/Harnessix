@@ -253,3 +253,22 @@ def test_sandbox_level_binds_supported_native_backends(
     else:
         with pytest.raises(ValueError):
             SandboxBinding.model_validate(values)
+
+
+def test_windows_host_environment_binds_every_inherited_system_variable() -> None:
+    # 2026-11-11 Windows 11实机：沙箱外PowerShell命令继承PROGRAMFILES(X86)，变量名规则不允许括号，
+    # 每条命令都以execution_environment_denied失败。
+    from harnessix.sandbox.native_policy import host_environment
+
+    environ = {
+        "PATH": r"C:\Windows\System32",
+        "SYSTEMROOT": r"C:\Windows",
+        "PROGRAMFILES": r"C:\Program Files",
+        "PROGRAMFILES(X86)": r"C:\Program Files (x86)",
+        "USERPROFILE": r"C:\Users\someone",
+        "PSMODULEPATH": r"C:\Program Files\WindowsPowerShell\Modules",
+    }
+    environment = host_environment(environ)
+    assert "PROGRAMFILES(X86)" in environment
+    names = [item.name for item in bind_environment(environment, platform="windows")]
+    assert names == sorted(environment, key=str.casefold)

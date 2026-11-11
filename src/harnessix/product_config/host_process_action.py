@@ -49,11 +49,14 @@ _STOP_REASON_CODES = {
     "launch_failed": "process_launch_failed",
 }
 # 启动前即可确定失败、不会产生副作用的错误码。
+# 只在确认Lease不存在时参考：这些错误都发生在建立Lease、创建进程之前，命令确定没有执行。
 _PREFLIGHT_CODES = frozenset(
     {
         "approval_required",
+        "execution_environment_denied",
         "execution_plan_stale",
         "process_capability_mismatch",
+        "process_spec_invalid",
         "secret_binding_mismatch",
         "workspace_snapshot_changed",
     }

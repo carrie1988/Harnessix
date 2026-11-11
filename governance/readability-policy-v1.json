@@ -26,7 +26,7 @@
     "src/harnessix/product_config/coding_tool_view.py": 895,
     "src/harnessix/product_config/contracts.py": 602,
     "src/harnessix/product_config/native_process.py": 608,
-    "src/harnessix/product_config/process_action.py": 766,
+    "src/harnessix/product_config/process_action.py": 768,
     "src/harnessix/protocol/contracts.py": 658,
     "src/harnessix/sandbox/container.py": 629,
     "src/harnessix/session/sqlite.py": 622,

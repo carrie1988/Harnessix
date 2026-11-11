@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 136
-code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
+version: 137
+code_revision: b86793a7fdd3f883727b7483ee0db2a6fc055153
 owners:
   - core
 modules:
@@ -115,6 +115,10 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
+
+## 当前增量：启动前失败归为确定未执行（0.10.0b13）
+
+- 宿主与原生进程执行器在Lease确认不存在时，把`execution_environment_denied`、`process_spec_invalid`归为确定未执行（`process_preflight_failed`）：二者都发生在建立Lease、创建进程之前。此前被报成效果未知并中止整轮，Windows上每条命令都如此。详见[进程模块设计](processes.md)。
 
 ## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
 
@@ -2274,6 +2278,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 137 | `b86793a7` 增量 | 2026-11-11 | 启动前的环境与进程规格错误归为确定未执行（0.10.0b13） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |
 | 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
 | 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |

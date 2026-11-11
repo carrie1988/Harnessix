@@ -307,7 +307,7 @@
       "additionalProperties": false,
       "properties": {
         "name": {
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_()]{0,127}$",
           "title": "Name",
           "type": "string"
         },

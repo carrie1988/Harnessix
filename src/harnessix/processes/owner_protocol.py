@@ -12,6 +12,7 @@ from uuid import UUID
 from pydantic import Field, TypeAdapter, field_validator, model_validator
 
 from harnessix.agent.errors import KernelError
+from harnessix.execution.contracts import PROCESS_ENVIRONMENT_NAME_PATTERN
 from harnessix.processes.supervision_contracts import (
     MAX_PROCESS_ARGUMENT_BYTES,
     MAX_PROCESS_INPUT_BYTES,
@@ -68,7 +69,7 @@ class ProcessOwnerStart(SupervisionContract):
         names = tuple(self.environment)
         if (
             any(
-                re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,127}", name) is None or "\0" in value
+                re.fullmatch(PROCESS_ENVIRONMENT_NAME_PATTERN, name) is None or "\0" in value
                 for name, value in self.environment.items()
             )
             or sum(

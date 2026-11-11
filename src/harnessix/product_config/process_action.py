@@ -524,6 +524,8 @@ async def _process_execution_failure(
         if missing.code != "process_lease_not_found":
             return ActionExecutionOutcome(kind="unknown", error_code="process_state_unavailable")
         deterministic = {
+            "execution_environment_denied",
+            "process_spec_invalid",
             "sandbox_binding_invalid",
             "sandbox_binding_changed",
             "sandbox_capability_mismatch",

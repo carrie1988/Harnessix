@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 39
-code_revision: c7b13fb3b4eb8cce15b97c90acfbf849ad280ba9
+version: 40
+code_revision: b86793a7fdd3f883727b7483ee0db2a6fc055153
 owners:
   - core
 modules:
@@ -54,6 +54,12 @@ supersedes: []
 ---
 
 # Harnessix Code Process Runtime模块设计
+
+## 当前增量：Windows沙箱外命令可以执行（0.10.0b13）
+
+- 2026-11-11 Windows 11实机：沙箱外PowerShell命令在批准后一律以效果未知中止。继承的系统变量`PROGRAMFILES(X86)`带括号，执行计划的`EnvironmentBinding`与[`ProcessOwnerStart`](../../src/harnessix/processes/owner_protocol.py)的变量名规则都不允许括号，分别报`execution_environment_denied`与`process_spec_invalid`。两处改为共用[`execution.contracts.PROCESS_ENVIRONMENT_NAME_PATTERN`](../../src/harnessix/execution/contracts.py)（允许括号）；用户自定义的Key变量名、Profile预设与容器环境仍用原规则。
+- 这两个错误都发生在建立Lease、创建进程之前；Lease确认不存在时，宿主与原生进程执行器现在把它们归为确定未执行（`process_preflight_failed`），不再报效果未知并中止整轮。
+- `tests/product_config/test_windows_host_command.py`的两个真实PowerShell用例此前因Windows CI步骤超时从未运行，现于Windows实机通过；`tests/execution/test_plans.py`在所有平台覆盖Windows继承变量的绑定。
 
 ## 当前增量：macOS僵尸进程组不再误报清理失败（0.10.0b11）
 
@@ -1720,6 +1726,7 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 37 | `b86793a7` 增量 | 2026-11-11 | Windows继承变量名允许括号；启动前失败归为确定未执行（0.10.0b13） |
 | 36 | `c7b13fb3` 增量 | 2026-11-11 | macOS僵尸进程组：发信号前先回收已退出组长，停止命令不再误报cleanup_failed（0.10.0b11） |
 | 35 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job、核心Trusted Execution五步成功后可读性失败及Snapshot候选本机回归不替代原生验收的边界 |
 | 15 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c向产品恢复扫描提供低敏Active Lease清单，明确孤儿Lease只Reconcile、不按PID控制或重Spawn，并让Route期限覆盖Process清理余量 |
