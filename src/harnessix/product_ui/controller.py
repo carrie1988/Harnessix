@@ -225,10 +225,12 @@ class ProductController:
         sandbox: str | None = None,
         list_price: ListPrice | None = None,
         model: str | None = None,
+        automation: ApprovalAutomation | None = None,
     ) -> None:
         self._session = session
         self._interactions = InteractionService(session)
-        self._automation = ApprovalAutomation()
+        self._automation = automation or ApprovalAutomation()
+        self.rule_offer = self._automation.rule_offer
         self._state = ProductControllerState(
             pricing=pricing, sandbox=sandbox, list_price=list_price, model=model
         )

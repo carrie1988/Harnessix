@@ -81,6 +81,7 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
 - **Git用户观察的读取超时**：本地读取时限到期此前被报成“来源发生变化”（复核时）或“路径无效”（初次捕获时），现报`git_user_observation_timeout`（可重试）。时限仍为5秒，与执行时快照复核共用，按用户决定不放宽。
+- **沙箱外命令的审批（0.10.0b14，ADR 0128）**：服务端仍为每条沙箱外命令产生审批；交互客户端对内置只读命令和用户保存的命令前缀自动批准并写明原因。规则文件是工作区状态目录下新增的私有JSON，缺失或损坏时按没有规则处理。无人值守运行不变。
 - **Windows命令读取`ProgramFiles(x86)`（0.10.0b14）**：环境变量名合同不变；PowerShell固定前缀在命令运行前向系统查询并补上该变量（用户决定方案A）。命令的启动参数因此变化，旧显式配置的参数仍接受。
 - **Windows删除工作区数据（0.10.0b13）**：`harnessix data delete`持有状态宿主锁期间只删除锁目录以外的数据，释放锁后再删除锁目录与工作区目录；POSIX行为不变（删除结果相同），Windows不再因删除仍打开的锁文件而失败。
 - **Windows固定目录的共享方式（0.10.0b12）**：目录句柄由只共享读改为共享读写、不共享删除，目录内改名不再因Harnessix持有句柄而失败；目录本身仍不能被改名、删除或替换，见[Workspace模块设计](../modules/workspace.md)。
@@ -117,6 +118,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
 Windows原生验证步骤（`windows-trusted-execution`）的第一步在GitHub Windows Runner上用时约2分57秒（134项全部通过），3分钟步骤时限在pytest收尾时到期，整步判失败，其后的Windows产品测试全部被跳过。曾尝试放宽时限，但该任务的步骤定义由治理测试冻结（`test_original_windows_core_steps_are_unchanged`等），属于原生验收边界的治理决策，已撤回，待用户决定；在此之前Windows产品级覆盖以Windows正式测试机实测为准。
+0.10.0b14沙箱外命令减少询问（[ADR 0128](../adr/0128-host-command-approval-rules.md)）：`ProductController`增加2行（378→380），即构造参数`automation`与对外暴露的`rule_offer`；判定、存储与界面文案分别放在新模块`product_config/command_rules.py`、`product_ui/approval_rules.py`和模块函数`_remember_label`。`InteractionPresenter`通过合并F1帮助的条目选择保持在100行。
 0.10.0b13发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交（见上文b12的文档门禁说明）。
 0.10.0b13修正Windows沙箱外命令（见[进程模块设计](../modules/processes.md)）：`product_config/process_action.py`增加2行（766→768），即把`execution_environment_denied`与`process_spec_invalid`列为确定未执行；二者都发生在建立Lease、创建进程之前，此前被报成效果未知并中止整轮。变量名合同不变（冻结），改为不继承`PROGRAMFILES(X86)`。
 0.10.0b12发布提交单独推送时，CI以上一次推送为文档门禁基准，升版本带来的SBOM、许可证证据与锁文件变化要求本文同步记录；此后升版本提交与本说明一起提交。

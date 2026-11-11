@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 614,
-    "physical_lines": 129389,
-    "logical_lines": 113139,
-    "documented_modules": 614,
-    "classes": 1208,
-    "documented_classes": 619,
-    "functions": 5073,
-    "documented_functions": 1667,
+    "source_files": 617,
+    "physical_lines": 129863,
+    "logical_lines": 113508,
+    "documented_modules": 617,
+    "classes": 1209,
+    "documented_classes": 620,
+    "functions": 5100,
+    "documented_functions": 1682,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1654,7 +1654,7 @@
       "qualname": "ProductController",
       "kind": "class",
       "line": 217,
-      "lines": 378,
+      "lines": 380,
       "documented": true
     },
     {

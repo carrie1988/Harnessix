@@ -25,6 +25,8 @@ from harnessix.product_config.product_contracts import (
 )
 from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.activation import activation_arguments
+from harnessix.product_ui.approval_automation import ApprovalAutomation
+from harnessix.product_ui.approval_rules import CommandRules, rules_path
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.cost_estimate import chain_list_price, chain_model_name
@@ -341,6 +343,11 @@ def code_main(argv: Sequence[str] | None = None) -> None:
     if values and values[0] == "doctor":
         _doctor(values[1:])
         return
+    if values and values[0] == "approvals":
+        from harnessix.product_ui.approvals_cli import approvals_main
+
+        approvals_main(values[1:])
+        return
     arguments = _start_parser().parse_args(values)
     if not confirm_workspace_trust(Path(arguments.workspace).absolute()):
         raise SystemExit(2)
@@ -385,6 +392,9 @@ def code_main(argv: Sequence[str] | None = None) -> None:
                 list_price=chain_list_price(config, arguments.profile),
                 sandbox=sandbox_status_line(preflight),
                 model=chain_model_name(config, arguments.profile),
+                automation=ApprovalAutomation(
+                    command_rules=CommandRules(workspace, rules_path(state_root))
+                ),
             )
             report = app_type(
                 controller,

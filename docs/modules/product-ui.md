@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 37
-code_revision: acd37114ab5563103431f0e13a4a0007c57dbe42
+version: 38
+code_revision: b3bf0da1df361de8862e4d68097475b8ac6083c6
 owners:
   - product
 modules:
@@ -33,6 +33,7 @@ related_tests:
   - tests/product_ui/test_stdio_product.py
   - tests/product_ui/test_cli.py
   - tests/product_ui/test_configure_vendors.py
+  - tests/product_ui/test_approval_rules.py
   - tests/app_server/test_server_sdk.py
   - tests/evals/test_provider_suite_cli.py
   - tests/product_config/test_zero_config.py
@@ -40,6 +41,14 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：沙箱外命令减少询问（ADR 0128，0.10.0b14）
+
+- 用户决定（2026-11-11）：Windows不做操作系统级沙箱，参考Claude Code减少询问。服务端策略不变，自动批准发生在交互客户端并写明原因；无人值守的`exec`不使用这些规则。
+- [`approval_rules.py`](../../src/harnessix/product_ui/approval_rules.py)：`CommandRules`绑定工作区与规则文件（工作区状态目录下的`approval-rules.json`，私有JSON，按Shell种类保存），`reason(cmd)`依次判断内置只读命令（文本判断见[产品配置模块设计](product-config.md)的`command_rules`，再把路径解析符号链接复核）和用户保存的前缀，`offer(cmd)`给出可以保存的前缀。只对`host_command.*`的进程审批生效。
+- [`ApprovalAutomation`](../../src/harnessix/product_ui/approval_automation.py)增加`command_rules`：`reason(pending)`返回自动批准的原因（本会话规则、只读命令、匹配保存的规则），`remember(pending)`在有可保存前缀时长期保存，否则沿用本会话的完全相同匹配。
+- 审批窗口第二个按钮的文案由模块函数`_remember_label`决定：修改类“批准并自动接受本会话的修改”，命令可保存规则时“批准并以后不再询问：<前缀> *”，否则“批准并在本会话允许相同操作”。`ProductController`接收`automation`并暴露`rule_offer`；F1帮助的条目选择合并为一次`current_error_help`调用，`InteractionPresenter`不增长。
+- [`approvals_cli.py`](../../src/harnessix/product_ui/approvals_cli.py)：`harnessix code approvals [工作区] [--remove 序号]`列出、撤销规则。
 
 ## 当前增量：Windows上删除工作区数据（0.10.0b13）
 
@@ -1096,6 +1105,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 38 | `b3bf0da1` 增量 | 2026-11-11 | 沙箱外命令：只读免询问、保存前缀规则、查看与撤销（ADR 0128，0.10.0b14） |
 | 37 | `acd37114` 增量 | 2026-11-11 | Windows上`data delete`持锁删除锁目录外数据、释放后删除余下目录（0.10.0b13） |
 | 36 | `00848577` 增量 | 2026-11-10 | 配置向导先选服务商（DeepSeek、阿里云百炼、智谱）和模型，成功后说明下一步；`--json`保留机器格式（0.10.0b11） |
 | 35 | `f4a6dfb0` 增量 | 2026-11-10 | 费用显示：中断请求不当作上限、按确切型号匹配牌价、一律人民币、标注本轮（0.10.0b10） |

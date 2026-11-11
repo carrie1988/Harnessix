@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -57,6 +58,21 @@ def approval_summary(pending: PendingApproval) -> str:
     return f"Agent 请求：{action}"
 
 
+# 沙箱外命令可以长期保存的规则文案（如“python -m unittest *”）；没有可保存的规则时返回None。
+RuleOffer = Callable[[PendingApproval], str | None]
+
+
+def _remember_label(pending: PendingApproval, rule_offer: RuleOffer | None) -> str:
+    """第二个批准按钮：修改类整体自动接受；命令能保存规则时长期保存，否则只记住本会话。"""
+
+    if pending.approval_type in EDIT_APPROVAL_TYPES:
+        return "批准并自动接受本会话的修改"
+    offer = None if rule_offer is None else rule_offer(pending)
+    if offer is not None:
+        return f"批准并以后不再询问：{offer}"
+    return "批准并在本会话允许相同操作"
+
+
 @dataclass(frozen=True, slots=True)
 class ApprovalScreenResult:
     outcome: Literal["approved", "rejected"]
@@ -70,9 +86,10 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
     CSS = _MODAL_CSS
     BINDINGS = [Binding("escape", "close_modal", "关闭")]
 
-    def __init__(self, review: ApprovalReview) -> None:
+    def __init__(self, review: ApprovalReview, rule_offer: RuleOffer | None = None) -> None:
         super().__init__()
         self.review = review
+        self.remember_label = _remember_label(review.pending, rule_offer)
 
     def compose(self) -> ComposeResult:
         pending = self.review.pending
@@ -103,11 +120,7 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                     "批准", id="approval-approve", disabled=not self.review.approve_allowed
                 )
                 yield Button(
-                    (
-                        "批准并自动接受本会话的修改"
-                        if pending.approval_type in EDIT_APPROVAL_TYPES
-                        else "批准并在本会话允许相同操作"
-                    ),
+                    self.remember_label,
                     id="approval-approve-session",
                     disabled=not self.review.approve_allowed,
                 )

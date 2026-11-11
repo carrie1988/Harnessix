@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 138
-code_revision: dd13503bbc02d44036f3b8c4735c7a18e3da7232
+version: 139
+code_revision: b3bf0da1df361de8862e4d68097475b8ac6083c6
 owners:
   - core
 modules:
@@ -113,8 +113,13 @@ related_tests:
   - tests/product_config/test_reasoning_transport_limits.py
   - tests/product_config/test_activation_precondition.py
   - tests/product_ui/test_configure_vendors.py
+  - tests/product_config/test_command_rules.py
 supersedes: []
 ---
+
+## 当前增量：命令文本的免询问判定（ADR 0128，0.10.0b14）
+
+- [`command_rules.py`](../../src/harnessix/product_config/command_rules.py)只看命令文本、不执行、不访问文件系统：`simple_command`把一条简单命令切成单词（复合命令、重定向、子表达式、变量、转义和非ASCII字符返回None）；`read_only_paths`识别内置只读命令并返回它引用的工作区相对路径；`rule_prefix`、`rule_matches`、`rule_label`处理“以后不再询问”的命令前缀；`allowed_relative_path`供调用方复核解析符号链接后的路径。路径检查沿用读工具的`WorkspaceReadPolicy`，免询问读到的内容不多于读工具。POSIX与PowerShell两套规则分别用对抗性用例覆盖（引号拼接、通配符、Windows尾点与短名称、`-参数:值`、弯引号等）。
 
 ## 当前增量：Windows命令运行前补上`ProgramFiles(x86)`（0.10.0b14）
 
@@ -2282,6 +2287,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 139 | `b3bf0da1` 增量 | 2026-11-11 | `command_rules`：只读命令识别与命令前缀规则（ADR 0128，0.10.0b14） |
 | 138 | `dd13503b` 增量 | 2026-11-11 | PowerShell固定前缀补上`ProgramFiles(x86)`；旧参数仍接受（0.10.0b14） |
 | 137 | `b86793a7` 增量 | 2026-11-11 | 启动前的环境与进程规格错误归为确定未执行（0.10.0b13） |
 | 136 | `0a05e8c3` 增量 | 2026-11-11 | Windows状态宿主锁允许状态目录内改名，TUI可保存客户端状态（0.10.0b12） |

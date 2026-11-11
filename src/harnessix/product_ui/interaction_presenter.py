@@ -9,7 +9,7 @@ from textual.app import App
 from textual.timer import Timer
 
 from harnessix.product_ui.controller import ProductController, ToggleAutoAcceptIntent
-from harnessix.product_ui.error_help import current_error_help, product_error_help
+from harnessix.product_ui.error_help import current_error_help
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_screens import (
     ApprovalScreen,
@@ -84,14 +84,15 @@ class InteractionPresenter:
         await self._controller.dispatch(LoadApprovalEvidenceIntent(pending.binding))
         state = self._controller.state
         review = approval_review(state.thread_view, state.approval_evidence)
-        result = await self._app.push_screen_wait(ApprovalScreen(review))
-        if result is not None:
+        screen = ApprovalScreen(review, self._controller.rule_offer)
+        reply = await self._app.push_screen_wait(screen)
+        if reply is not None:
             await self._controller.dispatch(
                 RespondApprovalIntent(
                     review.pending.binding,
-                    outcome=result.outcome,
-                    reason=result.reason,
-                    remember_for_session=result.remember,
+                    outcome=reply.outcome,
+                    reason=reply.reason,
+                    remember_for_session=reply.remember,
                 )
             )
 
@@ -126,13 +127,11 @@ class InteractionPresenter:
 
         state = self._controller.state
         turn = None if state.thread_view is None else state.thread_view.current_turn
-        item = (
-            product_error_help(code)
-            if code is not None
-            else current_error_help(
-                None if state.last_notice is None else state.last_notice.code,
-                None if turn is None else turn.status,
-                None if turn is None or turn.error is None else turn.error.code,
-            )
+        notice = None if state.last_notice is None else state.last_notice.code
+        # 显式给出的错误码与连接通知同样优先于本轮失败。
+        item = current_error_help(
+            code if code is not None else notice,
+            None if turn is None else turn.status,
+            None if turn is None or turn.error is None else turn.error.code,
         )
         await self._app.push_screen_wait(HelpScreen(item))
