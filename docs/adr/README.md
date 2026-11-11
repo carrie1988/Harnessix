@@ -267,6 +267,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0125：Skill的产品装配](0125-skill-product-wiring.md)：模型只给名称，宿主补齐摘要；目录快照只在进程内，工具合同不随Skill内容变化；没有Skill时产品行为不变。
 - [ADR 0126：会话历史的增量校验](0126-incremental-session-history-verification.md)：进程内缓存已验证的链前缀，游标读取只校验本次返回的事件，交付的数据仍全部经过认证；全量读取行为不变。
 - [ADR 0127：本机stdio MCP与逐个信任](0127-host-stdio-mcp-with-per-server-trust.md)：修订ADR 0073第2条；只读用户级`mcp.json`，逐个显式信任并绑定定义指纹，每次工具调用审批，仓库级配置与远端MCP不在1.0。
+- [ADR 0135：命令账本与工具步骤说明](0135-command-ledger-step-notices.md)：同一条Shell命令在补丁之前通过、之后失败，同一份补丁第二次被回滚，或同一条命令原地重复第三次时，宿主在该步工具结果之后补发一条事实说明；从持久Item推导，每类事实只说明一次，不改写工具结果。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

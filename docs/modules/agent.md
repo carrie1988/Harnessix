@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 46
+version: 47
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0135-command-ledger-step-notices.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -47,6 +48,7 @@ related_tests:
   - tests/context/test_turn_budget_compaction.py
   - tests/context/test_compaction_runtime.py
   - tests/product_config/test_native_sandbox_profile.py
+  - tests/agent/test_step_notices.py
 supersedes: []
 ---
 
@@ -432,6 +434,7 @@ Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并�
 | `reply_approval` | Client → Runtime | Approval ID、请求指纹、决定 | ID与原请求指纹匹配 | 过期、关闭、错配拒绝 | 相同决定幂等；不同决定冲突 | 授权仅限绑定Call |
 | `ModelProvider.stream` | Runtime → Adapter | `ModelRequest` → 事件流 | 历史已归一化 | 关闭流响应取消/超时；Provider错误分类 | Attempt身份稳定 | Provider无Workspace权限 |
 | `ScopedToolRuntime.execute_scoped` | Runtime → Tool | Call、Scope、Token → Result | Call已持久且状态为执行中 | 输出有界；异常转稳定Tool失败 | Scope绑定请求指纹；结果按Call关联 | Scope不是FS能力或Secret |
+| `ToolStepNoticeSource.step_notice` | Runtime → 产品来源 | Thread、当前Turn → 说明正文或`None` | 该步工具结果已全部落账 | 来源异常按Runtime错误结束Turn；不涉及IO | 只读持久事实，重放结论相同；每步至多调用一次 | 只是模型提示，不授予执行权限、不改写工具结果 |
 | `SessionStore.append` | Runtime → Store | EventDraft批次、期望序号 → Thread | Thread存在且序号一致 | 存储/投影错误关闭 | 单事务、严格顺序 | Store不替Runtime授权 |
 
 ## 11. 正常Agent Loop
@@ -585,6 +588,25 @@ sequenceDiagram
 `[Harnessix host notice]`开头），并以`TurnStateChanged(reason="steering")`重入，沿用§13.3的Event v19
 语义，事件版本不变。每个Turn最多补发两次；步骤或Token预算已用尽时不补发。产品配置`completion_guard`
 默认关闭（ADR 0124），`harnessix exec`默认开启；Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+
+### 13.5 工具步骤说明（注入来源时）
+
+模型改坏了原本通过的检查时，常把失败归咎于环境；“哪条命令在哪次补丁之前通过、之后失败”宿主早已落账。
+`AgentRuntime(step_notices=...)`注入[`ToolStepNoticeSource`](../../src/harnessix/agent/ports.py)后，
+`_drive`在一步的全部工具结果落账（`_execute_calls`返回）之后调用
+[`append_step_notice`](../../src/harnessix/agent/step_notices.py)一次：
+
+| 项 | 规则 |
+|---|---|
+| 内容 | 来源的`step_notice(thread, turn)`只读Thread持久事实给出，没有事实为`None`；内核不解释内容 |
+| 落账 | 一条用户消息Item，正文以`[Harnessix host notice] `开头，身份`uuid5(turn_id, "harnessix.tool-step-notice/v1:<step>")`；经`_commit`提交，公开输出保护照常生效 |
+| 位置 | 该步全部工具结果之后、下一次模型请求之前；与§13.3的Steering同一通道（Event v19），不新增事件类型 |
+| 上限 | 每个Turn至多6条、每条至多2000字符；同一步已发布则不再询问来源，恢复重入不重复 |
+| 状态 | 只在`EXECUTING_TOOLS`或`PREPARING_CONTEXT`（计划更新已提前切换）发布；取消中的Turn不发布 |
+
+说明不写进工具结果：命令结果的`output`与输出Artifact逐字段绑定，补丁结果与审计摘要绑定，追加字段会使
+既有校验失败（ADR 0135第2.3节）。当前Turn的用户消息在压缩时整组保留，所以说明在压缩后仍对模型可见。
+默认不注入；产品实现是[`product_config/command_ledger.py`](../../src/harnessix/product_config/command_ledger.py)。
 
 ## 14. 取消、超时和关闭
 
@@ -816,6 +838,7 @@ recover(thread):
 | Retry | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `retry_turn` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_terminal_turn_retry_creates_new_turn_and_is_idempotent`、`test_retry_rejects_completed_and_non_latest_turns` | 新Turn与安全限制 |
 | 审批 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `reply_approval` | [`test_approval_crash_recovery.py`](../../tests/agent/test_approval_crash_recovery.py) | `test_approval_crash_boundaries` | 各提交边界恢复 |
 | 交互与历史并发 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py) | `steer_turn`、`prepare_and_commit_model_history` | [`test_interactions.py`](../../tests/agent/test_interactions.py) | `test_steering_during_history_verification_restarts_preparation`及Steering、Question、错配与恢复用例 | Steering在历史验证竞态中不会提交过期检查或误失败 |
+| 工具步骤说明 | [`step_notices.py`](../../src/harnessix/agent/step_notices.py) | `step_notice_text`、`append_step_notice` | [`test_step_notices.py`](../../tests/agent/test_step_notices.py) | `test_runtime_appends_the_notice_after_the_tool_results`、`test_a_step_is_noticed_at_most_once`、`test_notices_stop_at_the_per_turn_cap` | 说明落在结果组之后、每步一次、有界 |
 | Trusted Action恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`trusted_action_runtime.py`](../../src/harnessix/agent/trusted_action_runtime.py) | `_recover`、`resume_recovery` | [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py) | 终态响应丢失、决定同步与UNKNOWN核对用例 | 不重复当前Patch或Process效果 |
 | 历史Process兼容 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover`、`resume_turn`、`_reply_approval` | [`test_legacy_process_compatibility.py`](../../tests/agent/test_legacy_process_compatibility.py) | `test_historical_process_state_is_readable_but_never_mutated_or_replayed` | 旧等待事实可读、启动零改写、命令稳定拒绝 |
 | Patch恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover_patch`、`_recover_patch_batch` | [`test_kernel_patch_crash.py`](../../tests/patches/test_kernel_patch_crash.py) | Patch崩溃边界参数化用例 | 稳定计划对账 |
@@ -979,6 +1002,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 47 | `feat/r2-regress` 增量 | 2026-11-11 | 新增工具步骤说明端口：一步的工具结果落账后，注入的来源可补发一条宿主事实说明（ADR 0135） |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |
 | 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |
