@@ -63,10 +63,12 @@ def _cost_text(state: ProductControllerState, usage: UsageCostView) -> str:
     if state.pricing == "free":
         return "本地 0 元"
     if state.list_price is None:
-        return f"费用未知（{usage.cost_reason}）"
-    return cost_upper_bound(
+        return "费用未知"
+    bound = cost_upper_bound(
         state.list_price, input_tokens=usage.input_tokens, output_tokens=usage.output_tokens
     ).text()
+    # 中断的请求用量服务商未报告，“≤”只对已报告部分成立，不能当作本轮上限。
+    return f"已知{bound} · 另有中断的请求可能已计费" if usage.interrupted_model_call else bound
 
 
 def _status_text(state: ProductControllerState) -> str:
@@ -79,7 +81,7 @@ def _status_text(state: ProductControllerState) -> str:
             if usage.max_tokens is None or usage.max_tokens >= UNCAPPED_TOKENS
             else f"{usage.total_tokens:,}/{usage.max_tokens:,} tokens"
         )
-        usage_text = f" · {tokens} · {_cost_text(state, usage)}"
+        usage_text = f" · 本轮 {tokens} · {_cost_text(state, usage)}"
     sandbox = "" if state.model is None else f" · {state.model}"
     sandbox += "" if state.sandbox is None else f" · {state.sandbox}"
     if state.auto_accept_edits:

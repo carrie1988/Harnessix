@@ -111,6 +111,7 @@ class UsageCostView:
     output_tokens: int
     total_tokens: int
     max_tokens: int | None
+    interrupted_model_call: bool = False
     cost_status: Literal["unknown"] = "unknown"
     cost_reason: Literal["price_not_exposed"] = "price_not_exposed"
 
@@ -313,6 +314,7 @@ def usage_cost_view(view: ProductViewState | None) -> UsageCostView | None:
         max_tokens=None
         if view.current_turn.budget is None
         else view.current_turn.budget.max_tokens,
+        interrupted_model_call=view.current_turn.interrupted_model_call,
     )
 
 

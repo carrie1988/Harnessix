@@ -133,7 +133,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-cost",
         type=_positive_decimal,
-        help="费用上限，单位是模型牌价的货币；只支持已核对牌价的模型，按输入单价折算成Token上限",
+        help="费用上限，单位是人民币（元）；只支持已核对牌价的模型，按输入单价折算成Token上限",
     )
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--max-tokens", type=int)

@@ -226,15 +226,16 @@ harnessix code configure --provider-kind openai_chat \
 
 下列模型已内置上下文窗口和思考设置，并核对过牌价，界面会显示费用上限：
 
-| 服务 | 模型 | 上下文窗口 | 牌价（每百万 Token，输入/输出） |
+| 服务 | 模型 | 上下文窗口 | 牌价（每百万 Token，输入/输出，人民币） |
 |---|---|---|---|
-| DeepSeek 官方 | `deepseek-v4-pro*` | 100 万 | $1.32 / $3.96（按高峰价） |
-| DeepSeek 官方 | `deepseek-flash*` | 100 万 | $0.3 / $1.2 |
-| 百炼 | `deepseek-v4-pro*` | 100 万 | ¥12 / ¥24 |
-| 百炼 | `qwen3.8-max*` | 100 万 | ¥12 / ¥36 |
-| 百炼 | `qwen3.8-flash*` | 100 万 | ¥0.8 / ¥2.7 |
+| DeepSeek 官方 | `deepseek-flash`（旧名 `deepseek-v4-flash` 同价） | 100 万 | ¥2 / ¥8（高峰价；闲时半价） |
+| DeepSeek 官方 | `deepseek-v4-pro` | 100 万 | ¥9 / ¥27（高峰价；闲时半价） |
+| 百炼 | `deepseek-v4-pro` | 100 万 | ¥12 / ¥24 |
+| 百炼 | `deepseek-v4-pro-0813` | 100 万 | ¥9 / ¥27（高峰价） |
+| 百炼 | `qwen3.8-max`、`qwen3.8-max-0902` | 100 万 | ¥12 / ¥36 |
+| 百炼 | `qwen3.8-flash` | 100 万 | ¥0.8 / ¥2.7 |
 
-牌价核对于 2026-11-09，以服务商官网为准。其他 OpenAI 兼容服务和 Anthropic 接口（`--provider-kind anthropic`）也可以使用，但费用显示为“未知”。没有内置窗口的模型，建议用 `--context-window-tokens` 写明上下文窗口。
+牌价核对于 2026-11-10，以服务商官网为准；金额一律以人民币显示。只有表中的确切型号会显示费用，带其他日期或后缀的型号可能另有价格，显示为“费用未知”。其他 OpenAI 兼容服务和 Anthropic 接口（`--provider-kind anthropic`）也可以使用，但费用显示为“未知”。没有内置窗口的模型，建议用 `--context-window-tokens` 写明上下文窗口。
 
 ### 4.3 自己部署的模型
 
@@ -593,7 +594,7 @@ Hooks、IDE 插件、Web 搜索、子代理、图片输入、自动更新。
 ### 10.1 费用显示
 
 - 已核对牌价的模型（见 [4.2](#42-云模型)），状态栏显示“费用≤¥x.xxxx”。这是按牌价估算的**上限**：所有输入都按未命中缓存的价格计算，实际账单通常更低。
-- 费用越过提醒档位时，状态栏会提示可以按 `Ctrl+X` 取消。档位：人民币 5、20、50、100、200 元；美元 1、5、10、20、50 美元。
+- 费用越过提醒档位时，状态栏会提示可以按 `Ctrl+X` 取消。档位：5、20、50、100、200 元。
 - 本地模型显示“本地 0 元”；其他模型显示“费用未知”。
 
 ### 10.2 单个任务的上限
@@ -651,7 +652,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 | `--workspace` | 工作区，默认当前目录 |
 | `--trust-workspace` | 本次信任工作区，不记录 |
 | `--approval-mode` | `manual`、`auto-edit`、`auto` |
-| `--max-cost` | 费用上限，单位为牌价货币，按输入单价折算为 Token 上限 |
+| `--max-cost` | 费用上限，单位为人民币（元），按输入单价折算为 Token 上限 |
 | `--max-steps`、`--max-tokens`、`--timeout-seconds` | 覆盖默认上限 |
 | `--max-output-chars`、`--max-tool-calls-per-step` | 单步输出与工具调用数量上限 |
 | `--summary-file` | 摘要写入文件，默认输出到标准输出 |

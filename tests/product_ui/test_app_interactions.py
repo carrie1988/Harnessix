@@ -203,8 +203,9 @@ async def test_product_app_answers_question_from_dedicated_modal(tmp_path: Path)
 
                 status = str(app.query_one("#status", Static).content)
                 assert status.startswith("等待你回答（Ctrl+U）")
-                assert " · 0/" in status and " tokens · " in status
-                assert "费用未知（price_not_exposed）" in status
+                assert " · 本轮 0/" in status and " tokens · " in status
+                # 状态栏只说“费用未知”，不显示内部原因码。
+                assert "费用未知" in status and "price_not_exposed" not in status
 
                 await pilot.press("ctrl+u")
                 await _wait_until(lambda: isinstance(app.screen, QuestionScreen))

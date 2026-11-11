@@ -29,10 +29,30 @@ from harnessix.product_ui.turn_budget import (
         ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-flash", True),
         ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-27b", False),
         ("https://api.example.test/v1", "deepseek-v4-pro", False),
+        # 带日期或后缀的型号可能另有价格，不能套用前缀相同型号的牌价。
+        ("https://api.deepseek.com/v1", "deepseek-v4-pro-0813", False),
+        ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen3.8-flash-0801", False),
+        ("https://dashscope.aliyuncs.com/compatible-mode/v1", "deepseek-v4-pro-0813", True),
     ],
 )
 def test_prices_only_cover_verified_models(base_url: str, model: str, known: bool) -> None:
     assert (list_price_for(base_url, model) is not None) is known
+
+
+def test_deepseek_official_prices_are_peak_cny_and_dated_variants_differ() -> None:
+    # 2026-11-10核对：国内账户按人民币计费，取高峰价作为上限。
+    official = "https://api.deepseek.com"
+    assert list_price_for(official, "deepseek-flash") == ListPrice(
+        "CNY", Decimal("2"), Decimal("8")
+    )
+    assert list_price_for(official, "deepseek-v4-pro") == ListPrice(
+        "CNY", Decimal("9"), Decimal("27")
+    )
+    bailian = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    pro = list_price_for(bailian, "deepseek-v4-pro")
+    dated = list_price_for(bailian, "deepseek-v4-pro-0813")
+    assert pro is not None and dated is not None
+    assert dated.output_per_million > pro.output_per_million
 
 
 def test_upper_bound_charges_all_input_at_the_full_rate() -> None:

@@ -64,6 +64,8 @@ class TurnProjection:
     error: PublicFailure | None = None
     # usage已计入到哪个事件游标：快照含其游标前的全部用量，之后的逐步用量事件累加。
     usage_cursor: int = 0
+    # 模型调用中途结束（失败、中断或取消）：该次请求的用量服务商未报告，可能已计费却无法计入。
+    interrupted_model_call: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +93,15 @@ class ProductViewState:
         return next((entry for entry in self.streams if entry.item_id == item_id), None)
 
 
+_ENDED_DURING_MODEL_CALL = frozenset({"failed", "interrupted", "cancelling", "cancelled"})
+# HTTP错误响应不计费（ADR 0123第6节）：鉴权失败与限流可以确定；其他服务错误可能发生在流中途。
+_KNOWN_UNBILLED_CODES = frozenset({"provider_authentication", "provider_rate_limit"})
+
+
+def _known_unbilled(error: PublicFailure | None) -> bool:
+    return error is not None and error.code in _KNOWN_UNBILLED_CODES
+
+
 def _turn_from_snapshot(thread: ThreadView) -> TurnProjection | None:
     turn = thread.latest_turn
     if turn is None:
@@ -104,6 +115,11 @@ def _turn_from_snapshot(thread: ThreadView) -> TurnProjection | None:
         model_step=turn.model_steps,
         error=turn.error,
         usage_cursor=thread.cursor,
+        # 重新打开时只有终态错误：模型服务失败（确定未计费的除外）同样按可能另有计费处理。
+        interrupted_model_call=turn.status in {"failed", "interrupted"}
+        and turn.error is not None
+        and turn.error.code.startswith("provider_")
+        and not _known_unbilled(turn.error),
     )
 
 
@@ -196,7 +212,17 @@ def _apply_event(state: ProductViewState, event: PublicEvent) -> ProductViewStat
         current = state.current_turn
         if current is None or current.turn_id != event.turn_id:
             raise ProductUIError("projection_turn_conflict", "Turn状态事件与当前Turn不匹配")
-        return replace(state, current_turn=replace(current, status=data.status, error=data.error))
+        interrupted = current.interrupted_model_call or (
+            current.status == "calling_model"
+            and data.status in _ENDED_DURING_MODEL_CALL
+            and not _known_unbilled(data.error)
+        )
+        return replace(
+            state,
+            current_turn=replace(
+                current, status=data.status, error=data.error, interrupted_model_call=interrupted
+            ),
+        )
     if isinstance(data, UsagePublicEvent):
         if event.turn_id is None:
             raise ProductUIError("projection_event_invalid", "Usage事件缺少Turn ID")

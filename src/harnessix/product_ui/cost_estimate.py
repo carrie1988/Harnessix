@@ -1,7 +1,9 @@
 """按官方牌价估算本轮费用上限；只覆盖已核对的模型，结果不是账单。
 
-牌价核对于2026-11-09。公开协议没有缓存命中量，输入全部按未命中价计算，实际费用通常更低。
-DeepSeek按高峰价计算。
+牌价核对于2026-11-10（百炼模型价格页、DeepSeek中文价格页）。公开协议没有缓存命中量，输入全部按
+未命中价计算，实际费用通常更低。DeepSeek按高峰价计算；国内账户以人民币计费（余额接口返回CNY）。
+只按核对过的确切型号匹配：带日期的版本可能另有价格（如百炼deepseek-v4-pro-0813的输出单价高于
+deepseek-v4-pro），未登记的型号显示费用未知，避免给出偏低的“上限”。
 """
 
 from __future__ import annotations
@@ -17,25 +19,23 @@ from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
 
 _MILLION: Final = Decimal(1_000_000)
-_SYMBOLS: Final = {"CNY": "¥", "USD": "$"}
-_REMINDERS: Final = {
-    "CNY": tuple(Decimal(item) for item in (5, 20, 50, 100, 200)),
-    "USD": tuple(Decimal(item) for item in (1, 5, 10, 20, 50)),
-}
+# 产品面向中国用户，金额一律以人民币显示；只登记以人民币计费的已核对牌价。
+_SYMBOLS: Final = {"CNY": "¥"}
+_REMINDERS: Final = {"CNY": tuple(Decimal(item) for item in (5, 20, 50, 100, 200))}
 
 
 @dataclass(frozen=True, slots=True)
 class ListPrice:
     """每百万Token的牌价。"""
 
-    currency: Literal["CNY", "USD"]
+    currency: Literal["CNY"]
     input_per_million: Decimal
     output_per_million: Decimal
 
 
 @dataclass(frozen=True, slots=True)
 class CostUpperBound:
-    currency: Literal["CNY", "USD"]
+    currency: Literal["CNY"]
     amount: Decimal
 
     def text(self) -> str:
@@ -48,21 +48,25 @@ class CostUpperBound:
         return f"{base} · 已超过 {symbol}{crossed[-1]}，可按 Ctrl+X 取消" if crossed else base
 
 
-_LIST_PRICES: Final[tuple[tuple[str, str, ListPrice], ...]] = (
-    ("api.deepseek.com", "deepseek-v4-pro", ListPrice("USD", Decimal("1.32"), Decimal("3.96"))),
-    ("api.deepseek.com", "deepseek-flash", ListPrice("USD", Decimal("0.3"), Decimal("1.2"))),
-    ("dashscope.aliyuncs.com", "deepseek-v4-pro", ListPrice("CNY", Decimal("12"), Decimal("24"))),
-    ("dashscope.aliyuncs.com", "qwen3.8-max", ListPrice("CNY", Decimal("12"), Decimal("36"))),
-    ("dashscope.aliyuncs.com", "qwen3.8-flash", ListPrice("CNY", Decimal("0.8"), Decimal("2.7"))),
-)
+_DASHSCOPE: Final = "dashscope.aliyuncs.com"
+_DEEPSEEK: Final = "api.deepseek.com"
+_LIST_PRICES: Final[dict[tuple[str, str], ListPrice]] = {
+    (_DEEPSEEK, "deepseek-flash"): ListPrice("CNY", Decimal("2"), Decimal("8")),
+    # 旧模型名仍可调用，由Flash模型提供服务并按Flash价格计费（DeepSeek价格页注1）。
+    (_DEEPSEEK, "deepseek-v4-flash"): ListPrice("CNY", Decimal("2"), Decimal("8")),
+    (_DEEPSEEK, "deepseek-v4-pro"): ListPrice("CNY", Decimal("9"), Decimal("27")),
+    (_DASHSCOPE, "deepseek-v4-pro"): ListPrice("CNY", Decimal("12"), Decimal("24")),
+    (_DASHSCOPE, "deepseek-v4-pro-0813"): ListPrice("CNY", Decimal("9"), Decimal("27")),
+    (_DASHSCOPE, "qwen3.8-max"): ListPrice("CNY", Decimal("12"), Decimal("36")),
+    (_DASHSCOPE, "qwen3.8-max-0902"): ListPrice("CNY", Decimal("12"), Decimal("36")),
+    (_DASHSCOPE, "qwen3.8-flash"): ListPrice("CNY", Decimal("0.8"), Decimal("2.7")),
+}
 
 
 def list_price_for(base_url: str, model: str) -> ListPrice | None:
-    host = urlsplit(base_url).hostname
-    for known_host, prefix, price in _LIST_PRICES:
-        if host == known_host and model.startswith(prefix):
-            return price
-    return None
+    """只返回确切型号的已核对牌价。"""
+
+    return _LIST_PRICES.get((urlsplit(base_url).hostname or "", model))
 
 
 def chain_list_price(config: Path, profile: str | None) -> ListPrice | None:
