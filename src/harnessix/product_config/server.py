@@ -30,6 +30,7 @@ from harnessix.product_config.action_store import SQLiteProductRuntimeConfigStor
 from harnessix.product_config.agent_context import build_product_agent_context
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.coding_tool_view import CodingWorkflowToolView
+from harnessix.product_config.command_ledger import command_ledger_notices
 from harnessix.product_config.contracts import (
     ModelProfile,
     ProductConfigSnapshot,
@@ -376,6 +377,7 @@ async def _serve_product_stdio(
                             completion_guard=startup.completion_guard,
                             continue_after_unknown_usage=startup.continue_after_unknown_usage,
                             recover_truncated_replies=True,
+                            step_notices=command_ledger_notices(verified),
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
