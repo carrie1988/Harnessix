@@ -58,7 +58,9 @@ def test_step_timings_split_each_step_at_state_changes_and_subtract_scripted_wai
     ]
     events = [_event(index, at, status) for index, (at, status) in enumerate(marks, 1)]
 
-    first, second = step_timings(events, ["exec_command.testbed", "grep"], [0.08, 0.0])
+    first, second = step_timings(
+        events, ["exec_command.testbed", "grep"], [0.08, 0.0], [1.0, 1.25, 1.5]
+    )
 
     assert (first.step, first.tool, second.step, second.tool) == (
         1,
@@ -71,6 +73,7 @@ def test_step_timings_split_each_step_at_state_changes_and_subtract_scripted_wai
     assert measured == [30, 20, 20, 40, 70]
     assert [round(getattr(second, phase) * 1000) for phase in PHASES] == [40, 20, 10, 0, 20]
     assert round(first.total * 1000) == 180
+    assert (first.cpu, second.cpu) == (0.25, 0.25)
 
 
 @pytest.mark.skipif(os.name != "posix", reason="外部边界命令Profile只在POSIX上可用")
@@ -93,6 +96,7 @@ async def test_one_tool_cycle_runs_on_the_product_runtime_and_times_every_step(
     ]
     for item in report.steps:
         assert item.preparing_context > 0 and item.model_call > 0 and item.tool_and_result > 0
+        assert item.cpu > 0
         # 评测的自动审批覆盖命令与补丁；只读工具不经过审批往返。
         assert (item.approval > 0) == (item.tool in {"exec_command.testbed", "apply_patch_batch"})
     assert report.session_bytes > 0

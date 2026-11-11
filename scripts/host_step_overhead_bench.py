@@ -13,21 +13,21 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import cProfile
 import io
 import json
 import os
+import pstats
 import statistics
 import sys
-import threading
-from collections import Counter
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from time import perf_counter
-from types import FrameType
+from time import perf_counter, process_time
 from uuid import uuid4
 
+from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.models import Usage
 from harnessix.agent.usage import (
     ModelAttemptFinished,
@@ -37,6 +37,7 @@ from harnessix.agent.usage import (
 )
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.models.contracts import (
+    ModelRequest,
     ProviderEvent,
     ResponseCompleted,
     ResponseStarted,
@@ -70,6 +71,8 @@ class StepTiming:
 
     model_call是进入calling_model到用量事件之间的时间：脚本化模型不耗时，剩下的是宿主记录回复的开销
     （设置了增量间隔时已减去脚本的等待）。tool_and_result含工具本身的执行时间。
+    cpu是本步消耗的进程CPU时间（含进程内的协议客户端，不含命令子进程）：机器繁忙时墙钟时间会被
+    排队拉长，CPU时间仍可比较。
     """
 
     step: int
@@ -79,6 +82,7 @@ class StepTiming:
     after_usage: float
     approval: float
     tool_and_result: float
+    cpu: float
 
     @property
     def total(self) -> float:
@@ -114,6 +118,7 @@ class BenchReport:
                 row[phase] = statistics.fmean(getattr(item, phase) for item in chunk)
             row["total_mean"] = statistics.fmean(item.total for item in chunk)
             row["total_median"] = statistics.median(item.total for item in chunk)
+            row["cpu_mean"] = statistics.fmean(item.cpu for item in chunk)
             rows.append(row)
         return rows
 
@@ -221,10 +226,34 @@ def build_script(steps: int) -> tuple[list[list[ProviderEvent]], list[str]]:
     return script, tools
 
 
+class ClockedScriptedProvider(ScriptedProvider):
+    """记下每个模型步骤开始时的进程CPU时间；不保留请求副本，深拷贝整个请求会算进宿主开销。"""
+
+    def __init__(self, steps: Sequence[Sequence[ProviderEvent]], *, delay_seconds: float) -> None:
+        super().__init__(steps, delay_seconds=delay_seconds)
+        self.cpu_marks: list[float] = []
+
+    async def stream(
+        self, request: ModelRequest, cancel: CancelToken
+    ) -> AsyncGenerator[ProviderEvent, None]:
+        self.cpu_marks.append(process_time())
+        for event in self.steps[request.step - 1]:
+            cancel.checkpoint()
+            if self.delay_seconds:
+                await cancel.run(asyncio.sleep(self.delay_seconds))
+            yield event
+
+
 def step_timings(
-    events: Sequence[PublicEvent], tools: Sequence[str], scripted_wait_seconds: Sequence[float]
+    events: Sequence[PublicEvent],
+    tools: Sequence[str],
+    scripted_wait_seconds: Sequence[float],
+    cpu_marks: Sequence[float],
 ) -> tuple[StepTiming, ...]:
-    """把公开事件切成模型步骤：每步从preparing_context开始，到下一次preparing_context之前结束。"""
+    """把公开事件切成模型步骤：每步从preparing_context开始，到下一次preparing_context之前结束。
+
+    cpu_marks是各模型步骤开始时的进程CPU时间，相邻两项之差即前一步的CPU时间。
+    """
     timings: list[StepTiming] = []
     phases = dict.fromkeys(PHASES, 0.0)
     current: str | None = None
@@ -233,7 +262,8 @@ def step_timings(
     def close_step() -> None:
         step = len(timings) + 1
         phases["model_call"] = max(0.0, phases["model_call"] - scripted_wait_seconds[step - 1])
-        timings.append(StepTiming(step=step, tool=tools[step - 1], **phases))
+        cpu = cpu_marks[step] - cpu_marks[step - 1]
+        timings.append(StepTiming(step=step, tool=tools[step - 1], cpu=cpu, **phases))
 
     for event in events:
         moment = event.occurred_at.timestamp()
@@ -289,7 +319,7 @@ async def run_benchmark(
     for path in (config, actions):
         path.chmod(0o600)
     script, tools = build_script(steps)
-    provider = ScriptedProvider(script, delay_seconds=delta_interval_seconds)
+    provider = ClockedScriptedProvider(script, delay_seconds=delta_interval_seconds)
     events: list[PublicEvent] = []
     receipts: list[dict[str, object]] = []
 
@@ -350,7 +380,10 @@ async def run_benchmark(
     sessions = state / "sessions.db"
     return BenchReport(
         steps=step_timings(
-            events, tools, [len(step) * delta_interval_seconds for step in script[:steps]]
+            events,
+            tools,
+            [len(step) * delta_interval_seconds for step in script[:steps]],
+            provider.cpu_marks,
         ),
         wall_seconds=wall,
         reason=str(receipt["reason"]),
@@ -360,93 +393,34 @@ async def run_benchmark(
 
 
 def format_report(report: BenchReport) -> str:
-    columns = (*PHASES, "total_mean", "total_median")
+    columns = (*PHASES, "total_mean", "total_median", "cpu_mean")
     lines = [f"{'steps':>7} " + " ".join(f"{name:>17}" for name in columns)]
     for row in report.buckets():
         cells = " ".join(f"{float(row[name]) * 1000:>15.1f}ms" for name in columns)
         lines.append(f"{row['steps']:>7} {cells}")
+    count = max(len(report.steps), 1)
     total = sum(item.total for item in report.steps)
+    cpu = sum(item.cpu for item in report.steps)
     lines.append(
         f"reason={report.reason} steps={len(report.steps)} "
         f"failed_tool_results={report.failed_tool_results} step_time_total={total:.2f}s "
-        f"per_step={total / max(len(report.steps), 1) * 1000:.0f}ms "
+        f"per_step={total / count * 1000:.0f}ms cpu_per_step={cpu / count * 1000:.0f}ms "
         f"wall={report.wall_seconds:.2f}s sessions.db={report.session_bytes / 1024:.0f}KB"
     )
     return "\n".join(lines)
 
 
-class StackSampler(threading.Thread):
-    """按固定间隔采样全部线程的调用栈：SQLite读写在各连接的工作线程里，单线程Profiler看不到。
-
-    一个样本代表某线程约一个间隔的墙钟时间；空闲等待（事件循环select、队列与锁等待）不计。
-    """
-
-    _IDLE = frozenset({"select", "wait", "get", "_worker", "run_forever", "sleep"})
-
-    def __init__(self, interval_seconds: float = 0.002) -> None:
-        super().__init__(name="overhead-sampler", daemon=True)
-        self.interval_seconds = interval_seconds
-        self.inclusive: Counter[tuple[str, str]] = Counter()
-        self.leaves: Counter[tuple[str, str]] = Counter()
-        self.samples = 0
-        self._finished = threading.Event()
-
-    def run(self) -> None:
-        own = threading.get_ident()
-        while not self._finished.wait(self.interval_seconds):
-            for ident, frame in sys._current_frames().items():
-                if ident == own or frame.f_code.co_name in self._IDLE:
-                    continue
-                self.samples += 1
-                self.leaves[(frame.f_code.co_filename, frame.f_code.co_name)] += 1
-                seen: set[tuple[str, str]] = set()
-                current: FrameType | None = frame
-                while current is not None:
-                    seen.add((current.f_code.co_filename, current.f_code.co_name))
-                    current = current.f_back
-                self.inclusive.update(seen)
-
-    def stop(self) -> None:
-        self._finished.set()
-        self.join()
-
-    def table(self, limit: int = 40) -> str:
-        """产品代码按包含样本排序，另列叶子帧（实际消耗CPU或阻塞在C调用的位置）。"""
-
-        def rows(counter: Counter[tuple[str, str]], only_product: bool) -> list[str]:
-            selected = [
-                (count, filename, name)
-                for (filename, name), count in counter.most_common()
-                if not only_product or "/harnessix/" in filename
-            ][:limit]
-            return [
-                f"{count * self.interval_seconds:8.2f}s {count / max(self.samples, 1):6.1%}  "
-                f"{Path(filename).parent.name}/{Path(filename).name}:{name}"
-                for count, filename, name in selected
-            ]
-
-        busy = self.samples * self.interval_seconds
-        return "\n".join(
-            [
-                f"busy thread samples: {self.samples} (~{busy:.1f}s)",
-                "-- inclusive, product code --",
-                *rows(self.inclusive, True),
-                "-- leaf frames --",
-                *rows(self.leaves, False),
-            ]
-        )
-
-
 def _profiled(root: Path, steps: int, delta_interval_seconds: float) -> BenchReport:
-    sampler = StackSampler()
-    sampler.start()
+    """只剖析事件循环线程：宿主开销几乎都是这里的CPU时间，SQLite工作线程的占比很小。"""
+    profiler = cProfile.Profile()
+    profiler.enable()
     try:
         return asyncio.run(
             run_benchmark(root, steps=steps, delta_interval_seconds=delta_interval_seconds)
         )
     finally:
-        sampler.stop()
-        print(sampler.table())
+        profiler.disable()
+        pstats.Stats(profiler).strip_dirs().sort_stats("tottime").print_stats(40)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -454,7 +428,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=60)
     parser.add_argument("--delta-interval-ms", type=float, default=0.0, help="模型事件之间的等待")
     parser.add_argument("--json", type=Path, help="写出逐步明细与分桶结果")
-    parser.add_argument("--profile", action="store_true", help="采样全部线程并打印热点")
+    parser.add_argument("--profile", action="store_true", help="剖析事件循环线程并打印热点")
     arguments = parser.parse_args(argv)
     interval = arguments.delta_interval_ms / 1000
     with TemporaryDirectory(prefix="harnessix-overhead-") as directory:
