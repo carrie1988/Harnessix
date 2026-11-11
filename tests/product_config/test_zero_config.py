@@ -86,8 +86,12 @@ async def _runtime_instruction(tmp_path: Path, **options: bool) -> dict[str, str
     )
     prepared = await context.context.prepare(request, CancelToken())
     fragments = json.loads(prepared.instructions or "")["fragments"]
-    (runtime,) = [item for item in fragments if item["kind"] == "runtime_instruction"]
-    return runtime
+    (execution,) = [
+        item
+        for item in fragments
+        if item["kind"] == "runtime_instruction" and "execution-instructions" in item["source"]
+    ]
+    return execution
 
 
 async def test_native_instructions_are_separate_from_generic_ones(tmp_path: Path) -> None:
