@@ -34,6 +34,7 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.reply_shape import (
+    HOST_RECORD_MARKERS,
     ReplyShape,
     announces_next_step,
     reply_shape,
@@ -84,6 +85,11 @@ _NON_ANSWER_NOTICES: dict[ReplyShape, str] = {
     "cut_off": CUT_OFF_REPLY_NOTICE,
     "call_as_text": CALL_AS_TEXT_NOTICE,
 }
+# 模型历史里替换结构化乱码的占位；开头属于HOST_RECORD_MARKERS，模型照抄它同样不算答复。
+NON_ANSWER_PLACEHOLDER = (
+    "[Harnessix host placeholder] The host removed a response here: it was a JSON record or "
+    "an unfinished tool call written as text, not an answer."
+)
 
 
 def completion_notice_item_id(turn_id: UUID, step: int) -> UUID:
@@ -203,3 +209,38 @@ def last_tool_call_failed(items: Iterable[Item]) -> bool:
     """本Turn最近一次工具结果是否不是成功；还没有工具结果时为False。"""
     results = [item.content for item in items if isinstance(item.content, ToolResultContent)]
     return bool(results) and results[-1].outcome != "succeeded"
+
+
+def without_non_answers(history: Sequence[Item]) -> tuple[Item, ...]:
+    """发给模型的历史：守卫已判为不是答复的结构化乱码换成短占位，持久Item不变。
+
+    乱码留在历史里会被模型当成自己的上一条回复再抄一遍。只替换紧跟“不是答复”类提示、形态仍是
+    结构化片段且比占位长的助手消息：提示证明守卫在此判定过，形态与长度保证不丢正文、不增加输入。
+    照抄宿主记录的回复不替换，它与宿主自己投影的上下文摘要无法区分。
+    """
+    visible = list(history)
+    for index, item in enumerate(visible[:-1]):
+        # 先看后一条是不是提示：每次出站映射都会走到这里，形态判定只留给极少数候选。
+        if _is_non_answer_notice(visible[index + 1]) and _is_structured_non_answer(item):
+            placeholder = TextContent(kind="assistant_message", text=NON_ANSWER_PLACEHOLDER)
+            visible[index] = item.model_copy(update={"content": placeholder})
+    return tuple(visible)
+
+
+def _is_non_answer_notice(item: Item) -> bool:
+    return (
+        isinstance(item.content, TextContent)
+        and item.content.kind == "user_message"
+        and item.content.text.startswith(tuple(_NON_ANSWER_NOTICES.values()))
+    )
+
+
+def _is_structured_non_answer(item: Item) -> bool:
+    content = item.content
+    if not isinstance(content, TextContent) or content.kind != "assistant_message":
+        return False
+    return (
+        len(content.text) > len(NON_ANSWER_PLACEHOLDER)
+        and not any(marker in content.text for marker in HOST_RECORD_MARKERS)
+        and reply_shape(reply_text(content.text)) in ("host_record", "cut_off", "call_as_text")
+    )

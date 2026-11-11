@@ -14,6 +14,7 @@ from harnessix.agent.completion_guard import (
     CUT_OFF_REPLY_NOTICE,
     MAX_COMPLETION_NOTICES,
     NO_CHANGE_NOTICE,
+    NON_ANSWER_PLACEHOLDER,
     NOT_A_REPLY_NOTICE,
     UNFINISHED_STEP_NOTICE,
     completion_notice,
@@ -22,6 +23,7 @@ from harnessix.agent.completion_guard import (
     notice_allowance,
     plan_unfinished,
     step_reply,
+    without_non_answers,
     workspace_patched,
 )
 from harnessix.agent.errors import KernelError
@@ -39,10 +41,13 @@ from harnessix.agent.models import (
     Usage,
 )
 from harnessix.agent.reducer import replay
+from harnessix.agent.reply_shape import reply_shape
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.trusted_action_contracts import TrustedActionApprovalRequestContent
 from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
 from harnessix.domain.models import utc_now
+from harnessix.models._history import messages_for
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools, answer, tool_step
@@ -72,6 +77,7 @@ NON_ANSWERS = (SUMMARY_COPY, RECORD, CUT_OFF_RECORD, MESSAGE_WITH_CALL, "  ")
 Outcome = Literal["succeeded", "failed", "cancelled", "unknown"]
 Presentation = Literal["tool", "patch_batch", "process"]
 StepStatus = Literal["pending", "in_progress", "completed"]
+MessageKind = Literal["user_message", "assistant_message"]
 
 
 def item(content: ItemContent, item_id: UUID | None = None) -> Item:
@@ -367,6 +373,78 @@ def test_cut_off_records_keep_getting_notices_while_nothing_has_changed() -> Non
     assert third.endswith("Model calls left in this task: at most 64.")
 
 
+def history(*entries: tuple[MessageKind, str]) -> tuple[Item, ...]:
+    return tuple(item(TextContent(kind=kind, text=text)) for kind, text in entries)
+
+
+def visible_texts(items: tuple[Item, ...]) -> list[str]:
+    return [
+        entry.content.text
+        for entry in without_non_answers(items)
+        if isinstance(entry.content, TextContent)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("reply", "notice"),
+    [
+        (RECORD, NOT_A_REPLY_NOTICE),
+        (CUT_OFF_RECORD, CUT_OFF_REPLY_NOTICE),
+        (MESSAGE_WITH_CALL, CALL_AS_TEXT_NOTICE),
+    ],
+)
+def test_structured_non_answers_are_replaced_in_the_history_sent_to_the_model(
+    reply: str, notice: str
+) -> None:
+    sent = notice + " Model calls left in this task: at most 9."
+    items = history(
+        ("user_message", "fix the bug"),
+        ("assistant_message", reply),
+        ("user_message", sent),
+        ("assistant_message", "Continuing."),
+    )
+    assert visible_texts(items) == ["fix the bug", NON_ANSWER_PLACEHOLDER, sent, "Continuing."]
+    replaced = without_non_answers(items)
+    assert [entry.item_id for entry in replaced] == [entry.item_id for entry in items]
+    # 持久Item不变；占位比原文短，发给模型的输入不会变大；模型照抄占位同样不算答复。
+    assert items[1].content == TextContent(kind="assistant_message", text=reply)
+    assert len(NON_ANSWER_PLACEHOLDER) < len(reply)
+    assert reply_shape(NON_ANSWER_PLACEHOLDER) == "host_record"
+
+
+@pytest.mark.parametrize(
+    ("reply", "notice"),
+    [
+        # 没有“不是答复”类提示跟在后面：守卫没有在此判定过。
+        (RECORD, "please continue"),
+        (RECORD, NO_CHANGE_NOTICE),
+        (RECORD, UNFINISHED_STEP_NOTICE),
+        # 正常文字、比占位短的记录不替换。
+        ("The bug is confirmed.", NOT_A_REPLY_NOTICE),
+        ('{"error":"x"}', NOT_A_REPLY_NOTICE),
+        # 宿主投影的上下文摘要（v2说明头、v1 JSON）压缩后可能紧挨着提示，绝不能被替换。
+        (
+            SUMMARY_PROJECTION_HEADER + "Verified facts: the parser drops the root key." * 4,
+            NOT_A_REPLY_NOTICE,
+        ),
+        (SUMMARY_COPY, NOT_A_REPLY_NOTICE),
+    ],
+)
+def test_everything_else_reaches_the_model_verbatim(reply: str, notice: str) -> None:
+    items = history(
+        ("user_message", "fix the bug"), ("assistant_message", reply), ("user_message", notice)
+    )
+    assert without_non_answers(items) == items
+
+
+def test_a_record_that_ends_the_history_or_is_a_user_message_stays() -> None:
+    trailing = history(("user_message", "fix the bug"), ("assistant_message", RECORD))
+    assert without_non_answers(trailing) == trailing
+    pasted = history(("user_message", RECORD), ("user_message", NOT_A_REPLY_NOTICE))
+    assert without_non_answers(pasted) == pasted
+    assert without_non_answers(()) == ()
+
+
 async def test_runtime_sends_a_notice_and_completes_on_the_answer(tmp_path: Path) -> None:
     provider = ScriptedProvider([answer("The bug is confirmed."), answer("Nothing to change.")])
     store = SQLiteSessionStore(tmp_path / "session.db")
@@ -455,6 +533,17 @@ async def test_runtime_keeps_a_degenerating_model_working(tmp_path: Path) -> Non
         CUT_OFF_REPLY_NOTICE,
         NO_CHANGE_NOTICE,
     ]
+    # 之后的请求里，乱码已换成占位，模型无从照抄；Session里的原文不变。
+    last_request = provider.requests[-1]
+    wire = [
+        message["content"]
+        for message in messages_for(last_request)
+        if message["role"] == "assistant"
+    ]
+    assert wire.count(NON_ANSWER_PLACEHOLDER) == 3
+    assert not any(RECORD[:40] in content for content in wire)
+    raw = [e.content.text for e in last_request.history if isinstance(e.content, TextContent)]
+    assert RECORD in raw and raw.count(CUT_OFF_RECORD) == 2
 
 
 async def test_runtime_without_the_guard_completes_on_any_reply(tmp_path: Path) -> None:
