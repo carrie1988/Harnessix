@@ -19,6 +19,9 @@ from scripts.installed_product_acceptance import (
     state_snapshot,
 )
 
+# Windows原生验证步骤的时限：用户2026-11-11批准由3（备份与恢复为5）分钟放宽到10分钟。
+WINDOWS_NATIVE_STEP_MINUTES = 10
+
 
 def test_installed_environment_refuses_source_import_and_nonisolated_process(
     tmp_path: Path,
@@ -273,7 +276,7 @@ def test_frozen_diagnostic_is_data_but_active_source_formatting_and_secret_scan_
     assert {finding["rule"] for finding in scan_paths([diagnostic])} == {"bearer_literal"}
 
 
-def test_windows_state_focus_preserves_all_files_and_original_step_deadlines() -> None:
+def test_windows_state_focus_preserves_all_files_and_the_approved_step_deadlines() -> None:
     import yaml
 
     path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
@@ -293,8 +296,8 @@ def test_windows_state_focus_preserves_all_files_and_original_step_deadlines() -
     selected = [step for step in steps if step.get("name") in groups]
     assert len(selected) == 2
     for step in selected:
-        # 原文件各执行一次；诊断、断言与期限不因编排分组而被删除。
-        assert step["timeout-minutes"] == 5
+        # 原文件各执行一次；诊断与断言不因编排分组而被删除。期限为用户2026-11-11批准的10分钟。
+        assert step["timeout-minutes"] == WINDOWS_NATIVE_STEP_MINUTES
         assert step["run"].split() == [
             "uv",
             "run",
@@ -333,7 +336,7 @@ def test_rollback_root_binding_joins_native_focus_without_removing_existing_chec
         "steps"
     ]
     step = next(item for item in steps if item.get("name") == "验证原生NTFS文件事务与审批编码写链")
-    assert step["timeout-minutes"] == 3
+    assert step["timeout-minutes"] == WINDOWS_NATIVE_STEP_MINUTES
     # 诊断独立于原精确选择器合同，不允许借观测参数增加重试或放宽期限。
     assert step["env"] == {"PYTEST_ADDOPTS": "-vv -o faulthandler_timeout=60 --durations=10"}
     assert step["run"].split() == [
@@ -352,20 +355,20 @@ def test_rollback_root_binding_joins_native_focus_without_removing_existing_chec
     ]
 
 
-def test_windows_git_focus_keeps_turnover_negative_control_and_original_deadline() -> None:
+def test_windows_git_focus_keeps_turnover_negative_control_and_the_approved_deadline() -> None:
     import yaml
 
     path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
     job = yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["windows-trusted-execution"]
     step = next(item for item in job["steps"] if item.get("name") == "验证原生Git读取与取消回收")
-    assert step["timeout-minutes"] == 3
+    assert step["timeout-minutes"] == WINDOWS_NATIVE_STEP_MINUTES
     assert "tests/processes/test_receipt_snapshot_transition.py" in step["run"]
     assert "tests/processes/test_windows_receipt_contracts.py" in step["run"]
     assert "test_windows_product_sdk_git_diff_uses_private_redacted_owner" in step["run"]
     assert "faulthandler_timeout=60" in step["run"]
 
 
-def test_windows_git_focus_includes_checkpoint_source_guard_without_relaxing_timeout() -> None:
+def test_windows_git_focus_includes_checkpoint_source_guard_within_the_approved_deadline() -> None:
     import yaml
 
     path = Path(__file__).parents[2] / ".github/workflows/ci.yml"
@@ -373,4 +376,4 @@ def test_windows_git_focus_includes_checkpoint_source_guard_without_relaxing_tim
     step = next(item for item in job["steps"] if item.get("name") == "验证原生Git读取与取消回收")
     assert "tests/delivery/test_git_checkpoint_guard.py" in step["run"]
     assert "tests/processes/test_receipt_snapshot_transition.py" in step["run"]
-    assert step["timeout-minutes"] == 3
+    assert step["timeout-minutes"] == WINDOWS_NATIVE_STEP_MINUTES

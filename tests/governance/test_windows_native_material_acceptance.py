@@ -92,13 +92,33 @@ def test_groups_keep_original_order_and_fixed_module_boundary(original_job, grou
     assert selected == expected and len(selected) == count
 
 
-def test_original_windows_core_steps_are_unchanged(original_job):
+# 用户决定（2026-11-11）：这五个原生验证步骤的时限统一放宽到10分钟。第一步在GitHub Windows
+# Runner上实际用时接近原来的3分钟，经常超时，其后的Windows产品测试全部被跳过。其余内容仍与基线一致。
+RELAXED_STEP_MINUTES = 10
+RELAXED_STEPS = {
+    "验证原生NTFS文件事务与审批编码写链",
+    "验证原生Git读取与取消回收",
+    "验证原生产品重启与State创建边界",
+    "验证原生完整业务状态备份与观察者边界",
+    "验证原生完整业务状态恢复与元数据边界",
+}
+
+
+def test_original_windows_core_steps_are_unchanged_except_the_approved_deadlines(original_job):
     current = _workflow()["jobs"]["windows-trusted-execution"]
     expected = {
         **original_job,
-        "steps": [step for step in original_job["steps"] if step.get("name") != ORIGINAL_STEP],
+        "steps": [
+            {**step, "timeout-minutes": RELAXED_STEP_MINUTES}
+            if step.get("name") in RELAXED_STEPS
+            else step
+            for step in original_job["steps"]
+            if step.get("name") != ORIGINAL_STEP
+        ],
     }
     assert current == expected
+    relaxed = {step["name"] for step in current["steps"] if step.get("name") in RELAXED_STEPS}
+    assert relaxed == RELAXED_STEPS
 
 
 def test_matrix_keeps_native_runner_and_failure_semantics(original_job):
