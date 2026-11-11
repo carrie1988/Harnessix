@@ -283,3 +283,7 @@ def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
     unknown = transcript_lines(view("uncertain_effect", "存在未知效果，禁止自动重放"))
     assert unknown[0].role == "错误" and unknown[0].text.startswith("操作结果无法确认")
     assert "uncertain_effect" not in unknown[0].text
+    # Beta反馈HX-05：连接失败只说检查网络，没有说怎样接着做。
+    dropped = transcript_lines(view("provider_transport", "Provider 返回结构化失败"))
+    assert dropped[0].text.startswith("连不上模型服务，请检查网络或代理设置")
+    assert "直接发送“继续”就能接着做" in dropped[0].text

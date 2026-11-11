@@ -11,6 +11,7 @@ from uuid import uuid4
 import pytest
 
 from harnessix.product_config.state_owner import product_state_owner
+from harnessix.product_ui import data_cli
 from harnessix.product_ui.data_cli import (
     _all_threads,
     _thread_events,
@@ -174,3 +175,55 @@ def test_output_is_private_and_never_overwrites(tmp_path: Path) -> None:
         assert stat.S_IMODE(output.stat().st_mode) == 0o600
     with pytest.raises(FileExistsError):
         _write_private_json(output, {"a": 2})
+
+
+def test_diagnostics_reads_the_state_directory_the_session_was_started_with(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Beta反馈HX-07：会话用--state-directory启动后，诊断只查默认目录，得到0个会话且没有任何提示。"""
+    workspace = tmp_path / "project"
+    workspace.mkdir()
+    custom = tmp_path / "custom-state"
+    commands: list[dict[str, object]] = []
+    doctor_state: list[object] = []
+
+    def server_command(**options: object) -> tuple[str, ...]:
+        commands.append(options)
+        return ("true",)
+
+    async def no_threads(_workspace: Path, arguments: object, *, with_events: bool) -> list[object]:
+        data_cli._client(workspace, arguments)  # type: ignore[arg-type]
+        return []
+
+    monkeypatch.setattr(data_cli, "_server_command", server_command)
+    monkeypatch.setattr(data_cli, "_read_threads", no_threads)
+    monkeypatch.setattr(
+        data_cli,
+        "_doctor",
+        lambda arguments: doctor_state.append(arguments.state_directory) or {"status": "ok"},
+    )
+
+    data_cli.data_main(
+        [
+            "diagnostics",
+            str(workspace),
+            "--output",
+            str(tmp_path / "diag.json"),
+            "--state-directory",
+            str(custom),
+        ]
+    )
+
+    assert commands[0]["runtime_state"] == custom / "runtime"
+    assert doctor_state == [str(custom)]
+    receipt = json.loads(capsys.readouterr().out)[0]
+    # 一个会话也没读到时，回执写明查的是哪个目录，并提示可能要指定状态目录。
+    assert receipt["threads"] == 0 and receipt["state_directory"] == str(custom)
+    assert "--state-directory" in receipt["note"]
+    assert json.loads((tmp_path / "diag.json").read_text(encoding="utf-8"))["threads"] == []
+
+
+def test_a_receipt_with_sessions_stays_short(tmp_path: Path) -> None:
+    arguments = SimpleNamespace(state_directory=None)
+    receipt = data_cli._receipt(tmp_path / "out.json", [{"thread_id": "t"}], tmp_path, arguments)  # type: ignore[arg-type]
+    assert receipt == {"written": str(tmp_path / "out.json")}

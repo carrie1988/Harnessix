@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
+from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -73,6 +74,32 @@ def _remember_label(pending: PendingApproval, rule_offer: RuleOffer | None) -> s
     return "批准并在本会话允许相同操作"
 
 
+def _evidence_lines(review: ApprovalReview) -> list[str | Text]:
+    """审批窗口证据区的内容：修改文件只看差异，其他操作看完整参数和差异证据的状态。"""
+
+    pending, evidence = review.pending, review.evidence
+    rendered = (
+        readable_diff(evidence.text)
+        if evidence.status is ApprovalEvidenceStatus.READY and evidence.text
+        else None
+    )
+    if rendered is not None and pending.approval_type in EDIT_APPROVAL_TYPES:
+        # 修改文件只看差异；原始参数与差异重复，且转义后难以核对。
+        return ["将要做的修改：", *rendered]
+    lines: list[str | Text] = ["完整参数：", pending.arguments_json]
+    if evidence.status is ApprovalEvidenceStatus.READY:
+        lines += ["\n完整Diff Artifact：", evidence.text]
+    elif evidence.status is ApprovalEvidenceStatus.INLINE:
+        lines.append("\n单文件Patch以以上公开精确编辑参数作为审批证据。")
+    elif evidence.status is ApprovalEvidenceStatus.NOT_REQUIRED:
+        lines.append("\n该操作不要求额外Diff证据。")
+    elif evidence.status is ApprovalEvidenceStatus.REQUIRED:
+        lines.append("\nDiff尚未读取，批准操作保持禁用。")
+    else:
+        lines.append(f"\nDiff不可用：{evidence.error_code or 'diff_unavailable'}")
+    return lines
+
+
 @dataclass(frozen=True, slots=True)
 class ApprovalScreenResult:
     outcome: Literal["approved", "rejected"]
@@ -81,10 +108,17 @@ class ApprovalScreenResult:
 
 
 class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
-    """展示完整公开证据；关闭窗口不产生审批结果。"""
+    """展示完整公开证据；关闭窗口不产生审批结果。
+
+    证据从开头显示；焦点留在按钮上时，PgUp/PgDn直接翻看证据，不必先把焦点移进去。
+    """
 
     CSS = _MODAL_CSS
-    BINDINGS = [Binding("escape", "close_modal", "关闭")]
+    BINDINGS = [
+        Binding("escape", "close_modal", "关闭"),
+        Binding("pageup", "page_evidence(-1)", "上翻", show=False),
+        Binding("pagedown", "page_evidence(1)", "下翻", show=False),
+    ]
 
     def __init__(self, review: ApprovalReview, rule_offer: RuleOffer | None = None) -> None:
         super().__init__()
@@ -107,6 +141,8 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                 wrap=True,
                 markup=False,
                 max_lines=20_000,
+                # 默认会随写入滚到末尾，用户看到的将是最后一个文件的结尾而不是文件清单。
+                auto_scroll=False,
             )
             yield Input(
                 placeholder="可选：填写决定原因",
@@ -126,39 +162,25 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                 )
                 yield Button("拒绝", id="approval-reject", variant="error")
                 yield Button("暂不处理", id="approval-close")
-            yield Static("Enter 确认所选按钮 · Tab 切换 · Esc 关闭", classes="interaction-summary")
+            yield Static(
+                "Enter 确认所选按钮 · Tab 切换 · PgUp/PgDn 翻看 · Esc 关闭",
+                classes="interaction-summary",
+            )
             yield Static(detail, markup=False, classes="interaction-detail")
 
-    def on_mount(self) -> None:
-        pending = self.review.pending
-        evidence = self.review.evidence
+    def action_page_evidence(self, direction: int) -> None:
         log = self.query_one("#approval-evidence", RichLog)
+        if direction > 0:
+            log.scroll_page_down(animate=False)
+        else:
+            log.scroll_page_up(animate=False)
+
+    def on_mount(self) -> None:
         button = "#approval-approve" if self.review.approve_allowed else "#approval-reject"
         self.query_one(button, Button).focus()
-        rendered = (
-            readable_diff(evidence.text)
-            if evidence.status is ApprovalEvidenceStatus.READY and evidence.text
-            else None
-        )
-        if rendered is not None and pending.approval_type in EDIT_APPROVAL_TYPES:
-            # 修改文件只看差异；原始参数与差异重复，且转义后难以核对。
-            log.write("将要做的修改：")
-            for line in rendered:
-                log.write(line)
-            return
-        log.write("完整参数：")
-        log.write(pending.arguments_json)
-        if evidence.status is ApprovalEvidenceStatus.READY:
-            log.write("\n完整Diff Artifact：")
-            log.write(evidence.text)
-        elif evidence.status is ApprovalEvidenceStatus.INLINE:
-            log.write("\n单文件Patch以以上公开精确编辑参数作为审批证据。")
-        elif evidence.status is ApprovalEvidenceStatus.NOT_REQUIRED:
-            log.write("\n该操作不要求额外Diff证据。")
-        elif evidence.status is ApprovalEvidenceStatus.REQUIRED:
-            log.write("\nDiff尚未读取，批准操作保持禁用。")
-        else:
-            log.write(f"\nDiff不可用：{evidence.error_code or 'diff_unavailable'}")
+        log = self.query_one("#approval-evidence", RichLog)
+        for line in _evidence_lines(self.review):
+            log.write(line)
 
     @on(Button.Pressed)
     def _button_pressed(self, event: Button.Pressed) -> None:

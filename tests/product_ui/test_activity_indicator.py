@@ -69,3 +69,33 @@ async def test_indicator_moves_while_running_and_hides_when_waiting_or_done() ->
         done = replace(running, current_turn=replace(running.current_turn, status="completed"))
         indicator.follow(_state(done, 4))
         assert not indicator.display
+
+
+async def test_elapsed_time_continues_across_an_approval_in_the_same_turn(monkeypatch) -> None:
+    """Beta反馈HX-08：批准后“已运行”从0重新计，连沙箱命令约40毫秒的自动批准也会清零。"""
+    from harnessix.product_ui import activity_indicator
+
+    clock = [100.0]
+    monkeypatch.setattr(activity_indicator, "monotonic", lambda: clock[0])
+    app = _Host()
+    async with app.run_test(size=(80, 10)) as pilot:
+        indicator = app.query_one(ActivityIndicator)
+        running = _view("executing_tools")
+        indicator.follow(_state(running, 1))
+        clock[0] += 180
+        waiting = replace(
+            running, current_turn=replace(running.current_turn, status="waiting_approval")
+        )
+        indicator.follow(_state(waiting, 2))
+        assert not indicator.display
+        clock[0] += 20
+        indicator.follow(_state(running, 3))
+        await pilot.pause()
+        # 同一轮：等待审批的时间也计入，与本轮的时间上限口径一致。
+        assert "已运行 3 分 20 秒" in str(indicator.render())
+
+        clock[0] += 5
+        next_turn = _view("calling_model")
+        indicator.follow(_state(next_turn, 4))
+        await pilot.pause()
+        assert "已运行 0 秒" in str(indicator.render())

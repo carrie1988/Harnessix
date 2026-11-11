@@ -46,7 +46,7 @@ def _duration(seconds: float) -> str:
 
 
 class ActivityIndicator(Static):
-    """只在Turn运行时显示；计时从界面第一次看到这一轮开始。"""
+    """只在Turn运行时显示；计时从界面第一次看到这一轮开始，等待审批或回答的时间也计入。"""
 
     DEFAULT_CSS = """
     ActivityIndicator { height: 1; padding: 0 1; color: $accent; }
@@ -70,7 +70,10 @@ class ActivityIndicator(Static):
         view = state.thread_view
         turn = None if view is None else view.current_turn
         if state.phase is not ControllerPhase.READY or turn is None or turn.status not in _RUNNING:
-            self._turn = None
+            # 等待用户时只隐藏、保留这一轮的起点：沙箱命令的自动批准也会短暂经过等待审批，
+            # 在这里清零会让“已运行”变成“距上一条命令的时间”。
+            if turn is None:
+                self._turn = None
             self.display = False
             return
         if turn.turn_id != self._turn:
@@ -88,7 +91,7 @@ class ActivityIndicator(Static):
         self._render_line()
 
     def _tick(self) -> None:
-        if self._turn is None:
+        if self._turn is None or not self.display:
             return
         self._frame += 1
         self._render_line()

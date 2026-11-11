@@ -157,6 +157,14 @@ def _write_private_json(path: Path, value: object) -> None:
         stream.write("\n")
 
 
+def _state_directory(workspace: Path, arguments: argparse.Namespace) -> Path:
+    """与`harnessix code`同一规则：--state-directory优先，否则按环境变量或工作区默认目录。"""
+
+    if arguments.state_directory:
+        return Path(arguments.state_directory).absolute()
+    return _default_state_directory(workspace)
+
+
 def _client(workspace: Path, arguments: argparse.Namespace) -> AgentClient:
     # 必须与产品运行时使用同样的启动参数，否则状态目录会因配置变化拒绝打开。
     config = Path(arguments.config).absolute() if arguments.config else _default_config()
@@ -165,7 +173,7 @@ def _client(workspace: Path, arguments: argparse.Namespace) -> AgentClient:
         action_config=None,
         profile=arguments.profile,
         workspace=workspace,
-        runtime_state=_default_state_directory(workspace) / "runtime",
+        runtime_state=_state_directory(workspace, arguments) / "runtime",
         git_executable=detected_git_executable(None, workspace),
     )
     return AgentClient(SubprocessAgentTransport(command), client_name="harnessix-data")
@@ -197,7 +205,7 @@ def _doctor(arguments: argparse.Namespace) -> dict[str, object]:
         config=arguments.config,
         action_config=None,
         profile=arguments.profile,
-        state_directory=None,
+        state_directory=arguments.state_directory,
         git_executable=detected_git_executable(None, Path(arguments.workspace).absolute()),
     )
     report = run_product_preflight(_preflight_request(request, mode="doctor", require_tui=False))
@@ -242,7 +250,27 @@ def _parser() -> argparse.ArgumentParser:
         command.add_argument("--output", required=True)
         command.add_argument("--config")
         command.add_argument("--profile")
+        command.add_argument(
+            "--state-directory",
+            help="启动 harnessix code 时用过 --state-directory 的话，这里填同一个目录",
+        )
     return parser
+
+
+def _receipt(
+    output: Path, threads: object, workspace: Path, arguments: argparse.Namespace
+) -> dict[str, object]:
+    """写明输出文件；一个会话也没读到时指出查的是哪个状态目录，空结果不等于没有问题。"""
+
+    receipt: dict[str, object] = {"written": str(output)}
+    if isinstance(threads, list) and not threads:
+        receipt["threads"] = 0
+        receipt["state_directory"] = str(_state_directory(workspace, arguments))
+        receipt["note"] = (
+            "这个状态目录里没有会话。启动 harnessix code 时如果用了 --state-directory，"
+            "请加上同一个目录再运行一次"
+        )
+    return receipt
 
 
 def _run(arguments: argparse.Namespace) -> Iterable[object]:
@@ -256,15 +284,18 @@ def _run(arguments: argparse.Namespace) -> Iterable[object]:
         delete_workspace_state(root, fingerprint, confirm=arguments.confirm)
         return [{"deleted": fingerprint}]
     output = Path(arguments.output).absolute()
+    workspace = _workspace(arguments.workspace)
+    threads: object
     if arguments.operation == "export":
-        workspace = _workspace(arguments.workspace)
         threads = asyncio.run(_read_threads(workspace, arguments, with_events=True))
         _write_private_json(
             output, {"spec_version": "harnessix.data-export/v1", "threads": threads}
         )
     else:
-        _write_private_json(output, _diagnostics(arguments))
-    return [{"written": str(output)}]
+        diagnostics = _diagnostics(arguments)
+        threads = diagnostics.get("threads")
+        _write_private_json(output, diagnostics)
+    return [_receipt(output, threads, workspace, arguments)]
 
 
 def data_main(argv: Sequence[str] | None = None) -> None:

@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 1
-code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
+version: 2
+code_revision: 7357576af93ad9089dd54642020bb6645f38f500
 owners:
   - core
 modules:
@@ -17,6 +17,10 @@ related_adrs:
 related_tests:
   - tests/product_config/test_action_user_interruptions.py
   - tests/product_config/test_thinking_config.py
+  - tests/product_ui/test_interaction_screens.py
+  - tests/product_ui/test_activity_indicator.py
+  - tests/product_ui/test_configure_vendors.py
+  - tests/product_ui/test_data_cli.py
   - tests/governance/test_readability_policy.py
 supersedes: []
 ---
@@ -33,6 +37,11 @@ supersedes: []
 | HX-01 | 命令运行或补丁准备期间按Ctrl+S补充要求，本轮以`sequence_conflict`失败或以`uncertain_effect`中断 | Action Artifact发布要求Thread Sequence逐一相等 |
 | HX-10 | 按Ctrl+X取消运行中的命令，显示“已中断”“操作结果无法确认”和`trusted_action_output_failed` | 命令输出发布沿用执行准入，取消收尾时被拒绝 |
 | HX-03 | 百炼qwen3.8配置`--thinking off`后模型仍然思考 | 该模型族没有思考协议，设置被写入却从未发送 |
+| RT-01 | 审批窗口里看不到修改的开头，PgUp无效 | 证据区随写入滚到末尾，焦点在按钮上 |
+| HX-08 | 批准后“已运行”从0重新计 | 指示器在离开运行状态时丢掉了本轮起点 |
+| HX-12 | 配置目录权限不对时没有路径和修正办法 | 界面层原样转述通用错误 |
+| HX-07 | 自定义状态目录的会话在诊断里是0个 | `data`命令没有`--state-directory`，空结果也没有提示 |
+| HX-05 | 连不上模型服务时不知道怎样继续 | 提示文案只说检查网络 |
 
 补丁工具与读取工具相关的条目（换行不一致的文件无法多行编辑、新建文件时父目录不存在、批次失败反馈、参数宽容度、
 读取分页）按用户决定由另一条开发线承接，不在本文范围内。
@@ -66,6 +75,7 @@ supersedes: []
 |---|---|---|
 | HX-01 | `artifacts` | 新增[`action_publication_snapshot`](../../src/harnessix/artifacts/action_publication_snapshot.py)，由Action Review与Action Output两处发布共用 |
 | HX-10 | `artifacts` | [`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)的调用归属核对改用已有的宿主核对作用域[`inspection_scope`](../../src/harnessix/agent/patching.py) |
+| RT-01、HX-08、HX-12、HX-07、HX-05 | `product_ui` | 审批窗口、运行指示、配置命令、数据命令与失败文案各自的局部修改，见[产品界面模块设计](../modules/product-ui.md) |
 | HX-03 | `product_config`、`product_ui` | 新增[`explicit_thinking_switch`](../../src/harnessix/product_config/wizard.py)；[`configure_cli`](../../src/harnessix/product_ui/configure_cli.py)在显式`--thinking`时使用它，无开关可用时拒绝 |
 
 ## 5. 接口设计与数据结构
@@ -78,6 +88,8 @@ supersedes: []
 - `explicit_thinking_switch(base_url, model) -> ThinkingProtocol | None`：返回用户显式指定思考档位时应启用的协议。
 - 命令行：`harnessix code configure`的参数集合不变。`--thinking`在没有协议可用时由接受变为拒绝（退出码2，
   错误码沿用`product_configure_invalid`）。
+- 命令行：`harnessix data export|diagnostics`增加`--state-directory`；回执在没有读到会话时增加`threads`、`state_directory`、`note`三个字段，其余情况不变。
+- 审批窗口增加`PgUp`/`PgDn`两个按键；按钮、结果类型`ApprovalScreenResult`不变。
 - 领域契约与数据结构：Agent Event、Thread投影、产品配置Schema、`spec/`均无变化。
 
 ## 6. 流程与数据流
@@ -129,6 +141,8 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
   许可；调用是否已批准、Plan是否匹配仍由`_require_approved_process_output`核对，未批准的调用不能发布。
   执行准入`for_pending_call`本身未改动，其余调用方不受影响。
 - HX-03只影响发给模型服务的思考参数，不涉及密钥、工作区或权限。
+- HX-12的提示包含配置目录路径：路径由用户在命令行给出或是其主目录下的默认位置，只打印到该用户的终端；`--json`输出保持原样，不含路径。目录权限的校验本身没有放宽。
+- HX-07只改变读取哪个状态目录，诊断内容的字段白名单不变，仍不含路径、提示词、模型输出或工具内容；新增的`state_directory`只出现在打印给用户的回执里，不写入诊断文件。
 
 ## 10. 可观测与错误分类
 
@@ -145,7 +159,7 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
 - 已有配置文件、会话数据与事件日志无需迁移；未写`--thinking`的百炼qwen3.8配置行为不变。
 - 兼容性变化只有一处：脚本里对没有已核对开关的服务传`--thinking`会从成功变为退出码2。按提示加
   `--thinking-protocol none`或去掉该参数即可。
-- 回退：三处修复各自一个提交，可分别`git revert`，无数据迁移。
+- 回退：HX-01、HX-10、HX-03各自一个提交，界面类五项合为一个提交，可分别`git revert`，无数据迁移。
 - 可读性预算（ADR 0076）：策略文件未改动，只重新生成了最终报告。`publish_action_review`保持在100行以内。
 
 ## 12. 限制、风险与取舍
@@ -156,6 +170,7 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
   要到运行时才暴露，首轮Beta正是这样浪费了一轮。
 - 限制：显式开关只列入已核对的型号前缀。百炼新增可关闭思考的型号时需要补充；`qwen3.8-max`依据官方文档，
   `qwen3.8-flash`另有Beta第二轮的实际运行佐证（关闭后思考Token为0）。
+- 限制：HX-05里“另有中断的请求可能已计费”的提示没有改。连接尚未建立的失败不会计费，但界面收到的终态错误码无法把它与流中途断开区分开，保守提示仍然保留。
 - 风险：真实终端界面下的端到端复验（命令执行期间补充、取消长时间运行的命令）尚未在三个平台执行，随下一次
   发布前的正式测试完成。
 
@@ -172,6 +187,7 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
   百炼qwen3.8-flash的`off`与`every_step`都换算为请求里的显式`enable_thinking`；未写`--thinking`时仍不发送；
   无开关可用时拒绝且不写文件；`--thinking-protocol none`加`off`照常接受。
 - 用测试者的原命令在真实命令行入口复验：生成的配置含`dashscope_enable_thinking`与`thinking: off`。
+- 界面类五项各有一条先失败后通过的测试：128×36终端下三个文件的长差异打开时位于开头并可翻页（[`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)）；同一轮跨越审批后继续计时（[`test_activity_indicator.py`](../../tests/product_ui/test_activity_indicator.py)）；755目录的报错含目录、权限与`chmod`命令（[`test_configure_vendors.py`](../../tests/product_ui/test_configure_vendors.py)）；诊断按指定状态目录读取并在空结果时提示（[`test_data_cli.py`](../../tests/product_ui/test_data_cli.py)）；连接失败一行含继续办法（[`test_rendering.py`](../../tests/product_ui/test_rendering.py)）。整个`tests/product_ui`通过。
 - 回归：`tests/artifacts`、`tests/trusted_actions`、`tests/agent`、`tests/delivery`与整个`tests/product_config`
   在基线`dad55d32`与修复后的失败集合逐项相同，没有新增失败。剩余失败均为本机环境问题（Apple Git 2.24不支持
   `--object-format`、沙箱禁止本地Socket）。Ruff、Mypy、文档门禁与可读性策略检查通过。
@@ -186,6 +202,10 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
 | 宿主核对作用域 | [`patching.py`](../../src/harnessix/agent/patching.py) |
 | 显式思考开关 | [`wizard.py`](../../src/harnessix/product_config/wizard.py) |
 | 配置命令 | [`configure_cli.py`](../../src/harnessix/product_ui/configure_cli.py) |
+| 审批窗口 | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py) |
+| 运行指示 | [`activity_indicator.py`](../../src/harnessix/product_ui/activity_indicator.py) |
+| 数据命令 | [`data_cli.py`](../../src/harnessix/product_ui/data_cli.py) |
+| 失败文案 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) |
 | 用户介入回归 | [`test_action_user_interruptions.py`](../../tests/product_config/test_action_user_interruptions.py) |
 | 思考配置回归 | [`test_thinking_config.py`](../../tests/product_config/test_thinking_config.py) |
 | 模块设计 | [Artifact](../modules/artifacts.md)、[产品配置](../modules/product-config.md)、[产品界面](../modules/product-ui.md) |

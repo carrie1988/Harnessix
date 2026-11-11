@@ -478,7 +478,7 @@ harnessix code            # 不写目录时使用当前目录
 
 ### 8.2 审批窗口
 
-窗口顶部显示操作类型、工具和效果。修改文件时，下方先列出涉及的文件，再显示统一格式的差异（新增行绿色、删除行红色）；其他操作显示完整参数，例如要运行的命令。打开窗口时焦点在“批准”上：按 `Enter` 确认所选按钮，`Tab` 切换按钮或进入原因输入框，`Esc` 关闭。可以填写决定原因（可选），然后选择：
+窗口顶部显示操作类型、工具和效果。修改文件时，下方先列出涉及的文件，再显示统一格式的差异（新增行绿色、删除行红色）；其他操作显示完整参数，例如要运行的命令。差异从开头显示，一屏放不下时按 `PgUp`/`PgDn` 翻看，不必先把焦点移进差异区。打开窗口时焦点在“批准”上：按 `Enter` 确认所选按钮，`Tab` 切换按钮或进入原因输入框，`Esc` 关闭。可以填写决定原因（可选），然后选择：
 
 | 按钮 | 效果 |
 |---|---|
@@ -741,7 +741,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 | `harnessix data list` | 列出各工作区的数据（目录指纹、大小、修改时间） |
 | `harnessix data export [仓库] --output 文件` | 导出该工作区的完整会话。导出内容包含代码和对话，请妥善保管 |
 | `harnessix data delete --workspace 仓库 --confirm 指纹` | 删除该工作区的全部会话数据 |
-| `harnessix data diagnostics [仓库] --output 文件` | 生成不含代码、提示词和路径的诊断文件，适合用于反馈 |
+| `harnessix data diagnostics [仓库] --output 文件` | 生成不含代码、提示词和路径的诊断文件，适合用于反馈。启动时用过 `--state-directory` 的话，这里加上同一个目录（`export` 同理）；一个会话也没读到时，回执会写明查的是哪个目录 |
 
 删除需要用 `--confirm` 再次给出目录指纹。指纹可以从 `data list` 获得；指纹不对时，错误信息会给出正确的值，核对后再运行一次即可。输出文件已存在时，`export` 和 `diagnostics` 会拒绝覆盖。
 
@@ -825,7 +825,7 @@ uv tool uninstall harnessix
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
 | 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export 变量名=你的Key`（变量名见提示，如 `DASHSCOPE_API_KEY`）后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#42-api-key) |
-| 配置时提示配置目录权限或身份不安全 | 运行 `chmod 700 ~/.harnessix`，并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件 |
+| 配置时提示配置目录的权限不是 700，或目录不属于当前用户 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key |
 | 自托管模型很快报错或回答被截断 | 检查模型上下文窗口；Ollama 默认只有 4096 |

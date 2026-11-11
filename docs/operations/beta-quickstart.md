@@ -97,7 +97,7 @@ harnessix code /path/to/repo
 
 | 现象 | 处理 |
 |---|---|
-| 配置时提示配置目录权限或身份不安全 | 运行 `chmod 700 ~/.harnessix`，并确认目录属于当前用户 |
+| 配置时提示配置目录的权限不是 700 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设了 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key，见[接入自托管模型](self-hosted-models.md) |
 | 自托管模型很快报错或回答被截断 | 检查模型的上下文窗口，Ollama 默认只有 4096，见[接入自托管模型](self-hosted-models.md) |

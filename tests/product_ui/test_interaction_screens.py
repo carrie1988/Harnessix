@@ -161,3 +161,54 @@ async def test_help_without_an_error_is_a_usage_guide() -> None:
         title = str(screen.query_one(".interaction-title", Label).render())
         assert title == "使用帮助"
         assert "开始任务" in USAGE_HELP and "内部错误" not in USAGE_HELP
+
+
+def _three_file_artifact() -> str:
+    """三个文件、远超一屏的差异（Beta补测RT-01：128×36终端，首次审批3个文件）。"""
+    import json
+
+    paths = ("app/schemas/common.py", "app/api/routes.py", "app/services/locate.py")
+    diff = "".join(
+        f"diff --harnessix a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n@@ -1,40 +1,40 @@\n"
+        + "".join(f"-old line {n} of {path}\n+new line {n} of {path}\n" for n in range(40))
+        for path in paths
+    )
+    records: list[dict[str, object]] = [{"record_type": "summary", "file_count": 3}]
+    records += [
+        {"record_type": "entry", "index": index, "entry": {"kind": "modified", "path": path}}
+        for index, path in enumerate(paths)
+    ]
+    records.append({"record_type": "text", "sequence": 0, "text": diff})
+    return "\n".join(json.dumps(record) for record in records)
+
+
+async def test_a_long_diff_opens_at_its_start_and_pages_without_leaving_the_buttons() -> None:
+    app: App[None] = App()
+    async with app.run_test(size=(128, 36)) as pilot:
+        screen = ApprovalScreen(
+            _approval_review(ApprovalEvidenceStatus.READY, _three_file_artifact())
+        )
+        await app.push_screen(screen)
+        await pilot.pause()
+        log = screen.query_one("#approval-evidence", RichLog)
+        approve = screen.query_one("#approval-approve", Button)
+        assert log.virtual_size.height > log.size.height
+        # 打开时停在开头：用户先看到文件清单和第一个文件，而不是最后一个文件的末尾。
+        assert log.scroll_y == 0
+        first_page = [line.text for line in log.lines[: log.size.height]]
+        assert first_page[:5] == [
+            "将要做的修改：",
+            "共 3 个文件：",
+            "  修改  app/schemas/common.py",
+            "  修改  app/api/routes.py",
+            "  修改  app/services/locate.py",
+        ]
+        assert approve.has_focus
+        await pilot.press("pagedown")
+        await pilot.pause()
+        assert log.scroll_y > 0 and approve.has_focus
+        await pilot.press("pageup")
+        await pilot.pause()
+        assert log.scroll_y == 0 and approve.has_focus
+        hints = "\n".join(str(widget.render()) for widget in screen.query(Static))
+        assert "PgUp/PgDn 翻看" in hints

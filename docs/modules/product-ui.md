@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 39
-code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
+version: 40
+code_revision: 7357576af93ad9089dd54642020bb6645f38f500
 owners:
   - product
 modules:
@@ -41,6 +41,16 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：审批窗口、计时与几处提示（0.10.0b15）
+
+两轮Beta反馈里不涉及设计取舍的界面问题，逐条以测试复现后修复：
+
+- **审批窗口从开头显示（RT-01）。** [`ApprovalScreen`](../../src/harnessix/product_ui/interaction_screens.py)的证据区是`RichLog`，默认随写入滚到末尾：三个文件的修改，用户看到的是最后一个文件的最后几行，文件清单和前两个文件都在视口之外；焦点在按钮上，`PgUp`也到不了证据区。现在`auto_scroll=False`，并在Screen上绑定`pageup`/`pagedown`（`action_page_evidence`）直接翻看证据，焦点留在按钮上；提示行写明`PgUp/PgDn 翻看`。
+- **“已运行”不再归零（HX-08）。** [`ActivityIndicator.follow`](../../src/harnessix/product_ui/activity_indicator.py)在Turn离开运行状态时丢掉了起点。沙箱命令的自动批准也会经过约40毫秒的`waiting_approval`，所以实际显示的是“距上一条命令的时间”。现在等待用户时只隐藏、保留同一轮的起点，等待审批的时间计入，与本轮时间上限的口径一致；换了Turn才重新计时。
+- **配置目录不合规时说清楚（HX-12）。** [`configure_cli`](../../src/harnessix/product_ui/configure_cli.py)遇到`product_config_permissions`时由`_config_directory_problem`指出是哪个目录、当前权限、需要的权限和修正命令；错误码与`--json`输出不变，判断不出原因时沿用原提示。
+- **诊断与导出可以指定状态目录（HX-07）。** [`data_cli`](../../src/harnessix/product_ui/data_cli.py)的`export`、`diagnostics`增加`--state-directory`，规则与`harnessix code`相同；一个会话也没读到时，回执增加`threads: 0`、所查的`state_directory`和一句提示，避免把空结果当成没有问题。
+- **连接失败后怎样继续（HX-05）。** [`rendering`](../../src/harnessix/product_ui/rendering.py)的`provider_transport`一行补上“已完成的修改都保留着，直接发送‘继续’就能接着做”。
 
 ## 当前增量：`--thinking`不再静默失效（0.10.0b15）
 
@@ -1112,6 +1122,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 40 | `7357576a` 增量 | 2026-11-11 | 审批窗口从开头显示并可翻页、计时不归零、配置目录与诊断提示、连接失败后的继续提示（0.10.0b15，Beta反馈RT-01、HX-08、HX-12、HX-07、HX-05） |
 | 39 | `80fb499a` 增量 | 2026-11-11 | `configure`：显式`--thinking`按已求证开关生效，无开关可用时拒绝并给出出路（0.10.0b15，Beta反馈HX-03） |
 | 38 | `b3bf0da1` 增量 | 2026-11-11 | 沙箱外命令：只读免询问、保存前缀规则、查看与撤销（ADR 0128，0.10.0b14） |
 | 37 | `acd37114` 增量 | 2026-11-11 | Windows上`data delete`持锁删除锁目录外数据、释放后删除余下目录（0.10.0b13） |

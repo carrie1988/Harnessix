@@ -36,7 +36,9 @@ _FAILURE_TEXT: Final = {
         "模型服务拒绝了 API Key，请检查密钥是否正确（harnessix code doctor --probe-model 可核对）"
     ),
     "provider_rate_limit": "模型服务限流，请稍后重试",
-    "provider_transport": "连不上模型服务，请检查网络或代理设置",
+    "provider_transport": (
+        "连不上模型服务，请检查网络或代理设置；已完成的修改都保留着，直接发送“继续”就能接着做"
+    ),
     "provider_internal": "模型服务内部错误，请稍后重试",
     "provider_provider_internal": "模型服务内部错误，请稍后重试",
     "provider_context_overflow": "对话超出模型的上下文长度，请按 Ctrl+N 新建会话继续",

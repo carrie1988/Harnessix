@@ -161,6 +161,28 @@ def test_errors_are_plain_chinese_unless_json_is_asked_for(
     assert json.loads(capsys.readouterr().err)["code"] == "product_configure_invalid"
 
 
+@pytest.mark.skipif(os.name != "posix", reason="目录权限位只在POSIX上检查")
+def test_a_config_directory_others_can_read_is_named_with_the_fix(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Beta反馈HX-12：只说“目录权限或身份不安全”，没有是哪个目录、要什么权限、怎么改。"""
+    shared = tmp_path / "shared"
+    shared.mkdir(mode=0o755)
+    shared.chmod(0o755)
+
+    with pytest.raises(SystemExit) as failed:
+        _configure(shared / "config.json", "--vendor", "bailian", "--non-interactive")
+
+    assert failed.value.code == 2 and not (shared / "config.json").exists()
+    err = capsys.readouterr().err
+    assert err.startswith(f"配置没有完成：配置目录 {shared} 的权限是 755，需要 700")
+    assert f"chmod 700 {shared}" in err
+
+    shared.chmod(0o700)
+    _configure(shared / "config.json", "--vendor", "bailian", "--non-interactive")
+    assert "配置已保存" in capsys.readouterr().out
+
+
 def test_every_menu_model_has_a_verified_price_and_context_window() -> None:
     # 菜单只列核对过的型号：价格与窗口缺一项，用户就会看到“费用未知”或拿到不完整的配置。
     for vendor in VENDORS:

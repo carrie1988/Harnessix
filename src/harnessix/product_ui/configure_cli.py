@@ -11,6 +11,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
+import stat
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -128,8 +130,8 @@ def _parser() -> argparse.ArgumentParser:
 
 def configure_main(argv: Sequence[str]) -> None:
     arguments = _parser().parse_args(argv)
+    path = Path(arguments.config).absolute() if arguments.config else _default_config()
     try:
-        path = Path(arguments.config).absolute() if arguments.config else _default_config()
         replacement = _replacement(arguments, path)
         endpoint = _endpoint(arguments)
         receipt = write_product_config(
@@ -154,13 +156,39 @@ def configure_main(argv: Sequence[str]) -> None:
     except _KeepExisting:
         print("已保留原有配置，没有修改。")
     except ProductConfigError as error:
-        _fail(arguments, ProductUIError(error.code, error.message, retryable=error.retryable))
+        message = error.message
+        if error.code == "product_config_permissions" and not arguments.json:
+            message = _config_directory_problem(path) or message
+        _fail(arguments, ProductUIError(error.code, message, retryable=error.retryable))
     except ValidationError:
         _fail(arguments, ProductUIError("product_configure_invalid", "配置向导参数不符合契约"))
     except ProductUIError as error:
         _fail(arguments, error)
     except Exception:
         _fail(arguments, ProductUIError("product_internal_failure", "配置向导发生内部错误"))
+
+
+def _config_directory_problem(path: Path) -> str | None:
+    """配置目录不合规时指出是哪个目录、差在哪里、怎样改；判断不出时返回None，沿用通用提示。"""
+
+    directory = path.parent
+    try:
+        info = directory.lstat()
+    except OSError:
+        return None
+    if not stat.S_ISDIR(info.st_mode):
+        return f"配置目录 {directory} 不是普通目录（可能是符号链接或文件），请换一个目录"
+    if os.name != "posix":
+        return None
+    if info.st_uid != os.getuid():
+        return f"配置目录 {directory} 不属于当前用户，请换一个你自己的目录"
+    mode = stat.S_IMODE(info.st_mode)
+    if mode != 0o700:
+        return (
+            f"配置目录 {directory} 的权限是 {mode:o}，需要 700（只允许你自己访问）。"
+            f"运行 chmod 700 {shlex.quote(str(directory))} 后重试"
+        )
+    return None
 
 
 def _fail(arguments: argparse.Namespace, error: ProductUIError) -> None:
