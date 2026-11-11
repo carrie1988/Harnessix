@@ -367,6 +367,7 @@ async def _serve_product_stdio(
                             approval_responder=action_owner.approval_responder,
                             async_context=context.context,
                             compaction=context.compaction,
+                            compaction_window=context.compaction_window,
                             summary_provider=bundle,
                             model_tool_view=None if generic_execution else CodingWorkflowToolView(),
                             enable_planning=True,
@@ -379,6 +380,7 @@ async def _serve_product_stdio(
                             recover_truncated_replies=True,
                             step_notices=command_ledger_notices(verified),
                             session_baseline=tools,
+                            history_notes=_append_only_requests(startup),
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
@@ -428,6 +430,14 @@ def _active_providers(startup: _ProductRuntimeStartup) -> tuple[ProviderDefiniti
     return tuple(
         provider for provider in startup.config.config.providers if provider.provider_id in used
     )
+
+
+def _append_only_requests(startup: _ProductRuntimeStartup) -> bool:
+    """链上有稳定前缀的Provider（靠服务端前缀缓存）时，宿主说明落为历史Item，请求只追加。
+
+    其余Provider在同一Session里沿用同一份历史，映射按请求标记不再逐请求附加说明。
+    """
+    return any(provider.stable_prompt_prefix for provider in _active_providers(startup))
 
 
 def _chain_context_window(chain: list[ModelProfile]) -> int | None:

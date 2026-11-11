@@ -29,6 +29,7 @@ from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
+from harnessix.agent.compaction_calibration import calibrated_compaction, calibrated_limit
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.completion_guard import (
     completion_notice,
@@ -119,6 +120,7 @@ from harnessix.agent.publication import (
 )
 from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
+from harnessix.agent.request_notes import append_request_notes, without_request_notes
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
     select_artifact_verifier,
@@ -212,7 +214,10 @@ from harnessix.context.compaction_ledger_contracts import (
     CompactionUsageObserved,
 )
 from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
-from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
+from harnessix.context.compaction_runtime_contracts import (
+    CompactionRuntimeConfig,
+    CompactionTokenWindow,
+)
 from harnessix.context.compaction_window import build_compaction_window
 from harnessix.context.contracts import (
     ContextBuildInput,
@@ -338,6 +343,8 @@ class AgentRuntime:
         recover_truncated_replies: bool = False,
         step_notices: ToolStepNoticeSource | None = None,
         session_baseline: WorkspaceChangeObserver | None = None,
+        history_notes: bool = False,
+        compaction_window: CompactionTokenWindow | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -391,6 +398,9 @@ class AgentRuntime:
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
         # 提供观察端口即启用会话基线（session_baseline模块）：记录并保护会话开始前已有的未提交改动。
         self._session_baseline = session_baseline
+        # ADR 0132：宿主说明落为历史Item；压缩点按真实输入Token校准。
+        self._history_notes = history_notes is True
+        self._token_window = compaction_window
         # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._continue_after_unknown_usage = continue_after_unknown_usage is True
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -1985,6 +1995,7 @@ class AgentRuntime:
             turn_id=thread.active_turn_id,
             model_step=prepared.inspection.model_step,
             workspace=thread.workspace,
+            input_limit_tokens=calibrated_limit(self._token_window, thread),
             history_documents=tuple(history_document(item) for item in prepared.history),
             tool_documents=tuple(
                 json.dumps(
@@ -2034,7 +2045,7 @@ class AgentRuntime:
                     thread,
                     model_step,
                     self._tool_result_view_policy,
-                    self._compaction.policy,
+                    calibrated_compaction(self._compaction, self._token_window, thread).policy,
                     token,
                     compaction_id=compaction_id,
                     anchors=planning_history_anchors(thread),
@@ -2265,7 +2276,7 @@ class AgentRuntime:
         if self._model_tool_view is None:
             return ModelToolSelection(available)
         selected_view = self._model_tool_view.select(
-            turn.model_copy(deep=True),
+            without_request_notes(turn),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
         if type(selected_view) is tuple:
@@ -2322,6 +2333,7 @@ class AgentRuntime:
                 if self._compaction is not None:
                     self._require_request_slots(turn)
                 model_step = turn.model_steps + 1
+                await append_request_notes(self, thread_id, turn)
                 with self._telemetry.operation(
                     "history",
                     thread_id=thread_id,
@@ -2371,6 +2383,7 @@ class AgentRuntime:
                                 turn_id=turn_id,
                                 model_step=model_step,
                                 workspace=thread.workspace,
+                                input_limit_tokens=calibrated_limit(self._token_window, thread),
                                 history_documents=tuple(history_document(item) for item in history),
                                 tool_documents=tuple(
                                     json.dumps(
@@ -2458,6 +2471,7 @@ class AgentRuntime:
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                     tool_notice=tool_selection.notice,
+                    notes_in_history=self._history_notes,
                 )
                 estimated_input_tokens = estimate_request_input_tokens(
                     self.provider, candidate, turn, estimated_input_tokens
@@ -2503,6 +2517,7 @@ class AgentRuntime:
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                     tool_notice=tool_selection.notice,
+                    notes_in_history=self._history_notes,
                 )
                 try:
                     truncated = await self._sample(

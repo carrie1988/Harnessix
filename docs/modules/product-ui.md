@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 37
+version: 38
 code_revision: 008485773f840df8a920cf750480a8a363761167
 owners:
   - product
@@ -87,6 +87,10 @@ supersedes: []
 ## 当前增量：改配置后启动时的切换前提（0.10.0b8）
 
 - `_server_command`经[`activation.activation_arguments`](../../src/harnessix/product_ui/activation.py)附加`--expected-active-*`：用户未显式给出时，只读工作区`product-config.db`的当前活动指针原样交出，使用户用`configure`改过的配置在下次打开时生效。此前Server以`product_config_conflict`退出，TUI只显示“连接中断……server_closed”，`exec`同样失败。详见[产品配置模块设计](product-config.md)。
+
+## 当前增量：不显示预算与目录说明（ADR 0132）
+
+- 开启请求只追加后，Agent会把预算关口与目录变化的说明写成给模型看的`user_message` Item（见[Agent模块设计](agent.md)“请求只追加与压缩点校准”）。[`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)按Turn收集Item身份，用`request_note_ids(turn_id, item_ids)`识别并跳过它们，与取消后的宿主说明同一处处理：这些说明不是用户输入，不显示为“你”。目录说明按序号递增识别，视图里该Turn的Item不完整时可能显示出个别说明，不影响功能。
 
 ## 当前增量：不显示取消后的宿主说明（0.10.0b8）
 
@@ -1096,6 +1100,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 37 | `57dd7d7f` 增量 | 2026-11-11 | 对话记录不显示预算与目录说明（ADR 0132） |
 | 36 | `00848577` 增量 | 2026-11-10 | 配置向导先选服务商（DeepSeek、阿里云百炼、智谱）和模型，成功后说明下一步；`--json`保留机器格式（0.10.0b11） |
 | 35 | `f4a6dfb0` 增量 | 2026-11-10 | 费用显示：中断请求不当作上限、按确切型号匹配牌价、一律人民币、标注本轮（0.10.0b10） |
 | 34 | `1d857b39` 增量 | 2026-11-10 | 实时区显示最近的思考内容，结束即清除（0.10.0b9） |

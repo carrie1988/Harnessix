@@ -1090,6 +1090,88 @@ async def test_product_server_compacts_declared_windows_at_the_configured_point(
     assert context.compaction.policy.target_history_tokens == target
 
 
+async def _served_runtime_options(
+    tmp_path: Path, config: ProductConfigV2, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, object]:
+    """启动产品Server并截获AgentRuntime的装配参数；协议循环不运行。"""
+    from harnessix.product_config import server
+
+    _credentials(monkeypatch)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    path = write_config(tmp_path / "config.json", config)
+    captured: dict[str, object] = {}
+    real_runtime = server.AgentRuntime
+
+    def runtime(*args, **kwargs):
+        captured.update(kwargs)
+        return real_runtime(*args, **kwargs)
+
+    async def idle(*_args: object) -> None:
+        return None
+
+    monkeypatch.setattr(server, "AgentRuntime", runtime)
+    monkeypatch.setattr(server, "run_stdio", idle)
+    await run_product_stdio(
+        config_path=path,
+        action_config_path=None,
+        profile_id=None,
+        workspace=workspace,
+        state_directory=tmp_path / "state",
+        input_stream=io.BytesIO(),
+        output_stream=io.BytesIO(),
+    )
+    return captured
+
+
+@pytest.mark.parametrize("stable_prefix", [False, True])
+async def test_product_server_keeps_requests_append_only_for_stable_prefix_providers(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    stable_prefix: bool,
+) -> None:
+    """靠服务端前缀缓存的Provider：宿主说明落为历史Item（ADR 0132）；其余Provider沿用逐请求说明。"""
+    providers = tuple(
+        provider.model_copy(update={"stable_prompt_prefix": stable_prefix})
+        for provider in config.providers
+    )
+    options = await _served_runtime_options(
+        tmp_path,
+        ProductConfigV2.model_validate_json(
+            config.model_copy(update={"providers": providers}).model_dump_json()
+        ),
+        monkeypatch,
+    )
+    assert options["history_notes"] is stable_prefix
+
+
+@pytest.mark.parametrize("window", [None, 262_144])
+async def test_product_server_calibrates_compaction_only_for_declared_windows(
+    tmp_path: Path,
+    config: ProductConfigV2,
+    monkeypatch: pytest.MonkeyPatch,
+    window: int | None,
+) -> None:
+    """声明了模型窗口才把真实Token口径交给Runtime校准压缩点；未声明时沿用固定上限、不校准。"""
+    profiles = tuple(
+        profile.model_copy(update={"context_window_tokens": window}) for profile in config.profiles
+    )
+    options = await _served_runtime_options(
+        tmp_path,
+        ProductConfigV2.model_validate_json(
+            config.model_copy(update={"profiles": profiles}).model_dump_json()
+        ),
+        monkeypatch,
+    )
+    calibration = options["compaction_window"]
+    if window is None:
+        assert calibration is None
+    else:
+        assert calibration.window_tokens == window and calibration.trigger_divisor == 2
+        assert calibration.max_input_bytes == 786_432
+
+
 def test_native_command_backends_select_instructions_that_match_them() -> None:
     """只按实际验证通过的原生命令后端选择指令；外部边界从不得到本机沙箱指令。"""
     from harnessix.product_config.native_process import native_tool_name

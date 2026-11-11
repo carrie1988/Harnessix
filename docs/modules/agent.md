@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 50
+version: 51
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -82,6 +82,15 @@ supersedes: []
 - **失败与恢复**：观察失败（不是仓库、Git不可用、超时）按没有观察处理，不影响Turn；取消照常传播。说明落账后崩溃，恢复时按Item身份识别，不重复记录。
 - **界面**：Product UI按`is_session_baseline_notice`不显示这两条说明。
 - **测试**：[`tests/agent/test_session_baseline.py`](../../tests/agent/test_session_baseline.py)、[`tests/agent/test_session_baseline_git.py`](../../tests/agent/test_session_baseline_git.py)（真实Git仓库端到端）。局限见ADR 0131。
+
+## 当前增量：请求只追加与压缩点校准（ADR 0132）
+
+- **请求只追加（`history_notes`，默认关闭）**：[`request_notes`](../../src/harnessix/agent/request_notes.py)在每步准备模型历史之前判断是否有到期的宿主说明，有则在线程CAS内追加为已完成的`user_message` Item（与完成守卫同一机制，正文以`[Harnessix host notice]`开头），并让`ModelRequest.notes_in_history`为真，Provider映射不再逐请求附加预算与目录说明。说明写在本步`ModelHistoryPrepared`之前，属于本步消费的历史，不是待处理的Steering；之后一直留在历史里，请求等于“上一请求＋新内容”。
+  - 预算说明每个关口一次：剩余调用数或剩余累计Token≤1/2、≤1/4，以及过了四分之一关口后剩余调用数≤10或按上一请求实际尺寸只够再发≤10次。只读Turn的持久事实（`budget`、`model_steps`、`model_attempts`、`usage`），不依赖Provider是否实现输入估算端口，产品路径同样生效。身份`uuid5(turn_id, "harnessix.request-notes/v1:budget:<half|quarter|final>")`；较紧的关口发过后不补发较松的。
+  - 目录说明只在配置了`model_tool_view`时发：每个Turn首个请求一条，此后正文（可执行别名、受限原因、选择约束）与本Turn上一条不同才再发，身份`uuid5(turn_id, "harnessix.request-notes/v1:catalog:<序号>")`。没有工具视图时不发。
+  - 工具视图拿到的Turn副本不含这些说明（`without_request_notes`）；Product UI按身份隐藏。大多数步骤没有到期的说明，判断只用调用方手里的Turn快照，不加锁、不读Session。
+- **压缩点校准（`compaction_window`，默认不校准）**：[`compaction_calibration`](../../src/harnessix/agent/compaction_calibration.py)取Thread内最近一次已完成主请求的Context检查（估算字节）与Provider报告的真实输入Token，把触发点、目标与输入上限换算到真实窗口的同一比例：触发时整个请求的真实输入约为窗口的一半。只放宽固定比例换算的数值；输入上限不超过出站请求容量，触发点另在其下留出一次退避（历史增长四分之一后重试）的余量。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)用校准后的触发点判断，`_run_compaction`用校准后的策略规划，校准的输入上限经`ContextBuildInput.input_limit_tokens`交给Planner。没有声明窗口、没有Context Planner或没有完整用量时配置原样返回。
+- **回放**：不新增事件类型或版本；说明是普通Item事件，压缩计划记录它实际使用的策略，Reducer重放与历史哈希按既有规则覆盖。回归见[`test_request_notes.py`](../../tests/agent/test_request_notes.py)与[`test_compaction_calibration.py`](../../tests/agent/test_compaction_calibration.py)。
 
 ## 当前增量：思考预览（0.10.0b9）
 
@@ -1052,6 +1061,8 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 51 | `b7c7eb01` 增量 | 2026-11-11 | 预算与目录说明落为历史Item、请求只追加；压缩点按上一请求的真实输入Token校准（ADR 0132） |
+| 51 | `feat/r2-request` | 2026-11-11 | 预算与目录说明在关口落为历史Item，请求只在末尾追加；压缩点按上一次请求的真实输入Token校准（ADR 0132） |
 | 50 | `feat/r2-baseline` | 2026-11-11 | 会话基线：线程开始时记录工作区里已有的未提交改动并告知模型，收尾前检查是否被还原或删除（ADR 0131） |
 | 49 | `feat/r2-protocol` | 2026-11-11 | 计划调用可写在一次响应的任意位置，由宿主排到持久调用组末尾；计划校验错误与被拒调用的反馈改为英文（ADR 0136） |
 | 48 | `feat/r2-guard` | 2026-11-11 | 完成守卫第2版（ADR 0124）：截断或写成文本的工具调用不算完成，只包着文本的外壳去壳判定，继续意图检测扩展到结尾句，补发次数随状态在2～6次间变化，提示写明剩余模型调用次数，结构化乱码在出站历史里换成占位 |

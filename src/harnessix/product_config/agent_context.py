@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
+from harnessix.context.compaction_runtime_contracts import (
+    CompactionRuntimeConfig,
+    CompactionTokenWindow,
+)
 from harnessix.context.contracts import ContextFragment, ContextFragmentKind
 from harnessix.context.engine import ContextEngine
 from harnessix.context.sources import (
@@ -392,6 +395,8 @@ class ProductAgentContext:
 
     context: SourcedContextEngine
     compaction: CompactionRuntimeConfig
+    # 声明模型窗口时的真实Token口径，交给Runtime按真实输入用量校准压缩点；未声明时为None。
+    compaction_window: CompactionTokenWindow | None = None
 
 
 def build_product_agent_context(
@@ -578,4 +583,5 @@ def build_product_agent_context(
             ),
         ),
         compaction=budget.compaction_runtime(max_output_tokens),
+        compaction_window=budget.token_window,
     )

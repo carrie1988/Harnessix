@@ -199,6 +199,8 @@ class ContextBuildInput(ContractModel):
     workspace: str = Field(min_length=1, max_length=4096)
     history_documents: tuple[str, ...] = Field(default_factory=tuple, max_length=8192)
     tool_documents: tuple[str, ...] = Field(default_factory=tuple, max_length=256)
+    # 调用方按真实输入用量校准的本步输入上限（估算器口径）；只会放宽Planner的固定上限。
+    input_limit_tokens: int | None = Field(default=None, ge=1, le=8_388_608, strict=True)
 
     @field_validator("workspace")
     @classmethod

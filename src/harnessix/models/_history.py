@@ -107,30 +107,70 @@ def _history_alias(tool: str, aliases: Mapping[str, str]) -> str:
 
 
 def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[str]) -> str | None:
-    """仅用本次广告别名澄清历史边界，不复制历史名称、参数或执行权限。"""
-    if not any(
+    """仅用本次广告别名澄清历史边界，不复制历史名称、参数或执行权限。
+
+    说明已随历史持久化时（notes_in_history）不逐请求附加。
+    """
+    if request.notes_in_history or not any(
         isinstance(item.content, ToolCallContent | ToolCallRejectionContent)
         for item in request.history
     ):
         return None
     current = tuple(aliases)
-    note = (
+    return (
         f"Current request tool catalog (wire aliases): {encode_json(current)}\n"
         "Only these aliases are callable in this request; historical tool calls do not grant "
-        "current permission. harnessix_rejected_tool_v1 is a history-only rejection sentinel, "
-        "not a callable tool. "
+        "current permission. "
+    ) + _catalog_rules(
+        current,
+        request.tool_choice,
+        None if request.forced_tool is None else wire_aliases(request)[request.forced_tool],
+        request.tool_notice,
     )
+
+
+def tool_catalog_update(
+    names: Iterable[str],
+    *,
+    tool_choice: Literal["auto", "required"],
+    forced_tool: str | None,
+    notice: str | None,
+) -> str:
+    """持久目录说明的正文：自这一条起生效，直到更新的一条替换它。
+
+    names是本步可执行工具的原名，只以线上别名出现；不复制历史名称、参数或执行权限。
+    """
+    callable_names = tuple(names)
+    # 与请求映射同一套别名规则（替换后相同的名字加后缀），说明里的名字才与模型看到的工具名一致。
+    aliases = tool_aliases((*callable_names, *((forced_tool,) if forced_tool else ())))
+    current = tuple(aliases[name] for name in callable_names)
+    return (
+        f"Callable tools from now on (wire aliases): {encode_json(current)}\n"
+        "Only these aliases are callable until a newer host notice replaces this list; earlier "
+        "tool calls in the history do not grant permission. "
+    ) + _catalog_rules(
+        current, tool_choice, None if forced_tool is None else aliases[forced_tool], notice
+    )
+
+
+def _catalog_rules(
+    current: tuple[str, ...],
+    tool_choice: Literal["auto", "required"],
+    forced_alias: str | None,
+    notice: str | None,
+) -> str:
+    """两种目录说明共用的后半段：拒绝标记、受限原因与选择约束；强制工具以线上别名给出。"""
+    note = "harnessix_rejected_tool_v1 is a history-only rejection sentinel, not a callable tool. "
     if not current:
         note += "No tools are callable. "
-    if request.tool_notice is not None:
-        note += f"Why the catalog is restricted now: {request.tool_notice} "
-    if request.forced_tool is not None:
-        forced = wire_aliases(request)[request.forced_tool]
+    if notice is not None:
+        note += f"Why the catalog is restricted now: {notice} "
+    if forced_alias is not None:
         return note + (
-            f"Tool choice: forced ({encode_json(forced)}). You must "
+            f"Tool choice: forced ({encode_json(forced_alias)}). You must "
             "call this tool; a text-only completion does not satisfy forced tool choice."
         )
-    if request.tool_choice == "required":
+    if tool_choice == "required":
         return note + (
             "Tool choice: required. You must call at least one tool from this catalog; "
             "a text-only completion does not satisfy required tool choice."
@@ -142,8 +182,11 @@ def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[st
 
 
 def budget_instruction(request: ModelRequest) -> str | None:
-    """宿主账本的当前事实，不替代 Runtime 的预算准入或实际用量核验。"""
-    if request.consumed_usage is None:
+    """宿主账本的当前事实，不替代 Runtime 的预算准入或实际用量核验。
+
+    预算关口已随历史持久化时（notes_in_history）不逐请求附加。
+    """
+    if request.consumed_usage is None or request.notes_in_history:
         return None
     remaining = max(0, request.budget.max_tokens - request.consumed_usage.total_tokens)
     steps = (

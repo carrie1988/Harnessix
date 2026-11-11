@@ -141,3 +141,33 @@ def test_duplicate_fragment_is_rejected_before_runtime_use() -> None:
             ContextLimits(context_window_tokens=4096, reserved_output_tokens=1024),
             (fragment, fragment),
         )
+
+
+def test_a_calibrated_limit_only_widens_the_planner_limit() -> None:
+    """按真实用量校准的输入上限（ADR 0132）只放宽本步限额：更小的值不收紧，检查记录自洽。"""
+    limits = ContextLimits(
+        context_window_tokens=4096,
+        reserved_output_tokens=1024,
+        provider_overhead_tokens=0,
+        safety_margin_tokens=0,
+    )
+    engine = ContextEngine(limits)
+    history = ("x" * 4000,)
+    with pytest.raises(ContextPreparationError) as error:
+        engine.prepare(build_input(history=history))
+    assert error.value.code == "context_budget_exceeded"
+
+    widened = engine.prepare(
+        build_input(history=history).model_copy(update={"input_limit_tokens": 5000})
+    )
+    assert widened.inspection.available_input_tokens == 5000
+    assert widened.inspection.limits.reserved_output_tokens == 1024
+    assert widened.inspection.limits.available_input_tokens == 5000
+    with pytest.raises(ContextPreparationError):
+        engine.prepare(
+            build_input(history=("x" * 5001,)).model_copy(update={"input_limit_tokens": 5000})
+        )
+
+    for smaller in (None, 1, limits.available_input_tokens):
+        fixed = engine.prepare(build_input().model_copy(update={"input_limit_tokens": smaller}))
+        assert fixed.inspection.limits == limits
