@@ -142,6 +142,17 @@ def thinking_preset(
     return None
 
 
+def reasons_by_default(base_url: str, model: str) -> bool:
+    """已求证在服务端默认思考的云端模型：请求不加思考参数，但传输限额须按思考配置放宽。
+
+    百炼qwen3.8系列默认推送思考内容（2026-11-10实测flash与max），且产品写文件工具的参数要整段
+    生成完才一次发出；代码较长时流中静默常超过默认30秒空闲读取，被当成连接中断。
+    """
+
+    host = urlsplit(base_url).hostname
+    return host == "dashscope.aliyuncs.com" and model.startswith("qwen3.8")
+
+
 def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     """使用现有安全默认值生成单Provider、单Profile配置；声明思考协议时默认只在工具步骤思考。"""
 
@@ -200,7 +211,10 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     # 云端限流和网络抖动很常见，只有确定未计费的失败才会重试到这个次数。
                     "max_attempts": 4,
                     "retry_delay_seconds": 1.0,
-                    **_output_limits(checked.context_window_tokens, thinking=thinking),
+                    **_output_limits(
+                        checked.context_window_tokens,
+                        thinking=thinking or reasons_by_default(checked.base_url, checked.model),
+                    ),
                     **(_SELF_HOSTED_LIMITS if self_hosted else {}),
                 }
             ),

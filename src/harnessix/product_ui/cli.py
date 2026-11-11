@@ -35,6 +35,7 @@ from harnessix.product_config.wizard import (
     write_product_config,
 )
 from harnessix.product_config.zero_config import zero_config_wanted
+from harnessix.product_ui.activation import activation_arguments
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.cost_estimate import chain_list_price, chain_model_name
@@ -281,12 +282,8 @@ def _server_command(
         command.extend(("--git-executable", git_executable))
     if unattended:
         command.append("--unattended")
-    if expected_active_sha256 is not None:
-        command.extend(("--expected-active-sha256", expected_active_sha256))
-    if expected_active_profile is not None:
-        command.extend(("--expected-active-profile", expected_active_profile))
-    if expected_active_action_sha256 is not None:
-        command.extend(("--expected-active-action-sha256", expected_active_action_sha256))
+    explicit = (expected_active_sha256, expected_active_profile, expected_active_action_sha256)
+    command.extend(activation_arguments(runtime_state, explicit))
     return tuple(command)
 
 

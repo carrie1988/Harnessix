@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 31
+version: 32
 code_revision: aa686be2bc813e9a26e5595f050fadded94be69f
 owners:
   - product
@@ -39,6 +39,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：改配置后启动时的切换前提（0.10.0b8）
+
+- `_server_command`经[`activation.activation_arguments`](../../src/harnessix/product_ui/activation.py)附加`--expected-active-*`：用户未显式给出时，只读工作区`product-config.db`的当前活动指针原样交出，使用户用`configure`改过的配置在下次打开时生效。此前Server以`product_config_conflict`退出，TUI只显示“连接中断……server_closed”，`exec`同样失败。详见[产品配置模块设计](product-config.md)。
 
 ## 当前增量：不显示取消后的宿主说明（0.10.0b8）
 
@@ -1048,6 +1052,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 32 | `384ff28d` 增量 | 2026-11-10 | 启动Agent Server时以当前活动配置指针作为切换前提（0.10.0b8） |
 | 31 | `abd7b48e` 增量 | 2026-11-10 | 对话记录不显示取消后补给模型的宿主说明（0.10.0b8） |
 | 30 | `59ea4870` 增量 | 2026-11-10 | 多文件修改只显示数量和第一个路径；任务失败后F1显示该错误的原因和处理办法（0.10.0b7） |
 | 29 | `8b9630bc` 增量 | 2026-11-10 | 对话中“未知效果”错误改用白话说明（0.10.0b6） |

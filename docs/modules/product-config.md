@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 132
+version: 133
 code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
 owners:
   - core
@@ -110,8 +110,15 @@ related_tests:
   - tests/product_config/test_native_sandbox_action.py
   - tests/product_config/test_native_host_command.py
   - tests/product_config/test_zero_config.py
+  - tests/product_config/test_reasoning_transport_limits.py
+  - tests/product_config/test_activation_precondition.py
 supersedes: []
 ---
+
+## 当前增量：默认思考模型的传输限额与改配置后的切换（0.10.0b8）
+
+- **传输限额**：百炼qwen3.8系列在服务端默认思考（2026-11-10实测flash与max都推送`reasoning_content`），产品写文件工具`apply_patch_batch`的参数又是整段生成完才一次发出；代码较长时，流中静默常超过默认30秒空闲读取，被当成`provider_transport`断线。用户在macOS上让Agent写带完整注释的拓扑排序，两次都在写文件那一步失败；同一任务探针记录到13～27秒的静默。[`wizard.reasons_by_default`](../../src/harnessix/product_config/wizard.py)对这类模型套用已有的思考型传输限额（空闲读取180秒、单请求900秒、输出32768），只改限额，不声明思考协议、不改请求参数。其他云端模型仍用原默认值。已有配置需要重新运行`configure`才会更新。
+- **改配置后的切换**：Agent Server按CAS切换工作区的活动配置（ADR 0075第2.5节），产品入口此前从不提供旧指针，用户用`configure`换了模型后，用过的工作区每次启动都以`product_config_conflict`退出（界面只显示server_closed）。[`product_ui/activation.py`](../../src/harnessix/product_ui/activation.py)在启动前只读当前活动指针并作为前提交出，`harnessix code`、`exec`和`data`共用；用户显式给出前提时不变，全新工作区不加前提。读取与切换之间若有其他进程改动，Server仍按CAS拒绝。
 
 ## 当前增量：原生 Profile 扩展到本机沙箱（ADR 0111 第 1 步）
 
@@ -2252,6 +2259,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 133 | `384ff28d` 增量 | 2026-11-10 | 百炼qwen3.8系列套用思考型传输限额；产品入口以当前活动指针作为切换前提，改配置后工作区不再无法打开（0.10.0b8） |
 | 132 | `6a2fd39272ef2bba6fee5108bff577c0154183a9` | 2026-11-10 | Windows沙箱外命令（W2）：[`native_shells.py`](../../src/harnessix/product_config/native_shells.py)集中Shell规则，POSIX仍为sh/bash/dash/zsh加`-c`/`-lc`，Windows只允许沙箱外`powershell.exe`或`pwsh.exe`配固定参数（不加载配置、不交互、UTF-8输出）；零配置在Windows上生成`host_command.host-shell`，Windows Process Owner只证明沙箱外命令；环境继承增加Windows系统与用户目录变量 |
 | 131 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 本机MCP（ADR 0127）：`mcp_config.py`解析`~/.harnessix/mcp.json`并计算信任指纹，`mcp_trust.py`保存信任，`mcp_status.py`汇总状态供`harnessix mcp`、`code doctor`和会话启动共用，`mcp_composition.py`把工具按需审批接入；`extension_composition.py`把Skill与MCP作为一个扩展资源交给Action运行时；`private_json.py`供工作区信任与MCP信任共用私有原子写入 |
 | 130 | `d761381c3f5abf0000296efabeb734ad1257b0e1` | 2026-11-10 | `ProviderDefinition.proxy_url`与向导`--proxy-url`：云端点经显式本机HTTP代理访问（优先于环境变量），本机与内网自托管端点拒绝代理；按ADR 0014修订，未显式配置时读取`HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY`；OpenAI Chat与Anthropic请求、`doctor --probe-model`使用同一代理选择 |
