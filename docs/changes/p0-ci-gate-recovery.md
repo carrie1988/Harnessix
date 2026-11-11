@@ -118,6 +118,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
+0.10.0b14发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 0.10.0b14放宽Git来源读取时限（见[产品配置模块设计](../modules/product-config.md)）：`workspace/snapshot.py`的`_PosixRoot`增加1行（116→117），即`observe`的可选参数`read_timeout_seconds`；读取操作的构造放在模块函数`_read_operation`，默认时限下与原来完全一致。
 0.10.0b14按用户决定（2026-11-11）把`windows-trusted-execution`五个原生验证步骤的时限统一放宽到10分钟（原为3分钟，备份与恢复两步为5分钟）：第一步实际用时接近3分钟，经常超时，其后的Windows产品测试全部被跳过。治理测试中冻结的数值同步更新为批准后的10分钟，其余步骤内容仍与基线逐项一致；该任务仍不进入发布门禁。
 0.10.0b14沙箱外命令减少询问（[ADR 0128](../adr/0128-host-command-approval-rules.md)）：`ProductController`增加2行（378→380），即构造参数`automation`与对外暴露的`rule_offer`；判定、存储与界面文案分别放在新模块`product_config/command_rules.py`、`product_ui/approval_rules.py`和模块函数`_remember_label`。`InteractionPresenter`通过合并F1帮助的条目选择保持在100行。
