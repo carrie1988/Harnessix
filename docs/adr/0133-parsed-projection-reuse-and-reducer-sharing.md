@@ -12,6 +12,7 @@ related_adrs:
 related_tests:
   - tests/session/test_parsed_projection_cache.py
   - tests/session/test_read_original_bytes.py
+  - tests/agent/test_reducer_structural_sharing.py
   - tests/benchmarks/test_host_step_overhead_bench.py
 supersedes: []
 ---

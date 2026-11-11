@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 46
+version: 47
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -417,6 +417,12 @@ flowchart LR
 Thread创建、活动Turn之外的修改、归档活动Thread和终态重开。`replay`额外拒绝重复Event ID、空
 Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并更新Snapshot；调用方通过
 `expected_sequence`进行CAS。进程重启后可从Event Log重建并校验Snapshot，不信任单独的缓存投影。
+
+`apply_event`返回的Thread与输入的Thread、事件共享未变化的子对象，不再逐事件深拷贝整个聚合
+（[ADR 0133](../adr/0133-parsed-projection-reuse-and-reducer-sharing.md)）：深拷贝的代价与历史长度成正比，
+60步的会话里一次追加约12毫秒。聚合内全部是冻结模型，共享不改变取值；调用方不得原地修改其中的JSON容器。
+Store边界仍把调用方的Draft经JSON往返冻结。回归见
+[结构共享测试](../../tests/agent/test_reducer_structural_sharing.py)。
 
 ## 10. 公共端口与方法合同
 
@@ -979,6 +985,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 47 | ADR 0133增量 | 2026-11-11 | Reducer结构共享：`apply_event`不再逐事件深拷贝整个Thread，取值不变，共享对象不得原地修改 |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |
 | 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |

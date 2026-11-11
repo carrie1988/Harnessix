@@ -48,7 +48,9 @@ from harnessix.context.tool_result_view import history_items
 
 
 def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
-    """唯一的状态投影器；在线提交和离线 Replay 使用相同校验。"""
+    """唯一的状态投影器；在线提交和离线 Replay 使用相同校验。
+
+    结果与输入的Thread、事件共享未变化的冻结子对象（ADR 0133）；不得原地修改其中的JSON容器。"""
     payload = event.payload
     if thread is None:
         require(event.sequence == 1, "首事件 sequence 必须为 1")
@@ -79,8 +81,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
                 ),
                 "sequence": event.sequence,
                 "updated_at": event.occurred_at,
-            },
-            deep=True,
+            }
         )
     require(thread.archive is None, "归档Thread不可修改")
     require(event.turn_id is not None, "Turn 事件缺少 turn_id")
@@ -204,8 +205,7 @@ def apply_event(thread: Thread | None, event: AgentEvent) -> Thread:
             "sequence": event.sequence,
             "updated_at": event.occurred_at,
             **thread_updates,
-        },
-        deep=True,
+        }
     )
 
 
