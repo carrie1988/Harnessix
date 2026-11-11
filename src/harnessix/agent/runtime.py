@@ -132,6 +132,15 @@ from harnessix.agent.runtime_recovery import (
     result_resume_safe,
 )
 from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
+from harnessix.agent.session_baseline import (
+    MARKED_GIT_TOOLS,
+    BaselineNotice,
+    WorkspaceChangeObserver,
+    baseline_announcement,
+    baseline_loss_notice,
+    mark_pre_existing,
+    recorded_baseline,
+)
 from harnessix.agent.step_notices import append_step_notice
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.tool_call_groups import (
@@ -328,6 +337,7 @@ class AgentRuntime:
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
         step_notices: ToolStepNoticeSource | None = None,
+        session_baseline: WorkspaceChangeObserver | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -379,6 +389,8 @@ class AgentRuntime:
         # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
         self._completion_guard = completion_guard
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
+        # 提供观察端口即启用会话基线（session_baseline模块）：记录并保护会话开始前已有的未提交改动。
+        self._session_baseline = session_baseline
         # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._continue_after_unknown_usage = continue_after_unknown_usage is True
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -1213,6 +1225,10 @@ class AgentRuntime:
             if turn.status == TurnStatus.ACCEPTED:
                 self._fault("runtime.after_turn_started")
             async with asyncio.timeout(remaining):
+                if turn.status == TurnStatus.ACCEPTED:
+                    await self._session_baseline_notice(
+                        baseline_announcement, thread_id, turn_id, token
+                    )
                 result = await self._drive(thread_id, turn_id, token)
                 token.checkpoint()
                 return result
@@ -1251,6 +1267,20 @@ class AgentRuntime:
                 )
             )
             return await self._finish(thread_id, turn_id, TurnStatus.FAILED, failure)
+
+    async def _session_baseline_notice(
+        self, notice: BaselineNotice, thread_id: UUID, turn_id: UUID, token: CancelToken
+    ) -> None:
+        """会话基线的宿主说明有内容才落为用户消息，未启用时不做任何事。
+
+        完成前的复核先于终结判定落账：补发的说明与运行中Steering一样使本步重入，而不是完成Turn。
+        """
+        if self._session_baseline is None:
+            return
+        thread = await self.store.get_thread(thread_id)
+        events = await notice(self._session_baseline, thread, turn_id, token)
+        if events:
+            await self._commit(thread_id, turn_id, [event.payload for event in events])
 
     async def _record_cancel(self, thread_id: UUID, turn_id: UUID) -> Turn:
         async with self._lock(thread_id):
@@ -2517,6 +2547,10 @@ class AgentRuntime:
                     raise KernelError("budget_exceeded", "Provider 报告的 Token 用量超过预算")
                 if not calls:
                     token.checkpoint()
+                    if not truncated:
+                        await self._session_baseline_notice(
+                            baseline_loss_notice, thread_id, turn_id, token
+                        )
                     target = await self._close_model_step(request, truncated=truncated)
                     if target == TurnStatus.PREPARING_CONTEXT:
                         continue
@@ -2895,6 +2929,9 @@ class AgentRuntime:
                 checked = self._validate_result(result.result, call, max_output_chars)
                 operation.finish(checked.outcome, checked.error)
                 return replace(result, result=checked)
+            if self._session_baseline is not None and call.tool in MARKED_GIT_TOOLS:
+                baseline = recorded_baseline(await self.store.get_thread(thread_id))
+                result = mark_pre_existing(call.tool, result, baseline, max_chars=max_output_chars)
             result = self._validate_result(result, call, max_output_chars)
             operation.finish(result.outcome, result.error)
             return result

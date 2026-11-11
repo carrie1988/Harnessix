@@ -88,6 +88,7 @@ class HarnessixAgent(BaseInstalledAgent):
         normalize_workspace_modes: bool = False,
         network_isolation: bool = False,
         task_command_environment: bool = False,
+        git_read_tools: bool = False,
         **kwargs,
     ):
         if kwargs.get("model_name") is not None or kwargs.get("config") is not None:
@@ -129,6 +130,8 @@ class HarnessixAgent(BaseInstalledAgent):
             raise ValueError("network_isolation必须是布尔值")
         if type(task_command_environment) is not bool:
             raise ValueError("task_command_environment必须是布尔值")
+        if type(git_read_tools) is not bool:
+            raise ValueError("git_read_tools必须是布尔值")
         if task_command_environment and (
             action_config is None or action_config_template is not None or not external_boundary
         ):
@@ -156,6 +159,9 @@ class HarnessixAgent(BaseInstalledAgent):
         self.network_isolation = network_isolation
         # 显式开启时，按本任务容器的环境与语言生成命令Profile（见模块说明）。
         self.task_command_environment = task_command_environment
+        # 显式开启时，Runner像harnessix code/exec一样探测git并绑定Git只读能力：模型得到git_status、
+        # git_diff、git_review，产品记录并保护会话开始前已有的未提交改动（ADR 0131）。
+        self.git_read_tools = git_read_tools
         self.command_language: str | None = None
 
     @staticmethod
@@ -278,6 +284,8 @@ class HarnessixAgent(BaseInstalledAgent):
         if self.action_config is not None:
             command.extend(["--action-config", self.action_config])
         command.extend(["--approval-mode", self.approval_mode])
+        if self.git_read_tools:
+            command.append("--git-read-tools")
         for spec in self.model_relays:
             command.extend(["--model-relay", spec])
         base = await self._head(environment)
@@ -387,6 +395,7 @@ class HarnessixAgent(BaseInstalledAgent):
                 "external_boundary": self.external_boundary,
                 "workspace_modes_normalized": self.normalize_workspace_modes,
                 "task_command_environment": self.task_command_environment,
+                "git_read_tools": self.git_read_tools,
                 "command_language": self.command_language,
             },
         }

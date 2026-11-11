@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 139
+version: 140
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -98,6 +98,7 @@ related_tests:
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_session_baseline_wiring.py
   - tests/product_config/test_agent_context.py
   - tests/integration/test_product_process_profile.py
   - tests/evals/test_task_pack_execution.py
@@ -158,6 +159,12 @@ supersedes: []
 - **范围**：只含`exec_command.*`与`host_command.*`；`command_ledger_notices(verified)`在没有通过验证的命令工具时返回`None`，固定Profile流程不启用。超时或被终止的运行不算退出；失败或结果未知的补丁不算工作区变化；Fork继承的历史不进账本。
 - **边界**：不读取输出正文。检查的退出码被`| tail`、`; echo exit=$?`掩盖时没有“通过变失败”的事实可说；Shell命令自己对工作区的修改不被观察。
 - **装配**：[`server.py`](../../src/harnessix/product_config/server.py)以`step_notices=command_ledger_notices(verified)`注入，没有新增配置字段。
+
+## 当前增量：产品运行时启用会话基线（ADR 0131）
+
+- [`_serve_product_stdio`](../../src/harnessix/product_config/server.py)构造`AgentRuntime`时传入`session_baseline=tools`：会话基线的观察端口就是本进程的`CodingToolRuntime`，与模型所用`git_status`、`git_review`共用同一个Git只读运行时。会话开始前工作区已有的未提交改动由此被记录、告知模型并在完成前复核（见[Agent模块设计](agent.md)“会话基线”）。
+- 产品配置与Action配置的Schema不变，没有新增开关。入口没有git可执行文件（`--git-executable`未给出，或`harnessix code`、`harnessix exec`探测不到）时端口返回`None`，行为与此前相同。
+- 测试：[`tests/product_config/test_session_baseline_wiring.py`](../../tests/product_config/test_session_baseline_wiring.py)以真实Git仓库核对接线，以及没有git时不生效。
 
 ## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
 
@@ -2322,6 +2329,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 140 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
 | 139 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
 | 138 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
 | 137 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |

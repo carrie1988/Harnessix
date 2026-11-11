@@ -7,6 +7,7 @@ from typing import Final
 from uuid import UUID
 
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_item_id
+from harnessix.agent.session_baseline import is_session_baseline_notice
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem, TransientItemStream
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
@@ -204,6 +205,8 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
         )
         # 取消后的宿主说明只给模型看；对话里上一轮已显示“任务已取消”。
         and entry.item.item_id != cancelled_turn_notice_item_id(entry.turn_id)
+        # 会话基线的两条英文说明同样只给模型看，不当作用户发言显示。
+        and not is_session_baseline_notice(entry.turn_id, entry.item.item_id)
         for line in _entry_lines(entry, results)
     ]
     final_ids = {entry.item.item_id for entry in view.items if entry.final}

@@ -77,6 +77,29 @@ async def test_external_boundary_is_asserted_only_for_the_app_server_run(tmp_pat
 
 
 @pytest.mark.parametrize("enabled", [False, True])
+async def test_git_read_tools_reach_the_runner_only_when_enabled(
+    tmp_path: Path, enabled: bool
+) -> None:
+    instance = agent(tmp_path, git_read_tools=enabled)
+    instance.exec_as_agent = AsyncMock(return_value=SimpleNamespace(stdout="a" * 40 + "\n"))
+    await instance.run("fix it", SimpleNamespace(upload_file=AsyncMock()), AgentContext())
+    calls = instance.exec_as_agent.await_args_list
+    run = next(call.kwargs["command"] for call in calls if "--trial-id" in call.kwargs["command"])
+    assert ("--git-read-tools" in run.split()) is enabled
+    (tmp_path / "harnessix-summary.json").write_text(
+        json.dumps(
+            {
+                "spec_version": "harnessix.harbor-protocol-result/v1",
+                "trial_id": str(instance.context_id),
+            }
+        )
+    )
+    context = AgentContext()
+    instance.populate_context_post_run(context)
+    assert context.metadata["harnessix"]["git_read_tools"] is enabled
+
+
+@pytest.mark.parametrize("enabled", [False, True])
 async def test_network_isolation_wraps_the_whole_turn_only_when_enabled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, enabled: bool
 ) -> None:
@@ -310,6 +333,7 @@ async def test_fixed_action_template_is_still_uploaded_without_task_environment(
         {"normalize_workspace_modes": "yes"},
         {"network_isolation": "yes"},
         {"task_command_environment": "yes"},
+        {"git_read_tools": "yes"},
         # 任务环境需要容器内路径与外部边界，且不能同时给固定模板。
         {"task_command_environment": True, "external_boundary": True},
         {"task_command_environment": True, "action_config": "/etc/harnessix-eval/actions.json"},

@@ -378,6 +378,7 @@ async def _serve_product_stdio(
                             continue_after_unknown_usage=startup.continue_after_unknown_usage,
                             recover_truncated_replies=True,
                             step_notices=command_ledger_notices(verified),
+                            session_baseline=tools,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
                             config_store.activate_runtime(
