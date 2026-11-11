@@ -47,6 +47,7 @@ _ENV_NAMES = frozenset(
     }
 )
 _DEFAULT_ENV = {"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"}
+_REAP_WAIT_SECONDS = 2.0  # 信号被拒绝后，等asyncio回收直接子进程的上限
 
 
 def _identity(path: Path) -> tuple[int, ...]:
@@ -305,16 +306,33 @@ class HostProcessRuntime:
             return False
         return True
 
+    async def _signal_group(self, pid: int, number: int, exited: asyncio.Future[None]) -> bool:
+        """向进程组发信号；被拒绝时等直接子进程回收后再试一次。
+
+        macOS对只剩未回收僵尸的进程组，killpg（含探测信号0）返回EPERM而不是ESRCH（同
+        posix_owner._signal_group）。asyncio在自己的线程里回收子进程，这里不能poll，只能等
+        process_exited；回收后组内若无其他成员，killpg按ESRCH报告组已不存在。
+        """
+
+        if self._signal(pid, number):
+            return True
+        try:
+            await asyncio.wait_for(asyncio.shield(exited), _REAP_WAIT_SECONDS)
+        except TimeoutError:
+            return False
+        return self._signal(pid, number)
+
     async def _settle(
         self, transport: asyncio.SubprocessTransport, capture: CaptureProtocol
     ) -> Literal["none", "term", "kill", "failed"]:
         pid = transport.get_pid()
         termination: Literal["none", "term", "kill", "failed"] = "none"
         if self._group_exists(pid):
-            termination = "term" if self._signal(pid, signal.SIGTERM) else "failed"
+            sent = await self._signal_group(pid, signal.SIGTERM, capture.exited)
+            termination = "term" if sent else "failed"
             await asyncio.sleep(self._limits.terminate_grace_seconds)
             if self._group_exists(pid):
-                killed = self._signal(pid, signal.SIGKILL)
+                killed = await self._signal_group(pid, signal.SIGKILL, capture.exited)
                 termination = "kill" if killed and termination != "failed" else "failed"
         if not capture.exited.done() and termination == "failed":
             try:

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 40
-code_revision: b86793a7fdd3f883727b7483ee0db2a6fc055153
+version: 41
+code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
 modules:
@@ -55,6 +55,13 @@ supersedes: []
 
 # Harnessix Code Process Runtime模块设计
 
+## 当前增量：macOS僵尸进程组在宿主进程运行时一侧的同类误报（0.10.0b14）
+
+- 2026-11-11 CI macOS的`test_output_stop_threshold_closes_pipes_without_claiming_eof`再次得到`cleanup_failed`。该用例走的是[`HostProcessRuntime`](../../src/harnessix/processes/runtime.py)（Git只读工具与评测检查使用的宿主进程运行时），不是`posix_owner`。0.10.0b11只修了`posix_owner`里的同类判断（有它自己的僵尸组回归）；下面0.10.0b11一节把CI的这项失败归到`posix_owner`是错的，以本节为准。
+- 原因相同：输出超限后宿主关闭管道，子进程因写入失败自行退出；asyncio在自己的线程里回收子进程，`_settle`先于回收运行时，macOS对只剩僵尸的进程组`killpg`返回EPERM，`_signal`判为失败，结果记为`cleanup_failed`并关闭该运行时的准入（此后的调用报`process_closed`）。
+- `_settle`改经`_signal_group`发信号：被拒绝时等`process_exited`（asyncio回收直接子进程之后才通知，最多2秒）再试一次；回收后组内没有其他成员时`killpg`按ESRCH报告组已不存在。这里不能像`posix_owner`那样`poll`，否则会与asyncio的子进程Watcher争抢退出状态（见`test_timeout_does_not_steal_delayed_native_child_watcher`）。信号确实发不出去时结论不变（`cleanup_failed`、关闭准入），只是多等至多两次、每次2秒。
+- 回归：`tests/processes/test_runtime_zombie_group.py`用真实的未回收组长在macOS上稳定复现（修复前`_settle`返回`failed`）。Linux对僵尸组`killpg`成功，行为不变。
+
 ## 当前增量：Windows沙箱外命令可以执行（0.10.0b13）
 
 - 2026-11-11 Windows 11实机：沙箱外PowerShell命令在批准后一律以效果未知中止。继承的系统变量`PROGRAMFILES(X86)`带括号，执行计划的`EnvironmentBinding`与`ProcessOwnerStart`的变量名规则都不允许括号，分别报`execution_environment_denied`与`process_spec_invalid`。变量名规则属于已冻结的合同（Git交付计划v1 Schema按摘要冻结，0.10.0b13第一次尝试放宽规则被冻结测试拦下），因此不改合同：[`native_policy`](../../src/harnessix/sandbox/native_policy.py)的继承白名单去掉`PROGRAMFILES(X86)`。0.10.0b13中Windows命令读不到该变量；0.10.0b14按用户决定由PowerShell固定前缀在命令运行前补上（见[产品配置模块设计](product-config.md)），合同不变。
@@ -63,7 +70,7 @@ supersedes: []
 
 ## 当前增量：macOS僵尸进程组不再误报清理失败（0.10.0b11）
 
-- macOS对只剩未回收僵尸的进程组，`killpg`（含探测信号0）返回EPERM而不是ESRCH（2026-11-10本机实测）。命令因输出上限、超时或取消被停止时，子进程收到SIGTERM后已退出、事件循环尚未`poll`，等待期满升级SIGKILL时[`posix_owner`](../../src/harnessix/processes/posix_owner.py)把EPERM当成信号失败，结果记为`cleanup_failed`（结局未知），而进程其实已经停止。CI macOS连续两轮在`test_output_stop_threshold_closes_pipes_without_claiming_eof`复现。
+- macOS对只剩未回收僵尸的进程组，`killpg`（含探测信号0）返回EPERM而不是ESRCH（2026-11-10本机实测）。命令因输出上限、超时或取消被停止时，子进程收到SIGTERM后已退出、事件循环尚未`poll`，等待期满升级SIGKILL时[`posix_owner`](../../src/harnessix/processes/posix_owner.py)把EPERM当成信号失败，结果记为`cleanup_failed`（结局未知），而进程其实已经停止。CI macOS连续两轮在`test_output_stop_threshold_closes_pipes_without_claiming_eof`复现（更正：该用例实际走`HostProcessRuntime`，那一处在0.10.0b14修正，见上一节；本节的修正由`tests/processes/test_posix_owner_zombie_group.py`验证）。
 - `_request_stop`与`_escalate_if_needed`向进程组发信号前先`poll`回收已退出的组长；组内没有其他成员时`killpg`按ESRCH报告组已不存在。组内仍有存活成员时行为不变。Linux对僵尸组`killpg`成功，不受影响。
 
 ## 当前增量：v4预览去除终端转义序列
@@ -1726,6 +1733,7 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 38 | `dad55d32` 增量 | 2026-11-11 | macOS僵尸进程组：`HostProcessRuntime`发信号被拒绝时等回收后重试，不再误报cleanup_failed并关闭运行时（0.10.0b14） |
 | 37 | `b86793a7` 增量 | 2026-11-11 | Windows不再继承带括号的`PROGRAMFILES(X86)`；启动前失败归为确定未执行（0.10.0b13） |
 | 36 | `c7b13fb3` 增量 | 2026-11-11 | macOS僵尸进程组：发信号前先回收已退出组长，停止命令不再误报cleanup_failed（0.10.0b11） |
 | 35 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job、核心Trusted Execution五步成功后可读性失败及Snapshot候选本机回归不替代原生验收的边界 |

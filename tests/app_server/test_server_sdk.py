@@ -466,6 +466,36 @@ async def test_service_shutdown_is_bounded_and_persists_cancel(tmp_path: Path) -
         await client.close()
 
 
+@pytest.mark.parametrize(
+    ("stderr", "expected"),
+    [
+        # 服务端启动失败时自己报告的公开错误：把原因带给用户。
+        (
+            '{"code": "secret_unavailable", "message": "缺少模型的API Key", "retryable": false}',
+            "App Server已退出：缺少模型的API Key（secret_unavailable）",
+        ),
+        # 其他内容（回溯、任意日志、形状不符的JSON）一律不外传。
+        ("Traceback (most recent call last):\\n  secret-path", "App Server输出流已经关闭"),
+        ('{"code": "x", "message": "m", "retryable": false, "detail": "/private"}', None),
+        ('{"code": "Bad Code", "message": "m", "retryable": false}', None),
+        ("", None),
+    ],
+)
+async def test_a_server_that_exits_reports_its_own_public_error(
+    stderr: str, expected: str | None
+) -> None:
+    child = f"import sys; sys.stderr.write({stderr!r} + chr(10)); sys.exit(2)"
+    transport = SubprocessAgentTransport((sys.executable, "-c", child))
+    with pytest.raises(AgentSDKError) as closed:
+        await transport.exchange(b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{}}\n')
+    assert closed.value.code == "server_closed"
+    if expected is not None:
+        assert closed.value.message == expected
+    else:
+        assert "已退出：" not in closed.value.message
+    await transport.close()
+
+
 async def test_subprocess_notification_does_not_wait_for_response() -> None:
     child = (
         "import json,sys; "

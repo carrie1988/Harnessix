@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 46
-code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
+version: 47
+code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
 modules:
@@ -49,6 +49,11 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：恢复任务在开始执行前被取消（0.10.0b14）
+
+- 宿主关闭时取消后台的恢复任务。取消在`resume_turn`取锁、读取Thread期间到达时，此前Turn停在`accepted`：没有任务执行它，也没有终态（2026-11-11 CI负载下`test_service_shutdown_is_bounded_and_persists_cancel`复现，关闭的宽限期很短时才遇到）。现在`resume_turn`对尚未开始的Turn同样提交确定性的取消终态（`cancelled`，“调用方任务取消”），与进入执行循环之后被取消的结果一致。
+- 只处理状态仍为`accepted`的Turn。正在由另一个任务执行的Turn、等待审批或等待提问回答的Turn保持原状，下次打开仍可继续。回归见`tests/agent/test_resume_cancel_before_start.py`（三种情况各一例）。
 
 ## 当前增量：思考预览（0.10.0b9）
 
@@ -979,6 +984,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 47 | `dad55d32` 增量 | 2026-11-11 | 恢复任务在开始执行前被取消时，尚未开始的Turn提交取消终态；等待中的Turn不动（0.10.0b14） |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |
 | 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |

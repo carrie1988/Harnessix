@@ -45,6 +45,10 @@ from tests.product_config.test_server_and_cli import CANARY
 from tests.support.git_user_observation import run_authenticated_observation
 from tests.tools.test_git import _git
 
+# “期限内已开始、随后到期”的用例使用的总预算：第一步真实读取或子进程启动必须先在预算内完成。
+# 原值0.5秒在高负载的CI macOS上不够（2026-11-11：预算在Git子进程启动前耗尽，用例等不到启动）。
+_DEADLINE_SECONDS = 3.0
+
 
 def native_identity(path):
     """独立打开原NativeRoot核验身份，不调用受测模块的身份辅助方法。"""
@@ -926,7 +930,8 @@ async def test_inflight_query_is_bounded_and_parent_task_reclaims_children(
 ):
     async def inspect(scenario):
         started, reclaimed = asyncio.Event(), asyncio.Event()
-        token, budget = CancelToken(), GitOperationBudget(0.5 if fault == "deadline" else 60)
+        token = CancelToken()
+        budget = GitOperationBudget(_DEADLINE_SECONDS if fault == "deadline" else 60)
         original, tasks_before = scenario.reader._run_baseline, asyncio.all_tasks()
         before, index = scenario.unchanged_state(), (scenario.root / ".git/index").read_bytes()
 
@@ -956,7 +961,7 @@ async def test_inflight_query_is_bounded_and_parent_task_reclaims_children(
                 else KernelError
             )
             with pytest.raises(expected) as caught:
-                await asyncio.wait_for(task, 2)
+                await asyncio.wait_for(task, 2 + _DEADLINE_SECONDS)
             if fault == "deadline":
                 assert caught.value.code == "git_baseline_timeout"
             assert reclaimed.is_set()
@@ -996,7 +1001,8 @@ async def test_real_blocked_git_process_is_reaped_on_cancel_or_shared_deadline(
             context.setattr(CaptureProtocol, "connection_made", connected)
             task = asyncio.create_task(
                 scenario.collect(
-                    cancel=token, budget=GitOperationBudget(0.5 if fault == "deadline" else 60)
+                    cancel=token,
+                    budget=GitOperationBudget(_DEADLINE_SECONDS if fault == "deadline" else 60),
                 )
             )
             try:
@@ -1016,7 +1022,7 @@ async def test_real_blocked_git_process_is_reaped_on_cancel_or_shared_deadline(
                     else KernelError
                 )
                 with pytest.raises(expected) as caught:
-                    await asyncio.wait_for(task, 5)
+                    await asyncio.wait_for(task, 5 + _DEADLINE_SECONDS)
                 if fault == "deadline":
                     assert caught.value.code in {"git_baseline_timeout", "git_process_timeout"}
                 # 原process_exited仅在直接子进程已经wait/reap后通知；同时检查管道关闭。
