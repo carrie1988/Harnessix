@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 1
+version: 2
 code_revision: 5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1
 owners:
   - core
@@ -48,6 +48,11 @@ supersedes: []
 ---
 
 # Managed Patch Runtime模块设计
+
+## 当前增量：可定位的锚点拒绝（ADR 0129）
+
+- 精确编辑的三类拒绝都以`edits[j]`下标开头，并给出模型下一步能用的事实：锚点未找到时指出首个非空行所在行号，或说明`new_text`已在文件中（该编辑看起来已应用）；锚点不唯一时列出各处行号（至多5处）；编辑重叠时指出两条编辑的下标与重叠所在行。
+- 判定条件、计划算法与全部上限不变，只改变拒绝文本；文本为英文，不回显文件内容。见[`planner.py`](../../src/harnessix/patches/planner.py)。
 
 ## 1. 文档摘要
 

@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 900,
-    "src/harnessix/agent/runtime.py": 3480,
+    "src/harnessix/agent/runtime.py": 3535,
     "src/harnessix/context/sources.py": 839,
     "src/harnessix/delivery/git.py": 902,
     "src/harnessix/delivery/git_push.py": 609,
@@ -59,15 +59,15 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 3195,
+      "max_lines": 3233,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
-      "max_lines": 192,
+      "max_lines": 203,
       "max_decision_complexity": 48
     },
     "harnessix.agent.runtime:AgentRuntime._drive": {
-      "max_lines": 261,
+      "max_lines": 264,
       "max_decision_complexity": 50
     },
     "harnessix.agent.runtime:AgentRuntime._execute_calls": {
@@ -635,7 +635,7 @@
       "max_decision_complexity": 25
     },
     "harnessix.tools.runtime:CodingToolRuntime": {
-      "max_lines": 302,
+      "max_lines": 312,
       "max_decision_complexity": 0
     },
     "harnessix.tools.workspace:Workspace": {

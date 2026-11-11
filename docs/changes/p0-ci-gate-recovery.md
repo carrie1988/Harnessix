@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 6
+version: 7
 code_revision: c7b13fb3b4eb8cce15b97c90acfbf849ad280ba9
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models, processes]
@@ -113,6 +113,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 恢复门禁后，P0-10又让`ProductController`增加36行、`ProductApp`增加4行，用于本会话审批规则。相关判断已拆到
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
+第二轮耗时与解决率改进（见[变更设计](round2-time-and-resolve-rate.md)）把四项可选能力接入Agent运行时：工具步骤说明（ADR 0135）、会话基线（ADR 0131）、说明进历史与压缩校准（ADR 0132）、计划调用重排与补丁前置条件补全（ADR 0136、ADR 0129）。判断与文本都在各自的新模块里（`step_notices.py`、`session_baseline.py`、`request_notes.py`、`compaction_calibration.py`），留在`agent/runtime.py`的只有接线：导入16行、构造参数与赋值11行、会话基线说明的提交方法13行（它要读Thread并经`_commit`发布，放在运行时之外需要再开一个端口）、其余为各调用点。文件3480→3535行，`AgentRuntime`3195→3233行，`__init__`192→203行，`_drive`261→264行（复杂度不变）。`CodingToolRuntime`302→312行：新增`workspace_changes`与`workspace_file_mode`两个薄转发，实现分别在`tools/git.py`与`tools/files.py`。同一轮里`runtime.py`的未注册工具分支复用固定拒绝结果减少3行，`messages_for`与两个适配器的`build_request`各减少5～10行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
 Windows原生验证步骤（`windows-trusted-execution`）的第一步在GitHub Windows Runner上用时约2分57秒（134项全部通过），3分钟步骤时限在pytest收尾时到期，整步判失败，其后的Windows产品测试全部被跳过。曾尝试放宽时限，但该任务的步骤定义由治理测试冻结（`test_original_windows_core_steps_are_unchanged`等），属于原生验收边界的治理决策，已撤回，待用户决定；在此之前Windows产品级覆盖以Windows正式测试机实测为准。
 0.10.0b12发布提交单独推送时，CI以上一次推送为文档门禁基准，升版本带来的SBOM、许可证证据与锁文件变化要求本文同步记录；此后升版本提交与本说明一起提交。
