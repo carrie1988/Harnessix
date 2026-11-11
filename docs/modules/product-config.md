@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 136
+version: 137
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -96,6 +96,7 @@ related_tests:
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_session_baseline_wiring.py
   - tests/product_config/test_agent_context.py
   - tests/integration/test_product_process_profile.py
   - tests/evals/test_task_pack_execution.py
@@ -115,6 +116,12 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
+
+## 当前增量：产品运行时启用会话基线（ADR 0131）
+
+- [`_serve_product_stdio`](../../src/harnessix/product_config/server.py)构造`AgentRuntime`时传入`session_baseline=tools`：会话基线的观察端口就是本进程的`CodingToolRuntime`，与模型所用`git_status`、`git_review`共用同一个Git只读运行时。会话开始前工作区已有的未提交改动由此被记录、告知模型并在完成前复核（见[Agent模块设计](agent.md)“会话基线”）。
+- 产品配置与Action配置的Schema不变，没有新增开关。入口没有git可执行文件（`--git-executable`未给出，或`harnessix code`、`harnessix exec`探测不到）时端口返回`None`，行为与此前相同。
+- 测试：[`tests/product_config/test_session_baseline_wiring.py`](../../tests/product_config/test_session_baseline_wiring.py)以真实Git仓库核对接线，以及没有git时不生效。
 
 ## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
 

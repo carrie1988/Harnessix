@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 46
+version: 47
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0131-session-baseline-for-pre-existing-workspace-changes.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -40,6 +41,8 @@ related_tests:
   - tests/agent/test_approval_crash_recovery.py
   - tests/agent/test_interactions.py
   - tests/agent/test_cancelled_turn_notice.py
+  - tests/agent/test_session_baseline.py
+  - tests/agent/test_session_baseline_git.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_trusted_action_locked_sync.py
   - tests/agent/test_legacy_process_compatibility.py
@@ -49,6 +52,18 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：会话基线（ADR 0131）
+
+- **缺陷**：会话开始时工作区已有的未提交改动（用户的在途修改、任务环境预置的文件），模型在`git status`里看到后无从判断来历，曾在收尾清理时还原（`projectlombok__lombok-3009__jGA3Cpp`第38步，源码修复正确却整题失败）。此前只有评测适配器的补丁导出知道开始前的工作区。
+- **启用**：`AgentRuntime(session_baseline=<WorkspaceChangeObserver>)`，默认`None`时行为不变。端口只有一个方法`workspace_changes(cancel, paths=())`，返回与`git_status`相同的`GitStatusOutput`；产品传入`CodingToolRuntime`。逻辑全部在[`session_baseline`](../../src/harnessix/agent/session_baseline.py)，Runtime只有三处接线。
+- **记录与告知**（`_continue`，Turn为`accepted`时）：Thread还没有运行过模型步骤、不是Fork、也没有记录时观察一次；有改动则追加一条已完成的`user_message`宿主说明，身份`uuid5(turn_id, "harnessix.session-baseline/v1")`。正文是英文说明加末行JSON记录（`changes`逐条为`git status --short`写法，至多64条、4 KiB，`truncated`标明是否完整）。宿主此后只读这一行（`recorded_baseline`），不新增事件类型或存储。改动多到状态读取超限时，说明改为“多到无法列出”。
+- **标记**（`_execute`）：`git_status`、`git_review`的成功结果里，属于基线的条目加`pre_existing: true`，状态对象加`pre_existing_note`；标记后超出结果上限时返回原结果。
+- **完成前复核**（`_drive`，本步无工具调用且未截断，先于`_close_model_step`）：只对基线路径观察一次。路径不再出现在状态里，或开始前不是删除状态而现在是，记为丢失；HEAD已移动时不判断。有未提示过的丢失路径时追加一条`user_message`（身份`uuid5(turn_id, "harnessix.session-baseline-loss/v1")`，末行JSON列出路径），`_close_model_step`随即按既有Steering语义重入，本函数未改动。每个Turn至多一条，提示过的路径在整个Thread里不再提示，预算用尽时不补发。
+- **与完成守卫的先后**：复核说明先落账，该步完成守卫不再判定；模型回应后的下一次无工具调用回复照常经过完成守卫。
+- **失败与恢复**：观察失败（不是仓库、Git不可用、超时）按没有观察处理，不影响Turn；取消照常传播。说明落账后崩溃，恢复时按Item身份识别，不重复记录。
+- **界面**：Product UI按`is_session_baseline_notice`不显示这两条说明。
+- **测试**：[`tests/agent/test_session_baseline.py`](../../tests/agent/test_session_baseline.py)、[`tests/agent/test_session_baseline_git.py`](../../tests/agent/test_session_baseline_git.py)（真实Git仓库端到端）。局限见ADR 0131。
 
 ## 当前增量：思考预览（0.10.0b9）
 

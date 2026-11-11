@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 36
+version: 37
 code_revision: 008485773f840df8a920cf750480a8a363761167
 owners:
   - product
@@ -40,6 +40,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：不显示会话基线的宿主说明（ADR 0131）
+
+- Agent在会话开始时记录工作区已有的未提交改动，并在这些改动被还原或删除时提示模型一次（见[Agent模块设计](agent.md)“会话基线”）。两条说明都是给模型看的英文`user_message`。[`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)按`is_session_baseline_notice(turn_id, item_id)`跳过它们，对话里不出现用户没有说过的话；界面既有文字不变。回归见`tests/agent/test_session_baseline.py`。
 
 ## 当前增量：按平台给出Shell配置文件（0.10.0b12）
 
