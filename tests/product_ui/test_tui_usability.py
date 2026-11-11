@@ -42,7 +42,7 @@ from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk import InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.helpers import RecordingTools, answer, tool_step
-from tests.product_ui.test_app_interactions import _turn_status, _wait_until
+from tests.product_ui.test_app_interactions import _click_when_ready, _turn_status, _wait_until
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -90,7 +90,7 @@ async def test_a_new_approval_opens_by_itself_once(
                 assert app.check_action("approval", ())
                 await pilot.press("ctrl+a")
                 await _wait_until(lambda: isinstance(app.screen, ApprovalScreen))
-                await pilot.click("#approval-approve")
+                await _click_when_ready(pilot, "#approval-approve")
                 await _wait_until(lambda: _turn_status(controller) == "completed")
                 await _wait_until(lambda: not app.check_action("approval", ()))
                 assert len(tools.calls) == 1

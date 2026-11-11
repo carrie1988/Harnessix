@@ -6,6 +6,8 @@ from pathlib import Path
 from time import monotonic
 
 import pytest
+from textual.css.query import NoMatches
+from textual.pilot import Pilot
 from textual.widgets import Button, Input, Static
 
 from harnessix.agent.runtime import AgentRuntime
@@ -53,6 +55,24 @@ async def _wait_until(predicate, *, timeout_seconds: float = 10) -> None:
     async with asyncio.timeout(timeout_seconds):
         while not predicate():  # noqa: ASYNC110 - Textual状态由后台Controller更新
             await asyncio.sleep(0.02)
+
+
+async def _click_when_ready(pilot: Pilot, selector: str) -> None:
+    """等弹窗按钮完成布局且可用后再点，并确认点击落在按钮上。
+
+    弹窗入栈后app.screen立即切换，但按钮可能尚未布局（region为空），此时点击按空区域计算坐标而落空，
+    测试只会在后续等待里超时（CI py3.13负载下复现）。
+    """
+
+    def ready() -> bool:
+        try:
+            button = pilot.app.screen.query_one(selector, Button)
+        except NoMatches:
+            return False
+        return not button.disabled and button.region.area > 0
+
+    await _wait_until(ready)
+    assert await pilot.click(selector), f"点击未落在{selector}上"
 
 
 def _turn_status(controller: ProductController) -> str | None:
@@ -123,7 +143,7 @@ async def test_product_app_completes_approval_modal_flow(tmp_path: Path) -> None
 
                 await pilot.press("ctrl+a")
                 await _wait_until(lambda: isinstance(app.screen, ApprovalScreen))
-                await pilot.click("#approval-approve")
+                await _click_when_ready(pilot, "#approval-approve")
                 await _wait_until(lambda: _turn_status(controller) == "completed")
 
                 assert len(tools.calls) == 1
