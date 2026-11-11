@@ -765,6 +765,7 @@ uv tool uninstall harnessix
 | 现象 | 处理 |
 |---|---|
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
+| 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export MODEL_API_KEY=你的Key` 后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#41-准备-api-key) |
 | 配置时提示配置目录权限或身份不安全 | 运行 `chmod 700 ~/.harnessix`，并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key |

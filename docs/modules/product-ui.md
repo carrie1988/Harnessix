@@ -47,6 +47,8 @@ supersedes: []
 
 - 顶层`harnessix -V/--version`显示已安装版本（[`cli.py`](../../src/harnessix/cli.py)读取包元数据）；此前用户输入`--version`得到“缺少子命令”。
 
+- 启动失败的说明：[`startup_failure.startup_failure_text`](../../src/harnessix/product_ui/startup_failure.py)先用一句白话说明为什么不能启动，再按编号给出可照做的步骤；缺少API Key时从配置文件读出环境变量名，给出可直接复制的`export`命令（Windows为PowerShell的`$env:`与`setx`）。`harnessix code`与`exec`启动失败都改用它；完整检查清单仍由`harnessix code doctor`输出。此前启动失败直接打印整张预检清单，原因夹在英文原因码里（2026-11-10 macOS实测）。
+
 ## 当前增量：运行中的动态指示（0.10.0b8）
 
 - 用户反馈：模型思考或整段生成写文件内容时，界面几十秒只有静止的“思考中”，看起来像卡住（百炼qwen3.8实测流中静默13～27秒）。[`ActivityIndicator`](../../src/harnessix/product_ui/activity_indicator.py)位于对话与状态栏之间，只在Agent自己运行（accepted、preparing_context、calling_model、executing_tools、waiting_action、finalizing、cancelling）时显示一行“⠹ 思考中 · 已运行 23 秒”；当前步骤已收到正文时显示“生成回复中”。等待审批或回答时隐藏，因为那时在等人。定时器每0.12秒只更新这一行，不重绘对话；计时从界面第一次看到这一轮开始。

@@ -28,7 +28,6 @@ from harnessix.product_ui.cli import (
     _default_config,
     _default_state_directory,
     _preflight_request,
-    _render_preflight,
     _server_command,
     _workspace,
 )
@@ -40,6 +39,7 @@ from harnessix.product_ui.cost_estimate import (
 )
 from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
+from harnessix.product_ui.startup_failure import startup_failure_text
 from harnessix.product_ui.turn_budget import turn_budget_for
 from harnessix.product_ui.workspace_trust import confirm_workspace_trust
 from harnessix.protocol.contracts import (
@@ -330,11 +330,11 @@ def _prepare(arguments: argparse.Namespace) -> _Launch | None:
     preflight = run_product_preflight(
         _preflight_request(arguments, mode="startup", require_tui=False)
     )
+    config = Path(arguments.config).absolute() if arguments.config else _default_config()
     if not preflight.ready:
-        print(_render_preflight(preflight), file=sys.stderr)
+        print(startup_failure_text(preflight, config), file=sys.stderr)
         return None
     workspace = _workspace(arguments.workspace)
-    config = Path(arguments.config).absolute() if arguments.config else _default_config()
     state_root = (
         Path(arguments.state_directory).absolute()
         if arguments.state_directory

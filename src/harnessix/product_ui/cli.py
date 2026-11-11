@@ -43,6 +43,7 @@ from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import remediation_text, sandbox_status_line
 from harnessix.product_ui.session import RecoverableAgentSession
+from harnessix.product_ui.startup_failure import startup_failure_text
 from harnessix.product_ui.state_store import ClientStateStore
 from harnessix.product_ui.workspace_trust import confirm_workspace_trust
 from harnessix.sdk import AgentSDKError, SubprocessAgentTransport
@@ -534,6 +535,7 @@ def code_main(argv: Sequence[str] | None = None) -> None:
     arguments.git_executable = detected_git_executable(
         arguments.git_executable, Path(arguments.workspace).absolute()
     )
+    config = Path(arguments.config).absolute() if arguments.config else _default_config()
     try:
         preflight = run_product_preflight(
             _preflight_request(
@@ -543,11 +545,10 @@ def code_main(argv: Sequence[str] | None = None) -> None:
             )
         )
         if not preflight.ready:
-            print(_render_preflight(preflight), file=sys.stderr)
+            print(startup_failure_text(preflight, config), file=sys.stderr)
             raise SystemExit(2)
         app_type = _product_app_type()
         workspace = _workspace(arguments.workspace)
-        config = Path(arguments.config).absolute() if arguments.config else _default_config()
         state_root = (
             Path(arguments.state_directory).absolute()
             if arguments.state_directory

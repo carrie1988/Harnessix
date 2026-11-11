@@ -101,8 +101,9 @@ def test_code_cli_rejects_missing_workspace_with_stable_redacted_error(
 
     assert error.value.code == 2
     captured = capsys.readouterr()
-    assert "Harnessix Code检查结论：不可启动" in captured.err
-    assert "workspace_binding_invalid" in captured.err
+    # 启动失败先说原因和做法（0.10.0b9）；完整检查清单在 harnessix code doctor。
+    assert captured.err.startswith("Harnessix 无法启动") and "工作区目录不可用" in captured.err
+    assert "harnessix code doctor" in captured.err and "[通过]" not in captured.err
     assert secret not in captured.err and captured.out == ""
 
 
