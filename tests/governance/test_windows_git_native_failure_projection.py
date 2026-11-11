@@ -79,6 +79,7 @@ def original_observer():
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",  # 源码含中文；Windows默认按本地编码解码会失败，stdout变成None
     ).stdout
     namespace = {"__name__": "baseline_observe"}
     exec(compile(source, "baseline_observe", "exec"), namespace)

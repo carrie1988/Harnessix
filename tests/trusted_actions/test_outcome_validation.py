@@ -42,6 +42,12 @@ def test_valid_native_envelope_preserves_fields_and_independent_output(external,
         assert result.output == before
 
 
+def _short_id(value: object) -> str | None:
+    """超长字符串参数取短名：pytest把用例名写进环境变量，Windows上限32767字符。"""
+
+    return f"{len(value)}-chars" if isinstance(value, str) and len(value) > 100 else None
+
+
 @pytest.mark.parametrize(
     "name,value",
     [
@@ -61,6 +67,7 @@ def test_valid_native_envelope_preserves_fields_and_independent_output(external,
         ("error_code", 12),
         ("error_code", "invalid-error"),
     ],
+    ids=_short_id,
 )
 def test_constructed_or_copied_header_does_not_bypass_contract(name, value):
     raw = ActionExecutionOutcome.model_construct(kind="failed", error_code="executor_error")

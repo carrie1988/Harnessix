@@ -3,6 +3,8 @@ LICENSE text eol=lf
 *.sql text eol=lf
 *.sh text eol=lf
 uv.lock text eol=lf
+# 按字节校验摘要的冻结测试输入：Windows检出时不能转成CRLF
+tests/workspace/fixtures/workspace_paths_before.py text eol=lf
 pyproject.toml text eol=lf
 governance/sbom.cyclonedx.json -text
 governance/license-scan-v1.json -text

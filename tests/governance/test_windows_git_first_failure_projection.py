@@ -409,6 +409,7 @@ def test_frozen_v1_reader_and_single_returncode_publisher_are_exact():
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     ).stdout
     namespace = {"__name__": "frozen_failure_projection"}
     exec(compile(source, "frozen_failure_projection", "exec"), namespace)
