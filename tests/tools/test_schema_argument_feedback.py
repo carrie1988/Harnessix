@@ -477,19 +477,21 @@ def test_repeated_extra_fields_name_each_location_and_list_allowed_fields_once()
     files = [{**_patch_file(content_sha256=None), "path": f"src/f{i}.py"} for i in range(3)]
     message = _patch_feedback({"files": files})
     located = message.split("Problems: ", 1)[1].split(". ", 1)[0].split("; ")
+    extra = "not a field of this contract, remove it"
     assert located == [
-        "files[0].content_sha256: not a field of this contract, remove it (allowed here: content, edits, expected_sha256, mode, operation, path)",
-        "files[1].content_sha256: not a field of this contract, remove it",
-        "files[2].content_sha256: not a field of this contract, remove it",
+        f"files[0].content_sha256: {extra} "
+        "(allowed here: content, edits, expected_sha256, mode, operation, path)",
+        f"files[1].content_sha256: {extra}",
+        f"files[2].content_sha256: {extra}",
     ]
 
 
 def test_top_level_extra_field_is_named_with_the_published_fields() -> None:
     message = _patch_feedback({"files": [_patch_file()], "dry_run": True})
     assert (
-        "Problems: dry_run: not a field of this contract, remove it (allowed here: files, spec_version). "
-        in message
-    )
+        "Problems: dry_run: not a field of this contract, remove it "
+        "(allowed here: files, spec_version). "
+    ) in message
 
 
 def test_empty_files_still_reports_the_genuine_length_error() -> None:
