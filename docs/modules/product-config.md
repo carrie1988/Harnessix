@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 134
-code_revision: 6dca857c7d1e9c4352e37a5043f225007289692b
+version: 135
+code_revision: 008485773f840df8a920cf750480a8a363761167
 owners:
   - core
 modules:
@@ -112,8 +112,15 @@ related_tests:
   - tests/product_config/test_zero_config.py
   - tests/product_config/test_reasoning_transport_limits.py
   - tests/product_config/test_activation_precondition.py
+  - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
+
+## 当前增量：服务商菜单与智谱端点（0.10.0b11）
+
+- **服务商菜单**：[`vendors.py`](../../src/harnessix/product_config/vendors.py)登记配置向导列出的国内服务商——DeepSeek官方、阿里云百炼、智谱——的接口地址、API Key变量名（`DEEPSEEK_API_KEY`、`DASHSCOPE_API_KEY`、`ZAI_API_KEY`，与各家官方文档一致）和推荐模型，每家第一个是默认（便宜且够日常编码）。它只决定“列什么”，上下文窗口、思考方式、等待时间与牌价不在此重复，由下列按端点核对的表决定；测试保证菜单里每个型号都有核对过的价格和窗口。
+- **智谱端点**（官方文档核对于2026-11-10）：OpenAI兼容地址`https://open.bigmodel.cn/api/paas/v4`；GLM-5.3系列上下文100万Token，强制思考、不能关闭，因此不声明思考协议，按[`reasoning_models.reasons_by_default`](../../src/harnessix/product_config/reasoning_models.py)使用思考型传输限额；`tool_choice`“默认且仅支持auto”，[`wizard.auto_tool_choice_only`](../../src/harnessix/product_config/wizard.py)使向导写入`omit_tool_choice`；请求只认`max_tokens`，向导对该端点写入`output_token_parameter=max_tokens`。
+- `wizard.current_config_digest`读出现有配置的摘要，交互向导询问替换时与原有的替换提示共用。
 
 ## 当前增量：旧配置自动使用思考型等待时间（0.10.0b9）
 
@@ -2263,6 +2270,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 135 | `00848577` 增量 | 2026-11-10 | 服务商菜单目录`vendors.py`；智谱端点的上下文窗口、强制思考限额、只发auto的工具选择与`max_tokens`（0.10.0b11） |
 | 134 | `098c1b55` 增量 | 2026-11-10 | 旧向导写下的默认等待时间对默认思考模型在运行时自动放宽（0.10.0b9） |
 | 133 | `384ff28d` 增量 | 2026-11-10 | 百炼qwen3.8系列套用思考型传输限额；产品入口以当前活动指针作为切换前提，改配置后工作区不再无法打开（0.10.0b8） |
 | 132 | `6a2fd39272ef2bba6fee5108bff577c0154183a9` | 2026-11-10 | Windows沙箱外命令（W2）：[`native_shells.py`](../../src/harnessix/product_config/native_shells.py)集中Shell规则，POSIX仍为sh/bash/dash/zsh加`-c`/`-lc`，Windows只允许沙箱外`powershell.exe`或`pwsh.exe`配固定参数（不加载配置、不交互、UTF-8输出）；零配置在Windows上生成`host_command.host-shell`，Windows Process Owner只证明沙箱外命令；环境继承增加Windows系统与用户目录变量 |

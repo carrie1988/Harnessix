@@ -20,7 +20,7 @@ from harnessix.product_config.contracts import (
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.runtime import default_provider_factory
 from harnessix.product_config.wizard import build_product_config, thinking_preset
-from harnessix.product_ui.cli import _configure
+from harnessix.product_ui.configure_cli import configure_main
 
 BAILIAN = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 DEEPSEEK = "https://api.deepseek.com"
@@ -200,7 +200,7 @@ def test_only_loopback_endpoints_may_declare_free_pricing():
 
 def _configure_to(tmp_path: Path, *extra: str) -> ProductConfigV2:
     path = tmp_path / "config.json"
-    _configure(
+    configure_main(
         [
             "--config",
             str(path),

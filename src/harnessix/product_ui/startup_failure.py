@@ -68,13 +68,13 @@ def _title(check: ProductPreflightCheck) -> str:
 
 def _steps(check: ProductPreflightCheck, config: Path | None) -> str:
     if check.remediation_id == "set_environment_secret":
-        return _secret_steps(_secret_variables(config))
+        return api_key_setup_text(_secret_variables(config))
     text = remediation_text(check.remediation_id) if check.remediation_id else None
     return text or "运行 harnessix code doctor 查看具体原因"
 
 
-def _secret_steps(names: Sequence[str]) -> str:
-    """按平台给出设置环境变量的命令；变量名来自配置文件，本身不是机密。"""
+def api_key_setup_text(names: Sequence[str]) -> str:
+    """按平台给出设置API Key环境变量的命令；变量名来自配置，本身不是机密。"""
 
     variables = names or ("MODEL_API_KEY",)
     if os.name == "nt":

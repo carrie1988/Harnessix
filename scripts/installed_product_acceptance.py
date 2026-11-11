@@ -161,6 +161,7 @@ def prepare_case(root: Path) -> InstalledCase:
         (
             "code",
             "configure",
+            "--json",
             "--config",
             str(case.config),
             "--provider-kind",

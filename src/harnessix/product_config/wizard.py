@@ -88,11 +88,15 @@ _SELF_HOSTED_LIMITS: dict[str, object] = {
 }
 
 
-# 官方文档核对（2026-11-09）的按量调用上下文长度（Token）；未列出的端点和模型不预设。
+# 官方文档核对（智谱2026-11-10，其余2026-11-09）的按量调用上下文长度；未列出的不预设。
 _KNOWN_CONTEXT_WINDOWS: tuple[tuple[str, tuple[str, ...], int], ...] = (
     ("api.deepseek.com", ("deepseek-v4", "deepseek-flash"), 1_000_000),
     ("dashscope.aliyuncs.com", ("deepseek-v4", "qwen3.8-max", "qwen3.8-flash"), 1_000_000),
+    ("open.bigmodel.cn", ("glm-5.3",), 1_000_000),
 )
+# 智谱文档：tool_choice“默认且仅支持auto”，请求只认max_tokens。
+_AUTO_TOOL_CHOICE_ONLY_HOSTS = frozenset({"open.bigmodel.cn"})
+_MAX_TOKENS_HOSTS = frozenset({"open.bigmodel.cn"})
 
 
 def known_context_window(base_url: str, model: str) -> int | None:
@@ -143,6 +147,12 @@ def thinking_preset(
     return None
 
 
+def auto_tool_choice_only(base_url: str) -> bool:
+    """端点只接受tool_choice=auto：不发送tool_choice，强制选择改由可执行集收窄约束。"""
+
+    return urlsplit(base_url).hostname in _AUTO_TOOL_CHOICE_ONLY_HOSTS
+
+
 def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     """使用现有安全默认值生成单Provider、单Profile配置；声明思考协议时默认只在工具步骤思考。"""
 
@@ -158,7 +168,9 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
     )
     thinking = thinking and not thinking_auto_off
     output_token_parameter = checked.output_token_parameter or (
-        "max_tokens" if protocol is not None else None
+        "max_tokens"
+        if protocol is not None or urlsplit(checked.base_url).hostname in _MAX_TOKENS_HOSTS
+        else None
     )
     # 自托管端点（本机回环或已声明的内网）：还原被字符串化的工具参数，并按0元计价。
     self_hosted = checked.self_hosted or urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
@@ -321,11 +333,19 @@ def _validate_expected_digest(value: str | None) -> None:
         raise KernelError("product_config_write_invalid", "产品配置期望摘要无效")
 
 
+def current_config_digest(target: Path) -> str | None:
+    """现有配置文件的摘要，替换时作为期望值；读不到时返回None。"""
+
+    try:
+        return hashlib.sha256(read_product_config_bytes(target)).hexdigest()
+    except (OSError, KernelError):
+        return None
+
+
 def _replace_hint(target: Path) -> str:
     """给出当前文件摘要：用户照此替换，摘要仍挡住期间被别人改写的配置。"""
-    try:
-        digest = hashlib.sha256(read_product_config_bytes(target)).hexdigest()
-    except (OSError, KernelError):
+    digest = current_config_digest(target)
+    if digest is None:
         return ""
     return f"；要替换它，加 --replace --expected-source-sha256 {digest}"
 

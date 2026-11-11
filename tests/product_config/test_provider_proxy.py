@@ -23,7 +23,7 @@ from harnessix.product_config.endpoint_probe import probe_chat_endpoint, probe_p
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.runtime import default_provider_factory
 from harnessix.product_config.wizard import build_product_config
-from harnessix.product_ui.cli import _configure
+from harnessix.product_ui.configure_cli import configure_main
 
 BAILIAN = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 PROXY = "http://127.0.0.1:7890"
@@ -47,7 +47,7 @@ def _provider(**changes: object) -> dict[str, object]:
 
 def test_configure_records_the_proxy_on_the_provider(tmp_path: Path, capsys) -> None:
     path = tmp_path / "config.json"
-    _configure(
+    configure_main(
         [
             "--config",
             str(path),
@@ -81,18 +81,19 @@ def test_adding_a_proxy_to_an_existing_config_follows_the_printed_hint(
         BAILIAN,
         "--model",
         "qwen3.8-flash",
+        "--json",
     ]
-    _configure(arguments)
+    configure_main(arguments)
     capsys.readouterr()
 
     with pytest.raises(SystemExit):
-        _configure([*arguments, "--proxy-url", PROXY])
+        configure_main([*arguments, "--proxy-url", PROXY])
     error = json.loads(capsys.readouterr().err)
     assert error["code"] == "product_config_exists"
     hint = error["message"].split("要替换它，加 ")[1].split()
     assert hint[:2] == ["--replace", "--expected-source-sha256"]
 
-    _configure([*arguments, "--proxy-url", PROXY, *hint])
+    configure_main([*arguments, "--proxy-url", PROXY, *hint])
     capsys.readouterr()
     assert load_product_config(path).config.providers[0].proxy_url == PROXY
 

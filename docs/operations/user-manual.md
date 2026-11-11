@@ -187,41 +187,79 @@ Linux 上的命令沙箱依赖 bubblewrap。没有可用的沙箱时，Harnessix
 
 配置只需做一次，结果保存在 `~/.harnessix/config.json`。**API Key 不写入任何文件**，Harnessix 只记录环境变量的名字，每次运行时从环境变量读取。
 
-### 4.1 准备 API Key
+### 4.1 选择服务商和模型
 
-默认从环境变量 `MODEL_API_KEY` 读取：
+运行向导，按提示选择即可：
 
 ```bash
-export MODEL_API_KEY=你的Key
+harnessix code configure
 ```
 
-为了不必每次都输入，可以：
+```text
+选择模型服务商：
+  1) DeepSeek 官方
+  2) 阿里云百炼（通义千问、DeepSeek）
+  3) 智谱 GLM
+  4) 其他兼容 OpenAI 接口的服务（手动填写地址和模型名）
+输入序号 [1]: 2
+选择模型（阿里云百炼，价格为每百万 Token）：
+  1) qwen3.8-flash  便宜、速度快（推荐） · 输入 ¥0.8 / 输出 ¥2.7
+  2) qwen3.8-max  千问能力最强 · 输入 ¥12 / 输出 ¥36
+  3) deepseek-v4-pro  百炼提供的 DeepSeek · 输入 ¥12 / 输出 ¥24
+  4) 手动输入其他模型名
+输入序号 [1]:
+```
 
-- 写入 shell 配置文件（如 `~/.zshrc`），注意这是明文保存；
-- macOS 上更安全的做法是存进钥匙串，再在 shell 配置文件里读取：
+直接回车选第一项。每家的第一个模型便宜、够日常编码用，需要更强的效果再选其他型号。接口地址、上下文窗口、思考方式和等待时间都会自动填好。完成后向导会告诉你下一步，例如：
 
-  ```bash
-  security add-generic-password -a "$USER" -s harnessix-model -w   # 按提示输入 Key
-  # 在 ~/.zshrc 中：
-  export MODEL_API_KEY=$(security find-generic-password -s harnessix-model -w)
-  ```
+```text
+配置已保存：~/.harnessix/config.json
+模型：qwen3.8-flash（阿里云百炼） · 每百万 Token 输入 ¥0.8 / 输出 ¥2.7
 
-想用别的变量名（例如已经有 `DASHSCOPE_API_KEY`），配置时加 `--api-key-env DASHSCOPE_API_KEY`。
+下一步：
+  1. 在当前终端设置 API Key：
+       export DASHSCOPE_API_KEY=你的API Key
+     想以后打开终端都生效，把上面这一行加到 ~/.zshrc（zsh）或 ~/.bash_profile（bash）末尾。
+  2. 进入项目目录，运行 harnessix code
+```
 
-### 4.2 云模型
+### 4.2 API Key
 
-**DeepSeek：**
+**API Key 不写入任何文件**，Harnessix 只记录环境变量的名字，每次运行时从环境变量读取。各服务商使用的变量名与其官方文档一致，可以同时设好几家的 Key，切换服务商时不必改环境变量：
+
+| 服务商 | 环境变量 | 在哪里获取 Key |
+|---|---|---|
+| DeepSeek 官方 | `DEEPSEEK_API_KEY` | DeepSeek 开放平台 |
+| 阿里云百炼 | `DASHSCOPE_API_KEY` | 百炼控制台（使用按量付费的 API Key） |
+| 智谱 GLM | `ZAI_API_KEY` | 智谱开放平台 |
+| 其他服务、自己部署的模型 | `MODEL_API_KEY` | — |
+
+macOS 上比写进 `~/.zshrc` 更安全的做法是存进钥匙串，再在 shell 配置文件里读取：
+
+```bash
+security add-generic-password -a "$USER" -s harnessix-model -w   # 按提示输入 Key
+# 在 ~/.zshrc 中：
+export DASHSCOPE_API_KEY=$(security find-generic-password -s harnessix-model -w)
+```
+
+想用别的变量名，配置时加 `--api-key-env 变量名`。
+
+### 4.3 在脚本里配置
+
+不想交互时，用 `--vendor` 指定服务商（`deepseek`、`bailian`、`zhipu`），不写 `--model` 时使用该家的默认模型：
+
+```bash
+harnessix code configure --vendor bailian --non-interactive
+harnessix code configure --vendor deepseek --model deepseek-v4-pro --non-interactive
+```
+
+需要机器可读的结果时加 `--json`：成功时输出 JSON 收据，失败时在 stderr 输出 JSON 错误（0.10.0b11 起不加 `--json` 时输出中文说明）。
+
+其他 OpenAI 兼容服务手动填写地址和模型名：
 
 ```bash
 harnessix code configure --provider-kind openai_chat \
-  --base-url https://api.deepseek.com/v1 --model deepseek-v4-pro --non-interactive
-```
-
-**阿里云百炼（使用按量付费的 API Key）：**
-
-```bash
-harnessix code configure --provider-kind openai_chat \
-  --base-url https://dashscope.aliyuncs.com/compatible-mode/v1 --model qwen3.8-flash --non-interactive
+  --base-url https://你的服务地址/v1 --model 模型名 --non-interactive
 ```
 
 下列模型已内置上下文窗口和思考设置，并核对过牌价，界面会显示费用上限：
@@ -234,10 +272,13 @@ harnessix code configure --provider-kind openai_chat \
 | 百炼 | `deepseek-v4-pro-0813` | 100 万 | ¥9 / ¥27（高峰价） |
 | 百炼 | `qwen3.8-max`、`qwen3.8-max-0902` | 100 万 | ¥12 / ¥36 |
 | 百炼 | `qwen3.8-flash` | 100 万 | ¥0.8 / ¥2.7 |
+| 智谱 | `glm-5.3-flash` | 100 万 | ¥0.8 / ¥2.8 |
+| 智谱 | `glm-5.3-flashx` | 100 万 | ¥2 / ¥7 |
+| 智谱 | `glm-5.3` | 100 万 | ¥8 / ¥28 |
 
 牌价核对于 2026-11-10，以服务商官网为准；金额一律以人民币显示。只有表中的确切型号会显示费用，带其他日期或后缀的型号可能另有价格，显示为“费用未知”。其他 OpenAI 兼容服务和 Anthropic 接口（`--provider-kind anthropic`）也可以使用，但费用显示为“未知”。没有内置窗口的模型，建议用 `--context-window-tokens` 写明上下文窗口。
 
-### 4.3 自己部署的模型
+### 4.4 自己部署的模型
 
 **同一台机器**（地址是 `127.0.0.1`、`localhost` 或 `::1`）：无需额外声明，自动按本地模型配置。
 
@@ -268,10 +309,6 @@ harnessix code configure --provider-kind openai_chat \
 
 详见[接入自托管模型](self-hosted-models.md)。
 
-### 4.4 交互式向导
-
-不带 `--non-interactive` 运行 `harnessix code configure` 时，向导会依次询问 Provider 类型（`openai_chat` 或 `anthropic`）、Base URL 和模型名；遇到内网地址时还会问“这是你自己部署的模型吗？”。命令行已经给出的项不再询问。
-
 ### 4.5 使用代理
 
 需要经代理访问云模型时，任选一种方式：
@@ -283,7 +320,9 @@ harnessix code configure --provider-kind openai_chat \
 
 ### 4.6 修改已有配置
 
-为了防止误覆盖，修改配置需要带上当前配置的摘要：
+换服务商或模型时，再运行一次 `harnessix code configure`。向导会先显示当前模型并询问是否替换，回答 `y` 后按 4.1 重新选择；回答其他内容则保留原配置。
+
+在脚本里修改时，为了防止误覆盖，需要带上当前配置的摘要：
 
 ```bash
 harnessix code configure [新的完整参数] --replace \
@@ -300,10 +339,11 @@ harnessix code configure [新的完整参数] --replace \
 
 | 参数 | 说明 |
 |---|---|
+| `--vendor` | 服务商：`deepseek`、`bailian`（阿里云百炼）、`zhipu`（智谱），自动填写地址和 Key 变量名 |
 | `--provider-kind` | `openai_chat`（OpenAI 兼容接口）或 `anthropic` |
 | `--base-url` | 模型服务地址，云服务必须是 HTTPS |
 | `--model` | 模型名 |
-| `--api-key-env` | 读取 Key 的环境变量名，默认 `MODEL_API_KEY` |
+| `--api-key-env` | 读取 Key 的环境变量名，默认按服务商（见 4.2），手动填写时为 `MODEL_API_KEY` |
 | `--context-window-tokens` | 上下文窗口（Token）。已知云模型自动填写；自托管模型建议填写 |
 | `--self-hosted` | 声明为自己部署的内网端点 |
 | `--proxy-url` | 经本机 HTTP 代理访问 |
@@ -315,6 +355,7 @@ harnessix code configure [新的完整参数] --replace \
 | `--config` | 配置文件路径，默认 `~/.harnessix/config.json` |
 | `--replace`、`--expected-source-sha256` | 修改已有配置，见 [4.6](#46-修改已有配置) |
 | `--non-interactive` | 不询问，缺少参数时直接报错 |
+| `--json` | 输出 JSON 收据和 JSON 错误，供脚本使用 |
 
 ---
 
@@ -593,7 +634,7 @@ Hooks、IDE 插件、Web 搜索、子代理、图片输入、自动更新。
 
 ### 10.1 费用显示
 
-- 已核对牌价的模型（见 [4.2](#42-云模型)），状态栏显示“费用≤¥x.xxxx”。这是按牌价估算的**上限**：所有输入都按未命中缓存的价格计算，实际账单通常更低。
+- 已核对牌价的模型（见 [4.3](#43-在脚本里配置) 的价格表），状态栏显示“费用≤¥x.xxxx”。这是按牌价估算的**上限**：所有输入都按未命中缓存的价格计算，实际账单通常更低。
 - 费用越过提醒档位时，状态栏会提示可以按 `Ctrl+X` 取消。档位：5、20、50、100、200 元。
 - 本地模型显示“本地 0 元”；其他模型显示“费用未知”。
 
@@ -766,7 +807,7 @@ uv tool uninstall harnessix
 | 现象 | 处理 |
 |---|---|
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
-| 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export MODEL_API_KEY=你的Key` 后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#41-准备-api-key) |
+| 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export 变量名=你的Key`（变量名见提示，如 `DASHSCOPE_API_KEY`）后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#42-api-key) |
 | 配置时提示配置目录权限或身份不安全 | 运行 `chmod 700 ~/.harnessix`，并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key |
@@ -920,7 +961,8 @@ uv tool uninstall harnessix
 
 | 变量 | 作用 |
 |---|---|
-| `MODEL_API_KEY` | 默认的模型 API Key 来源（可用 `--api-key-env` 改名） |
+| `DEEPSEEK_API_KEY`、`DASHSCOPE_API_KEY`、`ZAI_API_KEY` | 选择对应服务商时的 API Key 来源（见 [4.2](#42-api-key)） |
+| `MODEL_API_KEY` | 手动填写的服务和自己部署的模型的 API Key 来源（可用 `--api-key-env` 改名） |
 | `HTTPS_PROXY`、`HTTP_PROXY`、`NO_PROXY` | 访问云模型时使用的 HTTP 代理 |
 | `HARNESSIX_TRUST_WORKSPACE=1` | 本次运行信任工作区 |
 | `HARNESSIX_ZERO_CONFIG_ACTIONS=0` | 不自动配置命令工具 |

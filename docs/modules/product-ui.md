@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 35
-code_revision: aa686be2bc813e9a26e5595f050fadded94be69f
+version: 36
+code_revision: 008485773f840df8a920cf750480a8a363761167
 owners:
   - product
 modules:
@@ -32,6 +32,7 @@ related_tests:
   - tests/product_ui/test_app.py
   - tests/product_ui/test_stdio_product.py
   - tests/product_ui/test_cli.py
+  - tests/product_ui/test_configure_vendors.py
   - tests/app_server/test_server_sdk.py
   - tests/evals/test_provider_suite_cli.py
   - tests/product_config/test_zero_config.py
@@ -39,6 +40,13 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：配置向导先选服务商和模型（0.10.0b11）
+
+- 产品面向国内用户，此前向导依次询问“Provider类型(openai_chat/anthropic)”“Base URL”“模型标识”，用户要自己查接口地址和模型名，成功后只打印JSON收据。[`configure_cli.py`](../../src/harnessix/product_ui/configure_cli.py)承接`harnessix code configure`（从`cli.py`移出，`cli.py`只分派）：交互模式先列出DeepSeek官方、阿里云百炼、智谱和“其他兼容OpenAI接口的服务”，再列该家推荐模型与[`cost_estimate`](../../src/harnessix/product_ui/cost_estimate.py)中核对过的人民币牌价，直接回车选第一项（便宜够用的型号）。服务商目录见[产品配置模块设计](product-config.md)“服务商菜单”。
+- 地址与Key变量名取自服务商预设；上下文窗口、思考协议、等待时间与`tool_choice`仍由按端点核对的各表决定，菜单不重复登记。“其他”按OpenAI兼容接口手动填写，变量名仍为`MODEL_API_KEY`；命令行给出的字段优先且不再询问；`--vendor`供脚本使用，不给`--model`时取该家默认模型。
+- 交互模式下已有配置时先显示当前模型并询问是否替换，同意后以此刻的文件摘要作为CAS期望值，期间被其他进程改写仍按冲突拒绝；不同意则不修改。非交互仍要求`--replace --expected-source-sha256`。
+- 成功后用中文说明下一步：Key未设置时复用[`startup_failure.api_key_setup_text`](../../src/harnessix/product_ui/startup_failure.py)给出按平台的设置命令，已设置时说明已检测到（不显示值）。`--json`保留原有的JSON收据与stderr JSON错误；不加时错误也改为中文一行。安装验收脚本改为加`--json`。
 
 ## 当前增量：费用显示的准确性（0.10.0b10）
 
@@ -1076,6 +1084,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 36 | `00848577` 增量 | 2026-11-10 | 配置向导先选服务商（DeepSeek、阿里云百炼、智谱）和模型，成功后说明下一步；`--json`保留机器格式（0.10.0b11） |
 | 35 | `f4a6dfb0` 增量 | 2026-11-10 | 费用显示：中断请求不当作上限、按确切型号匹配牌价、一律人民币、标注本轮（0.10.0b10） |
 | 34 | `1d857b39` 增量 | 2026-11-10 | 实时区显示最近的思考内容，结束即清除（0.10.0b9） |
 | 33 | `aef6a8b4` 增量 | 2026-11-10 | 运行中显示转动符号与已运行时间（0.10.0b8） |

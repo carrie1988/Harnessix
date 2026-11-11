@@ -18,7 +18,10 @@ def reasons_by_default(base_url: str, model: str) -> bool:
     """已求证在服务端默认思考的云端模型：请求不加思考参数，但等待时间须按思考放宽。"""
 
     host = urlsplit(base_url).hostname
-    return host == "dashscope.aliyuncs.com" and model.startswith("qwen3.8")
+    # 智谱GLM-5.3系列强制思考、不能关闭（智谱文档，2026-11-10）。
+    return (host == "dashscope.aliyuncs.com" and model.startswith("qwen3.8")) or (
+        host == "open.bigmodel.cn" and model.startswith("glm-5.3")
+    )
 
 
 def effective_timeouts(

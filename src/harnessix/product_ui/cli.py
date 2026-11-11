@@ -9,30 +9,19 @@ import sys
 from collections.abc import Sequence
 from dataclasses import asdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, cast
-from urllib.parse import urlsplit
+from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
-from pydantic import ValidationError
-
 from harnessix.agent.errors import KernelError
-from harnessix.models.config import is_private_network_host
 from harnessix.product_config.codec import load_product_config
-from harnessix.product_config.contracts import ProductConfigSnapshot, ProviderKind
+from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.endpoint_probe import EndpointProbe, probe_provider_endpoint
 from harnessix.product_config.errors import ProductConfigError
 from harnessix.product_config.mcp_status import mcp_doctor_lines
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import (
-    ConfigurationDraft,
     PreflightMode,
     ProductPreflightReport,
-)
-from harnessix.product_config.wizard import (
-    ConfigurationWriteRequest,
-    known_context_window,
-    thinking_preset,
-    write_product_config,
 )
 from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.activation import activation_arguments
@@ -68,77 +57,6 @@ def _start_parser() -> argparse.ArgumentParser:
     parser.add_argument("--expected-active-profile")
     parser.add_argument("--expected-active-action-sha256")
     return parser
-
-
-def _configure_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="harnessix code configure",
-        description="生成不含API Key值的Harnessix Code产品配置",
-    )
-    parser.add_argument("--config")
-    parser.add_argument("--provider-kind", choices=("openai_chat", "anthropic"))
-    parser.add_argument("--provider-id", default="primary")
-    parser.add_argument("--profile-id", default="primary")
-    parser.add_argument("--base-url")
-    parser.add_argument("--model")
-    parser.add_argument("--secret-name", default="model-api-key")
-    parser.add_argument("--secret-version", default="environment-v1")
-    parser.add_argument("--api-key-env", default="MODEL_API_KEY")
-    parser.add_argument(
-        "--output-token-parameter",
-        choices=("max_completion_tokens", "max_tokens"),
-    )
-    # auto：已求证端点与模型族默认开启思考（只在工具步骤）；none：不发送任何思考参数。
-    parser.add_argument(
-        "--thinking-protocol",
-        choices=("auto", "none", "dashscope_enable_thinking", "deepseek_thinking_type"),
-        default="auto",
-    )
-    parser.add_argument("--thinking", choices=("tool_steps", "every_step", "off"))
-    parser.add_argument("--tool-choice", choices=("auto", "send", "omit"), default="auto")
-    parser.add_argument(
-        "--context-window-tokens",
-        type=int,
-        help="模型的上下文窗口（Token）；已知云模型自动填写，自托管模型建议手动指定",
-    )
-    parser.add_argument(
-        "--self-hosted",
-        action="store_true",
-        help="声明这是你自己部署在内网的模型端点：允许明文HTTP，并按本地模型配置",
-    )
-    parser.add_argument(
-        "--proxy-url",
-        help="经本机HTTP代理访问云端点，如http://127.0.0.1:7890；优先于HTTPS_PROXY等环境变量",
-    )
-    parser.add_argument("--replace", action="store_true")
-    parser.add_argument("--expected-source-sha256")
-    parser.add_argument("--non-interactive", action="store_true")
-    return parser
-
-
-def _thinking_options(
-    arguments: argparse.Namespace,
-    provider_kind: str,
-    base_url: str,
-    model: str,
-    *,
-    self_hosted: bool,
-) -> dict[str, object]:
-    """把思考相关参数解析为草案字段：auto只对已求证端点预设，显式值优先。"""
-    preset = (
-        thinking_preset(base_url, model, self_hosted=self_hosted)
-        if provider_kind == "openai_chat"
-        else None
-    )
-    protocol = arguments.thinking_protocol
-    if protocol == "auto":
-        protocol = preset[0] if preset is not None else None
-    elif protocol == "none":
-        protocol = None
-    omit = arguments.tool_choice == "omit" or (
-        arguments.tool_choice == "auto" and preset is not None and preset[1]
-    )
-    return {"thinking_protocol": protocol, "omit_tool_choice": omit, "thinking": arguments.thinking}
 
 
 def _doctor_parser() -> argparse.ArgumentParser:
@@ -336,114 +254,6 @@ def _render_preflight(report: ProductPreflightReport) -> str:
     return "\n".join(lines)
 
 
-def _prompt(value: str | None, label: str, *, non_interactive: bool) -> str:
-    if value is not None and value.strip():
-        return value
-    if non_interactive:
-        raise ProductUIError("product_configure_arguments_required", f"缺少配置字段：{label}")
-    try:
-        entered = input(f"{label}: ").strip()
-    except (EOFError, KeyboardInterrupt):
-        raise ProductUIError("product_configure_interrupted", "配置向导已中断") from None
-    if not entered:
-        raise ProductUIError("product_configure_arguments_required", f"缺少配置字段：{label}")
-    return entered
-
-
-def _self_hosted_choice(arguments: argparse.Namespace, base_url: str) -> bool:
-    """内网端点是否按自托管处理：命令行声明优先，交互模式询问，非交互默认否。"""
-
-    url = urlsplit(base_url)
-    if arguments.self_hosted:
-        return True
-    if not is_private_network_host(url.hostname):
-        return False
-    if arguments.non_interactive:
-        if url.scheme == "http":
-            raise ProductUIError(
-                "product_configure_self_hosted_required",
-                "内网HTTP端点需要显式声明自托管：加 --self-hosted",
-            )
-        return False
-    try:
-        answer = input("这是你自己部署的模型吗？选是才允许明文HTTP并按本地模型配置 [y/N]: ")
-    except (EOFError, KeyboardInterrupt):
-        raise ProductUIError("product_configure_interrupted", "配置向导已中断") from None
-    return answer.strip().lower() in {"y", "yes"}
-
-
-def _configure(argv: Sequence[str]) -> None:
-    arguments = _configure_parser().parse_args(argv)
-    try:
-        provider_kind = cast(
-            ProviderKind,
-            _prompt(
-                arguments.provider_kind,
-                "Provider类型(openai_chat/anthropic)",
-                non_interactive=arguments.non_interactive,
-            ),
-        )
-        base_url = _prompt(
-            arguments.base_url,
-            "Provider Base URL",
-            non_interactive=arguments.non_interactive,
-        )
-        model = _prompt(arguments.model, "模型标识", non_interactive=arguments.non_interactive)
-        self_hosted = _self_hosted_choice(arguments, base_url)
-        draft = ConfigurationDraft.model_validate(
-            {
-                "provider_kind": provider_kind,
-                "provider_id": arguments.provider_id,
-                "profile_id": arguments.profile_id,
-                "base_url": base_url,
-                "model": model,
-                "secret_name": arguments.secret_name,
-                "secret_version": arguments.secret_version,
-                "environment_variable": arguments.api_key_env,
-                "output_token_parameter": arguments.output_token_parameter,
-                "self_hosted": self_hosted,
-                "proxy_url": arguments.proxy_url,
-                "context_window_tokens": arguments.context_window_tokens
-                or (
-                    known_context_window(base_url, model)
-                    if provider_kind == "openai_chat"
-                    else None
-                ),
-                **_thinking_options(
-                    arguments, provider_kind, base_url, model, self_hosted=self_hosted
-                ),
-            }
-        )
-        receipt = write_product_config(
-            ConfigurationWriteRequest(
-                path=Path(arguments.config).absolute() if arguments.config else _default_config(),
-                draft=draft,
-                expected_source_sha256=arguments.expected_source_sha256,
-                replace=arguments.replace,
-            )
-        )
-        print(
-            json.dumps(
-                receipt.model_dump(mode="json"),
-                ensure_ascii=False,
-                sort_keys=True,
-                allow_nan=False,
-            )
-        )
-    except ProductConfigError as error:
-        _emit_error(ProductUIError(error.code, error.message, retryable=error.retryable))
-        raise SystemExit(2) from None
-    except ValidationError:
-        _emit_error(ProductUIError("product_configure_invalid", "配置向导参数不符合契约"))
-        raise SystemExit(2) from None
-    except ProductUIError as error:
-        _emit_error(error)
-        raise SystemExit(2) from None
-    except Exception:
-        _emit_error(ProductUIError("product_internal_failure", "配置向导发生内部错误"))
-        raise SystemExit(2) from None
-
-
 def _preflight_request(
     arguments: argparse.Namespace,
     *,
@@ -524,7 +334,9 @@ def _remediation_suffix(remediation_id: str | None) -> str:
 def code_main(argv: Sequence[str] | None = None) -> None:
     values = list(sys.argv[1:] if argv is None else argv)
     if values and values[0] == "configure":
-        _configure(values[1:])
+        from harnessix.product_ui.configure_cli import configure_main
+
+        configure_main(values[1:])
         return
     if values and values[0] == "doctor":
         _doctor(values[1:])

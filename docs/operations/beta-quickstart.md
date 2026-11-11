@@ -36,18 +36,16 @@ uv tool install harnessix
 
 国内下载慢时加镜像：`uv tool install harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟。
 
-**配置模型（选一种）：**
+**配置模型：**
 
 ```bash
-# DeepSeek
-export MODEL_API_KEY=你的Key
-harnessix code configure --provider-kind openai_chat \
-  --base-url https://api.deepseek.com/v1 --model deepseek-v4-pro --non-interactive
+harnessix code configure      # 按提示选服务商（DeepSeek、阿里云百炼、智谱）和模型
+```
 
-# 阿里云百炼（按量付费的 API Key）
-export MODEL_API_KEY=你的Key
-harnessix code configure --provider-kind openai_chat \
-  --base-url https://dashscope.aliyuncs.com/compatible-mode/v1 --model qwen3.8-flash --non-interactive
+完成后按提示设置 API Key，例如百炼：`export DASHSCOPE_API_KEY=你的Key`（DeepSeek 用 `DEEPSEEK_API_KEY`，智谱用 `ZAI_API_KEY`）。在脚本里配置时用 `--vendor`：
+
+```bash
+harnessix code configure --vendor bailian --non-interactive   # deepseek、bailian 或 zhipu
 ```
 
 自己部署的模型见[接入自托管模型](self-hosted-models.md)。

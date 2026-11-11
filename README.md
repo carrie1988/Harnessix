@@ -14,10 +14,9 @@ Harnessix Code 在你的终端里读代码、改代码、跑测试。改动要�
 # 1. 安装（国内可加 --index-url https://mirrors.huaweicloud.com/repository/pypi/simple）
 uv tool install harnessix
 
-# 2. 配置模型
-export MODEL_API_KEY=你的Key
-harnessix code configure --provider-kind openai_chat \
-  --base-url https://api.deepseek.com/v1 --model deepseek-v4-pro --non-interactive
+# 2. 配置模型：按提示选服务商（DeepSeek、阿里云百炼、智谱）和模型，再按提示设置 API Key
+harnessix code configure
+export DEEPSEEK_API_KEY=你的Key        # 变量名以向导提示为准
 
 # 3. 检查并启动
 harnessix code doctor /path/to/repo --probe-model

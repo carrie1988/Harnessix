@@ -1,6 +1,6 @@
 """按官方牌价估算本轮费用上限；只覆盖已核对的模型，结果不是账单。
 
-牌价核对于2026-11-10（百炼模型价格页、DeepSeek中文价格页）。公开协议没有缓存命中量，输入全部按
+牌价核对于2026-11-10（百炼模型价格页、DeepSeek中文价格页、智谱API定价页）。公开协议没有缓存命中量，输入全部按
 未命中价计算，实际费用通常更低。DeepSeek按高峰价计算；国内账户以人民币计费（余额接口返回CNY）。
 只按核对过的确切型号匹配：带日期的版本可能另有价格（如百炼deepseek-v4-pro-0813的输出单价高于
 deepseek-v4-pro），未登记的型号显示费用未知，避免给出偏低的“上限”。
@@ -50,6 +50,7 @@ class CostUpperBound:
 
 _DASHSCOPE: Final = "dashscope.aliyuncs.com"
 _DEEPSEEK: Final = "api.deepseek.com"
+_ZHIPU: Final = "open.bigmodel.cn"
 _LIST_PRICES: Final[dict[tuple[str, str], ListPrice]] = {
     (_DEEPSEEK, "deepseek-flash"): ListPrice("CNY", Decimal("2"), Decimal("8")),
     # 旧模型名仍可调用，由Flash模型提供服务并按Flash价格计费（DeepSeek价格页注1）。
@@ -60,6 +61,9 @@ _LIST_PRICES: Final[dict[tuple[str, str], ListPrice]] = {
     (_DASHSCOPE, "qwen3.8-max"): ListPrice("CNY", Decimal("12"), Decimal("36")),
     (_DASHSCOPE, "qwen3.8-max-0902"): ListPrice("CNY", Decimal("12"), Decimal("36")),
     (_DASHSCOPE, "qwen3.8-flash"): ListPrice("CNY", Decimal("0.8"), Decimal("2.7")),
+    (_ZHIPU, "glm-5.3"): ListPrice("CNY", Decimal("8"), Decimal("28")),
+    (_ZHIPU, "glm-5.3-flash"): ListPrice("CNY", Decimal("0.8"), Decimal("2.8")),
+    (_ZHIPU, "glm-5.3-flashx"): ListPrice("CNY", Decimal("2"), Decimal("7")),
 }
 
 

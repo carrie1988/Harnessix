@@ -130,6 +130,7 @@ def test_code_configure_creates_non_secret_v2_configuration(
             "--api-key-env",
             "PRIMARY_API_KEY",
             "--non-interactive",
+            "--json",
         ]
     )
 
@@ -195,7 +196,7 @@ def test_code_configure_lan_http_requires_explicit_self_hosted(
     path = tmp_path / "private" / "config.json"
 
     with pytest.raises(SystemExit):
-        _configure_lan(path, "--non-interactive")
+        _configure_lan(path, "--non-interactive", "--json")
 
     assert json.loads(capsys.readouterr().err)["code"] == "product_configure_self_hosted_required"
     assert not path.exists()
@@ -250,7 +251,7 @@ def test_code_configure_non_interactive_missing_fields_is_stable(
 ) -> None:
     with pytest.raises(SystemExit) as error:
         product_cli.code_main(
-            ["configure", "--config", str(tmp_path / "config.json"), "--non-interactive"]
+            ["configure", "--config", str(tmp_path / "config.json"), "--non-interactive", "--json"]
         )
     assert error.value.code == 2
     payload = json.loads(capsys.readouterr().err)
@@ -264,6 +265,7 @@ def test_code_configure_requires_explicit_replace_and_exact_digest(
     path = tmp_path / "config.json"
     base = [
         "configure",
+        "--json",
         "--config",
         str(path),
         "--provider-kind",
