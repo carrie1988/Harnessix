@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 51
+version: 52
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -460,6 +460,12 @@ flowchart LR
 Thread创建、活动Turn之外的修改、归档活动Thread和终态重开。`replay`额外拒绝重复Event ID、空
 Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并更新Snapshot；调用方通过
 `expected_sequence`进行CAS。进程重启后可从Event Log重建并校验Snapshot，不信任单独的缓存投影。
+
+`apply_event`返回的Thread与输入的Thread、事件共享未变化的子对象，不再逐事件深拷贝整个聚合
+（[ADR 0133](../adr/0133-parsed-projection-reuse-and-reducer-sharing.md)）：深拷贝的代价与历史长度成正比，
+60步的会话里一次追加约12毫秒。聚合内全部是冻结模型，共享不改变取值；调用方不得原地修改其中的JSON容器。
+Store边界仍把调用方的Draft经JSON往返冻结。回归见
+[结构共享测试](../../tests/agent/test_reducer_structural_sharing.py)。
 
 ## 10. 公共端口与方法合同
 
@@ -1061,8 +1067,8 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 52 | ADR 0133增量 | 2026-11-11 | Reducer结构共享：`apply_event`不再逐事件深拷贝整个Thread，取值不变，共享对象不得原地修改 |
 | 51 | `b7c7eb01` 增量 | 2026-11-11 | 预算与目录说明落为历史Item、请求只追加；压缩点按上一请求的真实输入Token校准（ADR 0132） |
-| 51 | `feat/r2-request` | 2026-11-11 | 预算与目录说明在关口落为历史Item，请求只在末尾追加；压缩点按上一次请求的真实输入Token校准（ADR 0132） |
 | 50 | `feat/r2-baseline` | 2026-11-11 | 会话基线：线程开始时记录工作区里已有的未提交改动并告知模型，收尾前检查是否被还原或删除（ADR 0131） |
 | 49 | `feat/r2-protocol` | 2026-11-11 | 计划调用可写在一次响应的任意位置，由宿主排到持久调用组末尾；计划校验错误与被拒调用的反馈改为英文（ADR 0136） |
 | 48 | `feat/r2-guard` | 2026-11-11 | 完成守卫第2版（ADR 0124）：截断或写成文本的工具调用不算完成，只包着文本的外壳去壳判定，继续意图检测扩展到结尾句，补发次数随状态在2～6次间变化，提示写明剩余模型调用次数，结构化乱码在出站历史里换成占位 |

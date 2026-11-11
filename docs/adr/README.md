@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 38
+version: 39
 code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
@@ -272,6 +272,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0136：可读工具别名、给模型的英文反馈与计划调用位置](0136-readable-tool-aliases-and-model-facing-feedback.md)：别名只替换非法字符，目录内冲突才加8位后缀；目录拒绝、计划校验、命令非零退出与超时给模型英文说明，持久结果与界面文案不变；`update_plan`可写在响应任意位置，宿主把它排到调用组末尾。
 - [ADR 0131：会话基线](0131-session-baseline-for-pre-existing-workspace-changes.md)：会话开始前工作区已有的未提交改动经Git只读端口记录为一条宿主说明并告知模型，`git_status`、`git_review`结果标记`pre_existing`，完成前复核，被还原或删除的提示一次；不写Git对象库，不新增事件类型或配置字段。
 - [ADR 0132：请求只追加，压缩点按真实Token校准](0132-append-only-requests-and-token-calibrated-compaction.md)：稳定前缀的Provider上预算与目录说明落为历史Item、只在关口或可执行集合变化时发；评测沿用产品默认压缩点（修订ADR 0120的评测压缩点）；声明窗口时压缩点按上一请求的真实输入Token校准，受出站请求容量约束。
+- [ADR 0133：Thread投影的解析复用与Reducer结构共享](0133-parsed-projection-reuse-and-reducer-sharing.md)：每次读取的摘要、MAC与SQL校验不变，原字节摘要相同时复用已解析的Thread；Reducer不再逐事件深拷贝整个Thread；共享对象不得原地修改。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 
