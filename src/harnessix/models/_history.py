@@ -16,7 +16,11 @@ from harnessix.agent.models import (
     ToolCallRejectionContent,
     ToolResultContent,
 )
-from harnessix.agent.tool_rejections import require_rejection_result
+from harnessix.agent.tool_rejections import (
+    RejectionReason,
+    rejection_feedback,
+    require_rejection_result,
+)
 from harnessix.models.contracts import ModelRequest
 
 # encode_json在tool_result_text中定义，此处显式再导出供既有调用方使用。
@@ -105,6 +109,24 @@ def budget_instruction(request: ModelRequest) -> str | None:
     return note
 
 
+def _public_result(content: ToolResultContent, rejection: RejectionReason | None) -> dict[str, Any]:
+    """工具结果发给模型的公开字段；目录拒绝的固定结果只把说明换成给模型的英文反馈。
+
+    持久结果、回放校验与界面不变；反馈由拒绝原因唯一确定，不随当前目录变化，历史前缀保持稳定。
+    """
+    fields = {"outcome", "output", "error", "diff_artifact"}
+    if rejection is None:
+        return content.model_dump(mode="json", include=fields)
+    # 先核对固定合同再序列化：不符合合同的拒绝结果不进入任何线上正文。
+    try:
+        require_rejection_result(content)
+    except KernelError:
+        raise InvalidModelRequest("拒绝工具结果不符合固定合同") from None
+    public = content.model_dump(mode="json", include=fields)
+    public["error"]["message"] = rejection_feedback(rejection)
+    return public
+
+
 def messages_for(
     request: ModelRequest, *, tool_result_format: Literal["json", "text"] = "json"
 ) -> list[dict[str, Any]]:
@@ -115,7 +137,7 @@ def messages_for(
     messages: list[dict[str, Any]] = []
     assistant: dict[str, Any] | None = None
     pending: set[UUID] = set()
-    rejected: set[UUID] = set()
+    rejected: dict[UUID, RejectionReason] = {}
     seen: set[UUID] = set()
     taking_results = False
     for item in request.history:
@@ -125,11 +147,7 @@ def messages_for(
         if isinstance(content, ToolResultContent):
             if content.call_id not in pending:
                 raise InvalidModelRequest("工具结果缺少唯一配对调用")
-            if content.call_id in rejected:
-                try:
-                    require_rejection_result(content)
-                except KernelError:
-                    raise InvalidModelRequest("拒绝工具结果不符合固定合同") from None
+            public = _public_result(content, rejected.get(content.call_id))
             if assistant is not None:
                 messages.append(assistant)
                 assistant = None
@@ -140,9 +158,7 @@ def messages_for(
                     "role": "tool",
                     "tool_call_id": "call_" + content.call_id.hex,
                     "content": (tool_result_text if tool_result_format == "text" else encode_json)(
-                        content.model_dump(
-                            mode="json", include={"outcome", "output", "error", "diff_artifact"}
-                        )
+                        public
                     ),
                 }
             )
@@ -167,7 +183,7 @@ def messages_for(
             pending.add(content.call_id)
             seen.add(content.call_id)
             if isinstance(content, ToolCallRejectionContent):
-                rejected.add(content.call_id)
+                rejected[content.call_id] = content.reason
             if assistant is None:
                 assistant = {"role": "assistant", "content": ""}
             assistant.setdefault("tool_calls", []).append(

@@ -24,6 +24,7 @@ from harnessix.agent.models import (
     ToolResultContent,
     Usage,
 )
+from harnessix.agent.tool_rejections import rejection_feedback
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.domain.models import EffectClass
 from harnessix.models import _history
@@ -805,7 +806,7 @@ def test_rejection_history_uses_fixed_marker_and_original_uuid_pairing(
         assert data["outcome"] == "failed" and data["output"] is None
         assert data["error"] == {
             "code": "unknown_tool",
-            "message": "工具未注册",
+            "message": rejection_feedback("unregistered_tool"),
             "category": "tool",
             "retryable": False,
         }

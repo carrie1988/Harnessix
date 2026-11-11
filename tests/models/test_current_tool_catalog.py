@@ -15,7 +15,7 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKENS
 from harnessix.agent.models import TextContent, ToolCallRejectionContent, ToolResultContent, Usage
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS
-from harnessix.agent.tool_rejections import rejection_result
+from harnessix.agent.tool_rejections import rejection_feedback, rejection_result
 from harnessix.models._anthropic_mapping import build_request as anthropic_request
 from harnessix.models._chat_input_anchor import CompletedChatInput
 from harnessix.models._chat_mapping import build_request as chat_request
@@ -187,9 +187,13 @@ def test_catalog_changes_only_feedback_and_advertisement_not_native_history(kind
     assert uses[1]["function"]["arguments"] == "{}"
     assert [m["tool_call_id"] for m in native[2:]] == [use["id"] for use in reversed(uses)]
     result = json.loads(native[2]["content"])
-    assert result == rejection_result(request.history[2].content.call_id).model_dump(
+    persisted = rejection_result(request.history[2].content.call_id).model_dump(
         mode="json", include={"outcome", "output", "error", "diff_artifact"}
     )
+    # 线上只把固定结果的说明换成给模型的英文反馈；它不含目录内容，所以上面的历史不随目录变化。
+    assert result["error"].pop("message") == rejection_feedback("unregistered_tool")
+    assert persisted["error"].pop("message") == "工具未注册"
+    assert result == persisted
 
 
 # 本改动前从两个 mapper 的精确 UTF-8 wire 捕获，覆盖工具、指令和预算反馈。
