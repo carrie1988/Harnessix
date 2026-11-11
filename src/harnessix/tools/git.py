@@ -25,6 +25,7 @@ from harnessix.processes.git_observation import (
 from harnessix.tools.contracts import MAX_RESULT_BYTES, ReadContract, ReadToolError
 from harnessix.tools.git_contracts import (
     MAX_GIT_DIFF_TEXT_BYTES,
+    MAX_GIT_STATUS_ENTRIES,
     GitDiffInput,
     GitDiffOutput,
     GitReviewInput,
@@ -61,6 +62,14 @@ _GLOBAL_ARGUMENTS: Final = (
     "core.fsmonitor=false",
     "-c",
     "core.hooksPath=/dev/null",
+)
+_STATUS_ARGUMENTS: Final = (
+    "status",
+    "--porcelain=v2",
+    "--branch",
+    "--untracked-files=all",
+    "--ignore-submodules=all",
+    "-z",
 )
 
 
@@ -147,6 +156,14 @@ class GitReadRuntime:
     ) -> ReadContract:
         return await _execute_git_read(self, args, cancel)
 
+    async def workspace_changes(
+        self, cancel: CancelToken, *, paths: tuple[str, ...] = ()
+    ) -> GitStatusOutput:
+        """宿主内部观察未提交改动：守卫、命令与解析同git_status；paths非空时只报告这些字面路径。"""
+        await self._require_repository_root(cancel)
+        await _reject_git_helpers(self, cancel)
+        return await _read_status(self, cancel, MAX_GIT_STATUS_ENTRIES, paths)
+
     async def _require_repository_root(self, cancel: CancelToken) -> None:
         await _require_git_repository_root(self, cancel)
 
@@ -188,19 +205,7 @@ async def _execute_git_read(
     await runtime._require_repository_root(cancel)
     await _reject_git_helpers(runtime, cancel)
     if isinstance(args, GitStatusInput):
-        result = await runtime._run(
-            (
-                *runtime._global_arguments,
-                "status",
-                "--porcelain=v2",
-                "--branch",
-                "--untracked-files=all",
-                "--ignore-submodules=all",
-                "-z",
-            ),
-            cancel,
-        )
-        return _status(result, args.limit)
+        return await _read_status(runtime, cancel, args.limit)
     diff_args = [
         *runtime._global_arguments,
         "diff",
@@ -216,6 +221,15 @@ async def _execute_git_read(
     diff_args.append("--")
     result = await runtime._run(tuple(diff_args), cancel)
     return _diff(result, args.target)
+
+
+async def _read_status(
+    runtime: GitReadRuntime, cancel: CancelToken, limit: int, paths: tuple[str, ...] = ()
+) -> GitStatusOutput:
+    """状态查询的唯一命令行；路径只来自宿主先前的状态观察，经字面pathspec传入，不接受模型输入。"""
+    pathspec = ("--", *paths) if paths else ()
+    result = await runtime._run((*runtime._global_arguments, *_STATUS_ARGUMENTS, *pathspec), cancel)
+    return _status(result, limit)
 
 
 async def _review(

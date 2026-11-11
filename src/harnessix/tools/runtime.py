@@ -37,6 +37,7 @@ from harnessix.tools.git_contracts import (
     GitDiffInput,
     GitReviewInput,
     GitStatusInput,
+    GitStatusOutput,
 )
 from harnessix.tools.grep_matcher import RegexSearchError
 from harnessix.tools.read_backend import build_read_backend
@@ -459,6 +460,20 @@ class CodingToolRuntime:
             if self._git is None:
                 raise KernelError("tool_contract_changed", "Git只读能力未绑定")
             return await self._git.execute(args, cancel)
+
+    async def workspace_changes(
+        self, cancel: CancelToken, *, paths: tuple[str, ...] = ()
+    ) -> GitStatusOutput | None:
+        """会话基线端口：经git_status所用的同一Git只读端口观察未提交改动；未绑定Git时为None。
+
+        paths非空时只看这些路径。读取失败沿用读工具的错误上抛，是否忽略由调用方决定。
+        """
+        if self._git is None:
+            return None
+        async with self._lock:
+            if self._closed:
+                raise KernelError("tool_runtime_closed", "工具运行时已关闭")
+            return await cancel.run(self._git.workspace_changes(cancel, paths=paths))
 
     @staticmethod
     def _failure(call: ToolCallContent, code: str, message: str) -> ToolResultContent:

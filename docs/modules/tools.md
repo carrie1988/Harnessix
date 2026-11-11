@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 21
+version: 22
 code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
 owners:
   - core
@@ -36,6 +36,7 @@ related_tests:
   - tests/tools/test_git.py
   - tests/tools/test_git_platform_contracts.py
   - tests/tools/test_git_delivery_reader.py
+  - tests/tools/test_workspace_changes.py
   - tests/product_config/test_git_baseline.py
   - tests/processes/test_git_raw_observation.py
   - tests/processes/test_raw_receipt_supervision.py
@@ -50,6 +51,14 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
+
+## 当前增量：会话基线的工作区改动观察（ADR 0131）
+
+- **用途**：Agent的会话基线需要在会话开始时和Turn完成前知道工作区的未提交改动。它复用模型所见`git_status`背后的同一观察，不另建读取路径、解析器或快照。
+- **`GitReadRuntime.workspace_changes(cancel, paths=())`**：先做与`git_status`相同的仓库根校验和配置守卫，再经[`_read_status`](../../src/harnessix/tools/git.py)执行状态查询。`_read_status`现在是状态查询唯一的命令行，`git_status`也走它，不带路径时命令行与原来逐字相同。`paths`非空时追加`-- <路径…>`，只报告这些路径；Git只读端口的环境固定`GIT_LITERAL_PATHSPECS=1`，路径按字面匹配。路径只来自宿主先前的状态观察，不接受模型输入；这个入口不是模型工具，工具目录与合同不变。
+- **`CodingToolRuntime.workspace_changes(cancel, paths=())`**：未绑定Git时返回`None`；否则在读并发信号量内调用上述入口，返回`GitStatusOutput`（至多200条，超出时`truncated`）。读取失败沿用读工具错误上抛（不是仓库`not_found`，工作区不是仓库根`path_denied`，状态输出超过1 MiB`limit_exceeded`，运行时已关闭`tool_runtime_closed`），是否忽略由调用方决定。
+- **边界**：限定路径后的输出与工作区其他改动的数量无关，复核不会因为会话产生大量未跟踪文件而失效。会话基线至多传入64个路径，连同固定参数不超过`ProcessRequest`的128个参数上限。
+- **测试**：[`tests/tools/test_workspace_changes.py`](../../tests/tools/test_workspace_changes.py)：与`git_status`结果一致、路径按字面限定、未绑定Git、各类读取失败的错误码。
 
 ## 显式有界正则搜索（候选默认关闭）
 
