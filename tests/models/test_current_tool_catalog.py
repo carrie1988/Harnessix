@@ -196,7 +196,9 @@ def test_catalog_changes_only_feedback_and_advertisement_not_native_history(kind
     assert result == persisted
 
 
-# 本改动前从两个 mapper 的精确 UTF-8 wire 捕获，覆盖工具、指令和预算反馈。
+# 目录说明引入前从两个 mapper 的精确 UTF-8 wire 捕获，覆盖工具、指令和预算反馈；
+# 当时test.read的别名带32位摘要，ADR 0136起为可读别名，这是线上字节的唯一差别。
+LEGACY_TEST_READ_ALIAS = "hx_test_read_" + hashlib.sha256(b"test.read").hexdigest()[:32]
 LEGACY_WIRE_SHA256 = {
     ("chat", "plain"): "b6e9eae6f7ee9b1746abe33b694539870888fddd4e9e6bcb205fd5a9e8811a80",
     ("chat", "tools"): "d6c81f73d2c00dc4a911ea142878af9aca7db7645637d6267c917bcee3ca4de8",
@@ -225,7 +227,10 @@ def test_first_request_without_tool_history_keeps_legacy_wire_bytes(kind, mode):
         )
     body, _ = build(kind, request)
     assert CATALOG_PREFIX not in system_text(kind, body)
-    assert hashlib.sha256(encode_json(body).encode()).hexdigest() == LEGACY_WIRE_SHA256[kind, mode]
+    wire = encode_json(body)
+    assert LEGACY_TEST_READ_ALIAS not in wire
+    legacy_wire = wire.replace('"name":"test_read"', f'"name":"{LEGACY_TEST_READ_ALIAS}"')
+    assert hashlib.sha256(legacy_wire.encode()).hexdigest() == LEGACY_WIRE_SHA256[kind, mode]
 
 
 def history_prefix(request: ModelRequest) -> ModelRequest:

@@ -65,7 +65,7 @@ def test_parallel_history_and_stable_aliases() -> None:
     assert messages[1]["tool_calls"][0]["id"] != messages[1]["tool_calls"][1]["id"]
     assert names[body["tools"][0]["function"]["name"]] == "test.read"
     assert "max_tokens" in body and "max_completion_tokens" not in body
-    assert tool_alias("test.read") != tool_alias("test_read")
+    assert names == {"test_read": "test.read"}
     assert len(tool_alias("工具名" * 50)) <= 64
 
 

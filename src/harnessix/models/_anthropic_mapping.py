@@ -11,7 +11,8 @@ from harnessix.models._history import (
     current_tool_catalog_instruction,
     encode_json,
     messages_for,
-    tool_alias,
+    wire_aliases,
+    wire_directory,
 )
 from harnessix.models._json import strict_json
 from harnessix.models._tool_schema import provider_tool_schema
@@ -66,25 +67,15 @@ def build_request(
             messages.append({"role": role, "content": blocks})
     if messages[0]["role"] != "user" or messages[-1]["role"] != "user":
         raise InvalidModelRequest("Anthropic History 必须以 user 开始和结束，不支持 prefill")
-    names: dict[str, str] = {}
-    tools: list[dict[str, Any]] = []
-    for definition in request.wire_tools:
-        alias = tool_alias(definition.name)
-        if (
-            not definition.name
-            or len(definition.name) > 256
-            or alias in names
-            or definition.input_schema.get("type") != "object"
-        ):
-            raise InvalidModelRequest("工具名称或输入 Schema 无效")
-        names[alias] = definition.name
-        tools.append(
-            {
-                "name": alias,
-                "description": definition.name + ": " + definition.description,
-                "input_schema": provider_tool_schema(definition.input_schema),
-            }
-        )
+    names = wire_directory(request)
+    tools: list[dict[str, Any]] = [
+        {
+            "name": alias,
+            "description": definition.name + ": " + definition.description,
+            "input_schema": provider_tool_schema(definition.input_schema),
+        }
+        for alias, definition in zip(names, request.wire_tools, strict=True)
+    ]
     body: dict[str, Any] = {
         "model": config.model,
         "max_tokens": min(
@@ -121,7 +112,7 @@ def build_request(
             "disable_parallel_tool_use": not config.capabilities.parallel_tool_calls,
         }
         if request.forced_tool is not None:
-            body["tool_choice"]["name"] = tool_alias(request.forced_tool)
+            body["tool_choice"]["name"] = wire_aliases(request)[request.forced_tool]
     if len(encode_json(body).encode()) > config.max_request_bytes:
         raise InvalidModelRequest("模型请求超过大小上限")
     return body, names

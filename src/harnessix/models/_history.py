@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Iterable
+from collections import Counter
+from collections.abc import Iterable, Mapping
 from typing import Any, Literal
 from uuid import UUID
 
@@ -32,15 +33,76 @@ class InvalidModelRequest(ValueError):
     pass
 
 
-def tool_alias(name: str) -> str:
-    """生成可读线协议别名，不作为持久身份或执行权限。
+REJECTED_TOOL_SENTINEL = "harnessix_rejected_tool_v1"
+_WIRE_NAME_LIMIT = 64
+_SUFFIX_HEX_DIGITS = 8
 
-    合法原名直接广告；其他名字的摘要基于精确UTF-8字节，不做规范化。
+
+def _readable(name: str, limit: int) -> str:
+    return re.sub(r"[^A-Za-z0-9_-]", "_", name)[:limit] or "tool"
+
+
+def _suffixed(name: str) -> str:
+    """可读片段加原名精确UTF-8字节摘要的前8位；摘要不做Unicode规范化。"""
+    stem = _readable(name, _WIRE_NAME_LIMIT - _SUFFIX_HEX_DIGITS - 1)
+    return f"{stem}_{hashlib.sha256(name.encode()).hexdigest()[:_SUFFIX_HEX_DIGITS]}"
+
+
+def tool_alias(name: str) -> str:
+    """单个工具名的可读线协议别名，不作为持久身份或执行权限。
+
+    合法原名不变，其余字符逐个替换为下划线并截到64字符；模型照着工具名即可写对，
+    不必抄写摘要。不同原名可能得到同一别名，目录内的一一对应由tool_aliases保证。
+    拒绝哨兵只表达历史，别名与它相同的工具恒加后缀。
     """
-    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", name) and name != "harnessix_rejected_tool_v1":
-        return name
-    stem = re.sub(r"[^A-Za-z0-9_-]", "_", name) or "tool"
-    return f"hx_{stem[:27]}_{hashlib.sha256(name.encode()).hexdigest()[:32]}"
+    alias = _readable(name, _WIRE_NAME_LIMIT)
+    return _suffixed(name) if alias == REJECTED_TOOL_SENTINEL else alias
+
+
+def tool_aliases(names: Iterable[str]) -> dict[str, str]:
+    """一份目录内原名到别名的一一映射，只由目录内的名字集合决定，与顺序无关。
+
+    可读别名互不相同时直接使用；多个原名替换后相同时，本身就是该别名的合法原名保留它，
+    其余加摘要后缀。加后缀后仍相同的目录由调用方整体拒绝。
+    """
+    readable = {name: tool_alias(name) for name in names}
+    shared = {alias for alias, count in Counter(readable.values()).items() if count > 1}
+    return {
+        name: alias if alias not in shared or alias == name else _suffixed(name)
+        for name, alias in readable.items()
+    }
+
+
+def wire_aliases(request: ModelRequest) -> dict[str, str]:
+    """本次请求线上目录的原名到别名映射；工具定义、强制选择与历史投影共用。"""
+    return tool_aliases(definition.name for definition in request.wire_tools)
+
+
+def wire_directory(request: ModelRequest) -> dict[str, str]:
+    """本次线上目录的别名到原名反向映射，顺序同目录；名称、Schema或别名冲突时整体拒绝。"""
+    aliases = wire_aliases(request)
+    names: dict[str, str] = {}
+    for definition in request.wire_tools:
+        alias = aliases[definition.name]
+        if (
+            not definition.name
+            or len(definition.name) > 256
+            or alias in names
+            or definition.input_schema.get("type") != "object"
+        ):
+            raise InvalidModelRequest("工具名称或输入 Schema 无效")
+        names[alias] = definition.name
+    return names
+
+
+def _history_alias(tool: str, aliases: Mapping[str, str]) -> str:
+    """历史调用沿用本次目录的别名；目录外的旧工具若与目录别名相同则加后缀，不让旧调用看似指向当前工具。"""
+    alias = aliases.get(tool)
+    if alias is None:
+        alias = tool_alias(tool)
+        if alias in aliases.values():
+            alias = _suffixed(tool)
+    return alias
 
 
 def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[str]) -> str | None:
@@ -62,8 +124,9 @@ def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[st
     if request.tool_notice is not None:
         note += f"Why the catalog is restricted now: {request.tool_notice} "
     if request.forced_tool is not None:
+        forced = wire_aliases(request)[request.forced_tool]
         return note + (
-            f"Tool choice: forced ({encode_json(tool_alias(request.forced_tool))}). You must "
+            f"Tool choice: forced ({encode_json(forced)}). You must "
             "call this tool; a text-only completion does not satisfy forced tool choice."
         )
     if request.tool_choice == "required":
@@ -140,6 +203,7 @@ def messages_for(
     rejected: dict[UUID, RejectionReason] = {}
     seen: set[UUID] = set()
     taking_results = False
+    aliases = wire_aliases(request)
     for item in request.history:
         if item.status != ItemStatus.COMPLETED:
             raise InvalidModelRequest("History 含未完成 Item")
@@ -192,9 +256,9 @@ def messages_for(
                     "type": "function",
                     "function": {
                         # 拒绝标记仅表达闭合历史，不参与广告或重新计算别名。
-                        "name": tool_alias(content.tool)
+                        "name": _history_alias(content.tool, aliases)
                         if isinstance(content, ToolCallContent)
-                        else "harnessix_rejected_tool_v1",
+                        else REJECTED_TOOL_SENTINEL,
                         "arguments": encode_json(content.arguments)
                         if isinstance(content, ToolCallContent)
                         else "{}",
