@@ -108,6 +108,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
+0.10.0b8让Agent在上一轮被用户取消后补一条宿主说明（见[Agent模块设计](../modules/agent.md)“取消后的宿主说明”）：`agent/runtime.py`增加2行（3473→3475），`AgentRuntime`增加1行（3190→3191），即`_accept`里追加说明事件的1行和导入1行。判断与事件构造放在新模块`cancelled_turn_notice.py`，与完成守卫的宿主提示复用同一机制。
 0.10.0b6修复审批预览读取期限（见[delivery模块设计](../modules/delivery.md)“Review规划读取期限”）：`delivery/trusted_action.py`增加8行（614→622），即准备超时转为可恢复失败的4行，以及导入新期限常量和超时错误的4行。超时错误的文案放在同类错误所在的`workspace_patch_errors.py`，期限常量放在共用规划入口`action_transaction_planning.py`。
 P0-9（ADR 0123第6节）让两个模型适配器的`stream`各增加10行，`AgentRuntime`增加13行，用于区分确定未计费与计费未知；
 计算逻辑放在`_provider_io.py`和`turn_budget_compaction.py`，类内只保留分支和开关。

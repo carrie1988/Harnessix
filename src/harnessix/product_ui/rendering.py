@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Final
 from uuid import UUID
 
+from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_item_id
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
@@ -198,6 +199,8 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
             isinstance(entry.item.content, PublicToolResultContent)
             and entry.item.content.call_id in calls
         )
+        # 取消后的宿主说明只给模型看；对话里上一轮已显示“任务已取消”。
+        and entry.item.item_id != cancelled_turn_notice_item_id(entry.turn_id)
         for line in _entry_lines(entry, results)
     ]
     final_ids = {entry.item.item_id for entry in view.items if entry.final}

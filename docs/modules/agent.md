@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 44
+version: 45
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -39,6 +39,7 @@ related_tests:
   - tests/agent/test_crash_recovery.py
   - tests/agent/test_approval_crash_recovery.py
   - tests/agent/test_interactions.py
+  - tests/agent/test_cancelled_turn_notice.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_trusted_action_locked_sync.py
   - tests/agent/test_legacy_process_compatibility.py
@@ -48,6 +49,13 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：取消后的宿主说明（0.10.0b8）
+
+- **缺陷**：模型历史收录每一轮已完成的Item，但不含轮次终态。用户取消的请求在模型看来仍是“做到一半”，接着问别的事时，模型会把两者混成“同一条消息”，或反问是否继续（2026-11-10 macOS实测）。
+- **行为**：[`cancelled_turn_notice`](../../src/harnessix/agent/cancelled_turn_notice.py)在`_accept`里检查：Thread最近一轮为`cancelled`、且新Turn不是`retry_turn`重试它时，在用户输入之后追加一条已完成的`user_message`宿主说明（“[Harnessix host notice] The user cancelled the previous task…”）。身份为`uuid5(turn_id, "harnessix.cancelled-turn-notice/v1")`，与完成守卫的宿主提示同一机制，走既有Steering通道（Event v19）。只说明紧接着的那一轮。
+- **不变**：不改写任何既有Item、历史视图或检查记录；旧会话无需迁移，不影响逐字节复现。失败、中断的轮次不加说明，用户通常会直接重试或说“继续”。
+- **界面**：Product UI按该身份不显示这条说明，对话里上一轮已有“任务已取消”。
 
 ## 当前增量：宿主自动批准钩子（ADR 0113）
 
@@ -966,6 +974,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |
 | 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |
 | 43 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的两项行为：完成守卫在回复宣布下一步却没有工具调用时补发提示；字符串化容器参数还原移到结构修复之前按提案进行 |
 | 42 | `feat/p0-beta-readiness` | 2026-11-09 | 新增`continue_after_unknown_usage`：费用未知的尝试按已知单次最大消耗预留后继续，默认维持停止（ADR 0123第6节） |

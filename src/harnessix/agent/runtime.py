@@ -28,6 +28,7 @@ from harnessix.agent.approvals import (
 from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.completion_guard import (
     completion_notice,
@@ -905,6 +906,7 @@ class AgentRuntime:
                 start,
                 ItemStarted(item_id=item_id, content=content),
                 ItemFinished(item_id=item_id, content=content, status=ItemStatus.COMPLETED),
+                *cancelled_turn_notice_payloads(thread, turn_id, retry_of_turn_id=retry_of_turn_id),
             ]
             thread = await self.store.append(
                 thread_id,
