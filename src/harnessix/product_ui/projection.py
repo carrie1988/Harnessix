@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from uuid import UUID
 
+from harnessix.agent.reasoning_preview import reasoning_item_id
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.protocol.contracts import (
     EventsNextResult,
@@ -46,6 +47,8 @@ class TransientItemStream:
     last_sequence: int
     text: str
     gap: bool = False
+    # 思考预览流（条目身份由reasoning_preview约定）：不会有持久Item覆盖，步骤结束即清除。
+    reasoning: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -274,6 +277,7 @@ def apply_item_delta(state: ProductViewState, delta: PublicItemDelta) -> Product
             last_sequence=delta.stream_sequence if delta.stream_sequence == 1 else 0,
             text=delta.delta if delta.stream_sequence == 1 else "",
             gap=delta.stream_sequence != 1,
+            reasoning=delta.item_id == reasoning_item_id(delta.turn_id, delta.model_step),
         )
     streams = tuple(entry for entry in state.streams if entry.item_id != delta.item_id)
     return replace(
@@ -288,4 +292,22 @@ def apply_events_next(state: ProductViewState, page: EventsNextResult) -> Produc
     updated = apply_replay_page(state, page.replay)
     for delta in page.deltas:
         updated = apply_item_delta(updated, delta)
-    return replace(updated, live_gap=updated.live_gap or page.live_gap)
+    return replace(_without_stale_reasoning(updated), live_gap=updated.live_gap or page.live_gap)
+
+
+def _without_stale_reasoning(state: ProductViewState) -> ProductViewState:
+    """思考预览只属于正在调用模型、尚未结算用量的当前步骤；步骤结算或轮次结束后清除。"""
+
+    turn = state.current_turn
+    kept = tuple(
+        stream
+        for stream in state.streams
+        if not stream.reasoning
+        or (
+            turn is not None
+            and turn.status == "calling_model"
+            and stream.turn_id == turn.turn_id
+            and stream.model_step > turn.model_step
+        )
+    )
+    return state if kept == state.streams else replace(state, streams=kept)

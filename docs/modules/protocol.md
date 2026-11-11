@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 11
+version: 12
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -27,6 +27,10 @@ supersedes: []
 ---
 
 # Protocol模块设计
+
+## 当前增量：思考预览能力（0.10.0b9）
+
+- `ClientCapabilities.reasoning_deltas`与`ServerCapabilities.reasoning_deltas`（默认`false`，`initialize-params-v2`/`initialize-result-v2`增补）。只有客户端同时声明`item_deltas`与`reasoning_deltas`，服务端才推送思考预览；思考预览沿用`PublicItemDelta`格式，条目身份由`uuid5(turn_id, "harnessix.reasoning-preview/v1:<step>")`约定，不新增字段，未声明的客户端行为不变。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -1537,6 +1541,7 @@ Params摘要、State、Outcome摘要和两个时间。执行时重新读取并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 12 | `1d857b39` 增量 | 2026-11-10 | 握手增加`reasoning_deltas`能力，思考预览沿用Delta格式（0.10.0b9） |
 | 8 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表保持Protocol 1.0公开字段，由Session提供先筛选后分页与稳定游标；不增加外部Action服务 |
 | 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Protocol Request低敏容量、终态Plan-first离线保留、accepted全局保护和执行前置摘要语义 |
 | 5 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 验证默认Patch复用Protocol v1审批、Artifact分页和Tool Result，不泄漏Action/Delivery私有字段 |

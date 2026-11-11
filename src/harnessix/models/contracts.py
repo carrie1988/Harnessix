@@ -73,6 +73,13 @@ class TextDelta(ContractModel):
     delta: str = Field(max_length=1_000_000)
 
 
+class ReasoningDelta(ContractModel):
+    """模型思考内容的增量：只供界面实时展示，不进入Item、模型历史或输出计量。"""
+
+    type: Literal["reasoning_delta"] = "reasoning_delta"
+    delta: str = Field(min_length=1, max_length=1_000_000)
+
+
 class TextCompleted(ContractModel):
     type: Literal["text_completed"] = "text_completed"
     content_id: str = Field(min_length=1, max_length=256)
@@ -127,6 +134,7 @@ ProviderEvent = Annotated[
     | TextStarted
     | TextDelta
     | TextCompleted
+    | ReasoningDelta
     | ToolCallCompleted
     | ToolCallRejected
     | ResponseCompleted

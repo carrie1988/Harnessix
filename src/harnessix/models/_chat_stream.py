@@ -18,6 +18,7 @@ from harnessix.models._json import repaired_json_object, strict_json
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
+    ReasoningDelta,
     ResponseCompleted,
     ResponseStarted,
     TextCompleted,
@@ -94,6 +95,13 @@ def _proposal(
             call_id=call_id, reason="invalid_arguments_json", argument_chars=argument_chars
         )
     return ToolCallCompleted(call_id=call_id, tool=names[name], arguments=arguments)
+
+
+def _reasoning(delta: object) -> list[ProviderEvent]:
+    """百炼、DeepSeek等兼容服务在扩展字段推送思考内容；只转发供界面展示，不计入正文。"""
+
+    reasoning = getattr(delta, "reasoning_content", None)
+    return [ReasoningDelta(delta=reasoning)] if isinstance(reasoning, str) and reasoning else []
 
 
 def validate_frame(name: bytes, data: bytes) -> None:
@@ -217,6 +225,7 @@ class ChatStream:
             raise ChatProtocolError(ChatProtocolReason.MESSAGE_TYPE_UNSUPPORTED)
         if delta.refusal:
             raise ContentRefused
+        events.extend(_reasoning(delta))
         if delta.content:
             self._characters += len(delta.content)
             self._text += delta.content

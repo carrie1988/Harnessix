@@ -231,6 +231,7 @@ from harnessix.models.contracts import (
     ModelInputTokenEstimator,
     ModelProvider,
     ModelRequest,
+    ReasoningDelta,
     ResponseCompleted,
     ResponseFailed,
     ResponseStarted,
@@ -1798,6 +1799,8 @@ class AgentRuntime:
                     continue
                 if response_id is None:
                     raise KernelError("invalid_provider_output", "摘要响应尚未开始")
+                if isinstance(event, ReasoningDelta):
+                    continue
                 if isinstance(event, TextStarted):
                     if content_id is not None:
                         raise KernelError("invalid_provider_output", "摘要只能包含一个文本块")
@@ -3145,6 +3148,8 @@ class AgentRuntime:
                     continue
                 if not started:
                     raise KernelError("invalid_provider_output", "Provider 尚未开始响应")
+                if await texts.preview(event):
+                    continue
                 if isinstance(event, TextStarted | TextDelta | TextCompleted):
                     await texts.accept(event)
                 elif isinstance(event, ToolCallCompleted | ToolCallRejected):

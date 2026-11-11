@@ -76,8 +76,12 @@ class ActivityIndicator(Static):
         if turn.turn_id != self._turn:
             self._turn, self._since = turn.turn_id, monotonic()
         self._status = turn.status
+        # model_step是已结算用量的步数；正在调用模型的步骤号更大。思考预览不算回复正文。
         self._streaming = view is not None and any(
-            stream.text and stream.turn_id == turn.turn_id and stream.model_step == turn.model_step
+            stream.text
+            and not stream.reasoning
+            and stream.turn_id == turn.turn_id
+            and stream.model_step > turn.model_step
             for stream in view.streams
         )
         self.display = True

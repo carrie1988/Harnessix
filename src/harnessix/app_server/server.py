@@ -123,6 +123,7 @@ class AgentProtocolServer:
         self.state = ConnectionState.NEW
         self.client_instance_id: UUID | None = None
         self.item_deltas_enabled = False
+        self.reasoning_deltas_enabled = False
 
     def _error(
         self,
@@ -180,6 +181,7 @@ class AgentProtocolServer:
             return await self.service.next_events(
                 _params(EventsNextParams, params),
                 include_deltas=self.item_deltas_enabled,
+                include_reasoning=self.reasoning_deltas_enabled,
             )
         if method == "events/replay":
             return await self.service.replay_events(_params(EventsReplayParams, params))
@@ -287,6 +289,7 @@ class AgentProtocolServer:
             # 无await提交已保护候选；失败/取消时原NEW、身份、能力和协商限额均不变。
             self.client_instance_id = candidate.client_instance_id
             self.item_deltas_enabled = candidate.item_deltas_enabled
+            self.reasoning_deltas_enabled = candidate.reasoning_deltas_enabled
             self.limits = candidate.limits
             self.state = ConnectionState.INITIALIZED_PENDING_ACK
         return (published,)

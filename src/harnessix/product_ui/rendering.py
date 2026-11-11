@@ -7,7 +7,7 @@ from typing import Final
 from uuid import UUID
 
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_item_id
-from harnessix.product_ui.projection import ProductViewState, ProjectedItem
+from harnessix.product_ui.projection import ProductViewState, ProjectedItem, TransientItemStream
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
@@ -47,6 +47,9 @@ _FAILURE_TEXT: Final = {
         "操作结果无法确认，本轮已停止且不会自动重做；请先检查工作区改动（如 git status）再继续"
     ),
 }
+# 思考预览只显示最近的内容，避免长思考把对话挤出屏幕。
+_REASONING_TAIL_LINES: Final = 3
+_REASONING_TAIL_CHARS: Final = 240
 _TURN_STATUS_LABELS: Final = {
     "accepted": "准备中",
     "preparing_context": "准备中",
@@ -205,17 +208,33 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
     ]
     final_ids = {entry.item.item_id for entry in view.items if entry.final}
     lines.extend(
-        TranscriptLine(
-            stream.item_id,
-            "Harnessix（生成中）",
-            stream.text if not stream.gap else "实时文本存在缺口，等待持久事件恢复",
-            transient=True,
-            final=False,
-        )
+        _stream_line(stream)
         for stream in view.streams
-        if stream.item_id not in final_ids
+        if stream.item_id not in final_ids and not (stream.reasoning and stream.gap)
     )
     return tuple(lines)
+
+
+def _stream_line(stream: TransientItemStream) -> TranscriptLine:
+    """正文流显示全部已收到的文字；思考预览只显示最近几行，弱化处理且不落入历史。"""
+
+    if stream.reasoning:
+        return TranscriptLine(
+            stream.item_id, "思考", _reasoning_tail(stream.text), transient=True, final=False
+        )
+    return TranscriptLine(
+        stream.item_id,
+        "Harnessix（生成中）",
+        stream.text if not stream.gap else "实时文本存在缺口，等待持久事件恢复",
+        transient=True,
+        final=False,
+    )
+
+
+def _reasoning_tail(text: str) -> str:
+    lines = [line for line in text.strip().splitlines() if line.strip()]
+    tail = " ".join(lines[-_REASONING_TAIL_LINES:])
+    return tail if len(tail) <= _REASONING_TAIL_CHARS else "…" + tail[-_REASONING_TAIL_CHARS:]
 
 
 def thread_label(view: ThreadView, status: str | None = None) -> str:

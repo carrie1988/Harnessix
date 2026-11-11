@@ -77,6 +77,11 @@
           "default": false,
           "title": "Itemdeltas",
           "type": "boolean"
+        },
+        "reasoningDeltas": {
+          "default": false,
+          "title": "Reasoningdeltas",
+          "type": "boolean"
         }
       },
       "required": [

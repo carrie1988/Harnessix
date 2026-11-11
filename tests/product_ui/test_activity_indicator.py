@@ -30,8 +30,9 @@ class _Host(App[None]):
 
 def _view(status: str, *, streaming: bool = False) -> ProductViewState:
     thread = _thread()
+    # 第1步正在调用模型时，已结算用量的步数仍是0。
     turn = TurnProjection(
-        turn_id=uuid4(), request_id="r", status=status, budget=None, usage=None, model_step=1
+        turn_id=uuid4(), request_id="r", status=status, budget=None, usage=None, model_step=0
     )
     streams = (
         (

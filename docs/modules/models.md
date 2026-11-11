@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 25
+version: 26
 code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
@@ -47,6 +47,10 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：思考内容转发（0.10.0b9）
+
+- 用户反馈模型思考时界面长时间没有反馈（百炼qwen3.8实测流中静默13～27秒）。思考内容（`reasoning_content`）此前在适配器里被丢弃。[`_chat_stream._reasoning`](../../src/harnessix/models/_chat_stream.py)把兼容服务扩展字段`reasoning_content`转成新的Provider事件[`ReasoningDelta`](../../src/harnessix/models/contracts.py)（`provider-event-v4`增补）。它只供界面实时预览：不进入Item、模型历史、正文计数或输出上限，适配器重试与计费判断不变。Anthropic的thinking增量暂未转发。
 
 ## 当前增量：兼容端点模型预检与显式思考开关
 
@@ -824,6 +828,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
 | 25 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 同步主线：工具结果文本支持命令输出预览v4，去除了终端转义序列时注明“terminal escape sequences removed”，内容为空且未截断的流不再显示；纯文本回复在输出上限处截断改由运行时的截断恢复处理（ADR 0109第3版） |
 | 22 | `feat/p0-beta-readiness` | 2026-11-09 | HTTP错误响应或连接未建立的尝试报告完整零用量；重试遵循`Retry-After`，上限60秒 |
 | 21 | `6dca857c7d1e9c4352e37a5043f225007289692b` | 2026-11-09 | 新增显式`private_network_endpoint`：声明后允许内网地址明文HTTP，公网地址仍须HTTPS；默认值不进入序列化 |

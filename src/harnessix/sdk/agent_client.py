@@ -133,7 +133,7 @@ class AgentClient:
                 protocol_version=AGENT_PROTOCOL_VERSION,
                 client_info=ClientInfo(name=self.client_name, version=self.client_version),
                 client_instance_id=self.client_instance_id,
-                capabilities=ClientCapabilities(item_deltas=True),
+                capabilities=ClientCapabilities(item_deltas=True, reasoning_deltas=True),
             )
             try:
                 result = _validate_result(

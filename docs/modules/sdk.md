@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 10
+version: 11
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -25,6 +25,10 @@ supersedes: []
 ---
 
 # SDK模块设计
+
+## 当前增量：声明思考预览能力（0.10.0b9）
+
+- `AgentClient`握手时声明`reasoning_deltas=True`，与`item_deltas`一起接收思考预览增量；客户端按约定身份区分思考与正文。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -1241,6 +1245,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 11 | `1d857b39` 增量 | 2026-11-10 | 握手声明`reasoning_deltas`（0.10.0b9） |
 | 8 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a拆分子进程职责，限制Pending与Abandoned总量，增加取消安全Close和低敏资源快照 |
 | 7 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除Action HTTP Client、旧SDK测试和第二公共入口 |
 | 6 | `pending` | 2026-09-19 | 按ADR 0081收敛SDK公共边界，撤销Action HTTP Client包级导出并把遗留实现标记为迁移兼容 |

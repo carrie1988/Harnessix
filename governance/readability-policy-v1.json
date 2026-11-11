@@ -11,7 +11,7 @@
   "required_high_risk_callable_docstrings": true,
   "approved_oversized_files": {
     "src/harnessix/agent/models.py": 900,
-    "src/harnessix/agent/runtime.py": 3475,
+    "src/harnessix/agent/runtime.py": 3480,
     "src/harnessix/context/sources.py": 839,
     "src/harnessix/delivery/git.py": 902,
     "src/harnessix/delivery/git_push.py": 609,
@@ -27,7 +27,7 @@
     "src/harnessix/product_config/contracts.py": 602,
     "src/harnessix/product_config/native_process.py": 608,
     "src/harnessix/product_config/process_action.py": 766,
-    "src/harnessix/protocol/contracts.py": 656,
+    "src/harnessix/protocol/contracts.py": 658,
     "src/harnessix/sandbox/container.py": 629,
     "src/harnessix/session/sqlite.py": 622,
     "src/harnessix/skills/runtime.py": 644,
@@ -59,7 +59,7 @@
       "max_decision_complexity": 38
     },
     "harnessix.agent.runtime:AgentRuntime": {
-      "max_lines": 3191,
+      "max_lines": 3195,
       "max_decision_complexity": 0
     },
     "harnessix.agent.runtime:AgentRuntime.__init__": {
@@ -87,16 +87,16 @@
       "max_decision_complexity": 19
     },
     "harnessix.agent.runtime:AgentRuntime._sample_events": {
-      "max_lines": 285,
-      "max_decision_complexity": 87
+      "max_lines": 287,
+      "max_decision_complexity": 88
     },
     "harnessix.agent.runtime:AgentRuntime._select_model_tools": {
       "max_lines": 47,
       "max_decision_complexity": 23
     },
     "harnessix.agent.runtime:AgentRuntime._summary_text": {
-      "max_lines": 236,
-      "max_decision_complexity": 52
+      "max_lines": 238,
+      "max_decision_complexity": 53
     },
     "harnessix.agent.telemetry:KernelTelemetry": {
       "max_lines": 240,
@@ -119,11 +119,11 @@
       "max_decision_complexity": 21
     },
     "harnessix.app_server.server:AgentProtocolServer": {
-      "max_lines": 196,
+      "max_lines": 199,
       "max_decision_complexity": 0
     },
     "harnessix.app_server.service:AgentApplicationService": {
-      "max_lines": 425,
+      "max_lines": 430,
       "max_decision_complexity": 0
     },
     "harnessix.artifacts.batch_diff:SQLiteBatchDiffPublisher": {
@@ -335,11 +335,11 @@
       "max_decision_complexity": 38
     },
     "harnessix.models._chat_stream:ChatStream": {
-      "max_lines": 162,
+      "max_lines": 163,
       "max_decision_complexity": 0
     },
     "harnessix.models._chat_stream:ChatStream.feed": {
-      "max_lines": 74,
+      "max_lines": 75,
       "max_decision_complexity": 39
     },
     "harnessix.models._history:messages_for": {

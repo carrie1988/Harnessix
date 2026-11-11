@@ -24,7 +24,14 @@ from harnessix.agent.publication import (
     protect_request_json,
     protect_text,
 )
-from harnessix.models.contracts import ModelRequest, TextCompleted, TextDelta, TextStarted
+from harnessix.agent.reasoning_preview import ReasoningPreview
+from harnessix.models.contracts import (
+    ModelRequest,
+    ProviderEvent,
+    TextCompleted,
+    TextDelta,
+    TextStarted,
+)
 
 Commit = Callable[[UUID, UUID, Sequence[EventPayload]], Awaitable[Thread]]
 
@@ -49,6 +56,7 @@ class ModelTextPublication:
     items: dict[str, _TextItem] = field(default_factory=dict)
     characters: int = 0
     sequence: int = 0
+    reasoning: ReasoningPreview | None = None
 
     def account(self, count: int) -> None:
         self.characters += count
@@ -69,6 +77,13 @@ class ModelTextPublication:
             self.publish(item, prefix)
         else:
             await _complete(self, item, event)
+
+    async def preview(self, event: ProviderEvent) -> bool:
+        """思考增量交给本步骤的思考预览；返回True表示已消费。"""
+
+        if self.reasoning is None:
+            self.reasoning = ReasoningPreview(self.request, self.token, self.protection, self.emit)
+        return await self.reasoning.observe(event)
 
     def validate_prefix(self, item: _TextItem, prefix: str, *, final: bool = False) -> None:
         if not item.text.startswith(prefix, item.released) or (

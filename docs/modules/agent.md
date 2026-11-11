@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 45
+version: 46
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -49,6 +49,11 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：思考预览（0.10.0b9）
+
+- [`reasoning_preview.ReasoningPreview`](../../src/harnessix/agent/reasoning_preview.py)由`ModelTextPublication.preview`按需创建：思考增量经公开文本保护后以临时`ItemDelta`发布，条目身份为`uuid5(turn_id, "harnessix.reasoning-preview/v1:<step>")`，使用独立序号，不占用正文增量序号（否则界面会把正文判为缺口）。单步最多发布64 KiB。公开保护会扣住末尾可能构成密钥的字节，思考转入正文、工具调用或结束时收尾放出；收尾后本步骤再有思考只是不再预览。思考不建Item、不进模型历史、不计入输出上限。上下文摘要请求忽略思考增量。
+- 2026-11-10 macOS实测：未收尾时短思考一个字也不显示（保护扣住了全部字节），收尾后正常。
 
 ## 当前增量：取消后的宿主说明（0.10.0b8）
 
@@ -974,6 +979,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |
 | 44 | `cc5bb6d3` 增量 | 2026-11-10 | 拒绝审批时填写的原因附在失败结果中交给模型（0.10.0b2） |
 | 43 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的两项行为：完成守卫在回复宣布下一步却没有工具调用时补发提示；字符串化容器参数还原移到结构修复之前按提案进行 |

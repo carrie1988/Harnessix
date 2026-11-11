@@ -8,6 +8,11 @@
           "title": "Itemdeltas",
           "type": "boolean"
         },
+        "reasoningDeltas": {
+          "default": false,
+          "title": "Reasoningdeltas",
+          "type": "boolean"
+        },
         "serverRequests": {
           "default": true,
           "title": "Serverrequests",

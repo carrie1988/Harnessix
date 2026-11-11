@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 11
+version: 12
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -24,6 +24,10 @@ supersedes: []
 ---
 
 # App Server模块设计
+
+## 当前增量：思考预览按能力过滤（0.10.0b9）
+
+- 握手记录`reasoning_deltas`；`events/next`对未声明该能力的连接用[`without_reasoning`](../../src/harnessix/app_server/service.py)按约定身份滤掉思考预览增量，正文增量与原有长轮询行为不变。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -1365,6 +1369,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 12 | `1d857b39` 增量 | 2026-11-10 | 未声明`reasoning_deltas`的连接不收思考预览增量（0.10.0b9） |
 | 11 | `6376b10c` 增量 | 2026-11-10 | 薄CLI对自身不处理的待审批项先等3秒系统决定，修复`exec`在沙箱命令自动批准前误判需要人工（0.10.0b2） |
 | 10 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的薄CLI行为：事件页因`response_too_large`被拒时与`public_output_limit`一样减半页长重读 |
 | 8 | `184fb125f6159de4202a64a525f6b5cc99f0ab97` | 2026-09-29 | 显式公共预算转换使用内部字段名；同步现行Windows受管Patch边界，保持公开JSON、幂等与持久事实合同 |

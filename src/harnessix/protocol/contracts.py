@@ -115,6 +115,7 @@ class ProtocolLimits(ProtocolModel):
 
 class ClientCapabilities(ProtocolModel):
     item_deltas: bool = False
+    reasoning_deltas: bool = False
     server_requests: bool = True
     artifact_pages: bool = True
     replay: bool = True
@@ -141,6 +142,7 @@ class ServerCapabilities(ProtocolModel):
     replay: bool = True
     artifact_pages: bool = True
     item_deltas: bool = False
+    reasoning_deltas: bool = False
 
     @model_validator(mode="after")
     def stable_capabilities(self) -> ServerCapabilities:

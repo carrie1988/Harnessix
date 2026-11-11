@@ -207,6 +207,29 @@
       "title": "ModelUsageObserved",
       "type": "object"
     },
+    "ReasoningDelta": {
+      "additionalProperties": false,
+      "description": "模型思考内容的增量：只供界面实时展示，不进入Item、模型历史或输出计量。",
+      "properties": {
+        "type": {
+          "const": "reasoning_delta",
+          "default": "reasoning_delta",
+          "title": "Type",
+          "type": "string"
+        },
+        "delta": {
+          "maxLength": 1000000,
+          "minLength": 1,
+          "title": "Delta",
+          "type": "string"
+        }
+      },
+      "required": [
+        "delta"
+      ],
+      "title": "ReasoningDelta",
+      "type": "object"
+    },
     "ResponseBillingMetadata": {
       "additionalProperties": false,
       "description": "响应中观测到的原生事实，不推断平台/价格，不代表实际账单。",
@@ -634,6 +657,7 @@
       "model_attempt_finished": "#/$defs/ModelAttemptFinished",
       "model_attempt_started": "#/$defs/ModelAttemptStarted",
       "model_usage_observed": "#/$defs/ModelUsageObserved",
+      "reasoning_delta": "#/$defs/ReasoningDelta",
       "response_completed": "#/$defs/ResponseCompleted",
       "response_failed": "#/$defs/ResponseFailed",
       "response_started": "#/$defs/ResponseStarted",
@@ -657,6 +681,9 @@
     },
     {
       "$ref": "#/$defs/TextCompleted"
+    },
+    {
+      "$ref": "#/$defs/ReasoningDelta"
     },
     {
       "$ref": "#/$defs/ToolCallCompleted"
