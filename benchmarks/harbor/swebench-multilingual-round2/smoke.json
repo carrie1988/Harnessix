@@ -1,0 +1,89 @@
+{
+  "run_name": "multilingual-round2-smoke",
+  "dataset": {
+    "name": "swebench-multilingual-holdout30-smoke",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 1,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "Smoke of the round-2 bundle on one already analysed holdout30 task: checks that the bundle installs, template v4 renders, the git read tools and the session baseline work in the task container, and tool names are readable. Not a result.",
+    "harnessix: round-2 product bundle agent-a53faed3 (integration branch feat/round2-time-and-resolve) with task template v4, which holds only the facts of the benchmark; working habits come from the product default instructions. Evaluation and product differ only in completion_guard and the per-step output cap: the compaction point is the product default, and git_read_tools gives the product the git read tools and session baseline that harnessix code and exec detect by default. 100 steps and 3600 s per turn as before; the cumulative token budget is 10M instead of 6M because fewer compactions mean more cumulative input.",
+    "Primary metric: the official SWE-bench resolve of the exported whole-repository patch; wall time per trial is the agent execution phase recorded by Harbor. Both are compared with the dev baseline run multilingual-round2-dev-baseline-447fe024 on the same tasks, same model replicas and same concurrency."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/network-isolation.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-multilingual-round2",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py",
+    "HARNESSIX_MODEL_GATEWAY_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_MODEL_GATEWAY_CODE": "integrations/harbor/model_relay.py",
+    "HARNESSIX_TASK_DNS": "192.168.130.1"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.1.0-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "0.10.0b12+round2-a53faed3",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-a53faed3/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-a53faed3/product.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-a53faed3/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-a53faed3/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "task_command_environment": true,
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 10000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false,
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task-v4.j2",
+          "network_isolation": true,
+          "git_read_tools": true
+        },
+        "override_timeout_sec": 3900
+      }
+    }
+  ]
+}
