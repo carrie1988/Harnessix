@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 32
+version: 33
 code_revision: aa686be2bc813e9a26e5595f050fadded94be69f
 owners:
   - product
@@ -39,6 +39,11 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：运行中的动态指示（0.10.0b8）
+
+- 用户反馈：模型思考或整段生成写文件内容时，界面几十秒只有静止的“思考中”，看起来像卡住（百炼qwen3.8实测流中静默13～27秒）。[`ActivityIndicator`](../../src/harnessix/product_ui/activity_indicator.py)位于对话与状态栏之间，只在Agent自己运行（accepted、preparing_context、calling_model、executing_tools、waiting_action、finalizing、cancelling）时显示一行“⠹ 思考中 · 已运行 23 秒”；当前步骤已收到正文时显示“生成回复中”。等待审批或回答时隐藏，因为那时在等人。定时器每0.12秒只更新这一行，不重绘对话；计时从界面第一次看到这一轮开始。
+- 模型思考内容（`reasoning_content`）目前在模型适配器里被丢弃，界面看不到；实时显示思考过程需要从适配器、运行时到协议逐层增加临时事件，列为下一步。
 
 ## 当前增量：改配置后启动时的切换前提（0.10.0b8）
 
@@ -1052,6 +1057,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 33 | `aef6a8b4` 增量 | 2026-11-10 | 运行中显示转动符号与已运行时间（0.10.0b8） |
 | 32 | `384ff28d` 增量 | 2026-11-10 | 启动Agent Server时以当前活动配置指针作为切换前提（0.10.0b8） |
 | 31 | `abd7b48e` 增量 | 2026-11-10 | 对话记录不显示取消后补给模型的宿主说明（0.10.0b8） |
 | 30 | `59ea4870` 增量 | 2026-11-10 | 多文件修改只显示数量和第一个路径；任务失败后F1显示该错误的原因和处理办法（0.10.0b7） |

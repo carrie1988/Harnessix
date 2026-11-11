@@ -10,6 +10,7 @@ from textual.containers import Horizontal
 from textual.widget import Widget
 from textual.widgets import Input, Label, ListItem, ListView, Static
 
+from harnessix.product_ui.activity_indicator import ActivityIndicator
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
 from harnessix.product_ui.cost_estimate import cost_upper_bound
 from harnessix.product_ui.errors import ProductUIError
@@ -155,6 +156,7 @@ class ProductMainView(Widget):
         self._conversation = TranscriptPane()
         self._last_state: ProductControllerState | None = None
         self._status = Static("正在启动…", id="status")
+        self._activity = ActivityIndicator()
         self._composer = Input(
             placeholder="输入任务，Enter发送",
             id="composer",
@@ -166,6 +168,7 @@ class ProductMainView(Widget):
         with Horizontal(id="workspace"):
             yield self._threads
             yield self._conversation
+        yield self._activity
         yield self._status
         yield self._composer
 
@@ -179,6 +182,7 @@ class ProductMainView(Widget):
         if not await self._threads.show(state):
             return False
         self._render_transcript(state)
+        self._activity.follow(state)
         self._status.update(_status_text(state))
         return True
 
