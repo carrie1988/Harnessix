@@ -14,7 +14,7 @@ from types import TracebackType
 from typing import Literal, Protocol, Self
 
 from harnessix.agent.errors import KernelError
-from harnessix.tools.contracts import ReadToolError
+from harnessix.tools.contracts import READ_TIMEOUT_SECONDS, ReadToolError
 from harnessix.tools.workspace import ReadOperation, Workspace, revision_state
 from harnessix.workspace.contracts import (
     ExternalRoot,
@@ -85,6 +85,18 @@ class _Observed:
         self.entries = entries
 
 
+def _read_operation(
+    checkpoint: Callable[[], None] | None, timeout_seconds: int | float
+) -> ReadOperation:
+    """局部读取操作；有上游检查点时先消费上游。默认时限下的构造方式与原来完全一致。"""
+
+    if timeout_seconds == READ_TIMEOUT_SECONDS:
+        return ReadOperation() if checkpoint is None else NativeReadOperation(checkpoint)
+    if checkpoint is None:
+        return ReadOperation(timeout_seconds=timeout_seconds)
+    return NativeReadOperation(checkpoint, timeout_seconds=timeout_seconds)
+
+
 class _PosixRoot:
     root_identity: tuple[object, ...]
 
@@ -105,11 +117,12 @@ class _PosixRoot:
         *,
         access: ResourceAccess,
         checkpoint: Callable[[], None] | None = None,
+        read_timeout_seconds: int | float = READ_TIMEOUT_SECONDS,
     ) -> _Observed:
         parts = self._workspace.parts(path)
         parent = "/".join(parts[:-1]) or "."
         name = parts[-1] if parts else None
-        operation = ReadOperation() if checkpoint is None else NativeReadOperation(checkpoint)
+        operation = _read_operation(checkpoint, read_timeout_seconds)
         try:
             if name is None:
                 return self._observe_existing(".", operation, directory=True, access=access)

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 139
-code_revision: b3bf0da1df361de8862e4d68097475b8ac6083c6
+version: 140
+code_revision: 7d8477801d57a43ce91a1b95e1484df75a0875c9
 owners:
   - core
 modules:
@@ -116,6 +116,10 @@ related_tests:
   - tests/product_config/test_command_rules.py
 supersedes: []
 ---
+
+## 当前增量：Git来源读取的时限放宽到30秒（0.10.0b14）
+
+- 用户决定（2026-11-11）：[`git_user_source_files`](../../src/harnessix/product_config/git_user_source_files.py)复核`.git`里几个小文件的单次读取时限由5秒放宽到30秒（`SOURCE_READ_TIMEOUT_SECONDS`），只限这条路径；执行时快照复核仍为5秒。背景：0.10.0b11起超时已如实报告为`git_user_observation_timeout`，但5秒在系统繁忙或杀毒软件扫描时仍会到期，CI macOS负载下复现并挡住发布。
 
 ## 当前增量：命令文本的免询问判定（ADR 0128，0.10.0b14）
 
@@ -2287,6 +2291,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 140 | `7d847780` 增量 | 2026-11-11 | Git用户来源读取时限5秒放宽到30秒，仅此路径（0.10.0b14） |
 | 139 | `b3bf0da1` 增量 | 2026-11-11 | `command_rules`：只读命令识别与命令前缀规则（ADR 0128，0.10.0b14） |
 | 138 | `dd13503b` 增量 | 2026-11-11 | PowerShell固定前缀补上`ProgramFiles(x86)`；旧参数仍接受（0.10.0b14） |
 | 137 | `b86793a7` 增量 | 2026-11-11 | 启动前的环境与进程规格错误归为确定未执行（0.10.0b13） |

@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 617,
-    "physical_lines": 129863,
-    "logical_lines": 113508,
+    "physical_lines": 129894,
+    "logical_lines": 113531,
     "documented_modules": 617,
     "classes": 1209,
     "documented_classes": 620,
-    "functions": 5100,
-    "documented_functions": 1682,
+    "functions": 5102,
+    "documented_functions": 1684,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1581,8 +1581,8 @@
       "path": "src/harnessix/product_config/git_user_source_files.py",
       "qualname": "GitUserSourceFiles._capture",
       "kind": "function",
-      "line": 248,
-      "lines": 65,
+      "line": 264,
+      "lines": 61,
       "documented": false,
       "decision_complexity": 29
     },
@@ -1933,8 +1933,8 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "_PosixRoot",
       "kind": "class",
-      "line": 88,
-      "lines": 116,
+      "line": 100,
+      "lines": 117,
       "documented": false
     },
     {
@@ -1943,7 +1943,7 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 302,
+      "line": 315,
       "lines": 124,
       "documented": true,
       "decision_complexity": 27

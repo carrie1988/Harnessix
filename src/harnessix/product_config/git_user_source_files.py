@@ -36,6 +36,9 @@ if TYPE_CHECKING:
 
 MAX_SOURCE_NODES = MAX_SNAPSHOT_DIRECTORY_ENTRIES
 MAX_SOURCE_BYTES = MAX_SNAPSHOT_TOTAL_BYTES
+# 复核.git里几个小文件的单次读取时限。原先沿用读工具的5秒，系统繁忙或杀毒软件扫描时会误报超时
+# （2026-11-11 CI macOS复现）；用户决定放宽到30秒，只限这条路径，执行时快照复核仍为5秒。
+SOURCE_READ_TIMEOUT_SECONDS = 30
 _FILES = ("HEAD", "config", "config.worktree", "commondir", "packed-refs")
 _TREES = ("refs", "reftable")
 
@@ -143,12 +146,25 @@ def _source_object(observed: _NativeObservation) -> _SourceObject:
     )
 
 
+def _observe(native: _NativeRoot, path: str, control: _Checkpoint) -> _NativeObservation:
+    """POSIX观察带局部读取时限，按Git来源的时限放宽；Windows观察只受上游控制。"""
+
+    if isinstance(native, _PosixRoot):
+        return native.observe(
+            path,
+            access="read",
+            checkpoint=control,
+            read_timeout_seconds=SOURCE_READ_TIMEOUT_SECONDS,
+        )
+    return native.observe(path, access="read", checkpoint=control)
+
+
 def _directory_identity(native: _NativeRoot, path: str, control: _Checkpoint) -> tuple[object, ...]:
     """沿原句柄链只读目录对象身份，不枚举根或 locator 的其他成员。"""
     if isinstance(native, _PosixRoot):
         with native._workspace.open(
             path,
-            NativeReadOperation(control),
+            NativeReadOperation(control, timeout_seconds=SOURCE_READ_TIMEOUT_SECONDS),
             directory=True,
             same_device=native._root_device,
         ) as descriptor:
@@ -171,7 +187,7 @@ def _directory_identity(native: _NativeRoot, path: str, control: _Checkpoint) ->
 def _locator(native: _NativeRoot, control: _Checkpoint) -> _SourceObject:
     """固定 .git：普通文件读取完整正文，目录只绑定身份，不读取 gitdir 或 Index。"""
     if isinstance(native, _PosixRoot):
-        operation = NativeReadOperation(control)
+        operation = NativeReadOperation(control, timeout_seconds=SOURCE_READ_TIMEOUT_SECONDS)
         with native._workspace.open(".", operation, directory=True) as parent:
             try:
                 posix_info = os.stat(".git", dir_fd=parent, follow_symlinks=False)
@@ -267,9 +283,7 @@ class GitUserSourceFiles:
                 with _native_errors(
                     control, verifying=previous is not None or expected in {"directory", "regular"}
                 ):
-                    observed = _source_object(
-                        native.observe(path, access="read", checkpoint=control)
-                    )
+                    observed = _source_object(_observe(native, path, control))
                 if previous is not None:
                     if observed != previous:
                         raise _changed()
@@ -289,9 +303,7 @@ class GitUserSourceFiles:
                         raise _limit()
                 elif observed.kind == "directory":
                     with _native_errors(control, verifying=True):
-                        verified = _source_object(
-                            native.observe(path, access="read", checkpoint=control)
-                        )
+                        verified = _source_object(_observe(native, path, control))
                     if verified != observed:
                         raise _changed()
                     entries = observed.entries or ()

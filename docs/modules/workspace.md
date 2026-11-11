@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 18
-code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
+version: 19
+code_revision: 7d8477801d57a43ce91a1b95e1484df75a0875c9
 owners:
   - core
 modules:
@@ -45,6 +45,10 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：读取操作的局部时限可由调用方指定（0.10.0b14）
+
+- [`NativeReadOperation`](../../src/harnessix/workspace/native_observation_io.py)与`_PosixRoot.observe`增加可选的局部读取时限，默认仍是读工具的5秒；默认时限下读取操作的构造方式与原来完全一致（模块函数`_read_operation`），执行时快照复核等现有调用方不受影响。目前只有Git用户来源复核传入30秒，见[产品配置模块设计](product-config.md)。Windows观察没有局部时限，只受上游控制。
 
 ## 当前增量：Windows固定目录不再阻止目录内改名（0.10.0b12）
 
@@ -1247,6 +1251,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 13 | `7d847780` 增量 | 2026-11-11 | 读取操作的局部时限可由调用方指定，默认5秒不变（0.10.0b14） |
 | 12 | `65301a12` 增量 | 2026-11-11 | Windows目录句柄共享读写、不共享删除：固定根期间目录内改名不再WinError 32（0.10.0b12） |
 | 11 | `9eff41b`基线及专项输入清单 | 2026-10-05 | 独立Snapshot v2完整父字典、原CAS全量Reader与只读再验证；原v1资源事实共享校验及原生父checkpoint；默认消费者新代际仍待联合接入 |
 | 10 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步完整资源请求私有准入提取、原容量合同、Snapshot请求序列P2测试缺口及固定0f Windows原生验收边界；Snapshot候选待新原生验证 |

@@ -655,7 +655,7 @@
       "max_decision_complexity": 0
     },
     "harnessix.workspace.snapshot:_PosixRoot": {
-      "max_lines": 116,
+      "max_lines": 117,
       "max_decision_complexity": 0
     },
     "harnessix.workspace.snapshot:capture_workspace_snapshot": {

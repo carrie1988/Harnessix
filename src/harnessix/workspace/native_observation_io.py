@@ -9,6 +9,7 @@ from collections.abc import Callable
 from typing import Literal
 
 from harnessix.agent.errors import KernelError
+from harnessix.tools.contracts import READ_TIMEOUT_SECONDS
 from harnessix.tools.workspace import ReadOperation
 
 
@@ -22,8 +23,13 @@ class UpstreamCheckpointError(BaseException):
 class NativeReadOperation(ReadOperation):
     """沿用局部读取时限，并在每个检查点先消费同一父操作。"""
 
-    def __init__(self, checkpoint: Callable[[], None]) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        checkpoint: Callable[[], None],
+        *,
+        timeout_seconds: int | float = READ_TIMEOUT_SECONDS,
+    ) -> None:
+        super().__init__(timeout_seconds=timeout_seconds)
         self._upstream_checkpoint = checkpoint
 
     def checkpoint(self) -> None:

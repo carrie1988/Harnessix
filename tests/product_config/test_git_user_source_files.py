@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -677,3 +678,24 @@ def test_a_local_read_timeout_is_reported_as_a_retryable_timeout(repository, mon
         pytest.fail("读取超时不能成为基线")
     for caught in (verifying, capturing):
         assert caught.value.code == "git_user_observation_timeout" and caught.value.retryable
+
+
+def test_source_reads_use_their_own_longer_budget(repository, monkeypatch):
+    # 用户决定（2026-11-11）：Git来源读取的局部时限由5秒放宽到30秒，只限这条路径。
+    budgets: list[float] = []
+    original = NativeReadOperation.__init__
+
+    def recorded(operation, checkpoint, *, timeout_seconds=5):
+        budgets.append(timeout_seconds)
+        original(operation, checkpoint, timeout_seconds=timeout_seconds)
+
+    monkeypatch.setattr(NativeReadOperation, "__init__", recorded)
+    with repository.pin() as pinned:
+        pinned.verify(lambda: None)
+    assert source_files.SOURCE_READ_TIMEOUT_SECONDS == 30
+    if os.name == "posix":
+        assert budgets and set(budgets) == {30}
+    # 其他调用方不传时限时仍是读工具的5秒。
+    default = NativeReadOperation.__new__(NativeReadOperation)
+    original(default, lambda: None)
+    assert round(default.deadline - time.monotonic()) == 5
