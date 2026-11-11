@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 20
+version: 21
 code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
@@ -17,9 +17,12 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
+  - docs/adr/0126-incremental-session-history-verification.md
+  - docs/adr/0133-parsed-projection-reuse-and-reducer-sharing.md
 related_tests:
   - tests/session/test_authenticated_history.py
   - tests/session/test_read_original_bytes.py
+  - tests/session/test_parsed_projection_cache.py
   - tests/session/test_authenticated_body_refs.py
   - tests/contracts/session.py
   - tests/agent/test_session_contract.py
@@ -667,6 +670,7 @@ restore(backup):
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 21 | ADR 0133增量 | 2026-11-11 | 投影解析结果按原字节摘要复用：每次读取的摘要、MAC与SQL校验不变，原字节未变时不再解析；启动恢复扫描不经过缓存；Reducer改为结构共享见Agent模块设计 |
 | 20 | `f3f93a54108406bb2df7cca5d5716bc62aeaaefc` | 2026-11-10 | 增量历史校验（ADR 0126）：游标读取命中进程内已验证的链前缀缓存时，只校验本次返回的事件；增量不成立时不信任缓存，回到从根全量校验；全量读取行为不变 |
 | 13 | Git记录认证增量 | 2026-10-01 | 原Binding增加有限Git签发/只验真端口，复用原Key与HMAC；不改变数据库或开放Git产品写入 |
 | 12 | R1维护变更 | 2026-09-28 | 认证容量先验原Seal；认证Store拒绝旧式维护；候选预检、有界IO、取消结算和恢复故障回归 |
@@ -744,9 +748,44 @@ Owner的OS/SQLite异常以私有载体保留原对象；原真实回滚/关闭�
 [验证资料](../validation/authenticated-thread-history-2026-10-02-v1/README.md)。
 原`get_thread/events`合同、数据库格式、Key与认证域不变；此接口不承诺跨库原子快照。
 
-同次事件／投影读取只复用一次 UTF-8 编码的原 `bytes`，不缓存认证或解析模型。
-原第二次投影 SHA／解析、MAC、SQL、控制回调及期限仍保留；后继读取重新取得原行。
+同次事件／投影读取只复用一次 UTF-8 编码的原 `bytes`，不缓存认证结论。
+原第二次投影 SHA、MAC、SQL、控制回调及期限仍保留；后继读取重新取得原行。
+投影的解析结果按原字节摘要复用，见下一小节（ADR 0133）；事件仍逐次解析。
 私有三元组与投影正文返回、调用链及失败边界见[详细设计第7.1节](../changes/m09-r4-authenticated-thread-history.md#71-同次读取的原字节复用)。
+
+### 投影解析结果按原字节摘要复用
+
+[ADR 0133](../adr/0133-parsed-projection-reuse-and-reducer-sharing.md)。一个模型步骤约有55次投影读取
+（运行时每次提交前后各一次，协议客户端每个事件轮询一次），此前每次读取把整份投影解析两遍，
+耗时随历史长度增长，是宿主每步开销的最大一项。
+
+[`ParsedProjectionCache`](../../src/harnessix/session/parsed_projection_cache.py)属于
+`SQLiteSessionStore`实例，只在内存中：按Thread记住最近一份“原字节SHA-256与投影版本→已解析并通过
+内容校验的Thread”，最多16个Thread。
+
+```text
+_snapshot（get_thread、append事务内、Artifact读写共用）
+  读取投影行与事件统计
+  verify_snapshot：Header、检查点MAC、原字节编码一次、认证侧SHA与检查点比对
+      parse_projection(摘要, 版本)：命中→复用；未命中→解析、版本内容校验、拒绝闭合校验→记录
+      事件数量、链尾哈希与检查点比对
+  _validated_snapshot：存储侧SHA与行内摘要比对
+      parse_projection(摘要, 版本)：同一次读取内必然命中
+      身份与序号比对
+```
+
+| 情形 | 行为 |
+|---|---|
+| 原字节与上次相同 | 全部存储侧校验照常执行，只跳过解析与两项内容校验 |
+| 追加之后的第一次读取 | 摘要已变，从数据库读回的字节重新解析一次；不用内存中的Thread预填 |
+| 投影被改写 | 认证Store因摘要与检查点不符拒绝；无认证Store返回新字节的解析结果 |
+| 解析或内容校验失败 | 按原错误码失败，不进缓存，下次读取仍失败 |
+| 启动恢复扫描 | 不经过缓存，每份投影仍解析两次 |
+
+命中时多个读取方得到同一个Thread对象。Thread及其内部模型都是冻结模型，读取方不得原地修改其中的
+JSON容器（`arguments`、`output`等）；修改不会进入数据库，但同一进程内的其他读取方在该Thread
+下一次提交前会看到被改过的值。回归见
+[解析缓存测试](../../tests/session/test_parsed_projection_cache.py)。
 
 ### Windows测试文件与探针连接所有权
 

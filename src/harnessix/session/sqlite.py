@@ -20,10 +20,10 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.lifecycle import validate_fork_snapshot
 from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import replay
-from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.session import sqlite_history
 from harnessix.session.errors import storage_errors
+from harnessix.session.parsed_projection_cache import ParsedProjectionCache, parse_projection
 from harnessix.session.sqlite_append import append_in_transaction
 from harnessix.session.sqlite_publication import (
     authenticated_events,
@@ -31,10 +31,7 @@ from harnessix.session.sqlite_publication import (
     verify_snapshot,
     verify_store,
 )
-from harnessix.session.store_publication import (
-    SessionPublicationBinding,
-    require_projection_content_version,
-)
+from harnessix.session.store_publication import SessionPublicationBinding
 from harnessix.session.verified_prefix_cache import VerifiedPrefixCache
 
 _APPLICATION_ID = 0x4858534B
@@ -126,6 +123,7 @@ def _validated_snapshot(
     event_count: int,
     *,
     snapshot_bytes: bytes | None = None,
+    parsed: ParsedProjectionCache | None = None,
 ) -> Thread | None:
     """逐项校验投影与权威事件序列，供单条读取和批量恢复共用。"""
 
@@ -139,14 +137,13 @@ def _validated_snapshot(
     if row["projection_version"] not in range(1, 23):
         raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
     body = snapshot_bytes if snapshot_bytes is not None else encoded.encode()
-    if hashlib.sha256(body).hexdigest() != row["snapshot_sha256"]:
+    digest = hashlib.sha256(body).hexdigest()
+    if digest != row["snapshot_sha256"]:
         raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
     try:
-        thread = Thread.model_validate_json(encoded)
+        thread = parse_projection(parsed, thread_id, encoded, digest, row["projection_version"])
     except ValidationError:
         raise KernelError("projection_corrupt", "快照结构损坏，请重建投影") from None
-    require_projection_content_version(thread, row["projection_version"])
-    require_closed_rejections(thread)
     if (
         thread.thread_id != thread_id
         or thread.sequence != row["sequence"]
@@ -215,6 +212,7 @@ class SQLiteSessionStore:
         self.path = Path(path).resolve()
         self._publication = publication
         self._verified_prefixes = VerifiedPrefixCache()  # ADR 0126
+        self._parsed_projections = ParsedProjectionCache()  # ADR 0133
         self._fault = fault or (lambda _: None)
         self._runtime_owner_token: object | None = None
 
@@ -354,10 +352,9 @@ class SQLiteSessionStore:
         )
         last_row = await cursor.fetchone()
         assert last_row is not None
-        snapshot_bytes = await verify_snapshot(database, self._publication, thread_id, row)
-        return _validated_snapshot(
-            thread_id, row, last_row[0], last_row[1], snapshot_bytes=snapshot_bytes
-        )
+        cache = self._parsed_projections
+        body = await verify_snapshot(database, self._publication, thread_id, row, parsed=cache)
+        return _validated_snapshot(thread_id, row, *last_row, snapshot_bytes=body, parsed=cache)
 
     async def get_thread(self, thread_id: UUID) -> Thread:
         async with self._connection() as database:

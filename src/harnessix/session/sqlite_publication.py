@@ -15,6 +15,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
 from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.session.event_body_refs import EventBodyRef
+from harnessix.session.parsed_projection_cache import ParsedProjectionCache, parse_projection
 from harnessix.session.store_publication import (
     EMPTY_PREFIX,
     MAX_HISTORY_BYTES,
@@ -24,7 +25,6 @@ from harnessix.session.store_publication import (
     SessionPublicationBinding,
     extend_prefix,
     original_bytes,
-    require_projection_content_version,
     unproven,
 )
 from harnessix.session.verified_prefix_cache import VerifiedPrefix, VerifiedPrefixCache
@@ -94,7 +94,10 @@ async def verify_snapshot(
     publication: SessionPublicationBinding | None,
     thread_id: UUID,
     row: aiosqlite.Row | None,
+    *,
+    parsed: ParsedProjectionCache | None = None,
 ) -> bytes | None:
+    """按签名检查点认证投影原字节并返回它；parsed只省去对同一份原字节的重复解析（ADR 0133）。"""
     if publication is None:
         return None
     await verify_store(database, publication)
@@ -114,11 +117,9 @@ async def verify_snapshot(
     if not hmac.compare_digest(proof.snapshot_sha256, digest):
         raise unproven()
     try:
-        thread = Thread.model_validate_json(row["snapshot_json"])
+        parse_projection(parsed, thread_id, row["snapshot_json"], digest, proof.projection_version)
     except ValueError:
         raise unproven() from None
-    require_projection_content_version(thread, proof.projection_version)
-    require_closed_rejections(thread)
     cursor = await database.execute(
         "SELECT COUNT(*) FROM agent_events e JOIN agent_event_publications p "
         "ON e.event_id=p.event_id WHERE e.thread_id=?",
