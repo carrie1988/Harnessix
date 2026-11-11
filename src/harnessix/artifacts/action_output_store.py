@@ -22,6 +22,7 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.reducer import get_turn
+from harnessix.artifacts.action_publication_snapshot import action_publication_snapshot
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
@@ -213,9 +214,9 @@ async def publish_action_output(
                 )
                 await database.commit()
                 return matched
-            thread = await session._snapshot(database, thread_id)
-            if thread is None or thread.sequence != expected_sequence:
-                raise KernelError("sequence_conflict", "Action输出发布时会话已变化")
+            thread = await action_publication_snapshot(
+                session, database, thread_id, turn_id, expected_sequence, subject="Action输出"
+            )
             ToolExecutionScope.for_pending_call(thread, turn_id, call)
             _require_approved_process_output(thread, turn_id, call, process_id)
             await check_quota(database, thread_id, turn_id, candidate.size_bytes)

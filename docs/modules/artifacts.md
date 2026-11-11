@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 20
-code_revision: af16bc871ed3f5809e992c587fde00479d42d870
+version: 21
+code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
 modules:
@@ -42,6 +42,7 @@ related_tests:
   - tests/product_config/test_action_recovery.py
   - tests/product_config/test_git_prepared_link_ledger.py
   - tests/product_config/test_git_prepared_link_controls.py
+  - tests/product_config/test_action_user_interruptions.py
 supersedes: []
 ---
 
@@ -497,7 +498,7 @@ Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避�
 | Session无活跃Runtime Owner | `artifact_runtime_required` | 否 | 无Artifact |
 | Artifact能力未装配 | `artifact_not_enabled` | 否 | Turn明确失败 |
 | 非Scoped入口返回Artifact | `artifact_scope_required` | 否 | 拒绝载荷 |
-| Thread Sequence变化 | `sequence_conflict` | 否 | 当前事务回滚 |
+| Thread Sequence变化（Action Review/Output发布时，同一Turn的Steering除外，见文末“Action Artifact发布与Steering”） | `sequence_conflict` | 否 | 当前事务回滚 |
 | Pending Call或批准错绑 | `tool_scope_mismatch`/`approval_mismatch` | 否 | 当前事务回滚 |
 | 单Turn/全局配额不足 | `artifact_quota_exceeded`或可选归档省略 | 否 | 标准结果失败；Batch/Process保留原事实 |
 | 引用与Preview超过输出预算 | `tool_output_too_large`或可选归档省略 | 否 | 不发布误导引用 |
@@ -826,6 +827,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 21 | `dad55d32` 增量 | 2026-11-11 | Action Review/Output发布容忍执行期间的Steering，其余Session变化仍按`sequence_conflict`拒绝（0.10.0b15，Beta反馈HX-01） |
 | 20 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 动作输出存储识别命令输出预览v4（`trusted-process-output/v4`，预览为流的末尾），旧版本按`LEGACY_PREVIEW_VERSIONS`识别 |
 | 19 | `29402f7` 增量基础 | 2026-10-07 | 同步 Artifact 单件显式只读参数、prepared 全集 Evidence/ReadSet 与无外部回调的同步终端核验；不记录最终验收结论 |
 | 13 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加只读Action Artifact purpose/call恢复清单；孤儿只计数、不读取正文或自动删除 |
@@ -895,3 +897,19 @@ action_review分支调用原[`protect_review_jsonl`](../../src/harnessix/agent/p
 没有迁移或新表。详见[完整设计](../changes/m09-r4-git-review.md)、
 [实际认证发布恢复](../../tests/product_config/test_git_delivery_review_controls.py)与
 [实际SDK消费](../../tests/product_config/test_git_delivery_review.py)。默认Git执行仍待独立接线验收。
+
+## Action Artifact发布与Steering（0.10.0b15）
+
+[`publish_action_review`](../../src/harnessix/artifacts/action_review_store.py)在规划审批材料时发布，[`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)在命令执行结束后发布；两者都拿调用方在规划或执行**之前**取得的Thread Sequence作为`expected_sequence`。命令可能运行数分钟，这期间用户可以提交Steering（ADR 0072第8条：当前Tool Result先完成，补充输入进入下一模型步骤）。
+
+此前两处发布要求Sequence逐一相等，Steering写入的两条事件会使发布以`sequence_conflict`失败，整个Turn随之失败或中断（Beta反馈HX-01）。现在由[`action_publication_snapshot`](../../src/harnessix/artifacts/action_publication_snapshot.py)在发布事务内取当前Thread，并核对`expected_sequence`之后追加的事件：
+
+| 调用方快照之后的事件 | 处理 |
+|---|---|
+| 没有 | 照常发布 |
+| 全部是同一Turn的`user_message` Item事件（Steering） | 照常发布，后续校验使用事务内的当前Thread |
+| 含其他任何事件，或Sequence回退 | `sequence_conflict`，事务回滚 |
+
+调用归属（`ToolExecutionScope.for_pending_call`）、审批匹配和配额仍在返回的当前Thread上逐项核对，授权条件没有放宽；通用[`publish`](../../src/harnessix/artifacts/sqlite.py)与Batch Diff的`append`由Runtime在Thread锁内以最新Sequence调用，不受影响，仍要求逐一相等。
+
+回归测试：[`test_action_user_interruptions.py`](../../tests/product_config/test_action_user_interruptions.py)覆盖命令执行期间与补丁规划期间的Steering，以及非Steering事件仍被拒绝的负控。

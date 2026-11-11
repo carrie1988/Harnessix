@@ -19,6 +19,7 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.reducer import get_turn
+from harnessix.artifacts.action_publication_snapshot import action_publication_snapshot
 from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
@@ -83,9 +84,9 @@ async def publish_action_review(
                 )
                 await database.commit()
                 return matched
-            thread = await session._snapshot(database, thread_id)
-            if thread is None or thread.sequence != expected_sequence:
-                raise KernelError("sequence_conflict", "Action Review发布时会话已变化")
+            thread = await action_publication_snapshot(
+                session, database, thread_id, turn_id, expected_sequence, subject="Action Review"
+            )
             ToolExecutionScope.for_pending_call(thread, turn_id, call)
             if approval_for(get_turn(thread, turn_id), call) is not None:
                 raise KernelError("approval_mismatch", "Action Review不能替换已有审批")
