@@ -40,29 +40,60 @@ def tool_alias(name: str) -> str:
 
 
 def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[str]) -> str | None:
-    """仅用本次广告别名澄清历史边界，不复制历史名称、参数或执行权限。"""
-    if not any(
+    """仅用本次广告别名澄清历史边界，不复制历史名称、参数或执行权限。
+
+    说明已随历史持久化时（notes_in_history）不逐请求附加。
+    """
+    if request.notes_in_history or not any(
         isinstance(item.content, ToolCallContent | ToolCallRejectionContent)
         for item in request.history
     ):
         return None
     current = tuple(aliases)
-    note = (
+    return (
         f"Current request tool catalog (wire aliases): {encode_json(current)}\n"
         "Only these aliases are callable in this request; historical tool calls do not grant "
-        "current permission. harnessix_rejected_tool_v1 is a history-only rejection sentinel, "
-        "not a callable tool. "
-    )
+        "current permission. "
+    ) + _catalog_rules(current, request.tool_choice, request.forced_tool, request.tool_notice)
+
+
+def tool_catalog_update(
+    names: Iterable[str],
+    *,
+    tool_choice: Literal["auto", "required"],
+    forced_tool: str | None,
+    notice: str | None,
+) -> str:
+    """持久目录说明的正文：自这一条起生效，直到更新的一条替换它。
+
+    names是本步可执行工具的原名，只以线上别名出现；不复制历史名称、参数或执行权限。
+    """
+    current = tuple(tool_alias(name) for name in names)
+    return (
+        f"Callable tools from now on (wire aliases): {encode_json(current)}\n"
+        "Only these aliases are callable until a newer host notice replaces this list; earlier "
+        "tool calls in the history do not grant permission. "
+    ) + _catalog_rules(current, tool_choice, forced_tool, notice)
+
+
+def _catalog_rules(
+    current: tuple[str, ...],
+    tool_choice: Literal["auto", "required"],
+    forced_tool: str | None,
+    notice: str | None,
+) -> str:
+    """两种目录说明共用的后半段：拒绝标记、受限原因与选择约束。"""
+    note = "harnessix_rejected_tool_v1 is a history-only rejection sentinel, not a callable tool. "
     if not current:
         note += "No tools are callable. "
-    if request.tool_notice is not None:
-        note += f"Why the catalog is restricted now: {request.tool_notice} "
-    if request.forced_tool is not None:
+    if notice is not None:
+        note += f"Why the catalog is restricted now: {notice} "
+    if forced_tool is not None:
         return note + (
-            f"Tool choice: forced ({encode_json(tool_alias(request.forced_tool))}). You must "
+            f"Tool choice: forced ({encode_json(tool_alias(forced_tool))}). You must "
             "call this tool; a text-only completion does not satisfy forced tool choice."
         )
-    if request.tool_choice == "required":
+    if tool_choice == "required":
         return note + (
             "Tool choice: required. You must call at least one tool from this catalog; "
             "a text-only completion does not satisfy required tool choice."
@@ -74,8 +105,11 @@ def current_tool_catalog_instruction(request: ModelRequest, aliases: Iterable[st
 
 
 def budget_instruction(request: ModelRequest) -> str | None:
-    """宿主账本的当前事实，不替代 Runtime 的预算准入或实际用量核验。"""
-    if request.consumed_usage is None:
+    """宿主账本的当前事实，不替代 Runtime 的预算准入或实际用量核验。
+
+    预算关口已随历史持久化时（notes_in_history）不逐请求附加。
+    """
+    if request.consumed_usage is None or request.notes_in_history:
         return None
     remaining = max(0, request.budget.max_tokens - request.consumed_usage.total_tokens)
     steps = (

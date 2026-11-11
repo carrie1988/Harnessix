@@ -34,6 +34,9 @@ class ModelRequest(ContractModel):
     forced_tool: str | None = Field(default=None, min_length=1, max_length=256)
     # 工具视图给出的受限原因与解锁条件；只追加到本次目录说明，不改变可执行集合。
     tool_notice: str | None = Field(default=None, min_length=1, max_length=1024)
+    # 预算与目录说明已作为历史Item持久化（agent/request_notes）：Provider映射不再逐请求附加，
+    # 请求保持“上一请求＋新内容”，前缀缓存可以一直复用到上一请求末尾。
+    notes_in_history: bool = False
 
     @property
     def wire_tools(self) -> tuple[ToolDescriptor, ...]:

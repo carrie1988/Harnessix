@@ -117,6 +117,7 @@ from harnessix.agent.publication import (
 )
 from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
+from harnessix.agent.request_notes import append_request_notes, without_request_notes
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
     select_artifact_verifier,
@@ -324,6 +325,7 @@ class AgentRuntime:
         continue_after_unknown_usage: bool = False,
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
+        history_notes: bool = False,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -375,6 +377,8 @@ class AgentRuntime:
         # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
         self._completion_guard = completion_guard
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
+        # ADR 0132：宿主说明落为历史Item（request_notes），Provider不再逐请求附加。
+        self._history_notes = history_notes is True
         # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._continue_after_unknown_usage = continue_after_unknown_usage is True
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -2229,7 +2233,7 @@ class AgentRuntime:
         if self._model_tool_view is None:
             return ModelToolSelection(available)
         selected_view = self._model_tool_view.select(
-            turn.model_copy(deep=True),
+            without_request_notes(turn),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
         if type(selected_view) is tuple:
@@ -2286,6 +2290,7 @@ class AgentRuntime:
                 if self._compaction is not None:
                     self._require_request_slots(turn)
                 model_step = turn.model_steps + 1
+                await append_request_notes(self, thread_id, turn)
                 with self._telemetry.operation(
                     "history",
                     thread_id=thread_id,
@@ -2422,6 +2427,7 @@ class AgentRuntime:
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                     tool_notice=tool_selection.notice,
+                    notes_in_history=self._history_notes,
                 )
                 estimated_input_tokens = estimate_request_input_tokens(
                     self.provider, candidate, turn, estimated_input_tokens
@@ -2467,6 +2473,7 @@ class AgentRuntime:
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                     tool_notice=tool_selection.notice,
+                    notes_in_history=self._history_notes,
                 )
                 try:
                     truncated = await self._sample(
