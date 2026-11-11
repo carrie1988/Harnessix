@@ -81,6 +81,12 @@ def _group_exists(pid: int) -> bool:
 
 
 def _signal_group(pid: int, number: int) -> bool:
+    """向进程组发信号；调用方须先poll回收已退出的组长。
+
+    macOS对只剩未回收僵尸的进程组，killpg（含探测信号0）返回EPERM而不是ESRCH；子进程收到SIGTERM
+    后已退出、事件循环尚未poll时，已停止的进程会被误判为清理失败（2026-11-10 CI macOS复现）。
+    回收后组内若无其他成员，killpg按ESRCH报告组已不存在。
+    """
     try:
         os.killpg(pid, number)
     except ProcessLookupError:
@@ -423,6 +429,7 @@ class _Owner:
         self.stop_reason = reason
         if self.process is not None:
             self.stop_started = time.monotonic()
+            self.process.poll()  # 见_signal_group：先回收已退出的组长
             if not _signal_group(self.process.pid, signal.SIGTERM):
                 self.io_failed = True
 
@@ -434,6 +441,7 @@ class _Owner:
             or time.monotonic() - self.stop_started < self.request.terminate_grace_seconds
         ):
             return
+        self.process.poll()  # 见_signal_group：先回收已退出的组长
         if _group_exists(self.process.pid):
             self.kill_sent = True
             if not _signal_group(self.process.pid, signal.SIGKILL):

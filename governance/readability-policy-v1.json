@@ -423,7 +423,7 @@
       "max_decision_complexity": 23
     },
     "harnessix.processes.posix_owner:_Owner": {
-      "max_lines": 421,
+      "max_lines": 423,
       "max_decision_complexity": 0
     },
     "harnessix.processes.posix_owner:_Owner._event_loop": {

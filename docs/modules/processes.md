@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: 4fe4a17d9e3cd19ef2a5b7e7ce4351e81e6b174c
+version: 39
+code_revision: c7b13fb3b4eb8cce15b97c90acfbf849ad280ba9
 owners:
   - core
 modules:
@@ -54,6 +54,11 @@ supersedes: []
 ---
 
 # Harnessix Code Process Runtime模块设计
+
+## 当前增量：macOS僵尸进程组不再误报清理失败（0.10.0b11）
+
+- macOS对只剩未回收僵尸的进程组，`killpg`（含探测信号0）返回EPERM而不是ESRCH（2026-11-10本机实测）。命令因输出上限、超时或取消被停止时，子进程收到SIGTERM后已退出、事件循环尚未`poll`，等待期满升级SIGKILL时[`posix_owner`](../../src/harnessix/processes/posix_owner.py)把EPERM当成信号失败，结果记为`cleanup_failed`（结局未知），而进程其实已经停止。CI macOS连续两轮在`test_output_stop_threshold_closes_pipes_without_claiming_eof`复现。
+- `_request_stop`与`_escalate_if_needed`向进程组发信号前先`poll`回收已退出的组长；组内没有其他成员时`killpg`按ESRCH报告组已不存在。组内仍有存活成员时行为不变。Linux对僵尸组`killpg`成功，不受影响。
 
 ## 当前增量：v4预览去除终端转义序列
 
@@ -1715,6 +1720,7 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 36 | `c7b13fb3` 增量 | 2026-11-11 | macOS僵尸进程组：发信号前先回收已退出组长，停止命令不再误报cleanup_failed（0.10.0b11） |
 | 35 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f Windows材料三组Job、核心Trusted Execution五步成功后可读性失败及Snapshot候选本机回归不替代原生验收的边界 |
 | 15 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c向产品恢复扫描提供低敏Active Lease清单，明确孤儿Lease只Reconcile、不按PID控制或重Spawn，并让Route期限覆盖Process清理余量 |
 | 14 | `0798d84a6ba76d0b658f912c9c41f60b5645629b` | 2026-09-20 | CRT EACCES有界重读与POSIX失败关闭边界由CI 35472231908完成Linux双版本、macOS、Windows、固定Container和Documentation六实例验收 |

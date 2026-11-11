@@ -1,10 +1,10 @@
 ---
 doc_type: change-design
 status: current
-version: 5
-code_revision: 8594b423a51545e5d5bc0fbdd3c802808f598a1b
+version: 6
+code_revision: c7b13fb3b4eb8cce15b97c90acfbf849ad280ba9
 owners: [core]
-modules: [governance, documentation, evals, product_config, product_ui, models]
+modules: [governance, documentation, evals, product_config, product_ui, models, processes]
 related_adrs:
   - docs/adr/0076-code-readability-and-structural-governance.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
@@ -13,6 +13,8 @@ related_tests:
   - tests/governance/test_secret_scan.py
   - tests/evals/test_grader.py
   - tests/integration/test_task_pack_execution.py
+  - tests/processes/test_posix_owner_zombie_group.py
+  - tests/product_config/test_git_user_source_files.py
 supersedes: []
 ---
 
@@ -76,7 +78,10 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 
 ## 5. 失败与恢复语义
 
-本次不改变运行时的失败、取消、超时或恢复语义。
+CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
+
+- **Git用户观察的读取超时**：本地读取时限到期此前被报成“来源发生变化”（复核时）或“路径无效”（初次捕获时），现报`git_user_observation_timeout`（可重试）。时限仍为5秒，与执行时快照复核共用，按用户决定不放宽。
+- **macOS僵尸进程组**：停止命令时组长已退出、尚未回收，`killpg`返回EPERM，此前记为`cleanup_failed`（结局未知）；现先回收组长再发信号，组内无其他成员即按已停止处理。组内仍有存活成员时行为不变，见[进程模块设计](../modules/processes.md)。
 
 ## 6. 持久化与事务
 
@@ -108,6 +113,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
+0.10.0b11修正macOS停止命令被误报为清理失败（见[进程模块设计](../modules/processes.md)）：`posix_owner._Owner`增加2行（421→423），即`_request_stop`与`_escalate_if_needed`发信号前各回收一次已退出组长。原因说明放在模块函数`_signal_group`的文档里，类内只留调用。
 0.10.0b9实时显示模型思考内容（见[Agent模块设计](../modules/agent.md)“思考预览”）：思考增量从适配器经运行时、协议到界面逐层接入，判断与发布放在新模块`reasoning_preview.py`，各热点只留最小接线。`agent/runtime.py`增加5行（3475→3480）：导入1行，`_sample_events`交给预览2行（287行、复杂度88），`_summary_text`忽略思考增量2行（238行、复杂度53），`AgentRuntime`随之3191→3195。`protocol/contracts.py`增加2行（656→658），即客户端与服务端各一个能力字段。`AgentProtocolServer`增加3行（196→199）：按连接记录能力、握手赋值、透传查询。`AgentApplicationService`增加5行（425→430）：查询参数与过滤。`ChatStream`与`feed`各增加1行（162→163、74→75），提取逻辑在模块函数`_reasoning`。
 0.10.0b8让Agent在上一轮被用户取消后补一条宿主说明（见[Agent模块设计](../modules/agent.md)“取消后的宿主说明”）：`agent/runtime.py`增加2行（3473→3475），`AgentRuntime`增加1行（3190→3191），即`_accept`里追加说明事件的1行和导入1行。判断与事件构造放在新模块`cancelled_turn_notice.py`，与完成守卫的宿主提示复用同一机制。
 0.10.0b6修复审批预览读取期限（见[delivery模块设计](../modules/delivery.md)“Review规划读取期限”）：`delivery/trusted_action.py`增加8行（614→622），即准备超时转为可恢复失败的4行，以及导入新期限常量和超时错误的4行。超时错误的文案放在同类错误所在的`workspace_patch_errors.py`，期限常量放在共用规划入口`action_transaction_planning.py`。
