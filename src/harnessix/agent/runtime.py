@@ -92,6 +92,7 @@ from harnessix.agent.patching import execution_approval, inspection_scope, resul
 from harnessix.agent.planning import (
     UPDATE_PLAN_TOOL,
     execute_plan_update,
+    plan_calls_last,
     planning_history_anchors,
     planning_tool_descriptor,
 )
@@ -2916,11 +2917,7 @@ class AgentRuntime:
     ) -> ToolResultContent | ArtifactToolResult:
         definition = self._definitions.get(call.tool)
         if definition is None:
-            return ToolResultContent(
-                call_id=call.call_id,
-                outcome="failed",
-                error=AgentFailure(code="unknown_tool", message="工具未注册"),
-            )
+            return rejection_result(call.call_id)
         if action_owned(self._trusted_actions, call):
             self._validate_tool_contract(call)
             return await execute_trusted_action(
@@ -3248,7 +3245,7 @@ class AgentRuntime:
         # 原用量路径独立保留；调用组仅在流正常关闭后原子形成，拒绝无执行权。
         payloads: list[EventPayload] = []
         rejected_results: list[ToolResultContent] = []
-        for proposal in proposals:
+        for proposal in plan_calls_last(proposals, self._planning_enabled):
             definition = (
                 proposal_definitions.get(proposal.tool)
                 if isinstance(proposal, ToolCallCompleted)

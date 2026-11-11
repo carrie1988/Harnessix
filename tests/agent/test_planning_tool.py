@@ -44,6 +44,7 @@ from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
 from tests.agent.attempt_helpers import attempt_start, observed
 from tests.agent.helpers import RecordingTools, answer, tool_step
+from tests.agent.test_approvals import reply
 from tests.agent.test_publication import CANARY, protected
 
 
@@ -142,6 +143,8 @@ async def test_enabled_descriptor_and_host_only_bounded_result(tmp_path):
     assert turn.status is TurnStatus.COMPLETED and turn.model_steps == 2
     descriptor = next(tool for tool in provider.requests[0].tools if tool.name == "update_plan")
     assert descriptor.version == "harnessix.update-plan/v1"
+    # 说明是英文，并告诉模型计划可与其他调用同处一个响应、位置不限。
+    assert descriptor.description.isascii() and "in any position" in descriptor.description
     assert descriptor.effect_class is EffectClass.READ_ONLY
     assert descriptor.risk_level is RiskLevel.LOW
     assert not descriptor.supports_parallel_calls
@@ -263,30 +266,112 @@ async def test_revision_after_reopen_uses_host_latest_plan_id(tmp_path):
     )
 
 
-@pytest.mark.parametrize("order", ["plan-read", "read-plan", "plan-plan", "plan-read-plan"])
-async def test_only_last_pending_call_can_update_and_later_read_still_executes(tmp_path, order):
+@pytest.mark.parametrize(
+    "order", ["plan-read", "read-plan", "read-plan-read", "plan-plan", "plan-read-plan"]
+)
+async def test_plan_is_recorded_at_any_position_and_only_the_last_plan_of_a_response(
+    tmp_path, order
+):
     calls = [
         plan_call(call_id=f"plan-{index}")
         if name == "plan"
-        else ToolCallCompleted(call_id="read", tool="test.read")
+        else ToolCallCompleted(call_id=f"read-{index}", tool="test.read")
         for index, name in enumerate(order.split("-"))
     ]
+    plans = [call for call in calls if call.tool == "update_plan"]
+    reads = [call for call in calls if call.tool == "test.read"]
     tools = RecordingTools(parallel=True)
     _, _, turn = await run_script(tmp_path, [proposal_step(*calls), answer()], tools=tools)
-    assert turn.status is TurnStatus.COMPLETED
-    expected_plans = int(calls[-1].tool == "update_plan")
-    assert len(plan_items(turn)) == expected_plans
-    assert len(tools.calls) == sum(call.tool == "test.read" for call in calls)
-    for index, call in enumerate(calls):
-        result = result_for(turn, call.call_id)
-        if call.tool == "test.read" or index == len(calls) - 1:
-            assert result.outcome == "succeeded"
-        else:
-            assert result.outcome == "failed" and result.error.code == "tool_invalid_arguments"
-    if expected_plans:
-        assert result_for(turn, calls[-1].call_id).output["plan_item_id"] == str(
-            plan_items(turn)[0].item_id
-        )
+    assert turn.status is TurnStatus.COMPLETED and turn.model_steps == 2
+    # 持久调用组：其余调用保持模型给出的顺序，计划调用排在其后。
+    persisted = [
+        item.content.provider_call_id
+        for item in turn.items
+        if isinstance(item.content, ToolCallContent)
+    ]
+    assert persisted == [call.call_id for call in (*reads, *plans)]
+    assert [call.provider_call_id for call in tools.calls] == [call.call_id for call in reads]
+    assert all(result_for(turn, call.call_id).outcome == "succeeded" for call in reads)
+    (plan,) = plan_items(turn)
+    recorded = result_for(turn, plans[-1].call_id)
+    assert recorded.outcome == "succeeded"
+    assert recorded.output["plan_item_id"] == str(plan.item_id)
+    # 计划Item在整组调用结算后才出现。
+    assert turn.items.index(plan) > max(
+        index for index, item in enumerate(turn.items) if isinstance(item.content, ToolCallContent)
+    )
+    for superseded in plans[:-1]:
+        result = result_for(turn, superseded.call_id)
+        assert result.outcome == "failed" and result.error.code == "tool_invalid_arguments"
+        assert "only the last one is recorded" in result.error.message
+        assert result.error.message.isascii()
+
+
+async def test_plan_first_then_command_costs_one_step_instead_of_a_rejection(tmp_path):
+    """评测中24次被拒全是“先update_plan、再一个其他调用”；模型随后要多花一步只为重发计划。"""
+    calls = [plan_call(call_id="plan"), ToolCallCompleted(call_id="run", tool="test.read")]
+    tools = RecordingTools()
+    store, provider, turn = await run_script(
+        tmp_path, [proposal_step(*calls), answer()], tools=tools
+    )
+    assert turn.status is TurnStatus.COMPLETED and turn.model_steps == 2
+    assert result_for(turn, "plan").outcome == result_for(turn, "run").outcome == "succeeded"
+    assert len(plan_items(turn)) == 1 and len(tools.calls) == 1
+    # 下一请求里两个调用都已配对成功结果，最新计划的工具组仍被压缩固定。
+    history = provider.requests[1].history
+    results = [item.content for item in history if isinstance(item.content, ToolResultContent)]
+    assert [result.outcome for result in results] == ["succeeded", "succeeded"]
+    thread = await store.get_thread(provider.requests[0].thread_id)
+    assert len(planning_history_anchors(thread)) == 1
+
+
+async def test_plan_before_a_call_that_waits_for_approval_is_recorded_after_it(tmp_path):
+    """产品里的命令调用经过审批边界：排在前面的计划不抢在审批之前结算，也不因等待而丢失。"""
+    tools = RecordingTools(approval=True)
+    provider = ScriptedProvider(
+        [
+            proposal_step(plan_call(), ToolCallCompleted(call_id="run", tool="test.read")),
+            answer(),
+        ]
+    )
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider, tools, enable_planning=True) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        waiting = await runtime.run_turn(thread.thread_id, "先计划再运行", request_id="r")
+        assert waiting.status is TurnStatus.WAITING_APPROVAL
+        assert not plan_items(waiting) and tools.calls == []
+        await reply(runtime, thread.thread_id, waiting)
+        turn = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
+    assert turn.status is TurnStatus.COMPLETED and len(tools.calls) == 1
+    assert result_for(turn, "run").outcome == result_for(turn, "plan").outcome == "succeeded"
+    assert len(plan_items(turn)) == 1
+    assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
+
+
+async def test_custom_tool_named_update_plan_keeps_its_position_when_planning_is_disabled(
+    tmp_path,
+):
+    class CustomPlanTools(RecordingTools):
+        def definitions(self):
+            (read,) = super().definitions()
+            return (read, read.model_copy(update={"name": "update_plan"}))
+
+    tools = CustomPlanTools()
+    provider = ScriptedProvider(
+        [
+            proposal_step(
+                ToolCallCompleted(call_id="custom", tool="update_plan"),
+                ToolCallCompleted(call_id="read", tool="test.read"),
+            ),
+            answer(),
+        ]
+    )
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider, tools) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        turn = await runtime.run_turn(thread.thread_id, "自定义同名工具", request_id="r")
+    assert turn.status is TurnStatus.COMPLETED and not plan_items(turn)
+    assert [call.tool for call in tools.calls] == ["update_plan", "test.read"]
 
 
 async def test_already_settled_rejection_after_plan_is_not_a_pending_tail(tmp_path):
@@ -721,11 +806,11 @@ async def test_missing_step_ids_are_filled_by_position_and_plan_stays_pinned(
     [
         (
             {"steps": [{"step_id": str(i), "description": "DO_NOT_ECHO"} for i in range(9)]},
-            "计划需1到8个步骤，当前9个",
+            "A plan needs 1 to 8 steps; this one has 9.",
         ),
         (
             {"steps": [{"step_id": "a", "description": "DO_NOT_ECHO"}] * 2},
-            "步骤step_id重复",
+            "step_id values repeat",
         ),
         (
             {
@@ -734,11 +819,15 @@ async def test_missing_step_ids_are_filled_by_position_and_plan_stays_pinned(
                     {"description": "DO_NOT_ECHO", "status": "in_progress"},
                 ]
             },
-            "最多一个步骤为in_progress，当前2个",
+            "At most one step may be in_progress; this plan has 2.",
         ),
-        ({"steps": [{"description": "DO_NOT_ECHO", "status": "done"}]}, "status（pending"),
-        ({"steps": [{"description": "DO_NOT_ECHO" + "x" * 4100}]}, "超过4096字节上限"),
-        ({"plan": [{"step": "DO_NOT_ECHO"}]}, '参数须为{"steps"'),
+        ({"steps": [{"description": "DO_NOT_ECHO", "status": "done"}]}, "status (pending"),
+        (
+            {"steps": [{"description": "DO_NOT_ECHO" + "x" * 4100}]},
+            "the limit is 4096 bytes",
+        ),
+        ({"plan": [{"step": "DO_NOT_ECHO"}]}, 'Arguments must be {"steps"'),
+        ({"steps": [{"step_id": "a\x00", "description": "DO_NOT_ECHO"}]}, "NUL characters"),
     ],
 )
 async def test_rejected_plans_name_the_violated_rule_without_echoing_values(
@@ -747,15 +836,15 @@ async def test_rejected_plans_name_the_violated_rule_without_echoing_values(
     _, _, turn = await run_script(tmp_path, [proposal_step(plan_call(arguments)), answer()])
     result = result_for(turn)
     assert result.outcome == "failed" and result.error.code == "tool_invalid_arguments"
-    assert message in result.error.message
+    assert message in result.error.message and result.error.message.isascii()
     assert "DO_NOT_ECHO" not in result.model_dump_json()
 
 
 @pytest.mark.parametrize(
     ("arguments", "rule"),
     [
-        ({"step_id": "verify", "status": "completed"}, '参数须为{"steps"'),
-        ({"steps": [{"step_id": "verify", "status": "completed"}]}, "description（非空）"),
+        ({"step_id": "verify", "status": "completed"}, 'Arguments must be {"steps"'),
+        ({"steps": [{"step_id": "verify", "status": "completed"}]}, "description (non-empty)"),
     ],
     ids=["single-step-without-steps", "step-without-description"],
 )
@@ -765,8 +854,9 @@ async def test_shape_and_field_errors_show_a_valid_whole_plan_call(tmp_path, arg
     result = result_for(turn)
     assert result.outcome == "failed" and result.error.code == "tool_invalid_arguments"
     message = result.error.message
-    assert rule in message and "每次调用都发送完整计划" in message
-    example = json.loads(message.split("示例：", 1)[1])
+    assert rule in message and "Send the whole plan (every step) on each call" in message
+    assert message.isascii()
+    example = json.loads(message.split("Example: ", 1)[1])
     (tmp_path / "example").mkdir()
     _, _, turn = await run_script(
         tmp_path / "example", [proposal_step(plan_call(example)), answer()]
@@ -777,15 +867,3 @@ async def test_shape_and_field_errors_show_a_valid_whole_plan_call(tmp_path, arg
         ("reproduce", "completed"),
         ("fix", "in_progress"),
     ]
-
-
-async def test_plan_before_other_calls_says_it_must_be_last(tmp_path):
-    calls = [plan_call(call_id="plan"), ToolCallCompleted(call_id="read", tool="test.read")]
-    _, _, turn = await run_script(
-        tmp_path, [proposal_step(*calls), answer()], tools=RecordingTools(parallel=True)
-    )
-    result = result_for(turn)
-    assert result.outcome == "failed"
-    assert (
-        "update_plan须是本次响应的最后一个工具调用；其前还有1个调用未结算" in result.error.message
-    )

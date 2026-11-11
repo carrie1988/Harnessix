@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractAsyncContextManager
 from typing import Any, Protocol
 from uuid import UUID, uuid5
@@ -35,6 +35,7 @@ from harnessix.artifacts.ports import BatchDiffPublisher
 from harnessix.context.compaction_contracts import CompactionAnchor
 from harnessix.context.tool_result_view import history_document, history_items
 from harnessix.domain.models import ContractModel, EffectClass, RiskLevel, ToolDescriptor
+from harnessix.models.contracts import ToolCallCompleted, ToolCallRejected
 from harnessix.session.ports import SessionStore
 
 UPDATE_PLAN_TOOL = "update_plan"
@@ -44,11 +45,18 @@ _PLAN_ITEM_NAMESPACE = "harnessix.plan-item/v1"
 # 模型常只发单个步骤（如{"step_id": "verify", "status": "completed"}）或漏写description；
 # 形状与字段错误附一份完整合法调用，说明每次都发送整份计划，而不是只发变化的步骤。
 _WHOLE_PLAN_EXAMPLE = (
-    "每次调用都发送完整计划（全部步骤），而不是只发变化的步骤。示例："
+    "Send the whole plan (every step) on each call, not only the step that changed. Example: "
     '{"steps": [{"step_id": "reproduce", "description": "Reproduce the bug", '
     '"status": "completed"}, {"step_id": "fix", "description": "Fix the root cause", '
     '"status": "in_progress"}]}'
 )
+# 调用组发布时计划调用已排到末尾（plan_calls_last），其后仍有未结算调用只会是同一响应里更晚的
+# 计划调用：每次调用都是整份计划，只有最后一份随准备阶段原子发布。
+_SUPERSEDED_PLAN = (
+    "This plan was not recorded: the same response contains a later update_plan call, and only "
+    "the last one is recorded. Send update_plan once per response."
+)
+_Proposal = ToolCallCompleted | ToolCallRejected
 
 
 class UpdatePlanInput(ContractModel):
@@ -60,10 +68,12 @@ def planning_tool_descriptor() -> ToolDescriptor:
         name=UPDATE_PLAN_TOOL,
         version=UPDATE_PLAN_VERSION,
         description=(
-            "记录或修订最多8步的简短工作计划；参数JSON共不超过4096 UTF-8字节。"
-            "必须放在本次响应的所有其他工具之后，不单独花费请求重复计划。"
-            "步骤ID唯一，最多一个in_progress；completed仅为模型自报，"
-            "不证明修改、测试或Review完成，也不授予执行权限。"
+            "Record or revise a short work plan of at most 8 steps; the argument JSON is "
+            "limited to 4096 UTF-8 bytes. Send the whole plan on every call. It may share a "
+            "response with other tool calls, in any position; do not spend a request only to "
+            "restate the plan. Step IDs are unique and at most one step is in_progress. "
+            "completed is self-reported: it does not prove an edit, test or review and grants "
+            "no permission."
         ),
         input_schema=UpdatePlanInput.model_json_schema(),
         effect_class=EffectClass.READ_ONLY,
@@ -73,6 +83,20 @@ def planning_tool_descriptor() -> ToolDescriptor:
         supports_reconciliation=False,
         supports_parallel_calls=False,
     )
+
+
+def _is_plan_call(proposal: _Proposal) -> bool:
+    return isinstance(proposal, ToolCallCompleted) and proposal.tool == UPDATE_PLAN_TOOL
+
+
+def plan_calls_last(proposals: Sequence[_Proposal], enabled: bool) -> list[_Proposal]:
+    """返回持久调用组的顺序：其余调用保持模型给出的相对顺序，计划调用稳定移到其后。
+
+    计划Item只能在整组调用结算后进入准备阶段时与其结果原子发布，而结果必须按调用顺序结算；
+    因此模型可以把update_plan写在响应的任意位置，由宿主把它排到调用组末尾。计划只是自报记录，
+    不读写工作区，后移不改变其他调用的输入与效果。未启用内置规划时同名工具不属于本模块，保持原序。
+    """
+    return sorted(proposals, key=_is_plan_call) if enabled else list(proposals)
 
 
 class PlanningHost(Protocol):
@@ -109,23 +133,27 @@ def _with_step_ids(arguments: dict[str, Any]) -> dict[str, Any]:
 def _plan_rule_violation(arguments: dict[str, Any], body: bytes) -> str:
     """说明违反的具体规则，模型据此修正而不是原样重发。"""
     if len(body) > MAX_PLAN_INPUT_BYTES:
-        return f"参数JSON为{len(body)}字节，超过{MAX_PLAN_INPUT_BYTES}字节上限；请缩短步骤描述"
+        return (
+            f"The argument JSON is {len(body)} bytes; the limit is {MAX_PLAN_INPUT_BYTES} bytes. "
+            "Shorten the step descriptions."
+        )
     steps = arguments.get("steps")
     if not isinstance(steps, list):
         return (
-            '参数须为{"steps": [{"step_id", "description", "status"}...]}；' + _WHOLE_PLAN_EXAMPLE
+            'Arguments must be {"steps": [{"step_id", "description", "status"}, ...]}. '
+            + _WHOLE_PLAN_EXAMPLE
         )
     if not 1 <= len(steps) <= 8:
-        return f"计划需1到8个步骤，当前{len(steps)}个"
+        return f"A plan needs 1 to 8 steps; this one has {len(steps)}."
     ids = [step.get("step_id") for step in steps if isinstance(step, dict)]
     if len(set(ids)) != len(ids):
-        return "步骤step_id重复；每个步骤使用不同的step_id"
+        return "step_id values repeat; give every step a different step_id."
     active = sum(isinstance(step, dict) and step.get("status") == "in_progress" for step in steps)
     if active > 1:
-        return f"最多一个步骤为in_progress，当前{active}个"
+        return f"At most one step may be in_progress; this plan has {active}."
     return (
-        "每个步骤只允许step_id、description（非空）与status"
-        "（pending、in_progress或completed）三个字段；" + _WHOLE_PLAN_EXAMPLE
+        "Each step takes only step_id, description (non-empty) and status "
+        "(pending, in_progress or completed). " + _WHOLE_PLAN_EXAMPLE
     )
 
 
@@ -135,7 +163,7 @@ def _decode_plan(call: ToolCallContent) -> tuple[UpdatePlanInput | None, str]:
     try:
         body = json.dumps(arguments, ensure_ascii=False, allow_nan=False).encode()
     except (TypeError, ValueError):
-        return None, '参数须为{"steps": [...]}的JSON对象'
+        return None, 'Arguments must be a JSON object {"steps": [...]}.'
     if len(body) > MAX_PLAN_INPUT_BYTES:
         return None, _plan_rule_violation(arguments, body)
     try:
@@ -145,7 +173,7 @@ def _decode_plan(call: ToolCallContent) -> tuple[UpdatePlanInput | None, str]:
     except (TypeError, ValueError, UnicodeError):
         return None, _plan_rule_violation(arguments, body)
     if any("\x00" in step.step_id + step.description for step in parsed.steps):
-        return None, "步骤ID与描述不能包含空字符"
+        return None, "step_id and description must not contain NUL characters."
     return parsed, ""
 
 
@@ -196,9 +224,7 @@ async def execute_plan_update(
                 call_id=call.call_id,
                 outcome="failed",
                 error=AgentFailure(
-                    code="tool_invalid_arguments",
-                    message=violation
-                    or f"update_plan须是本次响应的最后一个工具调用；其前还有{others}个调用未结算",
+                    code="tool_invalid_arguments", message=violation or _SUPERSEDED_PLAN
                 ),
             )
         else:
