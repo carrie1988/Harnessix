@@ -64,12 +64,19 @@ def _state_layout(path: Path, workspace: Path) -> None:
         raise KernelError("product_state_invalid", "产品状态目录权限或身份无效") from None
 
 
+def validate_windows_git(path: Path) -> None:
+    """Windows上产品能否绑定该git.exe；启动检查与入口的Git探测共用同一校验。"""
+
+    from harnessix.workspace.git_windows_binding import validate_windows_git_executable
+
+    validate_windows_git_executable(path)
+
+
 def _git_binding(path: Path, platform: PreflightPlatform) -> None:
     if platform == "windows":
         from harnessix.processes.supervisor_capabilities import probe_windows_process_capability
-        from harnessix.workspace.git_windows_binding import validate_windows_git_executable
 
-        validate_windows_git_executable(path)
+        validate_windows_git(path)
         probe_windows_process_capability()
         return
     try:

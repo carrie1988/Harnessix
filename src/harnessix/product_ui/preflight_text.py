@@ -29,7 +29,10 @@ _REMEDIATION_TEXT: Final[Mapping[str, str]] = {
     "install_tui_extra": "安装终端界面依赖：pip install 'harnessix[tui]'",
     "inspect_workspace": "确认工作区目录存在且可读写，或在命令后指定其他工作区目录",
     "choose_state_directory": "用 --state-directory 指定一个可写的状态目录",
-    "omit_or_install_git": "安装Git，或用 --git-executable 指定git程序的绝对路径",
+    "omit_or_install_git": (
+        "安装Git，或用 --git-executable 指定git程序的绝对路径"
+        "（Windows 上用 Git 安装目录下的 bin\\git.exe）"
+    ),
     # Action配置与能力
     "fix_action_config": "检查 --action-config 指定的文件能否读取、格式是否正确",
     "inspect_action_capabilities": "先修复上面失败的配置检查，再重新运行 harnessix code doctor",

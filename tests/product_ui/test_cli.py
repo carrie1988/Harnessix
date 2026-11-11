@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from harnessix import cli
+from harnessix.agent.errors import KernelError
 from harnessix.product_ui import cli as product_cli
 from harnessix.product_ui import git_detection
 from tests.product_config.conftest import product_config, write_config
@@ -329,3 +330,21 @@ def test_code_doctor_json_uses_shared_report_without_creating_state(
     assert report["ready"] is True and report["mode"] == "doctor"
     assert report["platform"] == ("windows" if os.name == "nt" else "posix")
     assert not state.exists()
+
+
+def test_windows_git_on_path_falls_back_to_a_bindable_git_of_the_same_install() -> None:
+    # Git for Windows默认安装：cmd\git.exe与git-lfs.exe、mingw64\bin\git.exe与git-upload-pack.exe
+    # 互为硬链接，产品绑定拒绝；同一安装的bin\git.exe为单链接（2026-11-11 Windows 11实机）。
+    install = Path("D:/Git")
+    accepted = {install / "bin" / "git.exe"}
+
+    def bindable(path: Path) -> None:
+        if path not in accepted:
+            raise KernelError("product_git_invalid", "Git原生可执行文件绑定无效")
+
+    found = install / "cmd" / "git.exe"
+    assert git_detection.bindable_windows_git(found, bindable) == install / "bin" / "git.exe"
+    accepted.add(found)
+    assert git_detection.bindable_windows_git(found, bindable) == found
+    accepted.clear()
+    assert git_detection.bindable_windows_git(found, bindable) is None

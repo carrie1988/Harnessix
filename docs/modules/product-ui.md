@@ -41,6 +41,10 @@ supersedes: []
 
 # Product UI终端产品模块设计
 
+## 当前增量：Windows自动找到可用的Git（0.10.0b11）
+
+- Windows 11实机（Git for Windows 2.53默认安装）：PATH上的`cmd\git.exe`与`git-lfs.exe`、`mingw64\bin\git.exe`与`git-upload-pack.exe`等互为硬链接，产品Git绑定（`validate_windows_git_executable`）拒绝多硬链接EXE，`harnessix code`、`exec`与`doctor`都以`product_git_invalid`停止，用户装好就无法使用。[`git_detection.bindable_windows_git`](../../src/harnessix/product_ui/git_detection.py)在未显式指定时，依次尝试PATH上的git、同一安装的`bin\git.exe`和`mingw64\bin\git.exe`，取第一个能通过同一绑定校验的；绑定规则本身不变。修复提示补充“Windows 上用 Git 安装目录下的 bin\git.exe”。
+
 ## 当前增量：配置向导先选服务商和模型（0.10.0b11）
 
 - 产品面向国内用户，此前向导依次询问“Provider类型(openai_chat/anthropic)”“Base URL”“模型标识”，用户要自己查接口地址和模型名，成功后只打印JSON收据。[`configure_cli.py`](../../src/harnessix/product_ui/configure_cli.py)承接`harnessix code configure`（从`cli.py`移出，`cli.py`只分派）：交互模式先列出DeepSeek官方、阿里云百炼、智谱和“其他兼容OpenAI接口的服务”，再列该家推荐模型与[`cost_estimate`](../../src/harnessix/product_ui/cost_estimate.py)中核对过的人民币牌价，直接回车选第一项（便宜够用的型号）。服务商目录见[产品配置模块设计](product-config.md)“服务商菜单”。
