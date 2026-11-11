@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
+version: 7
 code_revision: 25f482e9dee8e1ef4ad7ec715626f4d17f18dbe9
 owners: [core]
 modules: [evals, observability, sdk]
@@ -312,6 +312,11 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    适配器`external_boundary`只为App Server进程断言`HARNESSIX_EXTERNAL_BOUNDARY=1`，审批模式auto。
    - 权限规整：`normalize_workspace_modes: true`时，安装阶段以root把工作区普通文件权限规整为Git风格的0644/0755
      （`integrations/harbor/workspace_modes.py`），Git看不到变化；元数据记录`workspace_modes_normalized`。
+   - Git只读能力：`git_read_tools: true`（默认`false`）时，适配器向协议驱动传`--git-read-tools`，驱动用
+     `harnessix code`、`harnessix exec`的同一探测（工作区在Git仓库内且git可运行）找到git，并以`--git-executable`
+     启动App Server；探测不到按未配置启动。开启后模型多出`git_status`、`git_diff`、`git_review`三个只读工具，
+     产品记录并保护会话开始前工作区已有的未提交改动（ADR 0131）；元数据记录`git_read_tools`。
+     此前的评测运行不带git，两者都没有；是否开启由运行规格显式决定。
    - 安装包：`build_bundle.py --python-dir`在派生任务镜像容器内复制uv托管的Python（uv按其内置摘要核对），
      按带哈希的依赖清单（`uv export --frozen --no-dev --no-emit-project --extra openai`，含所选Provider的可选依赖，
      缺失时App Server启动预检报`product_dependency_missing`）与产品wheel安装，收据记录摘要。

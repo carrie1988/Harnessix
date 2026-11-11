@@ -22,6 +22,7 @@ from uuid import UUID
 
 from harnessix.agent_cli import ApprovalPolicy
 from harnessix.exec_cli import ApprovalMode, approval_policy
+from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.protocol.contracts import (
     ApprovalRespondParams,
     ItemPublicEvent,
@@ -407,14 +408,12 @@ async def _run(arguments: argparse.Namespace, instruction: str) -> dict:
             relay.close()
 
 
-async def _drive(arguments: argparse.Namespace, instruction: str) -> dict:
-    budget = PublicBudget(
-        max_steps=arguments.max_steps,
-        max_tokens=arguments.max_tokens,
-        timeout_seconds=arguments.timeout_seconds,
-        max_output_chars=65_536,
-        max_tool_calls_per_step=32,
-    )
+def server_command(arguments: argparse.Namespace) -> list[str]:
+    """App Server命令行。
+
+    --git-read-tools时与harnessix code、harnessix exec用同一探测：工作区在Git仓库内且git可运行
+    才绑定Git只读能力（git_status等工具与会话基线）；探测不到按未配置启动，不让试次失败。
+    """
     command = [
         sys.executable,
         "-m",
@@ -429,8 +428,25 @@ async def _drive(arguments: argparse.Namespace, instruction: str) -> dict:
     ]
     if arguments.action_config is not None:
         command.extend(["--action-config", arguments.action_config])
+    if arguments.git_read_tools:
+        git = detected_git_executable(None, Path(arguments.workspace).absolute())
+        if git is not None:
+            command.extend(["--git-executable", git])
+    return command
+
+
+async def _drive(arguments: argparse.Namespace, instruction: str) -> dict:
+    budget = PublicBudget(
+        max_steps=arguments.max_steps,
+        max_tokens=arguments.max_tokens,
+        timeout_seconds=arguments.timeout_seconds,
+        max_output_chars=65_536,
+        max_tool_calls_per_step=32,
+    )
     transport = SubprocessAgentTransport(
-        command, graceful_shutdown_timeout_seconds=2.0, terminate_timeout_seconds=2.0
+        server_command(arguments),
+        graceful_shutdown_timeout_seconds=2.0,
+        terminate_timeout_seconds=2.0,
     )
     events: list[PublicEvent] = []
     result: dict | None = None
@@ -479,6 +495,9 @@ def main() -> None:
     )
     parser.add_argument("--model-relay", action="append", default=[], help="回环端口=宿主机:端口")
     parser.add_argument("--events-output", help="本Turn公开事件JSONL，供逐步记录使用")
+    parser.add_argument(
+        "--git-read-tools", action="store_true", help="探测git并向App Server绑定Git只读能力"
+    )
     arguments = parser.parse_args()
     previous_logging = logging.root.manager.disable
     logging.disable(logging.CRITICAL)

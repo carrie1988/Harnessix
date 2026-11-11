@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import hashlib
 import json
@@ -300,6 +301,38 @@ async def test_event_pages_shrink_only_for_oversized_pages_and_stay_small() -> N
         with pytest.raises(AgentSDKError):
             await protocol_runner.EventPages(start).read(failing(code))
         assert requested == [start]
+
+
+def test_server_command_binds_git_only_on_request_and_when_detected(
+    tmp_path: Path, monkeypatch
+) -> None:
+    arguments = argparse.Namespace(
+        server_config="/etc/harnessix-eval/product.json",
+        action_config=None,
+        workspace=str(tmp_path),
+        state_directory="/tmp/harnessix-state/trial",
+        git_read_tools=False,
+    )
+    probed = []
+
+    def detect(explicit: str | None, workspace: Path) -> str | None:
+        probed.append((explicit, workspace))
+        return "/usr/bin/git"
+
+    monkeypatch.setattr(protocol_runner, "detected_git_executable", detect)
+    plain = protocol_runner.server_command(arguments)
+    assert plain[1:4] == ["-m", "harnessix", "agent-server"]
+    assert "--git-executable" not in plain and probed == []
+
+    arguments.git_read_tools = True
+    bound = protocol_runner.server_command(arguments)
+    assert bound == [*plain, "--git-executable", "/usr/bin/git"]
+    # 与harnessix code、harnessix exec相同的探测：不显式指定路径，按工作区判断。
+    assert probed == [(None, tmp_path.absolute())]
+
+    # 工作区不在Git仓库内或git不可用：按未配置启动，试次照常进行。
+    monkeypatch.setattr(protocol_runner, "detected_git_executable", lambda *_: None)
+    assert protocol_runner.server_command(arguments) == plain
 
 
 def test_default_read_window_outlasts_one_command() -> None:
