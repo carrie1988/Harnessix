@@ -22,6 +22,16 @@
    "dropped": "tokio-rs__axum-1730",
    "promoted": "tokio-rs__tokio-4384",
    "reason": "Harbor task lists the seven target tests under PASS_TO_PASS, the dataset row under FAIL_TO_PASS"
+  },
+  {
+   "dropped": "apache__lucene-12022",
+   "promoted": "projectlombok__lombok-3326",
+   "reason": "gold patch fails in the offline environment (oracle run multilingual-round2-test-oracle-ced97cfed388)"
+  },
+  {
+   "dropped": "apache__lucene-12196",
+   "promoted": "projectlombok__lombok-3479",
+   "reason": "gold patch fails in the offline environment (oracle run multilingual-round2-test-oracle-ced97cfed388)"
   }
  ],
  "tasks": [
@@ -146,7 +156,7 @@
    "instance_id": "apache__lucene-12196",
    "repo": "apache/lucene",
    "language": "java",
-   "split": "test",
+   "split": "dropped",
    "origin": "round2",
    "image": "swebench/sweb.eval.x86_64.apache_1776_lucene-12196:latest",
    "digest": "sha256:3cb3f4a2cbd5d26e21cc9858d6de12d582ff28714010824b29cc47ea7b9a84cc"
@@ -155,7 +165,7 @@
    "instance_id": "apache__lucene-12022",
    "repo": "apache/lucene",
    "language": "java",
-   "split": "test",
+   "split": "dropped",
    "origin": "round2",
    "image": "swebench/sweb.eval.x86_64.apache_1776_lucene-12022:latest",
    "digest": "sha256:18d94859ef0f839d64aef5be75eb3c4785c7de07de970a1c7104973fa8530ef6"
@@ -209,7 +219,7 @@
    "instance_id": "projectlombok__lombok-3326",
    "repo": "projectlombok/lombok",
    "language": "java",
-   "split": "reserve",
+   "split": "test",
    "origin": "round2",
    "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3326:latest",
    "digest": "sha256:611b1e84684c7d83414839fc80571e62bae90ce09de413c41ba372259c075aaa"
@@ -218,7 +228,7 @@
    "instance_id": "projectlombok__lombok-3479",
    "repo": "projectlombok/lombok",
    "language": "java",
-   "split": "reserve",
+   "split": "test",
    "origin": "round2",
    "image": "swebench/sweb.eval.x86_64.projectlombok_1776_lombok-3479:latest",
    "digest": "sha256:28c977b4afa5dac4a5559bb403dec6c879362dc8baf27b9b8959b2ef7cd08ccb"
