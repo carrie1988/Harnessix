@@ -293,7 +293,20 @@ def test_missing_or_wrong_history_refused_without_record_or_repair(
         )
 
 
-@pytest.mark.parametrize("change", ["membership", "mode", "identity"])
+def test_new_member_in_a_distant_historical_parent_does_not_stale_the_plan(
+    tmp_path: Path,
+) -> None:
+    """计划快照对目录只绑定对象与权限、不绑定成员（ADR 0143）：多出的空目录不是漂移。"""
+    with _source(tmp_path, 128) as source:
+        parent = source.anchor / "d127/p01"
+        (parent / "empty-child").mkdir()
+        assert _run(source.anchor, "status", "--porcelain=v2", "--untracked-files=all", "-z") == b""
+        planned = source.runtime.plan_worktree(source.transaction.transaction_id, source.anchor)
+        assert planned.worktree_id is not None
+        assert source.store.load(source.transaction.transaction_id) == source.transaction
+
+
+@pytest.mark.parametrize("change", ["mode", "identity"])
 def test_clean_git_does_not_hide_changed_distant_historical_parent(
     tmp_path: Path, change: str
 ) -> None:
@@ -301,9 +314,7 @@ def test_clean_git_does_not_hide_changed_distant_historical_parent(
         parent = source.anchor / "d127/p01"
         leaf = parent / "leaf.txt"
         original_inode = leaf.stat().st_ino
-        if change == "membership":
-            (parent / "empty-child").mkdir()
-        elif change == "mode":
+        if change == "mode":
             parent.chmod(0o700)
         else:
             moved = source.anchor.parent / "moved-parent"
