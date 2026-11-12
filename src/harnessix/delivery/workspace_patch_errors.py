@@ -16,6 +16,16 @@ from harnessix.execution.public_tool_contracts import MAX_WORKSPACE_PATCH_FILES
 _SHA_MISMATCH_ORIGIN = object()
 _NO_CHANGE_ORIGIN = object()
 _PREPARATION_ORIGIN = object()
+# 精确编辑规划器（patches.planner）的确定性提案错误：只读了前镜像，模型改正该处编辑即可重发。
+PLANNER_EDIT_REJECTIONS = frozenset(
+    {
+        "patch_context_not_found",
+        "patch_ambiguous_context",
+        "patch_overlapping_edits",
+        "patch_limit_exceeded",
+        "patch_no_change",
+    }
+)
 
 
 class _LocatedPatchRejection(KernelError):

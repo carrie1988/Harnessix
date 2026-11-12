@@ -39,6 +39,7 @@ from harnessix.delivery.workspace_patch_compact import (
     decode_compact_workspace_patch,
 )
 from harnessix.delivery.workspace_patch_errors import (
+    PLANNER_EDIT_REJECTIONS,
     _sha_mismatch_error,
     locating_patch_file,
     target_exists_error,
@@ -468,13 +469,7 @@ def _apply_workspace_exact_edits(
             f"({error.code}); change it with the command tool instead",
         ) from None
     except KernelError as error:
-        if error.code not in {
-            "patch_context_not_found",
-            "patch_ambiguous_context",
-            "patch_overlapping_edits",
-            "patch_limit_exceeded",
-            "patch_no_change",
-        }:
+        if error.code not in PLANNER_EDIT_REJECTIONS:
             raise
         raise workspace_patch_preparation_error(error.code, error.message) from None
 
