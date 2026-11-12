@@ -10,7 +10,7 @@
   "primary_outcome": "grader",
   "notes": [
     "Round-2 candidate on the Multilingual dev set (30 tasks, dev.tasks.lock.json). The dev set is tuning material: results on it are not evidence of generalisation.",
-    "harnessix: round-2 product bundle agent-944361a3 (integration branch feat/round2-time-and-resolve) with task template v4, which holds only the facts of the benchmark; working habits come from the product default instructions. Evaluation and product differ only in completion_guard and the per-step output cap: the compaction point is the product default, and git_read_tools gives the product the git read tools and session baseline that harnessix code and exec detect by default. 100 steps and 3600 s per turn as before; the cumulative token budget is 10M instead of 6M because fewer compactions mean more cumulative input.",
+    "harnessix: round-2 product bundle agent-57dabb53 (integration branch feat/round2-time-and-resolve) with task template v4, which holds only the facts of the benchmark; working habits come from the product default instructions. Evaluation and product differ only in completion_guard and the per-step output cap: the compaction point is the product default, and git_read_tools gives the product the git read tools and session baseline that harnessix code and exec detect by default. 100 steps and 3600 s per turn as before; the cumulative token budget is 10M instead of 6M because fewer compactions mean more cumulative input.",
     "Primary metric: the official SWE-bench resolve of the exported whole-repository patch; wall time per trial is the agent execution phase recorded by Harbor. Both are compared with the dev baseline run multilingual-round2-dev-baseline-447fe024 on the same tasks, same model replicas and same concurrency.",
     "Finish grading uses /data/harnessix/harbor/round2/multilingual-round2-dev-full.jsonl (sha256 a3f841b04349f783b362a91bf87c6369205a1058111f05f7cd17b44e857f88a6)."
   ],
@@ -52,10 +52,10 @@
     {
       "arm_id": "harnessix",
       "system": "harnessix",
-      "system_version": "0.10.0b12+round2-944361a3",
+      "system_version": "0.10.0b12+round2-57dabb53",
       "artifacts": [
-        "/data/harnessix/harbor/agent-944361a3/harnessix-bundle.tar.gz",
-        "/data/harnessix/harbor/agent-944361a3/product.json"
+        "/data/harnessix/harbor/agent-57dabb53/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-57dabb53/product.json"
       ],
       "agent": {
         "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
@@ -63,10 +63,10 @@
           "MODEL_API_KEY": "local-replica-no-key"
         },
         "kwargs": {
-          "install_bundle": "/data/harnessix/harbor/agent-944361a3/harnessix-bundle.tar.gz",
+          "install_bundle": "/data/harnessix/harbor/agent-57dabb53/harnessix-bundle.tar.gz",
           "bundle_root": "/opt",
           "python_executable": "/opt/harnessix/bin/python",
-          "server_config_template": "/data/harnessix/harbor/agent-944361a3/product.json",
+          "server_config_template": "/data/harnessix/harbor/agent-57dabb53/product.json",
           "server_config": "/etc/harnessix-eval/product.json",
           "action_config": "/etc/harnessix-eval/actions.json",
           "task_command_environment": true,
