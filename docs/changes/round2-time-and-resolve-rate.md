@@ -7,6 +7,7 @@ owners: [core]
 modules: [agent, models, tools, delivery, patches, trusted_actions, context, session, product_config, product_ui, evals]
 related_adrs:
   - docs/adr/0109-recoverable-truncation-and-read-guidance.md
+  - docs/adr/0137-create-with-missing-parent-directories.md
   - docs/adr/0124-completion-guard-for-unattended-turns.md
   - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
   - docs/adr/0131-session-baseline-for-pre-existing-workspace-changes.md
@@ -30,6 +31,8 @@ related_tests:
   - tests/session/test_parsed_projection_cache.py
   - tests/tools/test_grep_include.py
   - tests/patches/test_planner_newlines.py
+  - tests/delivery/test_create_missing_parents.py
+  - tests/product_config/test_patch_missing_parents.py
   - tests/product_config/test_patch_newlines.py
   - tests/models/test_tool_argument_repair.py
   - tests/agent/test_pressure_compaction_loop.py
@@ -132,6 +135,9 @@ supersedes: []
 - 补丁事务的原子性、摘要前置条件、审批绑定与回滚路径不变（ADR 0129第3节）。精确编辑的后像自ADR 0129第2版起
   沿用被替换处的换行风格（CRLF处写CRLF，LF处写LF），匹配在逐字节失败后忽略CRLF/LF差异再试一次；
   此前版本保存的补丁计划按保存时的语义复核，升级后仍可回滚与恢复。
+- 新建文件的成员在同一事务内补建缺失的父目录（ADR 0137，POSIX）：目录不成为计划成员，由计划自身的来源快照推导；
+  成员在文件就位前失败时只删除它补建的空目录；回滚该补丁时删除当初补建且已为空的目录。审批Diff与界面列出将新建的目录，
+  公共合同与Schema不变。已发布前缀不自动回滚这一既有语义（ADR 0068）不变。Windows行为不变，仍需先建目录。
 
 ## 9. 安全、权限与信任边界
 

@@ -84,6 +84,8 @@ _USER_REASONS = {
     "delivery_metadata_unsupported": "Windows事务不模拟POSIX可执行模式",
     "delivery_path_denied": "Workspace Patch路径不允许写入",
     "workspace_path_denied": "Workspace路径不允许访问",
+    "workspace_parent_missing": "缺失资源的父目录不存在",
+    "workspace_wrong_file_type": "路径中已有的父级不是目录，无法在其下创建文件",
     "workspace_patch_cwd_unsupported": "Workspace Patch只支持根级cwd",
     "workspace_platform_unsupported": "Workspace平台不受支持",
     "workspace_patch_precondition_failed": (

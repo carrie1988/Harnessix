@@ -30,11 +30,22 @@ _WORKSPACE_PATCH_PLANNING_FAILURES = {
         "resend"
     ),
     "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
+    # POSIX上create会补建缺失的父目录（ADR 0137）；这个码只剩不补建的平台（Windows）会出现。
+    "workspace_parent_missing": (
+        "A parent directory of a path in files does not exist, and on this platform "
+        "apply_patch_batch does not create directories. Create the directory with the command "
+        "tool (for example mkdir), then resend this call unchanged"
+    ),
+    "workspace_wrong_file_type": (
+        "A path in files passes through an existing entry that is not a directory (for example "
+        "a.txt/b.py where a.txt is a file), so nothing can be created below it. Use a path "
+        "whose existing parents are directories; missing parent directories are created for you"
+    ),
     "workspace_path_denied": (
         "A path in files is not a workspace path. apply_patch_batch only writes files inside "
         "the workspace, addressed relative to its root (for example src/app.py, never an "
-        "absolute path or one containing ..); write files elsewhere, such as temporary "
-        "directories, with the command tool"
+        "absolute path, one containing .., or one that goes through a symbolic link); write "
+        "files elsewhere, such as temporary directories, with the command tool"
     ),
     "workspace_platform_unsupported": "apply_patch_batch is not supported on this platform",
 }

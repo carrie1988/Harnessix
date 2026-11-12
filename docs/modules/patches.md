@@ -51,6 +51,13 @@ supersedes: []
 
 # Managed Patch Runtime模块设计
 
+## 当前增量：产品补丁工具在新目录里新建文件（ADR 0137）
+
+- 本文描述的Managed Patch Runtime仍不创建文件或目录（第3.2节）。产品工具`apply_patch_batch`由
+  [Delivery事务](delivery.md)实现，只复用本模块的精确编辑算法（`planner.apply_exact_edits`）。
+- 自[ADR 0137](../adr/0137-create-with-missing-parent-directories.md)起，`apply_patch_batch`的`create`在父目录
+  不存在时由同一笔事务补建目录；本模块的源码与行为没有变化，设计与边界见Delivery与Workspace模块文档。
+
 ## 当前增量：可定位的锚点拒绝（ADR 0129）
 
 - 精确编辑的三类拒绝都以`edits[j]`下标开头，并给出模型下一步能用的事实：锚点未找到时指出首个非空行所在行号，或说明`new_text`已在文件中（该编辑看起来已应用）；锚点不唯一时列出各处行号（至多5处）；编辑重叠时指出两条编辑的下标与重叠所在行。

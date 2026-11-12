@@ -55,6 +55,14 @@ supersedes: []
 
 # Trusted Actions模块设计
 
+## 当前增量：Patch父路径拒绝的可改正说明（ADR 0137）
+
+[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)的内置Patch规划期
+拒绝表增加两个错误码，都发生在只读观察、尚无Route的阶段：`workspace_wrong_file_type`（父路径上已有的段不是
+目录；原来不在可回传清单里，Turn以`uncertain_effect`中断）与`workspace_parent_missing`（只剩不补建父目录的
+平台会出现，说明改为英文并给出“先用命令工具创建目录再原样重发”）。`workspace_path_denied`的说明补上
+“或经过符号链接的路径”。其余工具、码表归一与Route关闭顺序不变。
+
 ## 当前增量：命令非零退出与超时的英文说明（ADR 0136）
 
 - [`_process_failure_feedback`](../../src/harnessix/trusted_actions/agent_gateway_output.py)只处理Process族（`run_profile.*`、

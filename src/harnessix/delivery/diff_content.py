@@ -58,8 +58,13 @@ def build_diff_content(
     max_utf8_bytes: int | None,
     checkpoint: Callable[[], None],
     missing_newline_markers: bool = False,
+    new_directories: tuple[str, ...] = (),
 ) -> WorkspaceDiffContent:
-    """消费宿主已核验的Mutation和只读正文端口；不替代路径、归属或CAS核验。"""
+    """消费宿主已核验的Mutation和只读正文端口；不替代路径、归属或CAS核验。
+
+    new_directories是发布时会补建的父目录：目录不是文件成员，没有自己的Diff段，
+    在全部文件段之前各占一行`new directory <路径>`，审阅者据此看到完整的文件系统效果。
+    """
 
     if (
         (
@@ -78,6 +83,8 @@ def build_diff_content(
     renamed_paths = {item.path for pair in rename_pairs for item in pair}
     entries: list[WorkspaceDiffEntry] = []
     output = _Output(max_utf8_bytes)
+    for directory in new_directories:
+        output.append(f"new directory {directory}\n")
     for deleted, added in rename_pairs:
         checkpoint()
         body = _blob(read_blob, deleted.before.sha256)

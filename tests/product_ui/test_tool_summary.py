@@ -152,6 +152,17 @@ def _failed(code: str, message: str) -> PublicToolResultContent:
             "失败：编辑锚点不唯一，请提供更完整上下文（patch_ambiguous_context）",
         ),
         (
+            "workspace_wrong_file_type",
+            "A path in files passes through an existing entry that is not a directory",
+            "失败：路径中已有的父级不是目录，无法在其下创建文件（workspace_wrong_file_type）",
+        ),
+        (
+            "workspace_parent_missing",
+            "A parent directory of a path in files does not exist, and on this platform "
+            "apply_patch_batch does not create directories",
+            "失败：缺失资源的父目录不存在（workspace_parent_missing）",
+        ),
+        (
             "workspace_patch_precondition_failed",
             "files[0]: expected_sha256 does not match the current file",
             "失败：expected_sha256不匹配；请重新调用目标文件的read_file，"
