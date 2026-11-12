@@ -236,6 +236,7 @@ class CodingToolRuntime:
         )
         self._workspace = backend.workspace
         self._windows = backend.windows
+        self._read_complete_bytes = backend.read_complete_bytes
         self._max_concurrent_reads = max_concurrent_reads
         self._closed = False
         self._artifacts = artifacts
@@ -276,16 +277,13 @@ class CodingToolRuntime:
         return self._windows.scope
 
     async def read_workspace_file(self, path: str) -> bytes | None:
-        """完整读取一个不超过扫描上限的工作区文件，供提案修复核对；不可读或不支持时返回None。"""
-        if self._workspace is None:
-            return None
-        workspace = self._workspace
+        """完整读取一个不超过扫描上限的工作区文件，供提案修复核对；不可读时返回None。"""
         async with self._lock:
             if self._closed:
                 return None
             try:
                 return await run_read_operation(
-                    lambda operation: files.read_complete_bytes(workspace, path, operation),
+                    lambda operation: self._read_complete_bytes(path, operation),
                     timeout_seconds=self._read_timeout_seconds,
                 )
             except (ReadToolError, OSError, ValueError):

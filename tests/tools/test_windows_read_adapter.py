@@ -11,6 +11,7 @@ import pytest
 
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
+from harnessix.tools import runtime as tool_runtime
 from harnessix.tools.contracts import (
     MAX_SCAN_BYTES,
     ListFilesInput,
@@ -19,6 +20,8 @@ from harnessix.tools.contracts import (
     ReadFileSnapshotOutput,
     ReadToolError,
 )
+from harnessix.tools.read_backend import _ReadBackend
+from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.tools.search import SearchCapture
 from harnessix.tools.search_contracts import GlobInput, GrepInput
 from harnessix.tools.windows_read import WindowsReadRuntime
@@ -137,6 +140,44 @@ def test_windows_snapshot_preserves_native_observation_size_limit(
     with pytest.raises(ReadToolError) as failed:
         runtime.read_file_snapshot(ReadFileInput(path="app.py", max_lines=1), ReadOperation())
     assert failed.value.code == "limit_exceeded"
+
+
+def test_windows_complete_bytes_are_exact_and_fail_closed(
+    tmp_path: Path, runtime: WindowsReadRuntime
+) -> None:
+    body = "中文\r\n尾行".encode()
+    (tmp_path / "app.py").write_bytes(body)
+    assert runtime.read_complete_bytes("app.py", ReadOperation()) == body
+    (tmp_path / "large.bin").write_bytes(b"x" * (MAX_SCAN_BYTES + 1))
+    (tmp_path / "private").mkdir()
+    (tmp_path / "private/key").write_bytes(b"k")
+    for path, code in (
+        ("large.bin", "limit_exceeded"),
+        (".", "wrong_file_type"),
+        ("missing.py", "not_found"),
+        ("private/key", "path_denied"),
+    ):
+        with pytest.raises(ReadToolError) as failed:
+            runtime.read_complete_bytes(path, ReadOperation())
+        assert failed.value.code == code
+
+
+async def test_proposal_repair_reads_whole_files_through_the_windows_backend(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """提案修复要读整个文件来补edit的SHA；Windows后端以前恒返回None，修复在Windows上从不生效。"""
+
+    (tmp_path / "app.py").write_bytes(b"old\n")
+    backend = _ReadBackend(
+        workspace=None,
+        windows=WindowsReadRuntime(tmp_path, root_factory=cast(Any, _FakeWindowsRoot)),
+        implementation="coding-read/windows-v1",
+        git_runtime=None,
+    )
+    monkeypatch.setattr(tool_runtime, "build_read_backend", lambda *_arguments: backend)
+    async with CodingToolRuntime(tmp_path) as tools:
+        assert await tools.read_workspace_file("app.py") == b"old\n"
+        assert await tools.read_workspace_file("missing.py") is None
 
 
 def test_windows_adapter_honors_explicit_utf8_page_budget(tmp_path, runtime):

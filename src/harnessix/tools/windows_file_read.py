@@ -170,6 +170,16 @@ def _read_file_page(
     return page
 
 
+def read_complete_bytes(port: WindowsReadPort, path: str, operation: ReadOperation) -> bytes:
+    """同一原生稳定观察中的完整原始字节；超过扫描上限按limit_exceeded失败。"""
+
+    observed = port.observe(port.path(path), operation, max_bytes=MAX_SCAN_BYTES)
+    require_kind(observed, "file")
+    if observed.content is None or len(observed.content) != observed.size:
+        raise ReadToolError("io_failed")
+    return observed.content
+
+
 def read_file_snapshot(
     port: WindowsReadPort,
     args: ReadFileInput,
