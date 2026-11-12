@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import zlib
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,47 @@ _UUID_TEXT = re.compile(
 
 
 _MAX_ID_CHARS = 200
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--shard",
+        default=None,
+        metavar="I/N",
+        help="只运行第I片（共N片）；按测试文件稳定划分，CI用它把全量测试拆成并行任务",
+    )
+
+
+def shard_of(test_file: str, total: int) -> int:
+    """测试文件所属的分片（从1起）。只依赖文件路径，各进程、各平台结果相同。"""
+
+    return zlib.crc32(test_file.replace("\\", "/").encode("utf-8")) % total + 1
+
+
+def _requested_shard(config: pytest.Config) -> tuple[int, int] | None:
+    value = config.getoption("--shard")
+    if value is None:
+        return None
+    match = re.fullmatch(r"([1-9]\d*)/([1-9]\d*)", value)
+    if match is None or int(match[1]) > int(match[2]):
+        raise pytest.UsageError("--shard 的写法是 I/N，且 1 <= I <= N，例如 2/3")
+    return int(match[1]), int(match[2])
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """按文件分片：同一文件的用例留在同一片，模块级夹具与文件内顺序不受影响。"""
+
+    shard = _requested_shard(config)
+    if shard is None:
+        return
+    index, total = shard
+    kept: list[pytest.Item] = []
+    dropped: list[pytest.Item] = []
+    for item in items:
+        mine = shard_of(item.nodeid.split("::", 1)[0], total) == index
+        (kept if mine else dropped).append(item)
+    config.hook.pytest_deselected(items=dropped)
+    items[:] = kept
 
 
 def pytest_make_parametrize_id(config: pytest.Config, val: object, argname: str) -> str | None:

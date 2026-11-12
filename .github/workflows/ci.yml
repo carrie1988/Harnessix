@@ -22,6 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.12", "3.13"]
+        # 全量测试按文件拆成3片并行（tests/conftest.py的--shard），每片各自用满4核。
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -32,20 +34,33 @@ jobs:
       - run: uv sync --locked --all-extras --dev
       # 临时目录不放在/tmp：bubblewrap用私有挂载覆盖/tmp，真实沙箱测试的HOME会被遮住。
       # -n auto按CPU核数并行（GitHub托管Linux为4核），单进程约需1小时40分。
-      - run: uv run pytest -n auto --durations=20 --ignore=tests/governance --basetemp="$RUNNER_TEMP/pytest"
+      - run: uv run pytest -n auto --durations=20 --ignore=tests/governance --shard ${{ matrix.shard }}/3 --basetemp="$RUNNER_TEMP/pytest"
       - run: uv run python -m examples.kernel_search
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_artifacts
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.patch_plan
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.managed_patch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.patch_bridge
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_patch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.patch_batch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.managed_batch_approval
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.managed_batch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.batch_patch_bridge
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_batch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.batch_diff
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.host_process
+        if: ${{ matrix.shard == 1 }}
 
   lint:
     runs-on: ubuntu-latest
@@ -107,6 +122,11 @@ jobs:
 
   coding-tools-macos:
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 与Linux相同，按文件拆成3片并行；其余只需跑一遍的步骤放在第1片。
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -116,27 +136,44 @@ jobs:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
       - run: uv run pytest tests/governance/test_secret_scan.py tests/governance/test_cli_console.py
+        if: ${{ matrix.shard == 1 }}
       - run: uv build --offline --wheel --out-dir dist/secret-gate
         timeout-minutes: 2
       - run: uv run python scripts/secret_scan.py --artifact-dir dist/secret-gate
         timeout-minutes: 2
       - run: uv run pytest tests/session tests/agent/test_authenticated_store.py
+        if: ${{ matrix.shard == 1 }}
       - run: uv run pytest tests/benchmarks
-      - run: uv run pytest -n auto --durations=20 tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
+        if: ${{ matrix.shard == 1 }}
+      - run: uv run pytest -n auto --durations=20 --shard ${{ matrix.shard }}/3 tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
       - run: uv run python -m examples.kernel_files
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_search
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_artifacts
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.patch_plan
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.managed_patch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.patch_bridge
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_patch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.patch_batch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.managed_batch_approval
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.managed_batch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.batch_patch_bridge
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_batch
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.batch_diff
+        if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.host_process
+        if: ${{ matrix.shard == 1 }}
 
   windows-git-native-material:
     # 原27个选择器独立并行；失败不取消其余成员，也不忽略失败。
