@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 15
-code_revision: d5ad78a8f229b922b83cb8194435d2d11bfd96b0
+version: 16
+code_revision: 2d8f5c92c7d53aec563bd62017fafa10d688773d
 owners:
   - core
 modules:
@@ -128,7 +128,7 @@ Provider生命周期，仍经过取消、deadline、凭据出站保护及完整�
 截断响应先核验尝试与用量，再拒绝窗口激活；不接受半截摘要、不重试，不改变原Turn上限。
 截断以独立代码`provider_summary_truncated`结束压缩记录（[ADR-0109](../adr/0109-recoverable-truncation-and-read-guidance.md)）：
 规划阶段判定无法压缩（保留部分超预算、无进展、来源超限）时不写压缩记录。主动压缩（历史阈值或预算压力触发）遇到摘要截断、摘要超出字节预留或上述规划失败时，本步保留原历史继续，并在该Turn历史UTF-8字节再增长1/4前不再规划压缩，
-避免同一步重复规划；Context Overflow触发的被动压缩仍按原错误终止。产品摘要输出上限为`min(max_output_tokens, 2048)`：上限过高时中文摘要会在中途超出12288字节预留，此时用量不完整、不能继续，见ADR-0109 v2修订。
+避免同一步重复规划；Context Overflow触发的被动压缩仍按原错误终止。摘要请求以`provider_invalid_provider_output`结束（空响应、畸形流）且该次用量完整时同样跳过（ADR-0109 v4修订）。产品摘要输出上限为`min(max_output_tokens, 2048)`：上限过高时中文摘要会在中途超出12288字节预留，此时用量不完整、不能继续，见ADR-0109 v2修订。
 
 预付Context和实际Context使用相同的阶段工具目录及规范JSON编码，不把不可见注册项计入本步骤。
 `PreparedHistoryStep.budget_tool_selection`是深拷贝的单步临时快照，不新增持久字段；摘要后目录、
@@ -622,6 +622,7 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 16 | `2d8f5c92` 增量 | 2026-11-12 | 主动压缩的摘要输出不成立且用量完整时跳过本次压缩，不终止Turn（ADR 0109第4版） |
 | 15 | `d5ad78a8` 增量 | 2026-11-11 | `ContextBuildInput.input_limit_tokens`只放宽本步输入上限；新增`CompactionTokenWindow`（ADR 0132） |
 | 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
 | 1 | `6c5f310346afa3fa176f51707722467f46811b35` | 2026-09-12 | DOC-1.3 Wave A Context模块设计初版 |

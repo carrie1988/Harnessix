@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 28
-code_revision: af16bc871ed3f5809e992c587fde00479d42d870
+version: 29
+code_revision: 2d8f5c92c7d53aec563bd62017fafa10d688773d
 owners:
   - core
 modules:
@@ -853,6 +853,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 29 | `2d8f5c92` 增量 | 2026-11-12 | 开启`repair_tool_arguments`时工具调用序号空缺按到达的调用成组（ADR 0109第4版） |
 | 28 | `57dd7d7f` 增量 | 2026-11-11 | `notes_in_history`：说明随历史持久化时各映射不再逐请求附加；持久目录说明正文`tool_catalog_update`（ADR 0132） |
 | 27 | `feat/r2-guard` | 2026-11-11 | 出站历史映射把完成守卫判为不是答复的结构化乱码换成短占位（ADR 0124第2版） |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
@@ -946,6 +947,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - 开启`repair_tool_arguments`且以`length`结束时若已有流式工具调用，同样按上述规则形成调用组（截断的调用成为
   `invalid_arguments_json`拒绝，完整调用照常提交），终态记为`tool_calls`，由目录拒绝重入；无工具调用的纯文本截断仍以
   `max_output_tokens`失败。本地vLLM在输出用满上限时常把半截调用以`tool_calls`/`stop`结束，两条路径结果一致（ADR-0109）。
+- 开启`repair_tool_arguments`时，流式工具调用的`index`出现空缺不再使响应失败：到达的调用按序号先后成组，每个调用
+  仍逐项校验（本地vLLM实测偶有空缺）。未开启时仍以`tool_index_gap`失败（ADR-0109 v4修订）。
 - `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
   要求带工具历史中的助手消息携带该字段，否则400；空串即满足协议。
 - 同一思考模式只支持`tool_choice: auto`：映射不发送`tool_choice`，强制/required由可执行集收窄与目录说明约束。

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 3
-code_revision: 01e5e888e49e7a39fc1ac191b690f5d3b84e41c5
+version: 4
+code_revision: 2d8f5c92c7d53aec563bd62017fafa10d688773d
 owners: [core]
 modules: [agent, models, context, tools, product_config]
 related_adrs:
@@ -18,6 +18,7 @@ related_tests:
   - tests/app_server/test_rejection_sdk_chain.py
   - tests/protocol/test_rejection_protocol_v2.py
   - tests/agent/test_truncation_recovery.py
+  - tests/models/test_tool_argument_repair.py
 supersedes: []
 ---
 
@@ -107,3 +108,27 @@ week-1本地模型holdout中期分析（Verified A2x4前41次尝试）显示：7
 截断这一事实由补发Item本身留下审计记录。实现见`harnessix.agent.truncation_recovery`，
 测试见`tests/agent/test_truncation_recovery.py`。
 
+## 5. v4修订（2026-11-12）：调用序号空缺与摘要空响应不再终止回合
+
+**背景。** 第二轮开发集基线（Multilingual 30题×2轮，本地vLLM）60个试次里有3个不是因为预算而整题终止：
+- 2次是流式响应里工具调用的`index`不从0连续（`chat_protocol/v1:tool_index_gap`），其中一次发生在第3次模型调用、
+  任务开始30秒时；
+- 1次是主动压缩的摘要请求返回了没有正文的响应（`chat_protocol/v1:semantic_output_missing`），当时补丁已经写好。
+
+上一次正式对照的60个试次里没有出现，两次合计约为每2,000次模型调用1次。
+
+**决策。**
+1. **调用序号空缺按到达的调用成组。** `index`只是流内区分调用的键。开启`repair_tool_arguments`时，到达的调用
+   按序号先后成组，每个调用的ID、名称、类型与参数仍逐项校验，校验不过的仍按原规则处理。未开启时仍以
+   `tool_index_gap`整组失败。负序号、超过每步调用上限的序号仍失败。
+   空缺的成因是推断：服务端的流式解析器为模型写坏的一个调用占了序号却没有发出分片。原始分片不持久化，
+   两次都无法直接确认；无论成因如何，到达的调用各自完整，按上述校验后执行不会运行半个调用。
+2. **主动压缩的摘要输出不成立时跳过本次压缩。** 摘要请求以`provider_invalid_provider_output`结束（空响应、
+   畸形流）且该次尝试的用量完整时，与摘要截断同样处理：压缩记录按失败关闭，本步保留原历史继续，
+   该Turn历史再增长1/4之前不再规划。用量不完整时仍终止（账本不允许再发请求）；被动压缩仍终止。
+
+**边界。**
+- 被跳过的那个调用不会执行，也不出现在历史里；模型看到的是实际成组的调用与它们的结果。
+- 主循环里没有任何正文和调用的响应仍以`provider_invalid_provider_output`终止：两轮120个试次里没有观察到，
+  需要时另行决策。
+- 不新增事件类型、拒绝原因或配置字段。

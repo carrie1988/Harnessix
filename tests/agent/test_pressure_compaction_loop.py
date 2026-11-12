@@ -8,6 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from harnessix.agent.model_history_runtime import SUMMARY_OUTPUT_UNUSABLE
 from harnessix.agent.models import Budget, TextContent, ToolCallContent, Usage
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import replay
@@ -176,7 +177,7 @@ async def test_remaining_request_feedback_excludes_durable_summary_attempts(tmp_
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
 
 
-@pytest.mark.parametrize("finish", ["stop", "length"])
+@pytest.mark.parametrize("finish", ["stop", "length", "empty"])
 async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
     tmp_path: Path, monkeypatch, finish
 ):
@@ -199,10 +200,11 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
         assert "tools" not in body and "a" * 2500 not in instructions
         usage = chunk(usage=True)
         usage["usage"] = {"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13}
+        text = "" if finish == "empty" else "已调查旧窗口；尚需完成后续工作。"
         wire = WireStream(
             [
-                frame(chunk({"role": "assistant", "content": "已调查旧窗口；尚需完成后续工作。"})),
-                frame(chunk(finish=finish)),
+                frame(chunk({"role": "assistant", "content": text})),
+                frame(chunk(finish="stop" if finish == "empty" else finish)),
                 frame(usage),
                 b"data: [DONE]\n\n",
             ]
@@ -253,12 +255,14 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
         assert all(record.status == "summarized" for record in turn.compactions)
         assert len(main.requests) == 10
     else:
-        # 摘要被截断：每次已记账、不激活窗口；本步保留原历史继续，历史再增长1/4前不再规划。
+        # 摘要被截断或是空响应：每次已记账、不激活窗口；
+        # 本步保留原历史继续，历史再增长1/4前不再规划。
         assert turn.status == "completed", turn.error
         assert len(requests) == len(turn.compactions) == 3
+        code = "provider_summary_truncated" if finish == "length" else SUMMARY_OUTPUT_UNUSABLE
         for record in turn.compactions:
             assert record.status == "failed"
-            assert record.failure.code == "provider_summary_truncated"
+            assert record.failure.code == code
             assert record.attempt.usage.completeness == "complete"
         assert len(main.requests) == 10
     restored = await store.get_thread(thread.thread_id)

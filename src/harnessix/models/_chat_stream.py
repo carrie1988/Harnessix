@@ -40,8 +40,12 @@ class CallParts:
 def _complete_calls(
     calls: dict[int, CallParts], names: dict[str, str], *, repair_arguments: bool = False
 ) -> list[ToolCallCompleted | ToolCallRejected]:
-    """先校验整组结构，再按本次精确目录分类；畸形组不释放任何提案。"""
-    if sorted(calls) != list(range(len(calls))):
+    """先校验整组结构，再按本次精确目录分类；畸形组不释放任何提案。
+
+    序号只是流内区分调用的键。自托管服务的流偶尔留下序号空缺（实测，成因未能直接确认）；
+    开启修复时，到达的调用按序号先后成组，每个调用仍逐项校验（ADR 0109 v4）。
+    """
+    if not repair_arguments and sorted(calls) != list(range(len(calls))):
         raise ChatProtocolError(ChatProtocolReason.TOOL_INDEX_GAP)
     validated: list[tuple[str, str, dict[str, JsonValue] | None, int]] = []
     ids: set[str] = set()

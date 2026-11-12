@@ -58,6 +58,24 @@ def test_stream_repairs_only_when_enabled():
     assert not_object.value.reason is ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT
 
 
+def test_index_gaps_are_closed_only_when_enabled():
+    """自托管服务跳过没能解析的调用后，到达的调用按序号先后成组；严格模式仍整组失败。"""
+    first, second = _calls('{"path": "a.py"}')[0], _calls('{"path": "b.py"}')[0]
+    second.call_id = "c2"
+    names = {"read_file": "read_file"}
+    for gapped in ({1: first}, {0: first, 2: second}, {3: second, 1: first}):
+        with pytest.raises(ChatProtocolError) as error:
+            _complete_calls(dict(gapped), names)
+        assert error.value.reason is ChatProtocolReason.TOOL_INDEX_GAP
+        completed = _complete_calls(dict(gapped), names, repair_arguments=True)
+        assert [call.arguments["path"] for call in completed] == ["a.py", "b.py"][: len(gapped)]
+    # 空缺不放宽其余结构校验：到达的调用缺少ID时整组仍失败。
+    second.call_id = None
+    with pytest.raises(ChatProtocolError) as missing:
+        _complete_calls({0: first, 2: second}, names, repair_arguments=True)
+    assert missing.value.reason is ChatProtocolReason.TOOL_ID_MISSING
+
+
 def test_rejection_results_are_paired_by_reason():
     from uuid import uuid4
 

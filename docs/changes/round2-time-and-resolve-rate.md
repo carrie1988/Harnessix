@@ -6,6 +6,7 @@ code_revision: ce11ed19cb6ae4c39d5a91112cf05da2aba90826
 owners: [core]
 modules: [agent, models, tools, delivery, patches, trusted_actions, context, session, product_config, product_ui, evals]
 related_adrs:
+  - docs/adr/0109-recoverable-truncation-and-read-guidance.md
   - docs/adr/0124-completion-guard-for-unattended-turns.md
   - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
   - docs/adr/0131-session-baseline-for-pre-existing-workspace-changes.md
@@ -28,6 +29,8 @@ related_tests:
   - tests/product_config/test_command_ledger.py
   - tests/session/test_parsed_projection_cache.py
   - tests/tools/test_grep_include.py
+  - tests/models/test_tool_argument_repair.py
+  - tests/agent/test_pressure_compaction_loop.py
 supersedes: []
 ---
 
@@ -114,6 +117,8 @@ supersedes: []
 - 命令因超时被终止时，结果明确说明命令没有执行完、复合命令里尚未开始的部分没有运行。
 - 压缩校准只放宽固定比例得出的数值，不超过出站请求扫描容量；服务商少报用量时由既有的超窗后被动压缩兜底。
 - 工具步骤说明在工具结果提交后单独提交：进程在两次提交之间退出时该步说明丢失，但不会重复。
+- 自托管服务的单次坏响应不再终止Turn：流式工具调用序号空缺时按到达的调用成组，主动压缩的摘要输出不成立且用量完整时
+  跳过本次压缩（ADR 0109第4版）。开发集基线60个试次里有3个因此整题终止。
 
 ## 8. 持久化与事务
 

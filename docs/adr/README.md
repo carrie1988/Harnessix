@@ -253,7 +253,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 
 - [ADR 0107：评测认证宿主与同读完整历史](0107-authenticated-eval-host-and-history-read.md)：复用唯一产品Owner/Key/Scope，原历史完整验真先于恢复；精确新增`evals->secrets`而不扩大治理阈值。
 
-- [ADR 0109：单次坏输出可恢复与读工具失败引导](0109-recoverable-truncation-and-read-guidance.md)：截断工具调用走既有目录拒绝重入、主动压缩摘要截断不终止，读工具失败给出下一步并换算容器路径；不新增事件版本。
+- [ADR 0109：单次坏输出可恢复与读工具失败引导](0109-recoverable-truncation-and-read-guidance.md)：截断工具调用走既有目录拒绝重入、主动压缩摘要截断不终止，读工具失败给出下一步并换算容器路径；v4起调用序号空缺按到达的调用成组、摘要空响应跳过本次压缩；不新增事件版本。
 
 - [ADR 0109（已改号为0110）：Langfuse只读导出与Harbor协议适配](0109-evaluation-integrations.md)：保留原编号链接，供绑定摘要的历史验收证据使用。
 

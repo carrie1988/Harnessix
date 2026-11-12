@@ -69,7 +69,20 @@ _PLANNING_INFEASIBLE = frozenset(
 # 主动压缩遇到以下失败时，不压缩的原请求仍在窗口内：本步保留原历史继续，
 # 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
 _PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED}
+# 摘要Provider的输出不成立（空响应、畸形流）：只有该次用量完整时才可同样跳过（ADR 0109 v4）。
+SUMMARY_OUTPUT_UNUSABLE = "provider_invalid_provider_output"
 _BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = SKIPPED_COMPACTION_GROWTH
+
+
+def _proactive_failure_skippable(error: KernelError, thread: Thread, turn_id: UUID) -> bool:
+    """主动压缩的这次失败之后，不压缩的原请求能否照常发出。"""
+    if error.code in _PROACTIVE_SKIPPABLE:
+        return True
+    if error.code != SUMMARY_OUTPUT_UNUSABLE:
+        return False
+    records = get_turn(thread, turn_id).compactions
+    attempt = records[-1].attempt if records and records[-1].status == "failed" else None
+    return attempt is not None and attempt.usage.completeness == "complete"
 
 
 @dataclass(frozen=True, slots=True)
@@ -360,12 +373,14 @@ async def prepare_and_commit_model_history(
             try:
                 thread = await host._run_compaction(thread, turn, prepared, token, planned)
             except KernelError as error:
-                if reactive_compaction_required or error.code not in _PROACTIVE_SKIPPABLE:
+                if reactive_compaction_required:
                     raise
-                # 规划失败不留记录；摘要截断的记录已按失败关闭且用量已记账。
+                thread = await host.store.get_thread(thread_id)
+                if not _proactive_failure_skippable(error, thread, turn_id):
+                    raise
+                # 规划失败不留记录；摘要截断或输出不成立的记录已按失败关闭且用量已记账。
                 # 本步保留原历史继续，不重复规划同一步。
                 host._compaction_backoff[turn_id] = _history_utf8_bytes(prepared)
-                thread = await host.store.get_thread(thread_id)
                 budget_context = budget_selection = None
             else:
                 reactive_compaction_required = False
