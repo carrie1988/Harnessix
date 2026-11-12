@@ -23,7 +23,8 @@ _MAX_ID_CHARS = 200
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "nightly: 单项耗时数分钟的容量用例；每次推送的CI跳过，由nightly工作流每天运行",
+        "nightly: 每次推送的CI跳过、由nightly工作流每天运行的用例"
+        "（单项耗时数分钟的容量用例，以及尚未接入产品的内置Git交付测试族）",
     )
 
 
@@ -75,9 +76,32 @@ def _requested_shard(config: pytest.Config) -> tuple[int, int] | None:
     return int(match[1]), int(match[2])
 
 
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """按文件分片：同一文件的用例留在同一片，模块级夹具与文件内顺序不受影响。"""
+_UNWIRED_GIT_DELIVERY_TESTS = "tests/product_config/test_git_"
+# 已上线路径在用的Git模块的测试留在每次推送的CI里：审批运行时启动时绑定审计身份。
+_WIRED_GIT_TEST_FILES = frozenset({"tests/product_config/test_git_audit_identity_lifetime.py"})
 
+
+def runs_nightly_only(test_file: str) -> bool:
+    """内置Git交付在1.1接入产品前，其测试族只在nightly运行；接入时删除本规则。
+
+    这一族占每次推送CI慢用例耗时的七成以上，而用户走不到这些代码。按文件名直接点名的任务
+    （Windows Git原生验收等）不带 -m 筛选，照常运行这些用例。
+    """
+
+    name = test_file.replace("\\", "/")
+    return name.startswith(_UNWIRED_GIT_DELIVERY_TESTS) and name not in _WIRED_GIT_TEST_FILES
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """给只在nightly运行的文件加标记（须早于 -m 筛选）；再按文件分片。
+
+    同一文件的用例留在同一片，模块级夹具与文件内顺序不受影响。
+    """
+
+    for item in items:
+        if runs_nightly_only(item.nodeid.split("::", 1)[0]):
+            item.add_marker(pytest.mark.nightly)
     shard = _requested_shard(config)
     if shard is None:
         return

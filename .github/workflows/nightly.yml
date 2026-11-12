@@ -1,6 +1,8 @@
 name: Nightly
 
-# 每次推送的CI跳过标记为nightly的用例（单项耗时数分钟的容量用例），这里每天在main上补跑。
+# 每次推送的CI跳过标记为nightly的用例，这里每天在main上补跑（Linux与macOS）：
+# - 单项耗时数分钟的容量用例；
+# - 尚未接入产品的内置Git交付测试族（tests/conftest.py的runs_nightly_only；1.1接入产品时移回每次推送）。
 on:
   schedule:
     - cron: "0 18 * * *"
@@ -11,8 +13,13 @@ permissions:
 
 jobs:
   slow-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -21,4 +28,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --locked --all-extras --dev
-      - run: uv run pytest -n auto --durations=20 -m nightly --ignore=tests/governance --basetemp="$RUNNER_TEMP/pytest"
+      - run: uv run pytest -n auto --durations=20 -m nightly --ignore=tests/governance --shard ${{ matrix.shard }}/3 --basetemp="$RUNNER_TEMP/pytest"

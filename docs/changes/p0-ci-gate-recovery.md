@@ -71,6 +71,7 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 | 并行 | `python`与`coding-tools-macos`的主测试用`pytest -n auto`（pytest-xdist）按核数并行，并输出最慢20个用例 |
 | 分片（2026-11-12） | 全量测试按测试文件拆成并行分片（`tests/conftest.py`的`--shard I/N`，同一文件的用例留在同一片）：`python`两个Python版本各6片，`coding-tools-macos`5片（托管macOS最多同时跑5个任务），每片仍按核数并行；只需跑一遍的示例与小测试集放在第1片。慢文件按实测耗时均摊到各片（`tests/shard_weights.json`，由`scripts/shard_weights.py`从带`--durations=0 --durations-min=1`的CI日志生成；表里没有的文件按路径散列，新增测试无需登记）。此前单个任务25～45分钟（同样的用例在不同机房的托管机器上快慢相差约1.7倍），发布要等最慢的一个；3片时实测门禁21分钟 |
 | 每日用例（2026-11-12） | 一项容量用例（`tests/delivery/test_parent_closure_runtime.py`的255个成员，托管CI上单项6～12分钟）标记为`nightly`：每次推送的CI用`-m "not nightly"`跳过，`.github/workflows/nightly.yml`每天在main上运行；128个成员的同一用例仍在每次推送时运行。耗时来自发布每个成员都重新解码并校验整份事务记录（随成员数平方增长），属于产品侧的性能问题，另行处理 |
+| 内置Git交付测试族改为每日运行（2026-11-12，用户决定） | 内置Git交付（提交、推送的受控流程）尚未接入产品，用户走不到；它的测试族`tests/product_config/test_git_*`（104个文件、5464项用例）占每次推送CI慢用例耗时的74%。`tests/conftest.py`的`runs_nightly_only`按文件路径给这一族加`nightly`标记，不改动测试文件本身（其中有被历史验证证据按字节引用的文件）：每次推送的CI不再运行它们，`.github/workflows/nightly.yml`每天在main上用Linux与macOS各3片运行。例外：`test_git_audit_identity_lifetime.py`测的是已上线的审批运行时在用的函数，留在每次推送里。按文件名直接点名用例的任务（Windows Git原生验收、Windows受控执行等）不带`-m`筛选，照常运行。耗时表`tests/shard_weights.json`相应只保留每次推送都跑的文件。**1.1把Git交付接入产品时，删除该规则，把这一族移回每次推送。** |
 | 稳定用例ID | 5个用例在参数中现生成uuid4，各进程收集到的用例ID不同，xdist拒绝运行；`tests/conftest.py`给UUID文本参数固定ID，参数值不变。这些测试文件被历史验证证据按字节引用，不直接修改 |
 | 发布门禁不等Windows完整测试集 | 该测试集仍有大量存量失败（1.0门槛，W1），并曾在步骤超时后挂起两个多小时，整轮CI迟迟不结束，发布门禁随之等待。门禁改为：除它以外的任务全部成功即可，不再要求整轮运行结束。Windows任务形状受治理测试冻结，保持不变 |
 | 推送标签不触发CI | 推送版本标签曾对同一提交再跑一整轮CI；现在只有分支推送和PR触发 |
