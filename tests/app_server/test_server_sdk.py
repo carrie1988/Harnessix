@@ -484,7 +484,10 @@ async def test_service_shutdown_is_bounded_and_persists_cancel(tmp_path: Path) -
 async def test_a_server_that_exits_reports_its_own_public_error(
     stderr: str, expected: str | None
 ) -> None:
-    child = f"import sys; sys.stderr.write({stderr!r} + chr(10)); sys.exit(2)"
+    # 真实服务端的stderr固定为UTF-8（cli._use_utf8_output）；替身按字节写，不随本机代码页变化。
+    child = (
+        f"import sys; sys.stderr.buffer.write(({stderr!r} + chr(10)).encode('utf-8')); sys.exit(2)"
+    )
     transport = SubprocessAgentTransport((sys.executable, "-c", child))
     with pytest.raises(AgentSDKError) as closed:
         await transport.exchange(b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{}}\n')
