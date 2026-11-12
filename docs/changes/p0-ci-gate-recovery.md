@@ -129,6 +129,7 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
+0.10.0b15发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 0.10.0b14发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 0.10.0b14修正macOS上`HostProcessRuntime`把已退出、未回收的子进程误报为清理失败（见[进程模块设计](../modules/processes.md)）：`HostProcessRuntime`增加17行（261→278），即方法`_signal_group`（含说明共15行）与`_settle`里两处调用换行。等待回收必须拿到本次运行的`capture.exited`并经过可被测试替换的`_signal`，所以留在类内。
 0.10.0b14修正恢复任务在开始执行前被取消时Turn停在`accepted`（见[Agent模块设计](../modules/agent.md)）：`agent/runtime.py`（3480→3497）与`AgentRuntime`（3195→3212）各增加17行，即`resume_turn`外层的取消处理（原方法体改名`_resume_turn`，共11行）与`_cancel_task`、`_settle_cancel_task`的`only_accepted`参数及判断（6行）。取消终态的提交复用既有的`_cancel_task`，没有新增第二条路径。
