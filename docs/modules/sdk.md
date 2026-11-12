@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 12
+version: 13
 code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
@@ -25,6 +25,11 @@ supersedes: []
 ---
 
 # SDK模块设计
+
+## 当前增量：事件页被拒时缩小页长重读（0.10.0b17）
+
+- [`event_pages.read_event_page`](../../src/harnessix/sdk/event_pages.py)按给定页长读一页事件；服务端以`response_too_large`或`public_output_limit`拒绝整页时页长减半重读，返回这一页和读出它所用的页长，调用方此后沿用。单个事件仍被拒绝或其他错误原样抛出。
+- 这段逻辑原先只在无人值守客户端（`agent_cli`）里；终端界面读整页被拒后直接报连接中断，读过大文件的会话退出后无法再打开。两处现在共用同一个函数，见[产品界面模块设计](product-ui.md)。回归见`tests/app_server/test_agent_cli.py`与`tests/product_ui/test_recoverable_session.py`。
 
 ## 当前增量：服务端退出时带上它自己报告的原因（0.10.0b14）
 
@@ -1250,6 +1255,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 13 | `95421ad6` 增量 | 2026-11-11 | 新增`read_event_page`：事件页被以超限拒绝时减半页长重读，终端界面与无人值守客户端共用（0.10.0b17） |
 | 12 | `dad55d32` 增量 | 2026-11-11 | 服务端退出时带上它在stderr最后一行报告的公开错误（0.10.0b14） |
 | 11 | `1d857b39` 增量 | 2026-11-10 | 握手声明`reasoning_deltas`（0.10.0b9） |
 | 8 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a拆分子进程职责，限制Pending与Abandoned总量，增加取消安全Close和低敏资源快照 |

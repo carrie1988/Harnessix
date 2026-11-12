@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 618,
-    "physical_lines": 130210,
-    "logical_lines": 113764,
-    "documented_modules": 618,
+    "source_files": 619,
+    "physical_lines": 130253,
+    "logical_lines": 113790,
+    "documented_modules": 619,
     "classes": 1209,
     "documented_classes": 620,
-    "functions": 5118,
-    "documented_functions": 1696,
+    "functions": 5121,
+    "documented_functions": 1698,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -490,8 +490,8 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI",
       "kind": "class",
-      "line": 81,
-      "lines": 294,
+      "line": 79,
+      "lines": 293,
       "documented": true
     },
     {
@@ -500,7 +500,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._answer_pending",
       "kind": "function",
-      "line": 206,
+      "line": 203,
       "lines": 79,
       "documented": false,
       "decision_complexity": 25
@@ -511,7 +511,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._record_event",
       "kind": "function",
-      "line": 139,
+      "line": 137,
       "lines": 42,
       "documented": false,
       "decision_complexity": 21
@@ -1663,8 +1663,8 @@
       "path": "src/harnessix/product_ui/session.py",
       "qualname": "RecoverableAgentSession",
       "kind": "class",
-      "line": 80,
-      "lines": 266,
+      "line": 103,
+      "lines": 262,
       "documented": true
     },
     {
