@@ -8,6 +8,9 @@ uncertain_effect中断，获批的新文件没有写入，用户要手工核对�
 
 from __future__ import annotations
 
+import os
+import stat
+
 from harnessix.agent.models import (
     ToolResultContent,
     TrustedActionApprovalRequestContent,
@@ -81,7 +84,8 @@ async def test_model_resubmits_after_a_stale_plan_and_the_second_approval_publis
         first = _approvals(waiting)[0]
 
         # 审批期间父目录的权限被改了：计划绑定的事实已不成立，但同一份修改重新发起仍然适用。
-        (root / "src").chmod(0o700)
+        # Windows上目录的绑定只含只读属性（chmod也只能改它），只读属性不妨碍在目录里写文件。
+        (root / "src").chmod(0o700 if os.name == "posix" else stat.S_IREAD)
         again = await approve(runtime, thread.thread_id, waiting)
 
         # 同一轮里模型收到“未执行”的反馈并重新提交，产品为新计划重新请求审批。
