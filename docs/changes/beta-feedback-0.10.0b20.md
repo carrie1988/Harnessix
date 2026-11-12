@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 4
+version: 5
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -11,12 +11,16 @@ modules:
   - product_config
   - models
   - tools
+  - product_ui
 related_adrs:
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md
   - docs/adr/0123-provider-service-failure-attribution.md
   - docs/adr/0145-whole-repository-search-on-large-repositories.md
+  - docs/adr/0146-thinking-intensity-tiers.md
+  - docs/adr/0147-interactive-prompt-for-announced-steps.md
+  - docs/adr/0124-completion-guard-for-unattended-turns.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -27,6 +31,11 @@ related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/tools/test_whole_repository_search.py
   - tests/product_config/test_service_failure_retries.py
+  - tests/product_config/test_thinking_config.py
+  - tests/models/test_chat_mapping.py
+  - tests/agent/test_completion_guard.py
+  - tests/product_ui/test_config_hints.py
+  - tests/product_ui/test_rendering_host_notices.py
 supersedes: []
 ---
 
@@ -43,7 +52,10 @@ supersedes: []
 
 | 三 | 大仓库在根目录搜索5秒后超时，没有任何结果（B20-05） | 搜索提速约3.5倍，整仓上限放宽到四倍 | [ADR 0145](../adr/0145-whole-repository-search-on-large-repositories.md) |
 
-第1～14节描述第一项；第二、三项的设计分别集中在第15、16节。后续批次（收窄目录绑定）落地时在本文追加。
+| 四 | 产品负责人试用：第一步思考十分钟，任务两小时没有做完 | 思考强度档位，核实过的模型默认中档 | [ADR 0146](../adr/0146-thinking-intensity-tiers.md) |
+| 五 | 模型只说了接下来要做什么就显示“已完成” | 交互模式提示它继续；宿主说明显示为“提示” | [ADR 0147](../adr/0147-interactive-prompt-for-announced-steps.md) |
+
+第1～14节描述第一项；第二至五项的设计分别集中在第15～18节。后续批次（收窄目录绑定、生成进度与实时用量）落地时在本文追加。
 
 ## 2. 需求背景
 
@@ -268,3 +280,102 @@ flowchart TD
 
 更大的仓库仍会超时且没有部分结果（需要改搜索输出合同）；每个文件重新逐级打开并核对根身份的开销未动；
 Glob仍用原上限。
+
+## 17. 第四项：思考强度档位
+
+### 17.1 背景与确认
+
+产品负责人用本机安装的0.10.0b20（百炼qwen3.8-flash，11月10日生成的配置）让Agent创建一个演示黑洞的3D网页：
+第一次模型请求运行10分钟，32,768的输出额度里28,502个Token是思考，写文件的调用被截断；两个多小时、四轮、
+115次请求之后任务仍未结束，输出的约29.7万Token里约72%是思考。
+
+查证结果见[ADR 0146](../adr/0146-thinking-intensity-tiers.md)：这两个型号不设强度时按服务端最强档思考；
+设为low或medium后同一个简单任务的思考量从17,378 Token降到一两百；在真实终端界面里用负责人的原任务对比了
+八种设置，只有档位medium完成（8.7分钟）。
+
+### 17.2 设计
+
+```mermaid
+flowchart LR
+    Flag[configure --thinking-effort / --thinking-budget] --> Draft[ConfigurationDraft]
+    Draft --> Wizard{向导：核实过档位的模型?}
+    Wizard -- 是 且开启思考 --> Medium[thinking_effort 默认 medium]
+    Wizard -- 否 --> None[不写入]
+    Medium --> Profile[ModelProfile]
+    Profile --> Wire[OpenAIChatConfig reasoning_effort 或 thinking_budget]
+    Wire --> Request[开启思考的请求附带档位或上限]
+```
+
+- `models/config.py`：`OpenAIChatConfig.reasoning_effort`（小写标识，可不设）；与`thinking_budget`二选一；
+  `thinking_budget`不再要求`max_completion_tokens`。`models/_chat_mapping.py::_thinking_switch`把开关、上限、
+  档位组装进顶层思考格式的扩展参数，只在该请求开启思考时附带档位或上限。
+- `product_config/profile_options.py`（新模块）：档位类型、Profile可选字段类型、档位到线上取值的映射
+  （`dashscope_enable_thinking`：low→low、medium→medium、high→不发送）、`validate_profile_thinking`。
+- `product_config/contracts.py`：`ModelProfile.thinking_effort`、`thinking_budget_tokens`；校验移入上述模块。
+- `product_config/wizard.py`：`effort_tiers_verified`（百炼qwen3.8-max、qwen3.8-flash）；`_thinking_bounds`
+  在开启思考且没有给上限时写入档位，核实过的模型默认`medium`。
+- `product_ui/configure_cli.py`：`--thinking-effort`、`--thinking-budget`；未核实的服务与模型、关闭思考、
+  两者同时给出时拒绝并说明原因。
+- `product_ui/config_hints.py`（新模块）：活动模型核实过档位、配置里却没有强度也没有上限时返回一条建议，
+  显示在空会话的输入提示下方和`harnessix code doctor`的输出里。
+
+### 17.3 兼容
+
+- 已有配置没有新字段：序列化、摘要、线上请求都不变。
+- 新字段都是可选的，未设置时不进入序列化；公开Schema只新增可选字段。
+- `--thinking off`、小窗口自动关闭思考时不写入档位。
+
+### 17.4 验证
+
+- 配置与映射：`tests/product_config/test_thinking_config.py`（默认中档、三档映射、上限替代档位、到不了模型的
+  设置被拒绝、未核实端点不写入、旧配置不变、合同层的不一致组合被拒绝）、`tests/models/test_chat_mapping.py`
+  （档位只随开启思考的请求发送、与上限互斥、`max_tokens`下的上限）。
+- 提示：`tests/product_ui/test_config_hints.py`（新配置不提示、两代旧配置都提示、空会话里显示）。
+- 真实模型：见第19节。
+
+## 18. 第五项：交互模式下只宣布下一步的回复
+
+### 18.1 背景
+
+真实终端界面里两次出现模型只说了下一步就停下、界面显示“已完成”（原文见
+[ADR 0147](../adr/0147-interactive-prompt-for-announced-steps.md)）。交互模式一直没有开启完成守卫，
+因为它的另外两条规则会误伤问答。
+
+### 18.2 设计
+
+- `agent/completion_guard.py`：模式`off`、`interactive`、`full`；`completion_guard_mode`把运行时开关
+  （布尔值或模式名）归一；`completion_notice(turn, step, reply, mode)`在交互模式下只判断
+  `leaves_a_step_undone`——沿用宣布说法的词表，另认首句破折号之后的分句，以问号结尾的回复不算。
+- `agent/runtime.py`：构造时归一模式；步骤收尾处模式不是`off`即调用守卫并传入模式。
+- `product_config/server.py`：无人值守用`full`，终端界面用`interactive`。
+- `product_ui/rendering.py`：完成守卫与回复恢复补发的说明按派生的Item身份识别，显示为一行“提示”。
+
+### 18.3 边界
+
+- 上一步已经补发过不再连续补发；每个Turn最多两次；步骤或Token预算用尽时不补发。
+- 完整守卫（无人值守、评测）的判定逐条不变。
+- 误判时多一次很短的模型请求；漏判时用户需要手动“继续”，与此前相同。
+
+### 18.4 验证
+
+- `tests/agent/test_completion_guard.py`：两段真实回复原文被识别；提问、普通答复、带破折号的陈述不被识别；
+  交互模式不发“还没有补丁”“不是答复”两类提示；运行时提示一次后模型继续、不连续提示；模式开关的取值。
+- `tests/product_ui/test_rendering_host_notices.py`：两类说明显示为“提示”，用户自己输入同样的文字仍是用户发言。
+
+## 19. 第四、五项的真实模型验证
+
+真实终端界面（tmux驱动、逐条批准），百炼qwen3.8-flash，本分支代码，每种设置三次，单次上限15分钟。
+“中档”是向导的新默认值，“低档”是`--thinking-effort low`。
+
+| 任务 | 档位 | 完成次数 | 完成用时（分钟） | 交付核对 |
+|---|---|---|---|---|
+| 从零创建演示黑洞的3D网页（负责人的原任务） | 中 | 3/3 | 5.0、5.7、7.5 | 三次都写出自包含网页并给出总结 |
+| 同上 | 低 | 0/3 | 均超时 | 三次都写出了文件，但15分钟内没有收尾 |
+| 真实仓库（python-slugify）：新增`--stdin-lines`、修参数透传、补测试与README | 中 | 3/3 | 5.0、6.9、12.9 | 项目测试96～102项全部通过，新选项行为正确 |
+| 同上 | 低 | 2/3 | 7.1、8.2，一次超时 | 完成的两次项目测试98、100项全部通过 |
+
+- 对照：同一个网页任务在0.10.0b20上，默认（最强档）60分钟被时限终止，关闭思考20分钟未完成。
+- 低档并不更快：它的思考在每步4,096 Token处被截断，步数和输出反而更多。默认值维持中档。
+- 交互模式的提示在12次运行里触发1次（模型宣布了下一步却没有动作），提示后该次任务正常完成并通过项目测试；
+  其余11次没有触发，最终答复没有被误判。
+

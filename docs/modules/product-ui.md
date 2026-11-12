@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 45
+version: 46
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -1143,6 +1143,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 46 | `74b08375` 增量 | 2026-11-12 | `configure`新增`--thinking-effort`、`--thinking-budget`（到不了模型的设置直接拒绝）；旧配置没有思考强度时在空会话与`doctor`里提示重新configure（`config_hints.py`）；宿主补发的说明显示为“提示”行（ADR 0146、0147） |
 | 45 | `151ab594` 增量 | 2026-11-12 | `configure`新增`--service-failure-retries`：付费交互模式下服务方故障后的自动重试次数（0～20，默认5），写入产品配置（ADR 0144） |
 | 44 | `d387a5cd` 增量 | 2026-11-12 | 审批清单列出补丁将新建的目录；父路径拒绝在对话里只显示原因（0.10.0b21，ADR 0137） |
 | 43 | `cf52cadc` 增量 | 2026-11-11 | `configure`对百炼qwen3.8-max/flash改用默认思考预设，不再单独查显式开关；用户手册新增思考模式的选择说明（0.10.0b19） |

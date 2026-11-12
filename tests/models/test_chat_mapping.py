@@ -207,7 +207,6 @@ def test_thinking_without_room_for_an_answer_is_rejected_before_request() -> Non
         {"thinking_budget": 4096},
         {"enable_thinking": False},
         {"enable_thinking": None},
-        {"output_token_parameter": "max_tokens"},
     ],
 )
 def test_explicit_thinking_budget_rejects_unbounded_or_answerless_configuration(updates) -> None:
@@ -300,3 +299,57 @@ def test_invalid_request_is_rejected_before_network(case: str) -> None:
         )
     with pytest.raises(InvalidModelRequest):
         build_request(request, config)
+
+
+def test_a_thinking_budget_is_also_sent_with_the_answer_only_output_parameter() -> None:
+    """百炼的max_tokens只限制正文、思考不计入（qwen3.8-flash，2026-11-12实测）：思考上限照样有效。"""
+    config = OpenAIChatConfig(
+        model="test",
+        enable_thinking=True,
+        thinking_budget=1024,
+        max_output_tokens=4096,
+        output_token_parameter="max_tokens",
+    )
+    body, _ = build_request(model_request(), config)
+
+    assert body["extra_body"] == {"enable_thinking": True, "thinking_budget": 1024}
+    assert body["max_tokens"] == 4096 and "max_completion_tokens" not in body
+
+
+def test_reasoning_effort_travels_with_requests_that_think() -> None:
+    config = OpenAIChatConfig(
+        model="test", enable_thinking=True, reasoning_effort="medium", thinking_tool_steps_only=True
+    )
+    with_tools, _ = build_request(model_request(with_tools=True), config)
+    without_tools, _ = build_request(model_request(with_tools=False), config)
+
+    assert with_tools["extra_body"] == {"enable_thinking": True, "reasoning_effort": "medium"}
+    # 摘要、收尾回复等无工具请求不思考，也就不带强度档位。
+    assert without_tools["extra_body"] == {"enable_thinking": False}
+
+
+def test_configurations_without_reasoning_effort_serialize_and_send_as_before() -> None:
+    config = OpenAIChatConfig(model="test", enable_thinking=True)
+    body, _ = build_request(model_request(), config)
+
+    assert "reasoning_effort" not in config.model_dump(mode="json")
+    assert body["extra_body"] == {"enable_thinking": True}
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"enable_thinking": False},
+        {"enable_thinking": None},
+        {"thinking_budget": 1024},
+        {"thinking_format": "thinking_type"},
+        {"reasoning_effort": "Medium"},
+        {"reasoning_effort": ""},
+    ],
+)
+def test_reasoning_effort_needs_thinking_on_and_excludes_a_budget(updates) -> None:
+    with pytest.raises(ValidationError):
+        OpenAIChatConfig.model_validate(
+            {"model": "test", "enable_thinking": True, "reasoning_effort": "low", **updates},
+            strict=True,
+        )

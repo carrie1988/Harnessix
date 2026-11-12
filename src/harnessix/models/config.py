@@ -139,7 +139,12 @@ class OpenAIChatConfig(ModelHTTPConfig):
         ge=1,
         le=262_144,
         exclude_if=lambda value: value is None,
-        description="显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
+        description="显式思考Token上限；到达后模型停止思考并作答（按端点与模型核实后使用）",
+    )
+    # 思考强度档位（如DashScope的reasoning_effort）：随开启思考的请求原样发送；
+    # 与思考Token上限二选一。
+    reasoning_effort: str | None = Field(
+        default=None, pattern=r"^[a-z]{1,16}$", exclude_if=lambda value: value is None
     )
     # 仅在TCP连接或TLS握手失败时重连（请求字节尚未发出，不产生计费或新的模型尝试）。
     connect_retries: int = Field(default=0, ge=0, le=5, exclude_if=lambda value: value == 0)
@@ -181,15 +186,16 @@ class OpenAIChatConfig(ModelHTTPConfig):
     @model_validator(mode="after")
     def validate_thinking_budget(self) -> Self:
         if self.thinking_budget is not None and (
-            self.enable_thinking is not True
-            or self.output_token_parameter != "max_completion_tokens"
-            or self.thinking_budget >= self.max_output_tokens
+            self.enable_thinking is not True or self.thinking_budget >= self.max_output_tokens
         ):
-            raise ValueError("思考预算要求显式开启思考、整体输出上限及非空回答余量")
-        if self.thinking_format is not None and (
-            self.enable_thinking is None or self.thinking_budget is not None
+            raise ValueError("思考预算要求显式开启思考，且低于输出上限")
+        bounded = self.thinking_budget is not None or self.reasoning_effort is not None
+        if self.thinking_format is not None and (self.enable_thinking is None or bounded):
+            raise ValueError("显式思考格式要求显式思考开关，且不支持思考预算与强度档位")
+        if self.reasoning_effort is not None and (
+            self.enable_thinking is not True or self.thinking_budget is not None
         ):
-            raise ValueError("显式思考格式要求显式思考开关且不支持思考预算")
+            raise ValueError("思考强度档位要求显式开启思考，且不能与思考预算同时设置")
         return self
 
 

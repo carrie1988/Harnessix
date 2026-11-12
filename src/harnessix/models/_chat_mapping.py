@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import JsonValue
+
 from harnessix.agent.models import ToolCallContent, ToolCallRejectionContent, ToolResultContent
 from harnessix.models._history import (
     InvalidModelRequest,
@@ -16,6 +18,21 @@ from harnessix.models._history import (
 from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import OpenAIChatConfig
 from harnessix.models.contracts import ModelRequest
+
+
+def _thinking_switch(
+    config: OpenAIChatConfig, thinking: bool, output_tokens: int
+) -> dict[str, JsonValue]:
+    """顶层enable_thinking格式的思考参数：开关，以及随开启思考的请求发送的上限或强度档位。"""
+    switch: dict[str, JsonValue] = {"enable_thinking": thinking}
+    if thinking and config.thinking_budget is not None:
+        if output_tokens < 2:
+            raise InvalidModelRequest("整体输出预算不足以同时容纳思考与回答")
+        # 配置是上限；输出收缩时仍为可见回答留出余量，不扩张任务预算。
+        switch["thinking_budget"] = min(config.thinking_budget, output_tokens - 1)
+    if thinking and config.reasoning_effort is not None:
+        switch["reasoning_effort"] = config.reasoning_effort
+    return switch
 
 
 def build_request(
@@ -111,12 +128,7 @@ def build_request(
         body["extra_body"] = {"chat_template_kwargs": {"enable_thinking": thinking}}
     elif config.enable_thinking is not None:
         # OpenAI SDK 将 extra_body 合并到最终请求顶层，供兼容端点接收扩展参数。
-        body["extra_body"] = {"enable_thinking": thinking}
-        if thinking and config.thinking_budget is not None:
-            if output_tokens < 2:
-                raise InvalidModelRequest("整体输出预算不足以同时容纳思考与回答")
-            # 配置是上限；输出收缩时仍为可见回答留出余量，不扩张任务预算。
-            body["extra_body"]["thinking_budget"] = min(config.thinking_budget, output_tokens - 1)
+        body["extra_body"] = _thinking_switch(config, thinking, output_tokens)
     if len(encode_json(body).encode()) > config.max_request_bytes:
         raise InvalidModelRequest("模型请求超过大小上限")
     return body, names

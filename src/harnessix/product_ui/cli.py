@@ -27,6 +27,7 @@ from harnessix.product_config.zero_config import zero_config_wanted
 from harnessix.product_ui.activation import activation_arguments
 from harnessix.product_ui.approval_automation import ApprovalAutomation
 from harnessix.product_ui.approval_rules import CommandRules, rules_path
+from harnessix.product_ui.config_hints import thinking_config_hint
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.controller import ProductController, StartRequest
 from harnessix.product_ui.cost_estimate import chain_list_price, chain_model_name
@@ -314,6 +315,10 @@ def _doctor(argv: Sequence[str]) -> None:
                     f"- 端点探测 {item.check}：{item.status}（{item.detail}，{item.seconds:.1f}s）"
                 )
             sys.stdout.writelines(f"{line}\n" for line in mcp_doctor_lines(os.environ))
+            config = Path(arguments.config).absolute() if arguments.config else _default_config()
+            hint = thinking_config_hint(config, arguments.profile)
+            if hint is not None:
+                print(f"- {hint}")
         healthy = all(item.status != "failed" for item in probes)
         raise SystemExit(0 if report.ready and healthy else 2)
     except SystemExit:
@@ -401,6 +406,7 @@ def code_main(argv: Sequence[str] | None = None) -> None:
                 StartRequest(
                     workspace=str(workspace),
                     resume_thread_id=arguments.resume,
+                    config_hint=thinking_config_hint(config, arguments.profile),
                 ),
             ).run()
         if report is not None and not report.clean:

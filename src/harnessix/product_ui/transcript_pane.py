@@ -56,8 +56,10 @@ class TranscriptPane(Vertical):
     #live { height: auto; max-height: 50%; padding: 0 1; }
     """
 
-    def __init__(self) -> None:
+    def __init__(self, config_hint: str | None = None) -> None:
         super().__init__(id="conversation")
+        # 空会话的输入提示；启动时对配置有建议（如没有设置思考强度）就附在下面。
+        self._empty_text = EMPTY_HINT if config_hint is None else f"{EMPTY_HINT}\n{config_hint}"
         self._log = RichLog(id="transcript", wrap=True, markup=False, max_lines=10_000)
         self._live = Static("", id="live")
         self._history: tuple[TranscriptLine, ...] = ()
@@ -82,6 +84,6 @@ class TranscriptPane(Vertical):
             self._log.write(line_renderable(line))
         self._history, self._thread = history, thread
         if not lines:
-            self._live.update(Text(EMPTY_HINT, style="dim"))
+            self._live.update(Text(self._empty_text, style="dim"))
         else:
             self._live.update(Group(*(line_renderable(line) for line in live)))

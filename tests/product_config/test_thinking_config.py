@@ -451,3 +451,105 @@ def test_configurations_written_before_the_new_defaults_behave_as_before(tmp_pat
     assert effective_thinking(old_40k.profiles[0], old_40k.providers[0]) == "tool_steps"
     wire = _provider_config(old_40k)
     assert wire.enable_thinking is True and wire.max_output_tokens == 18_463
+
+
+def test_verified_models_default_to_medium_thinking_intensity(tmp_path, capsys):
+    """百炼qwen3.8不设强度时按服务端最强档思考：真实试用里第一步思考了十分钟、28,502 Token。
+
+    向导对核实过档位的模型默认写入中档，线上随开启思考的请求发送reasoning_effort。
+    """
+    for model in ("qwen3.8-flash", "qwen3.8-max"):
+        config = _configure(tmp_path / f"{model}.json", "--vendor", "bailian", "--model", model)
+        profile = config.profiles[0]
+        assert profile.thinking_effort == "medium" and profile.thinking_budget_tokens is None
+        wire = _provider_config(config)
+        assert wire.enable_thinking is True and wire.reasoning_effort == "medium"
+        assert wire.thinking_budget is None
+    capsys.readouterr()
+
+
+@pytest.mark.parametrize(
+    ("effort", "wire_value"), [("low", "low"), ("medium", "medium"), ("high", None)]
+)
+def test_each_intensity_tier_maps_to_its_wire_value(tmp_path, capsys, effort, wire_value):
+    """高档不发送档位参数：这两个型号不发送时就是服务端默认的最强档。"""
+    config = _configure(tmp_path / "config.json", *_BAILIAN_QWEN, "--thinking-effort", effort)
+    capsys.readouterr()
+    assert config.profiles[0].thinking_effort == effort
+    assert _provider_config(config).reasoning_effort == wire_value
+
+
+def test_an_explicit_thinking_token_cap_replaces_the_intensity_tier(tmp_path, capsys):
+    """qwen3.8-max不接受档位和上限同时出现：给了上限就只发上限。"""
+    config = _configure(tmp_path / "config.json", *_BAILIAN_QWEN, "--thinking-budget", "4000")
+    capsys.readouterr()
+    profile = config.profiles[0]
+    assert profile.thinking_budget_tokens == 4000 and profile.thinking_effort is None
+    wire = _provider_config(config)
+    assert wire.thinking_budget == 4000 and wire.reasoning_effort is None
+    # 百炼预设用max_tokens（只限制正文）：思考上限照样可以发送。
+    assert wire.output_token_parameter == "max_tokens"
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        (*_BAILIAN_QWEN, "--thinking-effort", "low", "--thinking-budget", "4000"),
+        (*_BAILIAN_QWEN, "--thinking", "off", "--thinking-effort", "low"),
+        ("--vendor", "deepseek", "--thinking-effort", "low"),
+        ("--vendor", "bailian", "--model", "deepseek-v4-pro-0813", "--thinking-budget", "4000"),
+        (*_UNKNOWN_ENDPOINT, "--thinking-effort", "medium"),
+    ],
+)
+def test_intensity_settings_that_cannot_reach_the_model_are_refused(tmp_path, capsys, arguments):
+    path = tmp_path / "config.json"
+    with pytest.raises(SystemExit):
+        configure_main(["--config", str(path), "--non-interactive", *arguments])
+    assert "--thinking-effort" in capsys.readouterr().err and not path.exists()
+
+
+def test_unverified_endpoints_and_no_thinking_get_no_intensity_setting(tmp_path, capsys):
+    deepseek = _configure(tmp_path / "deepseek.json", "--vendor", "deepseek")
+    off = _configure(tmp_path / "off.json", *_BAILIAN_QWEN, "--thinking", "off")
+    small = _configure(tmp_path / "small.json", *_BAILIAN_QWEN, "--context-window-tokens", "32768")
+    capsys.readouterr()
+    for config in (deepseek, off, small):
+        dumped = config.profiles[0].model_dump(mode="json")
+        assert "thinking_effort" not in dumped and "thinking_budget_tokens" not in dumped
+        assert _provider_config(config).reasoning_effort is None
+
+
+def test_configurations_without_an_intensity_keep_sending_nothing():
+    """已有配置不重新configure就不变：没有强度字段的Profile照旧不发送档位，摘要与序列化不变。"""
+    config = _bailian(model="qwen3.8-flash")
+    data = config.model_dump(mode="json")
+    assert data["profiles"][0].pop("thinking_effort") == "medium"
+    old = ProductConfigV2.model_validate_json(json.dumps(data))
+    assert "thinking_effort" not in old.profiles[0].model_dump(mode="json")
+    wire = _provider_config(old)
+    assert wire.enable_thinking is True and wire.reasoning_effort is None
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"thinking_effort": "low", "thinking_budget_tokens": 4000},
+        {"thinking": "off", "thinking_effort": "low"},
+        {"thinking_budget_tokens": 32_768},
+    ],
+)
+def test_inconsistent_intensity_settings_are_rejected_by_the_contract(change):
+    data = _bailian(model="qwen3.8-flash").model_dump(mode="json")
+    data["profiles"][0].pop("thinking_effort", None)
+    data["profiles"][0].update(change)
+    with pytest.raises(ValidationError):
+        ProductConfigV2.model_validate_json(json.dumps(data))
+
+
+def test_intensity_needs_a_protocol_that_carries_it():
+    data = build_product_config(
+        _draft(base_url=DEEPSEEK, model="deepseek-v4", thinking_protocol="deepseek_thinking_type")
+    ).model_dump(mode="json")
+    data["profiles"][0]["thinking_effort"] = "low"
+    with pytest.raises(ValidationError):
+        ProductConfigV2.model_validate_json(json.dumps(data))

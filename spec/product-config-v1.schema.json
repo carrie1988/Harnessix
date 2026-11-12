@@ -203,6 +203,37 @@
           ],
           "default": null,
           "title": "Thinking"
+        },
+        "thinking_effort": {
+          "anyOf": [
+            {
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking Effort"
+        },
+        "thinking_budget_tokens": {
+          "anyOf": [
+            {
+              "maximum": 262144,
+              "minimum": 256,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking Budget Tokens"
         }
       },
       "required": [

@@ -273,6 +273,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0142：批准后过期的计划以确定失败结束](0142-stale-approved-plan-fails-without-effect.md)：修订ADR 0069的Route状态机；执行前复核发现批准时绑定的工作区事实已变化时，Route由ready直接进入failed，操作不执行并如实反馈，本轮继续，不再报告为未知效果。
 - [ADR 0144：交互模式下服务方故障后的自动重试](0144-automatic-retry-after-service-failures-in-interactive-mode.md)：修订ADR 0123第6节；付费端点的交互模式下，网络中断、限流、服务端错误造成的用量未知不再立即停止，连续至多自动重试5次，其他原因的用量未知照旧停止。
 - [ADR 0145：大仓库的整仓搜索](0145-whole-repository-search-on-large-repositories.md)：二进制判断改用一次正则扫描，整份文本不命中的文件不逐行扫描，快照与正则搜索的整仓上限放宽到四倍；百MB级仓库的全仓搜索由超时无结果变为两秒左右返回，原字面量合同不变。
+- [ADR 0146：思考强度档位](0146-thinking-intensity-tiers.md)：给用户的是低、中、高三档思考强度而不是Token数；核实过档位的模型（百炼qwen3.8-max、qwen3.8-flash）默认中档，思考Token上限作为显式的高级选项，已有配置只提示不改。
+- [ADR 0147：交互模式下只宣布下一步的回复](0147-interactive-prompt-for-announced-steps.md)：修订ADR 0124；终端界面里模型只说接下来要做什么却没有动作时，宿主提示一次并继续，向用户提问的回复不算；宿主说明在界面上显示为“提示”。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

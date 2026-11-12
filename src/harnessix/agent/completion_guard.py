@@ -12,14 +12,21 @@ completion_guard），这类回复改为由宿主以用户消息补发提示、�
 - 每个Turn最多补发两次；步骤或Token预算已用尽时不补发，照常完成。
 
 判定只读本Turn已持久化的事实与本步回复正文，重放确定；补发Item的身份由Turn与步骤派生。
+
+交互模式（interactive，产品终端界面的默认值，ADR 0147）只保留“宣布还要继续”这一条：用户就在屏幕前，
+问答类的回复本来就没有工具调用，不能按“还没有补丁”催促；但模型说了“我先……然后写文件”就停下时，
+用户只能再输入一次“继续”。这一模式下首句破折号之后的分句同样算宣布，向用户提问的回复不算。
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable
+from typing import Literal
 from uuid import UUID, uuid5
 
+from harnessix.agent.errors import KernelError
 from harnessix.agent.models import (
     EventDraft,
     Item,
@@ -33,6 +40,9 @@ from harnessix.agent.models import (
 from harnessix.agent.trusted_action_contracts import TrustedActionApprovalRequestContent
 
 COMPLETION_GUARD_VERSION = "harnessix.completion-guard/v1"
+CompletionGuardMode = Literal["off", "interactive", "full"]
+# 首句里把前后两个分句隔开的破折号（中文破折号，或两侧带空格的短横与长横）。
+_CLAUSE_DASH = re.compile(r"——|\s[—–-]\s")
 MAX_COMPLETION_NOTICES = 2
 _SUMMARY_SCHEMA_MARKER = "harnessix.compaction-summary"
 _SUMMARY_HEADER_MARKER = "[Host summary of earlier history"
@@ -81,7 +91,20 @@ def completion_notice_item_id(turn_id: UUID, step: int) -> UUID:
     return uuid5(turn_id, f"{COMPLETION_GUARD_VERSION}:{step}")
 
 
-def completion_notice(turn: Turn, step: int, reply: str) -> str | None:
+def completion_guard_mode(value: object) -> CompletionGuardMode:
+    """运行时开关：布尔值（True为完整守卫）或模式名；其他取值按配置错误拒绝。"""
+    if value is True or value == "full":
+        return "full"
+    if value is False or value == "off":
+        return "off"
+    if value == "interactive" and type(value) is str:
+        return "interactive"
+    raise KernelError("invalid_runtime_configuration", "完成守卫开关必须是布尔值或已定义的模式")
+
+
+def completion_notice(
+    turn: Turn, step: int, reply: str, mode: CompletionGuardMode = "full"
+) -> str | None:
     """第step步无工具调用、正文为reply时应补发的提示；None表示照常完成。"""
     item_ids = {item.item_id for item in turn.items}
     sent = sum(
@@ -93,15 +116,31 @@ def completion_notice(turn: Turn, step: int, reply: str) -> str | None:
         or turn.usage.total_tokens >= turn.budget.max_tokens
     ):
         return None
-    if not_a_reply(reply):
+    full = mode == "full"
+    if full and not_a_reply(reply):
         return NOT_A_REPLY_NOTICE
     if completion_notice_item_id(turn.turn_id, step - 1) in item_ids:
         return None
-    if announces_next_step(reply):
+    if announces_next_step(reply) if full else leaves_a_step_undone(reply):
         return UNFINISHED_STEP_NOTICE
-    if not workspace_patched(turn.items):
+    if full and not workspace_patched(turn.items):
         return NO_CHANGE_NOTICE
     return None
+
+
+def leaves_a_step_undone(text: str) -> bool:
+    """交互模式：回复宣布了下一步却没有任何动作。
+
+    比无人值守多认一种写法：首句破折号之后的分句以宣布的说法开头
+    （“No existing files — I'll build …”）。以问号结尾的回复是在等用户回答，不算。
+    """
+    stripped = text.strip()
+    if not stripped or stripped.endswith(("?", "？")):
+        return False
+    later_clauses = _CLAUSE_DASH.split(stripped.splitlines()[0])[1:]
+    return announces_next_step(stripped) or any(
+        clause.strip().lower().startswith(_CONTINUATION_OPENINGS) for clause in later_clauses
+    )
 
 
 def announces_next_step(text: str) -> bool:

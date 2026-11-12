@@ -40,6 +40,7 @@ from harnessix.product_config.contracts import (
     diagnostic_report_digest,
     effective_thinking,
 )
+from harnessix.product_config.profile_options import effort_wire_value
 from harnessix.product_config.reasoning_models import effective_timeouts
 from harnessix.product_config.store import SQLiteProductConfigStore
 from harnessix.secrets.provider import (
@@ -248,6 +249,13 @@ def default_provider_factory(
                 ),
                 # 声明思考协议的端点显式发送开关（如百炼DeepSeek默认开启思考，关闭须显式false）。
                 enable_thinking=None if protocol is None else thinking != "off",
+                # 显式给出思考Token上限时发上限，否则发强度档位（协议不支持或该档不发送时为None）。
+                thinking_budget=profile.thinking_budget_tokens if thinking != "off" else None,
+                reasoning_effort=(
+                    effort_wire_value(protocol, profile.thinking_effort)
+                    if thinking != "off" and profile.thinking_budget_tokens is None
+                    else None
+                ),
                 thinking_format=_WIRE_THINKING_FORMAT.get(protocol) if protocol else None,
                 thinking_tool_steps_only=thinking == "tool_steps",
                 omit_tool_choice=definition.omit_tool_choice,

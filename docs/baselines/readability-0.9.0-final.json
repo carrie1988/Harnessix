@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 621,
-    "physical_lines": 130918,
-    "logical_lines": 114239,
-    "documented_modules": 621,
-    "classes": 1212,
-    "documented_classes": 623,
-    "functions": 5152,
-    "documented_functions": 1724,
+    "source_files": 623,
+    "physical_lines": 131222,
+    "logical_lines": 114464,
+    "documented_modules": 623,
+    "classes": 1213,
+    "documented_classes": 624,
+    "functions": 5169,
+    "documented_functions": 1735,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -204,7 +204,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3494
+      "lines": 3496
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -253,10 +253,6 @@
     {
       "path": "src/harnessix/product_config/coding_tool_view.py",
       "lines": 895
-    },
-    {
-      "path": "src/harnessix/product_config/contracts.py",
-      "lines": 601
     },
     {
       "path": "src/harnessix/product_config/native_process.py",
@@ -360,7 +356,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 290,
+      "line": 292,
       "lines": 3205,
       "documented": true
     },
@@ -370,10 +366,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 293,
-      "lines": 192,
+      "line": 295,
+      "lines": 190,
       "documented": false,
-      "decision_complexity": 48
+      "decision_complexity": 47
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._drive",
@@ -381,7 +377,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2291,
+      "line": 2293,
       "lines": 255,
       "documented": true,
       "decision_complexity": 48
@@ -392,7 +388,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2547,
+      "line": 2549,
       "lines": 243,
       "documented": true,
       "decision_complexity": 51
@@ -403,7 +399,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3328,
+      "line": 3330,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -436,7 +432,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 3036,
+      "line": 3038,
       "lines": 280,
       "documented": true,
       "decision_complexity": 83
@@ -447,7 +443,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._select_model_tools",
       "kind": "function",
-      "line": 2243,
+      "line": 2245,
       "lines": 47,
       "documented": true,
       "decision_complexity": 23
@@ -1070,10 +1066,10 @@
       "path": "src/harnessix/models/_chat_mapping.py",
       "qualname": "build_request",
       "kind": "function",
-      "line": 21,
-      "lines": 102,
+      "line": 38,
+      "lines": 97,
       "documented": false,
-      "decision_complexity": 38
+      "decision_complexity": 35
     },
     {
       "id": "harnessix.models._chat_stream:ChatStream",
@@ -1506,9 +1502,9 @@
       "qualname": "ProductConfigV2.valid_graph",
       "kind": "function",
       "line": 218,
-      "lines": 48,
+      "lines": 47,
       "documented": false,
-      "decision_complexity": 33
+      "decision_complexity": 31
     },
     {
       "id": "harnessix.product_config.git_approval_history_projection:interpret_git_approval_history",
@@ -1591,7 +1587,7 @@
       "path": "src/harnessix/product_config/runtime.py",
       "qualname": "SafeFallbackProvider",
       "kind": "class",
-      "line": 306,
+      "line": 314,
       "lines": 106,
       "documented": true
     },
@@ -1602,9 +1598,9 @@
       "qualname": "_serve_product_stdio",
       "kind": "function",
       "line": 270,
-      "lines": 138,
+      "lines": 139,
       "documented": true,
-      "decision_complexity": 10
+      "decision_complexity": 11
     },
     {
       "id": "harnessix.product_config.store:SQLiteProductConfigStore",
@@ -1642,7 +1638,7 @@
       "path": "src/harnessix/product_ui/controller.py",
       "qualname": "ProductController",
       "kind": "class",
-      "line": 217,
+      "line": 219,
       "lines": 380,
       "documented": true
     },

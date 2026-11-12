@@ -31,6 +31,8 @@ from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.completion_guard import (
+    CompletionGuardMode,
+    completion_guard_mode,
     completion_notice,
     completion_notice_events,
     step_reply,
@@ -324,7 +326,7 @@ class AgentRuntime:
         normalize_stringified_arguments: bool = False,
         stable_tool_catalog: bool = False,
         reject_forced_choice_violations: bool = False,
-        completion_guard: bool = False,
+        completion_guard: bool | CompletionGuardMode = False,
         unknown_usage: UnknownUsagePolicy = STOP_ON_UNKNOWN_USAGE,
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
@@ -374,10 +376,8 @@ class AgentRuntime:
         # 显式开启时，强制选择下调用其他工具不再使Turn失败：这些调用不在本步可执行集，
         # 沿原目录拒绝路径记为无效果失败结果，模型在原预算内纠正；强制工具调用照常执行。
         self._reject_forced_choice_violations = reject_forced_choice_violations
-        if type(completion_guard) is not bool:
-            raise KernelError("invalid_runtime_configuration", "完成守卫开关必须是布尔值")
-        # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
-        self._completion_guard = completion_guard
+        # 开启时，不像完成的纯文本回复改为补发继续提示（completion_guard的两种模式）；默认照常完成。
+        self._completion_guard = completion_guard_mode(completion_guard)
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
         # 用量未知的失败尝试是否按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._unknown_usage = unknown_usage
@@ -2190,8 +2190,10 @@ class AgentRuntime:
             notice_events: list[EventDraft] = []
             if recovery and not steered:
                 notice_events = recovery_notice_events(turn, request.step, recovery)
-            elif self._completion_guard and not steered and not rejected:
-                notice = completion_notice(turn, request.step, step_reply(turn.items, history_ids))
+            elif self._completion_guard != "off" and not steered and not rejected:
+                notice = completion_notice(
+                    turn, request.step, step_reply(turn.items, history_ids), self._completion_guard
+                )
                 notice_events = completion_notice_events(request.turn_id, request.step, notice)
             # 宿主补发与用户Steering同为新用户输入，按Steering语义重入下一步。
             steered = steered or bool(notice_events)

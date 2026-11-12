@@ -339,6 +339,7 @@ harnessix code configure [新的完整参数] --replace \
 
 **思考模式怎么选**
 
+- **思考强度（`--thinking-effort`）**：`low`、`medium`、`high` 三档，目前对阿里云百炼的 `qwen3.8-max`、`qwen3.8-flash` 有效，默认 `medium`。这两个模型不设强度时按最强档思考，一步可能想几分钟、上万 Token；中档下通常几秒到几十秒。需要更深的推理时用 `--thinking-effort high`（即原来的行为）；`low` 更快，但模型偶尔会想不完整。旧版本生成的配置没有这个设置，启动时会提示重新运行 `harnessix code configure`。
 - **默认（不写 `--thinking`）**：DeepSeek 以及百炼的 `deepseek-v4`、`qwen3.8-max`、`qwen3.8-flash` 只在调用工具的步骤思考；整理上下文的摘要这类不带工具的请求不思考，输出额度全部用于正文。0.10.0b19 之前百炼的两个 qwen3.8 型号每个请求都思考，窗口较小时摘要常被思考占满而作废；已有的配置不会自动改变，重新运行 `harnessix code configure` 即可用上新默认值。
 - **小窗口默认不思考**：思考内容计入单次输出上限，至少需要 16384 Token 的输出额度。上下文窗口小于 64K 时，四分之一窗口放不下这个额度，向导默认关闭思考。确实需要时可以显式加 `--thinking tool_steps` 或 `--thinking every_step`，这时输出上限会放到窗口允许的最大值，留给对话历史的空间相应变小。
 - **关闭思考（`--thinking off`）有代价**：回复更快、输出更省，但模型更容易做出与任务无关的操作。实测百炼 `qwen3.8-flash` 关闭思考后，出现过自作主张新建无关文件、搜索无关内容的情况。窗口够用时建议保留默认的 `tool_steps`；关闭思考后请留意审批窗口里的每一处修改。
@@ -355,6 +356,8 @@ harnessix code configure [新的完整参数] --replace \
 | `--proxy-url` | 经本机 HTTP 代理访问 |
 | `--thinking` | 思考模式：`tool_steps`（只在工具步骤思考，已知服务的默认值）、`every_step`、`off`。没有已核对思考开关的服务会拒绝这个参数并提示怎么改。详见下方“思考模式怎么选” |
 | `--thinking-protocol` | 思考参数格式：`auto`（默认，按已知服务预设）、`none`、`dashscope_enable_thinking`、`deepseek_thinking_type` |
+| `--thinking-effort` | 思考强度：`low`、`medium`（核实过的模型的默认值）、`high`。只对核实过强度档位的服务和模型有效，其他服务会拒绝这个参数。详见“思考模式怎么选” |
+| `--thinking-budget` | 思考 Token 上限（高级选项，256 起）：到达后模型停止思考直接作答。设置后不再发送思考强度；与 `--thinking-effort` 只能选一个 |
 | `--tool-choice` | 是否发送 `tool_choice`：`auto`、`send`、`omit` |
 | `--service-failure-retries` | 终端界面使用付费模型时，网络中断、限流、模型服务内部错误之后最多连续自动重试的次数，0～20，默认 5；填 0 表示不自动重试，出错即停下。见 [10.3](#103-费用未知时) |
 | `--output-token-parameter` | 输出上限参数名：`max_completion_tokens` 或 `max_tokens` |

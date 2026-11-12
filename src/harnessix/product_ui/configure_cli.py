@@ -31,6 +31,7 @@ from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     auto_tool_choice_only,
     current_config_digest,
+    effort_tiers_verified,
     known_context_window,
     thinking_preset,
     write_product_config,
@@ -48,6 +49,14 @@ _THINKING_WITHOUT_SWITCH = (
     "请去掉 --thinking；或用 --thinking-protocol 指定开关格式"
     "（dashscope_enable_thinking 或 deepseek_thinking_type）；"
     "确认模型本身不思考时，用 --thinking-protocol none"
+)
+_EFFORT_NOT_VERIFIED = (
+    "这个服务和模型没有核实过思考强度档位或思考上限，"
+    "--thinking-effort、--thinking-budget 的设置到不了模型"
+    "（目前核实过的是阿里云百炼的 qwen3.8-max、qwen3.8-flash，且没有关闭思考）。请去掉这两个参数"
+)
+_EFFORT_WITH_BUDGET = (
+    "--thinking-effort 和 --thinking-budget 只能设置一个：设置上限后不再发送强度档位"
 )
 
 
@@ -105,6 +114,16 @@ def _parser() -> argparse.ArgumentParser:
         default="auto",
     )
     parser.add_argument("--thinking", choices=("tool_steps", "every_step", "off"))
+    parser.add_argument(
+        "--thinking-effort",
+        choices=("low", "medium", "high"),
+        help="思考强度：low、medium（已核实模型的默认值）、high；只对核实过强度档位的服务和模型有效",
+    )
+    parser.add_argument(
+        "--thinking-budget",
+        type=int,
+        help="思考Token上限（高级选项，256起）：到达后模型停止思考并作答；设置后不再发送思考强度",
+    )
     parser.add_argument("--tool-choice", choices=("auto", "send", "omit"), default="auto")
     parser.add_argument(
         "--context-window-tokens",
@@ -381,7 +400,30 @@ def _thinking_options(
         protocol = None
     endpoint_omits = (preset is not None and preset[1]) or auto_tool_choice_only(endpoint.base_url)
     omit = arguments.tool_choice == "omit" or (arguments.tool_choice == "auto" and endpoint_omits)
-    return {"thinking_protocol": protocol, "omit_tool_choice": omit, "thinking": arguments.thinking}
+    return {
+        "thinking_protocol": protocol,
+        "omit_tool_choice": omit,
+        "thinking": arguments.thinking,
+        **_thinking_bounds(arguments, endpoint, protocol),
+    }
+
+
+def _thinking_bounds(
+    arguments: argparse.Namespace, endpoint: _Endpoint, protocol: str | None
+) -> dict[str, object]:
+    """思考强度与思考Token上限只对核实过的服务和模型生效；到不了模型的设置直接拒绝。"""
+
+    effort, budget = arguments.thinking_effort, arguments.thinking_budget
+    if effort is None and budget is None:
+        return {}
+    if effort is not None and budget is not None:
+        raise ProductUIError("product_configure_invalid", _EFFORT_WITH_BUDGET)
+    verified = protocol == "dashscope_enable_thinking" and effort_tiers_verified(
+        endpoint.base_url, endpoint.model
+    )
+    if not verified or arguments.thinking == "off":
+        raise ProductUIError("product_configure_invalid", _EFFORT_NOT_VERIFIED)
+    return {"thinking_effort": effort, "thinking_budget_tokens": budget}
 
 
 def _success_text(path: Path, endpoint: _Endpoint) -> str:

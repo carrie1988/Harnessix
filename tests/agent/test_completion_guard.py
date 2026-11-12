@@ -12,8 +12,10 @@ from harnessix.agent.completion_guard import (
     NOT_A_REPLY_NOTICE,
     UNFINISHED_STEP_NOTICE,
     announces_next_step,
+    completion_guard_mode,
     completion_notice,
     completion_notice_item_id,
+    leaves_a_step_undone,
     not_a_reply,
     step_reply,
     workspace_patched,
@@ -271,3 +273,111 @@ async def test_runtime_rejects_a_non_boolean_switch(tmp_path: Path) -> None:
             completion_guard=1,  # type: ignore[arg-type]
         )
     assert error.value.code == "invalid_runtime_configuration"
+
+
+# 真实试用里两次“只说了下一步就结束”的回复原文（开头部分）。
+PLAN_ONLY = (
+    "No existing files in the workspace — I'll build a self-contained, dependency-free 3D "
+    "black hole demo.\nPlan for the implementation (real physics, no external libs):\n"
+    " • Ray-traced null geodesics in Schwarzschild spacetime."
+)
+ANNOUNCED_ONLY = "我先确认环境能力，然后写文件。"
+
+
+@pytest.mark.parametrize(
+    ("reply", "undone"),
+    [
+        (ANNOUNCED_ONLY, True),
+        (PLAN_ONLY, True),
+        ("接下来修改 service.py：", True),
+        ("文件还不存在——我将新建它。", True),
+        # 向用户提问是在等回答，不能催模型自己往下做。
+        ("我先确认一下：你希望保留旧接口吗？", False),
+        ("Let me check: should the limit apply to multipart uploads too?", False),
+        # 普通的最终答复和问答。
+        ("已完成：新增 --stdin-lines，全部 31 项测试通过。", False),
+        ("这个函数用二分查找定位区间 - 时间复杂度是 O(log n)。", False),
+        ("The parser reads lines lazily — it never loads the whole stream.", False),
+        ("", False),
+    ],
+)
+def test_interactive_mode_recognises_an_announced_but_missing_step(reply, undone) -> None:
+    assert leaves_a_step_undone(reply) is undone
+
+
+def test_interactive_mode_only_prompts_for_an_announced_step() -> None:
+    draft = turn()
+    assert completion_notice(draft, 1, ANNOUNCED_ONLY, "interactive") == UNFINISHED_STEP_NOTICE
+    assert completion_notice(draft, 1, PLAN_ONLY, "interactive") == UNFINISHED_STEP_NOTICE
+    # 完整守卫会催的两种情况，交互模式不催：问答没有补丁很正常，空回复由回复恢复负责。
+    assert completion_notice(draft, 1, "The bug is in the parser.", "interactive") is None
+    assert completion_notice(draft, 1, SUMMARY_COPY, "interactive") is None
+    assert completion_notice(draft, 1, "The bug is in the parser.", "full") == NO_CHANGE_NOTICE
+    # 完整守卫的判定保持原样：首句破折号之后的分句不算宣布。
+    assert not announces_next_step(PLAN_ONLY)
+
+
+@pytest.mark.parametrize(
+    ("value", "mode"),
+    [
+        (True, "full"),
+        (False, "off"),
+        ("full", "full"),
+        ("off", "off"),
+        ("interactive", "interactive"),
+    ],
+)
+def test_guard_mode_accepts_booleans_and_mode_names(value, mode) -> None:
+    assert completion_guard_mode(value) == mode
+
+
+@pytest.mark.parametrize("value", [1, 0, None, "on", "INTERACTIVE", b"full"])
+def test_guard_mode_rejects_anything_else(value) -> None:
+    with pytest.raises(KernelError) as error:
+        completion_guard_mode(value)
+    assert error.value.code == "invalid_runtime_configuration"
+
+
+async def test_interactive_runtime_prompts_once_and_the_model_goes_on(tmp_path: Path) -> None:
+    provider = ScriptedProvider([answer(ANNOUNCED_ONLY), answer("已写入 blackhole.html。")])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider, completion_guard="interactive") as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        completed = await runtime.run_turn(thread.thread_id, "创建网页", request_id="interactive")
+
+    assert completed.status == TurnStatus.COMPLETED and len(provider.requests) == 2
+    texts = [
+        (entry.content.kind, entry.content.text)
+        for entry in provider.requests[1].history
+        if isinstance(entry.content, TextContent)
+    ]
+    assert texts[-2:] == [
+        ("assistant_message", ANNOUNCED_ONLY),
+        ("user_message", UNFINISHED_STEP_NOTICE),
+    ]
+    events = await store.events(thread.thread_id)
+    assert replay(events) == await store.get_thread(thread.thread_id)
+
+
+async def test_interactive_runtime_leaves_answers_and_questions_alone(tmp_path: Path) -> None:
+    for name, reply in (
+        ("answer", "The bug is in the parser."),
+        ("question", "我先确认：要保留旧接口吗？"),
+    ):
+        provider = ScriptedProvider([answer(reply)])
+        store = SQLiteSessionStore(tmp_path / f"{name}.db")
+        async with AgentRuntime(store, provider, completion_guard="interactive") as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            completed = await runtime.run_turn(thread.thread_id, "看一下这个缺陷", request_id=name)
+        assert completed.status == TurnStatus.COMPLETED and len(provider.requests) == 1
+
+
+async def test_interactive_runtime_does_not_prompt_twice_in_a_row(tmp_path: Path) -> None:
+    provider = ScriptedProvider([answer(ANNOUNCED_ONLY), answer("接下来我将写入文件。")])
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    async with AgentRuntime(store, provider, completion_guard="interactive") as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        completed = await runtime.run_turn(thread.thread_id, "创建网页", request_id="twice")
+
+    # 提示之后模型仍只宣布不行动：不再连续催，本轮照常结束，交给用户。
+    assert completed.status == TurnStatus.COMPLETED and len(provider.requests) == 2

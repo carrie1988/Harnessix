@@ -150,8 +150,21 @@
         }
       ],
       "default": null,
-      "description": "显式思考Token上限；须使用包含思考与回答的max_completion_tokens",
+      "description": "显式思考Token上限；到达后模型停止思考并作答（按端点与模型核实后使用）",
       "title": "Thinking Budget"
+    },
+    "reasoning_effort": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z]{1,16}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reasoning Effort"
     },
     "connect_retries": {
       "default": 0,

@@ -18,6 +18,7 @@ from harnessix.models.config import (
     is_private_network_host,
     with_validated_base_url,
 )
+from harnessix.product_config import profile_options as options
 from harnessix.product_config.runtime_options import ServiceFailureRetries, WorkspaceReadTimeout
 from harnessix.tools.contracts import Revision
 
@@ -157,10 +158,7 @@ class ModelProfile(ProductConfigContract):
     )
     fallback_profiles: tuple[str, ...] = Field(default=(), max_length=5)
     max_output_tokens: int = Field(default=4096, ge=1, le=1_000_000)
-    # 模型上下文窗口（真实Token）；声明后Context上限与压缩阈值按窗口换算，未声明沿用固定上限。
-    context_window_tokens: int | None = Field(
-        default=None, ge=8192, le=2_097_152, strict=True, exclude_if=lambda value: value is None
-    )
+    context_window_tokens: options.ContextWindowTokens = None
     timeout_seconds: float = Field(default=120, gt=0, le=3600)
     io_timeout_seconds: float = Field(default=30, gt=0, le=300)
     max_attempts: int = Field(default=2, ge=1, le=6)
@@ -171,6 +169,8 @@ class ModelProfile(ProductConfigContract):
     max_chunks: int = Field(default=10_000, ge=1, le=100_000)
     # None随Provider：声明思考协议时为tool_steps，否则不思考。
     thinking: ThinkingMode | None = Field(default=None, exclude_if=lambda value: value is None)
+    thinking_effort: options.ThinkingEffortOption = None
+    thinking_budget_tokens: options.ThinkingBudgetTokens = None
 
     @field_validator("fallback_profiles")
     @classmethod
@@ -240,8 +240,7 @@ class ProductConfigV2(ProductConfigContract):
             if profile.provider_id not in providers:
                 raise ValueError("Profile Provider引用不存在")
             provider = providers[profile.provider_id]
-            if profile.thinking not in (None, "off") and provider.thinking_protocol is None:
-                raise ValueError("Profile思考模式要求Provider声明已求证的思考协议")
+            options.validate_profile_thinking(profile, provider.thinking_protocol)
             if effective_thinking(profile, provider) != "off":
                 if profile.max_output_tokens < THINKING_MIN_OUTPUT_TOKENS:
                     raise ValueError("思考模式的推理计入输出上限，Profile输出上限至少16384")

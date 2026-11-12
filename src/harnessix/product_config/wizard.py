@@ -166,6 +166,25 @@ def thinking_preset(
     return None
 
 
+def effort_tiers_verified(base_url: str, model: str) -> bool:
+    """这个端点与模型是否核实过思考强度档位（以及思考Token上限）。
+
+    百炼qwen3.8-max、qwen3.8-flash（2026-11-12实测）：不设档位时按服务端默认的最强档思考，
+    同一个简单任务思考17,378 Token、耗时5分钟；设为low或medium后降到一两百Token。
+    同协议的百炼DeepSeek没有核实，不在此列。
+    """
+    host = urlsplit(base_url).hostname
+    return host == "dashscope.aliyuncs.com" and model.startswith(("qwen3.8-max", "qwen3.8-flash"))
+
+
+def _thinking_bounds(draft: ConfigurationDraft, *, thinking: bool) -> dict[str, object]:
+    """Profile的思考强度或思考Token上限：核实过档位的模型默认中档；给了上限就只用上限。"""
+    if not thinking or draft.thinking_budget_tokens is not None:
+        return {"thinking_budget_tokens": draft.thinking_budget_tokens if thinking else None}
+    verified = effort_tiers_verified(draft.base_url, draft.model)
+    return {"thinking_effort": draft.thinking_effort or ("medium" if verified else None)}
+
+
 def auto_tool_choice_only(base_url: str) -> bool:
     """端点只接受tool_choice=auto：不发送tool_choice，强制选择改由可执行集收窄约束。"""
 
@@ -229,6 +248,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     "provider_id": checked.provider_id,
                     "model": checked.model,
                     "thinking": "off" if thinking_auto_off else checked.thinking,
+                    **_thinking_bounds(checked, thinking=thinking),
                     "context_window_tokens": checked.context_window_tokens,
                     # 云端限流和网络抖动很常见：首次请求之外最多自动重试5次（ADR 0144）。
                     "max_attempts": 6,

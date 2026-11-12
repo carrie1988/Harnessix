@@ -379,7 +379,8 @@ async def _serve_product_stdio(
                                 provider.normalize_tool_arguments
                                 for provider in _active_providers(startup)
                             ),
-                            completion_guard=startup.completion_guard,
+                            # 无人值守用完整守卫；终端界面只在模型宣布下一步却没有动作时提示它继续。
+                            completion_guard="full" if startup.completion_guard else "interactive",
                             unknown_usage=UnknownUsagePolicy(
                                 always=startup.continue_after_unknown_usage,
                                 service_failure_retries=startup.service_failure_retries,

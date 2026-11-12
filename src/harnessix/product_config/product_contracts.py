@@ -17,6 +17,7 @@ from harnessix.product_config.contracts import (
     ThinkingMode,
     ThinkingProtocol,
 )
+from harnessix.product_config.profile_options import ThinkingBudgetTokens, ThinkingEffortOption
 from harnessix.product_config.runtime_options import ServiceFailureRetries
 from harnessix.tools.contracts import Revision
 
@@ -73,6 +74,9 @@ class ConfigurationDraft(ProductConfigContract):
     self_hosted: bool = Field(default=False, exclude_if=lambda value: value is False)
     proxy_url: LoopbackProxyUrl = None
     service_failure_retries: ServiceFailureRetries = None
+    # 思考强度与思考Token上限：未给出时由向导按已核实的端点与模型决定（ADR 0146）。
+    thinking_effort: ThinkingEffortOption = None
+    thinking_budget_tokens: ThinkingBudgetTokens = None
 
     @model_validator(mode="before")
     @classmethod
