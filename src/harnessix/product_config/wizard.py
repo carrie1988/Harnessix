@@ -197,6 +197,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
         active_profile=checked.profile_id,
         # 同机自托管通常与推理、构建共用CPU：读工具放宽到20秒，避免大仓库搜索在负载下超时。
         workspace_read_timeout_seconds=_SELF_HOSTED_READ_TIMEOUT_SECONDS if self_hosted else None,
+        service_failure_retries=checked.service_failure_retries,
         secret_sources=(
             EnvironmentSecretSourceConfig(
                 secret=secret,

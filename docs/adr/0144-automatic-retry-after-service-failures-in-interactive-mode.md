@@ -10,6 +10,8 @@ related_adrs:
 related_tests:
   - tests/agent/test_model_attempts.py
   - tests/context/test_pressure_window_candidates.py
+  - tests/product_config/test_service_failure_retries.py
+  - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
 
@@ -28,7 +30,7 @@ supersedes: []
 
 这条规则的出发点是费用不明时不替用户继续花钱。但终端界面没有单任务费用上限（产品负责人决定D1），用户就在
 屏幕前；一次网络抖动最多多付一两次请求的费用，换来的却是二十分钟的任务被打断。产品负责人2026-11-12决定：
-网络中断允许自动重试，重试次数为5次。
+网络中断允许自动重试，重试次数做成配置项，默认5次。
 
 ## 决策
 
@@ -36,7 +38,8 @@ supersedes: []
    `provider_transport`（连接与超时、流式中断）、`provider_rate_limit`（429）、`provider_provider_internal`（5xx）。
 2. **连续至多5次。** 本Turn最近连续的“服务方故障且用量未知”的尝试不超过5次时，允许发起下一次请求；第6次连续
    失败之后停止，错误码和说明与原来相同（原故障码，“按计费安全规则不再发起付费请求”）。中间只要有一次请求成功，
-   计数重新开始。次数是产品组合里的常量`SERVICE_FAILURE_RETRIES = 5`。
+   计数重新开始。次数是配置项：产品配置的`service_failure_retries`（0～20，未设置时为默认值5，0表示不自动重试），
+   `harnessix code configure --service-failure-retries N`写入；默认值是`SERVICE_FAILURE_RETRIES = 5`。
 3. **其他原因的用量未知照旧停止。** 例如输出无效、响应正常结束却没有报回用量。这些不是一时的故障，重试没有意义。
 4. **继续时仍按预留额记账。** 与无人值守模式相同：每个用量未知的尝试按本Turn已知的单次最大消耗预留，预留耗尽
    Token预算时停止（`require_reserved_unknown_usage`）。

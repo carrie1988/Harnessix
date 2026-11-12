@@ -145,6 +145,20 @@
       ],
       "default": null,
       "title": "Proxy Url"
+    },
+    "service_failure_retries": {
+      "anyOf": [
+        {
+          "maximum": 20,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Service Failure Retries"
     }
   },
   "required": [

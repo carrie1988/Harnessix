@@ -17,6 +17,7 @@ from harnessix.product_config.contracts import (
     ThinkingMode,
     ThinkingProtocol,
 )
+from harnessix.product_config.runtime_options import ServiceFailureRetries
 from harnessix.tools.contracts import Revision
 
 PreflightMode = Literal["startup", "doctor"]
@@ -71,6 +72,7 @@ class ConfigurationDraft(ProductConfigContract):
     # 用户显式声明这是自己部署的内网端点：允许明文HTTP并套用本地模型预设。
     self_hosted: bool = Field(default=False, exclude_if=lambda value: value is False)
     proxy_url: LoopbackProxyUrl = None
+    service_failure_retries: ServiceFailureRetries = None
 
     @model_validator(mode="before")
     @classmethod

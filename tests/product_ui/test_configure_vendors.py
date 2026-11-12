@@ -189,3 +189,30 @@ def test_every_menu_model_has_a_verified_price_and_context_window() -> None:
         for item in vendor.models:
             assert list_price_for(vendor.base_url, item.model) is not None, item.model
             assert known_context_window(vendor.base_url, item.model) is not None, item.model
+
+
+def test_the_retry_count_after_network_interruptions_is_configurable(tmp_path: Path) -> None:
+    """默认不写入配置（产品默认5次）；显式给出时写入，0表示不自动重试。"""
+    default = tmp_path / "default.json"
+    _configure(default, "--vendor", "bailian", "--non-interactive")
+    assert _config(default).service_failure_retries is None
+    assert "service_failure_retries" not in json.loads(default.read_text(encoding="utf-8"))
+
+    chosen = tmp_path / "chosen.json"
+    _configure(chosen, "--vendor", "bailian", "--non-interactive", "--service-failure-retries", "2")
+    assert _config(chosen).service_failure_retries == 2
+
+    never = tmp_path / "never.json"
+    _configure(never, "--vendor", "bailian", "--non-interactive", "--service-failure-retries", "0")
+    assert _config(never).service_failure_retries == 0
+
+    with pytest.raises(SystemExit):
+        _configure(
+            tmp_path / "invalid.json",
+            "--vendor",
+            "bailian",
+            "--non-interactive",
+            "--service-failure-retries",
+            "21",
+        )
+    assert not (tmp_path / "invalid.json").exists()

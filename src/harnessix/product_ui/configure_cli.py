@@ -120,6 +120,11 @@ def _parser() -> argparse.ArgumentParser:
         "--proxy-url",
         help="经本机HTTP代理访问云端点，如http://127.0.0.1:7890；优先于HTTPS_PROXY等环境变量",
     )
+    parser.add_argument(
+        "--service-failure-retries",
+        type=int,
+        help="终端界面使用付费模型时，网络中断、限流、服务端错误后最多连续自动重试的次数；默认5，0为不重试",
+    )
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--expected-source-sha256")
     parser.add_argument("--non-interactive", action="store_true")
@@ -345,6 +350,7 @@ def _draft(arguments: argparse.Namespace, endpoint: _Endpoint) -> ConfigurationD
             "output_token_parameter": arguments.output_token_parameter,
             "self_hosted": self_hosted,
             "proxy_url": arguments.proxy_url,
+            "service_failure_retries": arguments.service_failure_retries,
             "context_window_tokens": arguments.context_window_tokens
             or (known_context_window(endpoint.base_url, endpoint.model) if openai_chat else None),
             **_thinking_options(arguments, endpoint, self_hosted=self_hosted),

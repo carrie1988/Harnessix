@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 619,
-    "physical_lines": 130455,
-    "logical_lines": 113907,
-    "documented_modules": 619,
-    "classes": 1210,
-    "documented_classes": 621,
-    "functions": 5131,
-    "documented_functions": 1706,
+    "source_files": 621,
+    "physical_lines": 130918,
+    "logical_lines": 114239,
+    "documented_modules": 621,
+    "classes": 1212,
+    "documented_classes": 623,
+    "functions": 5152,
+    "documented_functions": 1724,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/harnessix/delivery/trusted_action.py",
-      "lines": 621
+      "lines": 620
     },
     {
       "path": "src/harnessix/evals/delivery.py",
@@ -256,7 +256,7 @@
     },
     {
       "path": "src/harnessix/product_config/contracts.py",
-      "lines": 602
+      "lines": 601
     },
     {
       "path": "src/harnessix/product_config/native_process.py",
@@ -1505,7 +1505,7 @@
       "path": "src/harnessix/product_config/contracts.py",
       "qualname": "ProductConfigV2.valid_graph",
       "kind": "function",
-      "line": 219,
+      "line": 218,
       "lines": 48,
       "documented": false,
       "decision_complexity": 33
@@ -1601,7 +1601,7 @@
       "path": "src/harnessix/product_config/server.py",
       "qualname": "_serve_product_stdio",
       "kind": "function",
-      "line": 269,
+      "line": 270,
       "lines": 138,
       "documented": true,
       "decision_complexity": 10
@@ -1932,7 +1932,7 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 315,
+      "line": 392,
       "lines": 124,
       "documented": true,
       "decision_complexity": 27

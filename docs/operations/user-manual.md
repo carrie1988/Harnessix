@@ -356,6 +356,7 @@ harnessix code configure [新的完整参数] --replace \
 | `--thinking` | 思考模式：`tool_steps`（只在工具步骤思考，已知服务的默认值）、`every_step`、`off`。没有已核对思考开关的服务会拒绝这个参数并提示怎么改。详见下方“思考模式怎么选” |
 | `--thinking-protocol` | 思考参数格式：`auto`（默认，按已知服务预设）、`none`、`dashscope_enable_thinking`、`deepseek_thinking_type` |
 | `--tool-choice` | 是否发送 `tool_choice`：`auto`、`send`、`omit` |
+| `--service-failure-retries` | 终端界面使用付费模型时，网络中断、限流、模型服务内部错误之后最多连续自动重试的次数，0～20，默认 5；填 0 表示不自动重试，出错即停下。见 [10.3](#103-费用未知时) |
 | `--output-token-parameter` | 输出上限参数名：`max_completion_tokens` 或 `max_tokens` |
 | `--provider-id`、`--profile-id` | 自定义配置中的标识，一般不需要 |
 | `--config` | 配置文件路径，默认 `~/.harnessix/config.json` |
@@ -676,7 +677,7 @@ Hooks、IDE 插件、Web 搜索、子代理、图片输入、自动更新。
 网络中断等情况下，可能无法确认某次模型请求是否计费：
 
 - 终端界面使用付费模型时：
-  - 网络中断、限流或模型服务内部错误造成的，会自动重试，连续 5 次仍失败才停下。重试的那几次请求有可能被服务商计费。
+  - 网络中断、限流或模型服务内部错误造成的，会自动重试，连续 5 次仍失败才停下。重试的那几次请求有可能被服务商计费。次数可以用 `harnessix code configure --service-failure-retries N` 修改，0 表示不自动重试。
   - 模型已经开始输出之后才断开的，以及其他原因造成的费用未知，任务会停下，交给你决定。发送新消息（例如“继续”）即可接着做。
 - `harnessix exec` 和本地模型会按该次请求可能的最大用量预留后继续。
 

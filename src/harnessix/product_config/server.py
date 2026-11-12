@@ -62,8 +62,8 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.contracts import READ_TIMEOUT_SECONDS
 from harnessix.tools.runtime import CodingToolRuntime
 
-# 付费交互模式下，网络中断、限流、服务端错误之后最多连续自动重试的次数；
-# 超过后停止并交给用户决定是否继续（产品负责人2026-11-12决定，ADR 0144）。
+# 付费交互模式下，网络中断、限流、服务端错误之后最多连续自动重试次数的默认值；
+# 配置里的service_failure_retries可以改。超过后停止并交给用户决定是否继续（ADR 0144）。
 SERVICE_FAILURE_RETRIES = 5
 
 
@@ -81,6 +81,7 @@ class _ProductRuntimeStartup:
     root_owner: ProductStateOwner
     completion_guard: bool = False
     continue_after_unknown_usage: bool = False
+    service_failure_retries: int = SERVICE_FAILURE_RETRIES
 
 
 def _is_link_or_junction(path: Path) -> bool:
@@ -381,7 +382,7 @@ async def _serve_product_stdio(
                             completion_guard=startup.completion_guard,
                             unknown_usage=UnknownUsagePolicy(
                                 always=startup.continue_after_unknown_usage,
-                                service_failure_retries=SERVICE_FAILURE_RETRIES,
+                                service_failure_retries=startup.service_failure_retries,
                             ),
                             recover_truncated_replies=True,
                         ) as runtime:
@@ -520,6 +521,11 @@ async def run_product_stdio(
             # 本地端点没有费用风险；付费交互模式下只对服务方故障自动重试有限次，其余停止并交给用户。
             continue_after_unknown_usage=(
                 unattended or loaded.config.chain_pricing(selection.selected_profile) == "free"
+            ),
+            service_failure_retries=(
+                SERVICE_FAILURE_RETRIES
+                if loaded.config.service_failure_retries is None
+                else loaded.config.service_failure_retries
             ),
         )
         await _serve_product_stdio(

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -26,6 +26,7 @@ related_tests:
   - tests/agent/test_model_attempts.py
   - tests/context/test_pressure_window_candidates.py
   - tests/tools/test_whole_repository_search.py
+  - tests/product_config/test_service_failure_retries.py
 supersedes: []
 ---
 
@@ -203,8 +204,10 @@ flowchart TD
   按预留额继续（`require_reserved_unknown_usage`），否则沿用原停止规则。
 - `AgentRuntime`的参数`continue_after_unknown_usage: bool`改为`unknown_usage: UnknownUsagePolicy`，四个读取点
   （请求额度、摘要额度、每步发起前、预算压力压缩规划）改为调用`continues(turn)`。默认策略仍是停止。
-- `product_config/server.py`：`SERVICE_FAILURE_RETRIES = 5`；无人值守和不计费端点`always=True`（行为不变），付费
-  交互模式`always=False`、`service_failure_retries=5`。
+- `product_config/server.py`：默认值`SERVICE_FAILURE_RETRIES = 5`；无人值守和不计费端点`always=True`（行为不变），付费
+  交互模式`always=False`，次数取配置项。
+- 配置项：`ProductConfigV2.service_failure_retries`（0～20，未设置即默认5，不写入配置文件；0表示不自动重试），
+  `harnessix code configure --service-failure-retries N`经`ConfigurationDraft`写入。
 - 向导生成配置的`max_attempts`由4改为6；`ModelProfile.max_attempts`与`ModelHTTPConfig.max_attempts`的上界由5
   放宽到6，7个公开Schema的`maximum`随之更新。
 
@@ -221,6 +224,8 @@ flowchart TD
   连续6次失败后停止且第7次请求没有发出；其他原因的用量未知仍停止；策略参数校验；原有“默认停止”
   “无人值守继续”用例保持通过。
 - `tests/context/test_pressure_window_candidates.py`：预算压力压缩规划读取同一策略。
+- `tests/product_config/test_service_failure_retries.py`：真实产品服务端装配下，默认配置与配置为3时中断后重试并完成，
+  配置为0时立即以`provider_transport`结束。`tests/product_ui/test_configure_vendors.py`：configure参数的写入与越界拒绝。
 
 ## 16. 第三项：大仓库的整仓搜索
 
