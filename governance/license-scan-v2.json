@@ -29051,12 +29051,12 @@
       "version": "0.52.4"
     }
   ],
-  "evidence_index_sha256": "ae20c73d3db976ff953b95e6787e156f79663a6fea9652ee64c2cbd1628d7ca3",
+  "evidence_index_sha256": "4767bc1371b71a58d8fdd3b5354488d274f0fee1dff8f86e37e672ec05e05bdf",
   "legal_rights_or_notice_completeness_claimed": false,
-  "lock_sha256": "6f0e257a9fcc70c8928c41c435fda138107ae3963c8e86fe2ebeea885c45ff1e",
+  "lock_sha256": "3c4b6f1f9a5e97a94b4afda1170aa4e50c21218ea314319395b88bd0b0f42ad3",
   "package_count": 77,
   "policy_sha256": "b8e851c07d578e6986a12c6afb94f763548d0aebcb9435175343d33b0a1f83d7",
-  "project_sha256": "7c51217e8903590a26e991a9c106c5b7c64369dc963daa914ed947b1f01aa3f9",
+  "project_sha256": "04d6697ac9ed771af7277b18d7310eb82b9d5737b6f2798dd8d3934a40a1f664",
   "root": {
     "license": "AGPL-3.0-only",
     "license_file_sha256": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee",
@@ -29064,7 +29064,7 @@
     "source": {
       "editable": "."
     },
-    "version": "0.10.0b17"
+    "version": "0.10.0b18"
   },
   "scope": "all_locked_distribution_archives",
   "spec_version": "harnessix.license-scan/v2",

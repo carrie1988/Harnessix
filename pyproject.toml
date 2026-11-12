@@ -1,7 +1,7 @@
 [project]
 name = "harnessix"
-version = "0.10.0b17"
-description = "面向生产级 Coding Agent 的本地优先运行时与安全执行基础设施"
+version = "0.10.0b18"
+description = "在本机终端运行、模型自选、每一步受控的 Coding Agent"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "AGPL-3.0-only"
