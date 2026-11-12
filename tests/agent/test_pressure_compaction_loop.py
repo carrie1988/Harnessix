@@ -176,7 +176,16 @@ async def test_remaining_request_feedback_excludes_durable_summary_attempts(tmp_
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
 
 
-@pytest.mark.parametrize("finish", ["stop", "length"])
+# 摘要请求的四种结束方式：正常、有正文的截断、没有正文的截断、正常结束却没有正文（后两种是
+# 思考模型把输出额度用在推理上，或只推理不作答）。
+_UNUSABLE_SUMMARIES = {
+    "length": "provider_summary_truncated",
+    "length_without_text": "provider_summary_truncated",
+    "stop_without_text": "provider_summary_empty",
+}
+
+
+@pytest.mark.parametrize("finish", ["stop", *_UNUSABLE_SUMMARIES])
 async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
     tmp_path: Path, monkeypatch, finish
 ):
@@ -199,10 +208,11 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
         assert "tools" not in body and "a" * 2500 not in instructions
         usage = chunk(usage=True)
         usage["usage"] = {"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13}
+        content = {"role": "assistant", "content": "已调查旧窗口；尚需完成后续工作。"}
         wire = WireStream(
             [
-                frame(chunk({"role": "assistant", "content": "已调查旧窗口；尚需完成后续工作。"})),
-                frame(chunk(finish=finish)),
+                *([] if finish.endswith("_without_text") else [frame(chunk(content))]),
+                frame(chunk(finish=finish.removesuffix("_without_text"))),
                 frame(usage),
                 b"data: [DONE]\n\n",
             ]
@@ -253,12 +263,13 @@ async def test_pressure_summary_capacity_reaches_sdk_and_terminal_facts_replay(
         assert all(record.status == "summarized" for record in turn.compactions)
         assert len(main.requests) == 10
     else:
-        # 摘要被截断：每次已记账、不激活窗口；本步保留原历史继续，历史再增长1/4前不再规划。
+        # 摘要被截断或没有正文：每次已记账、不激活窗口；
+        # 本步保留原历史继续，历史再增长1/4前不再规划。
         assert turn.status == "completed", turn.error
         assert len(requests) == len(turn.compactions) == 3
         for record in turn.compactions:
             assert record.status == "failed"
-            assert record.failure.code == "provider_summary_truncated"
+            assert record.failure.code == _UNUSABLE_SUMMARIES[finish]
             assert record.attempt.usage.completeness == "complete"
         assert len(main.requests) == 10
     restored = await store.get_thread(thread.thread_id)

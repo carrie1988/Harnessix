@@ -51,6 +51,8 @@ from harnessix.session.ports import SessionStore
 
 # 摘要输出被截断：用量已对账、窗口未激活。
 SUMMARY_TRUNCATED = "provider_summary_truncated"
+# 摘要请求正常结束却没有正文（思考模型只推理、不作答）：同样用量已对账、窗口未激活。
+SUMMARY_EMPTY = "provider_summary_empty"
 # 规划阶段判定本次无法压缩（尚未写入任何压缩记录）。
 _PLANNING_INFEASIBLE = frozenset(
     {
@@ -61,7 +63,7 @@ _PLANNING_INFEASIBLE = frozenset(
 )
 # 主动压缩遇到以下失败时，不压缩的原请求仍在窗口内：本步保留原历史继续，
 # 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
-_PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED}
+_PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED, SUMMARY_EMPTY}
 _BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = 5, 4
 
 

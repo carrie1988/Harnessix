@@ -253,8 +253,6 @@ class AnthropicStream:
         if self._finish in {"end_turn", "stop_sequence", "tool_use"}:
             if bool(self._call_ids) != (self._finish == "tool_use"):
                 raise InvalidWireData("结束原因与工具调用不匹配")
-            if not self._call_ids and not any(block.text for block in self._blocks.values()):
-                raise InvalidWireData("响应没有语义内容")
         events: list[ProviderEvent] = []
         for index, block in self._blocks.items():
             if block.type == "text":

@@ -101,7 +101,7 @@ SCENARIOS = [
     ("duplicate_key", None),
     ("non_finite", None),
     ("not_object", None),
-    ("empty_response", "semantic_output_missing"),
+    ("empty_response", None),
     ("no_usage", "completion_incomplete"),
     ("no_done", "completion_incomplete"),
     ("finish_mismatch", "finish_tool_mismatch"),
@@ -188,6 +188,11 @@ async def test_sdk_terminal_diagnostic_preserves_failure_and_releases_no_tools(s
         assert events[-1] == ResponseCompleted(
             finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
         )
+        assert ends[0].outcome == "completed" and ends[0].error is None
+    elif scenario == "empty_response":
+        # 没有正文也没有调用的正常结束不是协议错误：尝试照常完成，是否恢复由运行时决定。
+        assert not any(isinstance(e, ToolCallCompleted | ToolCallRejected) for e in events)
+        assert events[-1] == ResponseCompleted(usage=Usage(input_tokens=10, output_tokens=2))
         assert ends[0].outcome == "completed" and ends[0].error is None
     else:
         assert events[-1] == ResponseFailed(code="invalid_provider_output")

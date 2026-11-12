@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 9
-code_revision: 2574a498a9d36de2d4ae2b6d00568efa96af60fd
+version: 10
+code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery, trusted_actions]
 related_adrs:
@@ -19,6 +19,7 @@ related_tests:
   - tests/trusted_actions/test_plan_error_boundaries.py
   - tests/processes/test_runtime_zombie_group.py
   - tests/agent/test_resume_cancel_before_start.py
+  - tests/agent/test_truncation_recovery.py
   - tests/product_config/test_git_user_source_files.py
 supersedes: []
 ---
@@ -88,6 +89,8 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
+- **模型只思考、不作答（0.10.0b20，ADR 0109第6版，用户决定方案A）**：没有工具调用的步骤里，正常结束却没有正文的回复、以及思考用满输出上限而没有正文的回复，此前让整轮失败（`provider_invalid_provider_output`、`provider_max_output_tokens`）；现在由宿主补发提示继续，连续最多两次，之后仍按原错误失败。压缩摘要没有正文时跳过本次压缩。“没有语义内容”的判定由三处（两个适配器加运行时）收为运行时一处。0.10.0b18的Linux正式测试中出现一次，发布前用假模型端点从安装包端到端验证。见[Agent模块设计](../modules/agent.md)。
+- **云端模型给出格式不对的工具参数（0.10.0b18，ADR 0109第5版，用户决定方案B）**：参数不是合法JSON对象或在输出上限处被截断时，此前只有自托管端点只拒绝该次调用，云端端点整轮失败（`chat_protocol/v1:tool_arguments_invalid`）；现在所有端点都只拒绝该次调用，Turn继续。三次正式发布测试中出现两次。见[Models模块设计](../modules/models.md)。
 - **补丁目标是目录（0.10.0b16）**：在已有目录的路径上`create`，或对目录`edit`/`replace`/`delete`，此前在所有平台上被审批预览记为未知效果并中断整轮；现在规划前认出目录，判为可修正的拒绝，工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。
 - **Windows上带可执行权限位的补丁（0.10.0b15）**：解析阶段拒绝的原码`delivery_metadata_unsupported`此前未登记在公开码表，被换成`action_plan_failed`，整轮按未知效果中断；现在保留原码，作为可修正的失败返回，工作区没有变化。见[Trusted Actions模块设计](../modules/trusted-actions.md)。
 - **Windows上补丁目标存在性不符（0.10.0b15）**：`create`遇到已有文件、`edit`/`replace`/`delete`遇到缺失文件，此前在Windows上被审批预览记为未知效果并中断整轮；现在与POSIX一样在规划前判为可修正的拒绝（`workspace_patch_target_exists`、`workspace_patch_target_missing`），工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。

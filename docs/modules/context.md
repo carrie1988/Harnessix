@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 14
-code_revision: b0f03b63893b9c038512a17e143477313c0f7ae7
+version: 19
+code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
 modules:
@@ -57,6 +57,14 @@ supersedes: []
 仅固定完整配对组；正常、反应式及压力压缩都不删Pin或扩大预算，旧窗口沿持久事实重放。
 接口、费用取舍与失败流程见[统一设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)，
 真实Runtime连续窗口回归见[测试](../../tests/context/test_planning_compaction_runtime.py)。
+
+## 当前增量：没有正文的摘要（0.10.0b20，ADR 0109第6版）
+
+摘要请求先核验尝试与用量，再按结束方式分类：用满输出上限的（有没有正文都算）以`provider_summary_truncated`结束压缩记录；
+正常结束却没有正文的（思考模型只推理、不作答）以新的独立代码`provider_summary_empty`结束。两者都是用量已对账、窗口未激活，
+主动压缩时本步保留原历史继续，历史再增长1/4前不再规划；Context Overflow触发的被动压缩仍按原错误终止。
+此前没有正文的摘要一律落到`invalid_provider_output`，整个Turn失败。回归见
+[`test_pressure_compaction_loop.py`](../../tests/agent/test_pressure_compaction_loop.py)。文档版本15～18由round-2与Beta反馈分支使用。
 
 ## 当前增量：工作集模型视图（默认关闭）
 
@@ -615,6 +623,7 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 19 | `e5141ec7` 增量 | 2026-11-12 | 没有正文的摘要：正常结束的用独立代码`provider_summary_empty`，用满上限的归为截断；主动压缩时都可跳过（0.10.0b20） |
 | 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
 | 1 | `6c5f310346afa3fa176f51707722467f46811b35` | 2026-09-12 | DOC-1.3 Wave A Context模块设计初版 |
 

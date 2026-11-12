@@ -29,6 +29,7 @@ from harnessix.models.config import ChatCapabilities, OpenAIChatConfig
 from harnessix.models.contracts import (
     ResponseCompleted,
     ResponseFailed,
+    TextCompleted,
     ToolCallCompleted,
     ToolCallRejected,
 )
@@ -107,7 +108,6 @@ async def test_invalid_arguments_reject_only_that_call(arguments: str) -> None:
         "index_gap",
         "negative_index",
         "legacy_function_call",
-        "no_semantic_output",
         "content_type",
         "done_suffix",
         "duplicate_done",
@@ -167,8 +167,6 @@ async def test_malformed_wire(scenario: str) -> None:
         parts[0] = frame(chunk({"tool_calls": [call(1 if scenario == "index_gap" else -1)]}))
     elif scenario == "legacy_function_call":
         parts[0] = frame(chunk({"function_call": {"name": "read", "arguments": "{}"}}))
-    elif scenario == "no_semantic_output":
-        parts = [frame(chunk(finish="stop")), frame(chunk(usage=True)), b"data: [DONE]\n\n"]
     elif scenario == "content_type":
         parts = [frame({"id": "bad"})]
     elif scenario == "done_suffix":
@@ -189,6 +187,17 @@ async def test_malformed_wire(scenario: str) -> None:
         assert not any(
             isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
         )
+    assert wire.closed
+
+
+async def test_empty_reply_is_a_completed_response_for_the_runtime_to_judge() -> None:
+    """正常结束却没有正文和工具调用（思考模型只推理不作答）不是线上协议错误：是否恢复由运行时决定。"""
+    parts = [frame(chunk(finish="stop")), frame(chunk(usage=True)), b"data: [DONE]\n\n"]
+    events, wire = await collect(parts)
+    assert events[-1] == ResponseCompleted(usage=Usage(input_tokens=10, output_tokens=2))
+    assert not any(
+        isinstance(e, TextCompleted | ToolCallCompleted | ToolCallRejected) for e in events
+    )
     assert wire.closed
 
 

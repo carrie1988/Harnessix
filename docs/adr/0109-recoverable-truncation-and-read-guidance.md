@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 5
-code_revision: cf52cadc3ab672d0bef951d2734588d5ed42422d
+version: 6
+code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners: [core]
 modules: [agent, models, context, tools, product_config]
 related_adrs:
@@ -136,3 +136,50 @@ C：只对DeepSeek等点名的服务开启——产品不绑定具体模型或�
   `tool_arguments_invalid`与`tool_arguments_not_object`两个不再产生的原因。
 - 模型反复给出坏参数时不再立即失败，而是消耗步数预算直到步数上限；重复失败的熔断另行处理（Beta反馈第2批）。
 - 未覆盖：Anthropic端点以`max_tokens`结束且带半截工具调用时仍按原规则失败。
+
+## 6. v6修订（2026-11-12）：空回复补发提示继续
+
+**背景。** 0.10.0b18的Linux正式测试中，DeepSeek（deepseek-flash，思考开启）在任务已做完、只差一句总结时，
+返回了一个正常结束的响应：输出677 Token全部是推理，没有正文，也没有工具调用。OpenAI兼容适配器把它判为
+协议错误（`chat_protocol/v1:semantic_output_missing`），整个Turn以`provider_invalid_provider_output`失败、
+不可重试，界面显示“未完成”，而任务的独立验收是通过的。同一类坏输出还有两种：
+- 推理用满输出上限、正文一个字没有（Beta测试者与真实运行各1次，百炼qwen3.8-flash、32K窗口）。
+  第3版只恢复“有正文的截断”，这种情况仍以`provider_max_output_tokens`失败。
+- 压缩摘要请求没有正文（round-2开发集基线1次）。
+
+出现频率低（b18、b19共24个正式测试任务1次；不开思考的本地模型约6,800次调用主循环0次），
+但一出现就作废整轮任务。
+
+**决策（用户2026-11-12批准，方案A）。**
+- 没有任何工具调用的步骤里，回复不能当作答复的两种情况都由宿主补发提示继续，沿用第3版的机制与开关
+  （`recover_truncated_replies`，产品服务端开启，交互与无人值守相同）：
+  - **截断**：以`max_output_tokens`结束，有没有正文都算（第3版要求有正文，本版去掉这个条件）。提示不变。
+  - **空回复**：正常结束，却没有正文也没有工具调用。补发的英文提示说明上一条回复是空的、什么都没执行；
+    任务做完了就简短总结，否则继续调用工具。
+- 两种情况合并计数：连续最多补发两次，第三次或步骤、Token预算用尽时，按该情况原有的错误失败
+  （截断为`provider_max_output_tokens`，空回复为`invalid_provider_output`“模型响应没有语义内容”）。
+  中间有一步正常结束即重新计数。
+- 空回复那一步不留下助手消息，用量照常记账，占用原有的步数与Token预算。
+- 被剩余预算压低的输出上限造成的截断仍归为预算耗尽，不补发提示（第3版规则不变）。
+- 开关关闭时（SDK默认）两种情况都照旧失败。
+
+**实现上的一处移动。** “没有语义内容”的判定原先有两道：适配器（OpenAI兼容与Anthropic各一处）和运行时。
+适配器那两道删除，`ChatProtocolReason`相应去掉`semantic_output_missing`：正常结束的空响应是合法的
+线上响应，是否恢复只由运行时一处决定（`agent/truncation_recovery.py`的`settle_reply`）。
+因此开关关闭时，空响应的错误代码由`provider_invalid_provider_output`变为`invalid_provider_output`，
+尝试记为完成、用量完整；两者同属`provider`类、都不可重试。
+
+**压缩摘要。** 摘要请求不能补发提示，按第2节第2条处理：
+- 正常结束却没有正文的摘要用独立代码`provider_summary_empty`结束压缩记录；
+- 推理用满上限、没有正文的摘要归为`provider_summary_truncated`（此前因“没有正文”落到`invalid_provider_output`）；
+- 两者都是用量已对账、窗口未激活，主动压缩时本步保留原历史继续；Context Overflow触发的被动压缩仍终止。
+
+**没有选的方案。** B：同一请求原样重发——模型没有得到新信息，可能再次给出空回复。
+C：维持现状，由用户发送“继续”——已完成的修改都保留，但不满足“任务全程无报错”的要求。
+
+**不新增事件类型。** 补发提示与第3版共用Item身份（`harnessix.truncation-recovery/v1`加步骤号，一步至多一条），
+身份串不改名，已持久化的会话重放结果不变。测试见`tests/agent/test_truncation_recovery.py`、
+`tests/agent/test_pressure_compaction_loop.py`及两个适配器的测试；另用假模型端点在Linux上从安装包端到端验证了
+“工具调用→只推理不作答→补发提示→给出总结、任务完成”“连续三次空回复后失败”“无正文截断后继续”三种过程。
+
+**未覆盖。** Anthropic端点以`max_tokens`结束且带半截工具调用时仍按原规则失败。

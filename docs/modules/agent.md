@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 47
-code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
+version: 57
+code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
 modules:
@@ -49,6 +49,14 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：空回复补发提示继续（0.10.0b20，ADR 0109第6版）
+
+- 模型步骤的终态由[`truncation_recovery.settle_reply`](../../src/harnessix/agent/truncation_recovery.py)一处判定：回复可用、可补发提示继续，或按原错误失败。`AgentRuntime._sample_events`只调用它，不再自己写这三项检查。
+- 没有任何工具调用的步骤里，两种回复由宿主补发提示继续（开关`recover_truncated_replies`，产品服务端开启）：以输出上限结束的**截断**（有没有正文都算），和正常结束却没有正文的**空回复**（思考模型只推理、不作答）。两种合并计数，连续最多两次，之后按原错误失败（`provider_max_output_tokens`／`invalid_provider_output`）。
+- 空回复那一步不留下助手消息，用量照常记账；补发的提示是用户消息Item，按Steering语义重入下一步。Item身份沿用`harnessix.truncation-recovery/v1`加步骤号，重放确定。
+- 压缩摘要没有正文时不补发提示：正常结束的记为`provider_summary_empty`，用满上限的记为`provider_summary_truncated`，主动压缩时本步保留原历史继续（见[Context模块](context.md)）。
+- 回归见`tests/agent/test_truncation_recovery.py`与`tests/agent/test_pressure_compaction_loop.py`。文档版本48～56由round-2与Beta反馈分支使用。
 
 ## 当前增量：恢复任务在开始执行前被取消（0.10.0b14）
 
@@ -984,6 +992,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 57 | `e5141ec7` 增量 | 2026-11-12 | 空回复与无正文截断由宿主补发提示继续；步骤终态判定集中到`settle_reply`；空摘要用独立代码并可跳过（0.10.0b20，ADR 0109第6版） |
 | 47 | `dad55d32` 增量 | 2026-11-11 | 恢复任务在开始执行前被取消时，尚未开始的Turn提交取消终态；等待中的Turn不动（0.10.0b14） |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |

@@ -41,6 +41,7 @@ from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.model_history_runtime import (
+    SUMMARY_EMPTY,
     SUMMARY_TRUNCATED,
     prepare_and_commit_model_history,
 )
@@ -137,9 +138,10 @@ from harnessix.agent.tool_call_groups import (
 )
 from harnessix.agent.tool_rejections import rejection_result
 from harnessix.agent.truncation_recovery import (
-    recoverable_truncation,
+    RecoverableReply,
+    recovery_notice_events,
     recovery_switch,
-    truncation_notice_events,
+    settle_reply,
 )
 from harnessix.agent.trusted_action_runtime import (
     action_definitions,
@@ -1878,23 +1880,23 @@ class AgentRuntime:
                         else None
                     )
                     if (
-                        not text_finished
-                        or not text.strip()
-                        or attempt is None
+                        attempt is None
                         or attempt.status != "completed"
                         or attempt.response_id != response_id
                         or event.usage != attempt_usage
                     ):
-                        raise KernelError(
-                            "invalid_provider_output", "摘要响应终态、用量或正文不一致"
-                        )
+                        raise KernelError("invalid_provider_output", "摘要响应终态或用量不一致")
+                    # 以下两种用独立代码：用量已对账、窗口未激活；主动压缩时调用方可不压缩继续。
                     if event.finish_reason == "max_output_tokens":
-                        # 独立代码：用量已对账、窗口未激活；主动压缩时调用方可不压缩继续。
                         raise KernelError(
                             SUMMARY_TRUNCATED, "摘要输出达到Token上限，拒绝激活截断窗口"
                         )
                     if event.finish_reason != "completed":
                         raise KernelError("invalid_provider_output", "摘要响应未正常结束")
+                    if not text.strip():
+                        raise KernelError(SUMMARY_EMPTY, "摘要没有正文")
+                    if not text_finished:
+                        raise KernelError("invalid_provider_output", "摘要文本块未结束")
                     completed = True
                 else:
                     raise KernelError("invalid_provider_output", "不支持的摘要Provider事件")
@@ -2161,7 +2163,7 @@ class AgentRuntime:
                 raise KernelError(failure.code, failure.message) from None
 
     async def _close_model_step(
-        self, request: ModelRequest, *, truncated: bool = False
+        self, request: ModelRequest, *, recovery: RecoverableReply | None = None
     ) -> TurnStatus:
         """在线程CAS内决定完成或消费运行中Steering，避免终结竞态。"""
 
@@ -2184,8 +2186,8 @@ class AgentRuntime:
                 for item in turn.items
             )
             notice_events: list[EventDraft] = []
-            if truncated and not steered:
-                notice_events = truncation_notice_events(turn, request.step)
+            if recovery and not steered:
+                notice_events = recovery_notice_events(turn, request.step, recovery)
             elif self._completion_guard and not steered and not rejected:
                 notice = completion_notice(turn, request.step, step_reply(turn.items, history_ids))
                 notice_events = completion_notice_events(request.turn_id, request.step, notice)
@@ -2486,7 +2488,7 @@ class AgentRuntime:
                     tool_notice=tool_selection.notice,
                 )
                 try:
-                    truncated = await self._sample(
+                    recovery = await self._sample(
                         request,
                         token,
                         estimated_input_tokens,
@@ -2516,7 +2518,7 @@ class AgentRuntime:
                     )
                     reactive_compaction_required = True
                     continue
-                if truncated:
+                if recovery == "truncated":
                     await self._reject_lowered_cap(
                         thread_id, turn, allowed_output_tokens, output_token_limit
                     )
@@ -2528,7 +2530,7 @@ class AgentRuntime:
                     raise KernelError("budget_exceeded", "Provider 报告的 Token 用量超过预算")
                 if not calls:
                     token.checkpoint()
-                    target = await self._close_model_step(request, truncated=truncated)
+                    target = await self._close_model_step(request, recovery=recovery)
                     if target == TurnStatus.PREPARING_CONTEXT:
                         continue
                     return await self._finish(thread_id, turn_id, TurnStatus.COMPLETED, None)
@@ -3006,7 +3008,7 @@ class AgentRuntime:
         estimated_input_tokens: int,
         *,
         exclusive_tool_groups: tuple[tuple[str, ...], ...] = (),
-    ) -> bool:
+    ) -> RecoverableReply | None:
         with self._telemetry.operation(
             "model",
             thread_id=request.thread_id,
@@ -3017,7 +3019,7 @@ class AgentRuntime:
             protection = await begin_text_step(self._public_output_protection, token)
             failed = True
             try:
-                truncated = await self._sample_events(
+                recovery = await self._sample_events(
                     request,
                     token,
                     protection,
@@ -3027,7 +3029,7 @@ class AgentRuntime:
                 failed = False
             finally:
                 close_text_step(protection, failed=failed)
-            return truncated
+            return recovery
 
     async def _sample_events(
         self,
@@ -3037,10 +3039,10 @@ class AgentRuntime:
         estimated_input_tokens: int,
         *,
         exclusive_tool_groups: tuple[tuple[str, ...], ...] = (),
-    ) -> bool:
+    ) -> RecoverableReply | None:
         """验证Provider事件顺序和预算并持久投影；开放尝试在异常或取消时保守结算。"""
         started = False
-        truncated = False
+        recovery: RecoverableReply | None = None
         completed: ResponseCompleted | None = None
         texts = ModelTextPublication(request, token, protection, self._commit, self._emit_delta)
         call_ids: set[str] = set()
@@ -3196,19 +3198,12 @@ class AgentRuntime:
                         raise
                     if not attempt_mode:
                         record_usage(snapshot)
-                    if event.finish_reason not in {"completed", "tool_calls"} and not (
-                        truncated := recoverable_truncation(
-                            event.finish_reason,
-                            call_ids,
-                            texts.has_content,
-                            self._recover_truncated_replies,
-                        )
-                    ):
-                        raise KernelError("provider_" + event.finish_reason, "模型未正常完成")
-                    if bool(call_ids) != (event.finish_reason == "tool_calls"):
-                        raise KernelError("invalid_provider_output", "停止原因与 Tool Call 不一致")
-                    if not call_ids and not texts.has_content:
-                        raise KernelError("invalid_provider_output", "模型响应没有语义内容")
+                    recovery = settle_reply(
+                        event.finish_reason,
+                        call_ids,
+                        texts.has_content,
+                        self._recover_truncated_replies,
+                    )
                     completed = event
                 else:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")
@@ -3315,7 +3310,7 @@ class AgentRuntime:
             await self._commit(request.thread_id, request.turn_id, payloads)
             for _proposal in proposals:
                 self._fault("runtime.after_tool_call")
-        return truncated
+        return recovery
 
     async def _reject_lowered_cap(
         self, thread_id: UUID, before: Turn, allowed: int, limit: int

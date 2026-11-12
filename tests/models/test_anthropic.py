@@ -22,6 +22,7 @@ from harnessix.models.config import AnthropicConfig, ChatCapabilities, OpenAICha
 from harnessix.models.contracts import (
     ResponseCompleted,
     ResponseFailed,
+    TextCompleted,
     ToolCallCompleted,
     ToolCallRejected,
 )
@@ -130,7 +131,6 @@ async def test_bad_tool_json_rejects_only_that_call(arguments: str) -> None:
         "server_tool",
         "text_tool_finish",
         "tool_text_finish",
-        "empty",
         "server_usage",
     ],
 )
@@ -229,8 +229,6 @@ async def test_invalid_protocol(case: str) -> None:
         parts = text_frames()[:-2] + stop("tool_use")
     elif case == "tool_text_finish":
         parts[-2] = stop()[0]
-    elif case == "empty":
-        parts = [start(), *stop()]
     elif case == "server_usage":
         parts[0] = start(server_tool_use={"web_search_requests": 1, "web_fetch_requests": 0})
     events, wire = await collect(parts)
@@ -248,6 +246,16 @@ async def test_invalid_protocol(case: str) -> None:
             isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
         )
     assert CANARY not in repr(events) and wire.closed
+
+
+async def test_empty_reply_is_a_completed_response_for_the_runtime_to_judge() -> None:
+    """正常结束却没有正文和工具调用不是线上协议错误：是否恢复由运行时决定。"""
+    events, wire = await collect([start(), *stop()])
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "completed"
+    assert not any(
+        isinstance(e, TextCompleted | ToolCallCompleted | ToolCallRejected) for e in events
+    )
+    assert wire.closed
 
 
 async def test_cumulative_usage_includes_caches_without_double_counting() -> None:

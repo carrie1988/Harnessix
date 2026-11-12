@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 30
-code_revision: cf52cadc3ab672d0bef951d2734588d5ed42422d
+version: 31
+code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
 modules:
@@ -658,7 +658,8 @@ Attempt Intent已经提交但进程退出时，重开只把开放Attempt标记In
 | SSE JSON、顺序、身份、计数或终态非法 | `invalid_provider_output` | 否 | 保留先前合法Usage，不释放Tool |
 | Context Window明确超限 | `context_overflow` | 否 | 交由Context/Compaction或显式Retry |
 | Refusal/Content Filter | `content_policy`或`provider_content_filter` | 否 | 不执行Tool |
-| 达到输出上限 | `provider_max_output_tokens` | 否 | Turn失败，不自动续写 |
+| 达到输出上限 | `provider_max_output_tokens` | 否 | 没有工具调用时由Runtime补发提示继续（开启恢复时，连续最多两次），否则Turn失败；不自动续写 |
+| 正常结束但没有正文和工具调用 | 适配器照常完成；Runtime为`invalid_provider_output` | 否 | 同上：开启恢复时补发提示继续（ADR 0109第6版） |
 | Provider Event超过10000 | `provider_event_limit` | 否 | 关闭流 |
 | Agent输出字符/Tool Call超预算 | `model_output_too_large`/`tool_call_limit` | 否 | 已有事实保留，Turn失败 |
 | 流缺少开始或完整终态 | `provider_stream_incomplete` | 否 | Runtime结算开放Attempt |
@@ -828,6 +829,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 31 | `e5141ec7` 增量 | 2026-11-12 | 正常结束的空响应不再由适配器判为协议错误，改由Runtime一处判定并可补发提示继续；删除`semantic_output_missing`（ADR 0109第6版） |
 | 30 | `cf52cadc` 增量 | 2026-11-12 | 畸形或截断的工具参数对所有端点都只拒绝该次调用，不再使整个Turn失败（ADR 0109第5版）；文档版本27～29由round-2分支使用 |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
 | 25 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 同步主线：工具结果文本支持命令输出预览v4，去除了终端转义序列时注明“terminal escape sequences removed”，内容为空且未截断的流不再显示；纯文本回复在输出上限处截断改由运行时的截断恢复处理（ADR 0109第3版） |
@@ -966,3 +968,14 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、
   [`test_anthropic.py`](../../tests/models/test_anthropic.py)与Provider合同
   [`provider.py`](../../tests/contracts/provider.py)的`test_malformed_tool_arguments_reject_only_that_call`。
+
+## 当前增量：空响应不是线上协议错误（ADR 0109第6版）
+
+- 正常结束（OpenAI兼容的`stop`、Anthropic的`end_turn`/`stop_sequence`）却没有正文和工具调用的响应，两个适配器都照常产生
+  `ResponseCompleted`，尝试记为完成、用量完整。思考模型偶尔只推理、不作答，这是合法的线上响应。
+- 此前两个适配器各自把它判为失败（`chat_protocol/v1:semantic_output_missing`、“响应没有语义内容”），Runtime里还有第三处同样的检查。
+  现在只保留Runtime那一处（[`truncation_recovery.settle_reply`](../../src/harnessix/agent/truncation_recovery.py)）：
+  开启恢复时补发提示继续，否则以`invalid_provider_output`失败。`ChatProtocolReason`相应删除`semantic_output_missing`。
+- 终态与工具调用不匹配、调用结构错误等仍由适配器判为协议错误，不变。测试见
+  [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)与[`test_anthropic.py`](../../tests/models/test_anthropic.py)的
+  `test_empty_reply_is_a_completed_response_for_the_runtime_to_judge`。

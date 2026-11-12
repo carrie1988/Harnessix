@@ -322,8 +322,6 @@ class ChatStream:
         if finish in {"stop", "tool_calls"} and not cut:
             if bool(self._calls) != (finish == "tool_calls"):
                 raise ChatProtocolError(ChatProtocolReason.FINISH_TOOL_MISMATCH)
-            if not self._calls and not self._text:
-                raise ChatProtocolError(ChatProtocolReason.SEMANTIC_OUTPUT_MISSING)
             events.extend(
                 _complete_calls(self._calls, self._names, repair_arguments=self._repair_arguments)
             )

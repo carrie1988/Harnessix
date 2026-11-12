@@ -30,7 +30,6 @@ class ChatProtocolReason(StrEnum):
     COMPLETION_INCOMPLETE = "completion_incomplete"
     FINISH_REASON_UNSUPPORTED = "finish_reason_unsupported"
     FINISH_TOOL_MISMATCH = "finish_tool_mismatch"
-    SEMANTIC_OUTPUT_MISSING = "semantic_output_missing"
     TOOL_INDEX_GAP = "tool_index_gap"
     TOOL_ID_MISSING = "tool_id_missing"
     TOOL_ID_DUPLICATE = "tool_id_duplicate"
