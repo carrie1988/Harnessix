@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from functools import partial
+from pathlib import Path
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
@@ -12,6 +14,10 @@ from harnessix.agent.approvals import tool_fingerprint
 from harnessix.agent.errors import KernelError
 from harnessix.delivery.action_transaction_planning import prepare_action_workspace_transaction
 from harnessix.delivery.contracts import WorkspaceTransactionPlan, WorkspaceTransactionRecord
+from harnessix.delivery.parent_directories import (
+    planned_new_directories,
+    remove_empty_directories,
+)
 from harnessix.delivery.planner import DesiredWorkspaceFile
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
@@ -245,6 +251,20 @@ class WorkspaceRollbackTransactionPlanner:
         _validate_inverse_record(route, original, inverse)
 
 
+def _remove_created_directories(
+    planner: WorkspaceRollbackTransactionPlanner,
+    route: ActionRoutePlan,
+    arguments: BaseModel,
+    root: Path,
+) -> None:
+    """回滚发布后删除原Patch补建、现已为空的父目录；原有目录和仍有内容的目录保留（ADR 0137）。"""
+
+    original = planner._validate_route(route, arguments)
+    remove_empty_directories(
+        root, planned_new_directories(original.plan, planner.transactions.blob)
+    )
+
+
 def _validate_inverse_record(
     route: ActionRoutePlan,
     original: WorkspaceTransactionPlan,
@@ -291,6 +311,10 @@ def build_workspace_rollback_definition(
         input_model=WorkspaceRollbackInput,
         resolve=resolve,
         executor=WorkspaceTransactionActionExecutor(
-            transactions, leases, workspace_root, planner.load
+            transactions,
+            leases,
+            workspace_root,
+            planner.load,
+            after_publish=partial(_remove_created_directories, planner),
         ),
     )

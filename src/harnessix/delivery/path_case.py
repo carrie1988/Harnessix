@@ -49,6 +49,16 @@ def reject_case_aliases(root: str | Path, paths: Iterable[str]) -> None:
                     f"同一批修改中{claimed[key]}与{path}在本工作区指向同一个文件"
                     "（文件系统不区分大小写）；请把它们合并为一项",
                 )
+            for (place, name), other in claimed.items():
+                if place == directory and (
+                    name.startswith(f"{leaf}/") or leaf.startswith(f"{name}/")
+                ):
+                    # 父目录可由事务补建后才会出现：一项的文件路径是另一项要补建的目录。
+                    raise KernelError(
+                        CASE_CONFLICT,
+                        f"同一批修改中{other}与{path}冲突：一个路径不能既是文件又是另一项的父目录；"
+                        "请改用不同的路径",
+                    )
             claimed[key] = path
 
 
@@ -61,7 +71,11 @@ class _Resolver:
         self._folds: dict[tuple[int, int], bool] = {}
 
     def leaf_key(self, path: str) -> tuple[tuple[int, int] | None, str]:
-        """返回末段所在目录身份与比较名；路径中有不存在的父目录时交给规划器原有检查。"""
+        """返回最深的已有目录身份与其下余下路径的比较名。
+
+        父目录都存在时余下路径就是末段；自某段起目录尚不存在（发布时由事务补建）时，
+        余下的整段路径按该已有目录的大小写语义比较，新目录与它在同一文件系统上。
+        """
         with ExitStack() as stack:
             return self._walk(path, stack)
 
@@ -81,11 +95,10 @@ class _Resolver:
                         f"路径{path}与磁盘上的已有路径{actual}只差大小写或字符写法；本工作区的文件系统"
                         f"不区分大小写，请改用磁盘上的名称{actual}",
                     )
-            if index == len(parts) - 1:
+            if index == len(parts) - 1 or name not in entries:
+                rest = "/".join(parts[index:])
                 directory = identity(os.fstat(descriptor))
-                return directory, _fold(name) if self._folds_case(descriptor, parent) else name
-            if name not in entries:
-                return None, name
+                return directory, _fold(rest) if self._folds_case(descriptor, parent) else rest
             try:
                 child = os.open(name, _DIRECTORY_FLAGS, dir_fd=descriptor)
             except OSError:

@@ -124,6 +124,60 @@ def test_case_sensitive_file_systems_keep_distinct_names(tmp_path, generation):
     ]
 
 
+@pytest.mark.parametrize("generation", [1, 2])
+@pytest.mark.parametrize(
+    "paths",
+    [("pkg/a.txt", "pkg/A.txt"), ("pkg/a.txt", "PKG/a.txt"), ("Pkg", "pkg/a.txt")],
+    ids=["leaf", "new-directory", "file-and-directory"],
+)
+def test_aliases_below_a_directory_that_does_not_exist_yet_are_rejected(
+    tmp_path, generation, paths
+):
+    """父目录由事务补建后（ADR 0137）同样的缺陷会出现在新目录里：规划前按已有目录的语义整批拒绝。"""
+    root = _workspace(tmp_path)
+    if not _case_insensitive(root):
+        pytest.skip("文件系统区分大小写")
+    before = _snapshot(root)
+    with pytest.raises(KernelError) as rejected:
+        _plan(root, dict.fromkeys(paths, NEW), generation, tmp_path / "state")
+    assert rejected.value.code == CONFLICT
+    assert all(path in rejected.value.message for path in paths)
+    assert _snapshot(root) == before and not (root / "pkg").exists()
+
+
+@pytest.mark.parametrize("generation", [1, 2])
+def test_case_sensitive_file_systems_keep_distinct_new_directories(tmp_path, generation):
+    root = _workspace(tmp_path)
+    if _case_insensitive(root):
+        pytest.skip("文件系统不区分大小写")
+    plan = _plan(root, {"pkg/a.txt": NEW, "PKG/a.txt": NEW}, generation, tmp_path / "state")
+    assert [m.path for m in plan.mutations] == ["PKG/a.txt", "pkg/a.txt"]
+
+
+@pytest.mark.parametrize("generation", [1, 2])
+@pytest.mark.parametrize("parent", ["pkg", "src/pkg"], ids=["root", "existing-directory"])
+def test_one_batch_cannot_use_a_path_as_both_a_file_and_a_new_directory(
+    tmp_path, generation, parent
+):
+    """任何文件系统上都成立：同一批里一项新建文件pkg，另一项又要在pkg/下新建文件。"""
+    root = _workspace(tmp_path)
+    desired = {parent: NEW, f"{parent}/a.txt": NEW}
+    before = _snapshot(root)
+    with pytest.raises(KernelError) as rejected:
+        _plan(root, desired, generation, tmp_path / "state")
+    assert rejected.value.code == CONFLICT
+    assert all(path in rejected.value.message for path in desired)
+    assert _snapshot(root) == before and not (root / parent).exists()
+
+
+def test_sibling_whose_name_extends_a_file_name_is_not_a_conflict(tmp_path):
+    root = _workspace(tmp_path)
+    plan = prepare_workspace_transaction(
+        root, {"pkg": NEW, "pkgs/a.txt": NEW, "pkg.d/a.txt": NEW}, request_id="siblings"
+    ).plan
+    assert [m.path for m in plan.mutations] == ["pkg", "pkg.d/a.txt", "pkgs/a.txt"]
+
+
 def test_exact_disk_names_plan_normally(tmp_path):
     root = _workspace(tmp_path)
     (root / "src/README.md").write_bytes(b"readme\n")

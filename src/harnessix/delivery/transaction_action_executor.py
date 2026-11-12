@@ -34,6 +34,7 @@ class WorkspaceTransactionActionExecutor:
         record_loader: Callable[[ActionRoutePlan, BaseModel], WorkspaceTransactionRecord],
         *,
         lease_seconds: float = 300.0,
+        after_publish: Callable[[ActionRoutePlan, BaseModel, Path], None] | None = None,
     ) -> None:
         if type(lease_seconds) not in {int, float} or not 0 < lease_seconds <= 3600:
             raise ValueError("Workspace Patch租约时长无效")
@@ -43,6 +44,7 @@ class WorkspaceTransactionActionExecutor:
         self._leases = leases
         self._workspace_root = workspace_root
         self._lease_seconds = float(lease_seconds)
+        self._after_publish = after_publish
 
     async def execute(
         self,
@@ -66,6 +68,9 @@ class WorkspaceTransactionActionExecutor:
                     approval_fingerprint=record.plan.fingerprint,
                     lease=lease,
                 )
+            if self._after_publish is not None:
+                # 仍持有Workspace租约：发布后的收尾不会与另一笔事务的成员写入交错。
+                self._after_publish(plan, arguments, root)
         finally:
             self._leases.release(lease)
         return self._outcome(record, origin="execution")
