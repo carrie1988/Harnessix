@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+from itertools import takewhile
 
 from rich.text import Text
 
 _KIND_TEXT = {"added": "新增", "modified": "修改", "deleted": "删除", "renamed": "重命名"}
+# 事务会补建的父目录写在diff正文最前面，每个一行（ADR 0137）；界面把它们并入文件清单。
+_NEW_DIRECTORY = "new directory "
 
 
 def readable_diff(artifact_text: str) -> list[Text] | None:
@@ -28,9 +31,15 @@ def readable_diff(artifact_text: str) -> list[Text] | None:
         return None
     if not files and not chunks:
         return None
-    body = "".join(text for _, text in sorted(chunks))
-    header = [Text(f"共 {len(files)} 个文件：", style="bold"), *map(Text, files), Text("")]
-    return header + _diff_lines(body.splitlines())
+    lines = "".join(text for _, text in sorted(chunks)).splitlines()
+    directories = list(takewhile(lambda line: line.startswith(_NEW_DIRECTORY), lines))
+    header = [
+        Text(f"共 {len(files)} 个文件：", style="bold"),
+        *map(Text, files),
+        *(Text(f"  新建目录  {line.removeprefix(_NEW_DIRECTORY)}") for line in directories),
+        Text(""),
+    ]
+    return header + _diff_lines(lines[len(directories) :])
 
 
 def _diff_lines(lines: list[str]) -> list[Text]:
