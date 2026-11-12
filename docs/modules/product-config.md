@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 141
-code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
+version: 142
+code_revision: 57dabb538eecd4bd454eec4298a4c136c5ee0813
 owners:
   - core
 modules:
@@ -700,7 +700,7 @@ classDiagram
 | `output_token_parameter` | `max_completion_tokens`、`max_tokens`或空 | OpenAI-compatible输出参数差异 |
 | `thinking_protocol` | `dashscope_enable_thinking`、`deepseek_thinking_type`、`vllm_chat_template`或空（默认空、不序列化） | 端点已求证的思考开关格式；空表示不发送任何思考参数，声明后要求`output_token_parameter=max_tokens`；`vllm_chat_template`经`chat_template_kwargs.enable_thinking`交给模型对话模板 |
 | `omit_tool_choice` | 布尔，默认`false`、不序列化 | 端点强制工具选择不可靠时不发送`tool_choice`，由可执行集收窄、目录说明与Runtime校验约束 |
-| `normalize_tool_arguments` | 布尔，默认`false`、不序列化 | 端点把数组/对象工具参数编码成JSON字符串时（如vLLM上的Qwen系），按工具Schema还原后再校验 |
+| `normalize_tool_arguments` | 布尔，默认`false`、不序列化；向导对所有端点预设`true` | 模型把数组/对象工具参数编码成JSON字符串时，按工具Schema还原后再校验；只在Schema声明该位置为容器且字符串能严格解析成同类容器时还原 |
 | `repair_tool_arguments` | 布尔，默认`false`、不序列化 | 映射Model层同名开关：畸形工具参数先做两类保意图修复，仍非法则只拒绝该次调用、回合继续；回环端点预设开启 |
 | `compact_tool_results` | 布尔，默认`false`、不序列化；仅`openai_chat` | 映射Model层`tool_result_format="text"`：搜索、读取与命令结果以紧凑文本发给模型，其余结果与持久历史不变；向导不预设，Harbor评测组别显式开启 |
 | `stable_prompt_prefix` | 布尔，默认`false`、不序列化 | 开头只放固定指令，逐请求说明（预算、工具目录）以`[Harness note]`末尾user消息发送：前缀跨请求不变以命中自动前缀缓存，也满足只接受开头一条system消息的模板 |
@@ -2333,6 +2333,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 142 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |
 | 141 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
 | 140 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
 | 139 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
@@ -3295,6 +3296,6 @@ Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新�
 `omit_tool_choice`。[配置向导](../../src/harnessix/product_config/wizard.py)的`thinking_preset`只对已求证端点与模型族预设，其余端点
 保持不发送思考参数；预设Profile带v40实测的传输上限。验证见[思考配置测试](../../tests/product_config/test_thinking_config.py)。
 
-回环地址端点（同机vLLM自托管）预设`vllm_chat_template`，并开启`normalize_tool_arguments`、`stable_prompt_prefix`与
-`pricing=free`。`stable_prompt_prefix`映射为Model层`prompt_cache=stable_tail`：未开启时逐请求说明作为system消息插在开头，
+回环地址端点（同机vLLM自托管）预设`vllm_chat_template`，并开启`stable_prompt_prefix`与`pricing=free`；
+`normalize_tool_arguments`对所有端点预设开启（Beta实测云端同族模型在两轮25次参数拒绝里有9次是把`files`写成JSON字符串）。`stable_prompt_prefix`映射为Model层`prompt_cache=stable_tail`：未开启时逐请求说明作为system消息插在开头，
 Qwen系模板以“System message must be at the beginning”拒绝，且开头每步变化使自动前缀缓存无法命中。其余端点行为不变。

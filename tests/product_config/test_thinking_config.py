@@ -189,7 +189,9 @@ def test_only_loopback_endpoints_may_declare_free_pricing():
     remote = build_product_config(_draft()).providers[0].model_dump()
     with pytest.raises(ValidationError):
         ProviderDefinition.model_validate({**remote, "pricing": "free"})
-    assert "pricing" not in remote and "normalize_tool_arguments" not in remote
+    assert "pricing" not in remote
+    # 被字符串化的数组、对象参数在云端同样出现：还原对所有端点预设开启，其余自托管预设不变。
+    assert remote["normalize_tool_arguments"] is True
     assert "stable_prompt_prefix" not in remote and "repair_tool_arguments" not in remote
     assert "workspace_read_timeout_seconds" not in build_product_config(_draft()).model_dump()
     assert _provider_config(build_product_config(_draft())).prompt_cache is None
