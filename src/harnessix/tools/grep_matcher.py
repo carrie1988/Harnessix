@@ -7,7 +7,7 @@ from collections.abc import Callable
 from importlib import metadata
 
 from harnessix.agent.errors import KernelError
-from harnessix.tools.search_contracts import GrepInput, RegexGrepInput
+from harnessix.tools.search_contracts import GrepInput, GrepSnapshotInput, RegexGrepInput
 from harnessix.tools.workspace import ReadOperation
 
 RE2_VERSION = "1.1.20251105"
@@ -57,6 +57,24 @@ def literal_fallback_args(args: GrepInput) -> RegexGrepInput | None:
     ):
         return args.model_copy(update={"match_mode": "literal"})
     return None
+
+
+# 行首、行尾与文本首尾锚点：逐行匹配时每行各算一次，整份文本只算一次，两者结论可能不同。
+_LINE_ANCHORS = ("^", "$", "\\A", "\\z")
+
+
+def whole_text_decides(args: GrepInput) -> bool:
+    """整份文本不命中时，能否断定其中任何一行都不命中（快照与正则搜索）。
+
+    字面量查询可以：查询不含控制字符，命中不会跨行。不含上述锚点的正则也可以：RE2没有前后查找，
+    一行内的命中在整份文本的同一位置同样成立（单词边界在行首行尾两侧的结论相同）。
+    含锚点的正则不能，只能逐行判断。原字面量合同不使用这条捷径，扫描与统计口径保持不变。
+    """
+    if not isinstance(args, GrepSnapshotInput):
+        return False
+    if isinstance(args, RegexGrepInput) and args.match_mode == "regex":
+        return not any(anchor in args.query for anchor in _LINE_ANCHORS)
+    return True
 
 
 def build_line_matcher(args: GrepInput, operation: ReadOperation) -> LineMatcher:

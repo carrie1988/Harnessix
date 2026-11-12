@@ -141,7 +141,9 @@ def test_windows_uses_exact_same_observation_for_hash_identity_and_matches(port,
         port, GrepSnapshotInput(query="needle"), ReadOperation(), capture=None
     )
     assert output.stats.files_read == 1 and output.stats.bytes_read == len(body)
-    assert hashed == [body] and hashed[0] is body
+    # 不含查询的文件不逐行扫描，也不计算摘要；含查询的文件只对同一次观察的正文计算一次。
+    assert hashed == ([body] if b"needle" in body else [])
+    assert not hashed or hashed[0] is body
     assert root.calls.count(("source.py", True, MAX_SEARCH_FILE_BYTES)) == 1
     observed = _Observed("file", ("memory-file", "source.py", len(body)), body, len(body), None)
     expected_revision = file_revision(port, "source.py", observed)

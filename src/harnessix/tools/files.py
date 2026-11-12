@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import os
+import re
 import stat
 from typing import BinaryIO, Literal
 
@@ -34,12 +35,17 @@ def _check_revision(expected: str | None, actual: str) -> None:
         raise ReadToolError("page_changed")
 
 
+# 除制表、回车、换行以外的C0控制字符和DEL；出现任意一个即按二进制文件处理。
+# 用一次正则扫描而不是逐字符判断：整仓搜索要解码上百MB文本，逐字符循环占去大半时间。
+_CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
 def _decode(data: bytes) -> str:
     try:
         text = data.decode("utf-8")
     except UnicodeError:
         raise ReadToolError("invalid_utf8") from None
-    if any((ord(char) < 32 and char not in "\t\r\n") or ord(char) == 127 for char in text):
+    if _CONTROL_CHARACTER.search(text) is not None:
         raise ReadToolError("binary_file")
     return text
 

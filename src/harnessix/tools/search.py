@@ -16,7 +16,12 @@ from typing import Literal, Protocol
 from harnessix.artifacts.contracts import MAX_ARTIFACT_BYTES, MAX_ARTIFACT_RECORDS
 from harnessix.tools.contracts import MAX_LINE_BYTES, ReadToolError
 from harnessix.tools.files import _decode
-from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher, literal_fallback_args
+from harnessix.tools.grep_matcher import (
+    LineMatcher,
+    build_line_matcher,
+    literal_fallback_args,
+    whole_text_decides,
+)
 from harnessix.tools.grep_matcher import execution_contract as regex_execution_contract
 from harnessix.tools.patterns import BasenamePattern, PathPattern, include_pattern
 from harnessix.tools.search_contracts import (
@@ -55,7 +60,11 @@ from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity
 def execution_contract(
     *, enable_regex_search: bool = False, snapshot_grep: bool = False
 ) -> dict[str, object]:
-    """原字面量Grep与Glob合同不变；快照与正则Grep另有整仓库上限、文件名include与更宽上下文。"""
+    """原字面量Grep与Glob合同不变；快照与正则Grep另有整仓库上限、文件名include与更宽上下文。
+
+    v7（快照）与v8（正则）：整仓库上限放宽到四倍；整份文本不命中的文件不再逐行扫描，
+    超长行只在可能命中的文件里计数（ADR 0145）。此前分别是v5、v6。
+    """
     rules: dict[str, object] = {
         "version": "bounded-search/v3",
         "start_path": "regular-file-or-directory",
@@ -73,7 +82,7 @@ def execution_contract(
     }
     if snapshot_grep or enable_regex_search:
         rules.update(
-            version="bounded-search/v5",
+            version="bounded-search/v7",
             snapshot_grep={
                 "include": "basename-at-any-depth-without-slash-else-segments-and-globstar",
                 "max_entries": MAX_SNAPSHOT_SEARCH_ENTRIES,
@@ -85,7 +94,7 @@ def execution_contract(
         )
     if enable_regex_search:
         rules.update(
-            version="bounded-search/v6",
+            version="bounded-search/v8",
             grep="case-sensitive-re2-or-explicit-literal-lines",
             regex=regex_execution_contract(),
         )
@@ -374,6 +383,10 @@ def grep_line_matches(
     """单一内容观察内用有界滚动窗口生成命中；POSIX与原生读取端复用。"""
     if matcher is None:
         matcher = build_line_matcher(args, operation)
+    operation.checkpoint()
+    if whole_text_decides(args) and matcher(text) < 0:
+        # 整份文本都不命中：不必逐行扫描、不必计算摘要，其中也没有可能藏着命中的超长行。
+        return
     match_type: type[GrepMatch] = GrepMatch
     context_type: type[GrepContext] = GrepContext
     snapshot_fields: dict[str, str | int] = {}
@@ -402,7 +415,8 @@ def grep_line_matches(
             operation.checkpoint()
             raw = ahead.popleft()
             number += 1
-            if len(raw.encode("utf-8")) > MAX_LINE_BYTES:
+            # UTF-8每个字符至多4字节：字符数不超过上限的四分之一时不必编码就知道没有超长。
+            if len(raw) > MAX_LINE_BYTES // 4 and len(raw.encode("utf-8")) > MAX_LINE_BYTES:
                 scan.long_lines += 1
             else:
                 line = _line_text(raw)

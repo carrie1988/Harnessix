@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -10,11 +10,13 @@ modules:
   - agent
   - product_config
   - models
+  - tools
 related_adrs:
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md
   - docs/adr/0123-provider-service-failure-attribution.md
+  - docs/adr/0145-whole-repository-search-on-large-repositories.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -23,6 +25,7 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
   - tests/agent/test_model_attempts.py
   - tests/context/test_pressure_window_candidates.py
+  - tests/tools/test_whole_repository_search.py
 supersedes: []
 ---
 
@@ -37,7 +40,9 @@ supersedes: []
 | 一 | 批准后整轮中断，显示“存在未知效果”，获批操作没有执行（B20-02） | 过期计划以确定的失败结束，本轮继续 | [ADR 0142](../adr/0142-stale-approved-plan-fails-without-effect.md) |
 | 二 | 一次流式中断结束了进行到第57次请求的任务，要手动“继续” | 付费交互模式下服务方故障连续至多自动重试5次 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md) |
 
-第1～14节描述第一项；第二项的设计集中在第15节。后续批次（收窄目录绑定、大仓全仓搜索）落地时在本文追加。
+| 三 | 大仓库在根目录搜索5秒后超时，没有任何结果（B20-05） | 搜索提速约3.5倍，整仓上限放宽到四倍 | [ADR 0145](../adr/0145-whole-repository-search-on-large-repositories.md) |
+
+第1～14节描述第一项；第二、三项的设计分别集中在第15、16节。后续批次（收窄目录绑定）落地时在本文追加。
 
 ## 2. 需求背景
 
@@ -216,3 +221,45 @@ flowchart TD
   连续6次失败后停止且第7次请求没有发出；其他原因的用量未知仍停止；策略参数校验；原有“默认停止”
   “无人值守继续”用例保持通过。
 - `tests/context/test_pressure_window_candidates.py`：预算压力压缩规划读取同一策略。
+
+## 16. 第三项：大仓库的整仓搜索
+
+### 16.1 背景与确认
+
+复测在vLLM仓库（6,682个文件、101.6 MB）根目录搜索`report_build_time_ninja`，5秒后`tool_timeout`，没有结果，
+报告记为单次观察。用同一份仓库副本直接调用产品的搜索函数复核：默认时限下必然超时；解除时限后读到64 MiB
+上限即`limit_exceeded`；同一查询`git grep`用0.36秒。分析显示约六成时间在逐字符的二进制判断，约四分之一在
+对不含查询的文件逐行调用匹配器。
+
+### 16.2 设计
+
+- `tools/files.py::_decode`：控制字符判断由逐字符循环改为一次预编译正则扫描，结论不变。
+- `tools/grep_matcher.py::whole_text_decides(args)`：快照与正则搜索中，字面量查询和不含`^`、`$`、`\A`、`\z`的
+  正则可以先对整份文本判断一次。
+- `tools/search.py::grep_line_matches`：上述条件成立且整份文本不命中时直接返回，不逐行扫描、不计算摘要；
+  超长行的字节数判断先比较字符数（UTF-8每字符至多4字节），多数行不必编码。
+- `tools/search_contracts.py`：快照与正则搜索的条目、名称字节、总读取上限放宽到四倍；`SnapshotSearchStats`
+  的字段上界随之放宽，两个公开Schema更新。
+- 执行合同版本：快照v5→v7，正则v6→v8；原字面量合同v3及其描述符摘要不变。
+
+### 16.3 行为差异
+
+- 整份文本都不含查询的文件，其超长行不再计入`long_lines`（它们藏不住命中），这类搜索可以报告
+  `scan_complete`。可能命中的文件照旧计数。原字面量合同的统计口径不变。
+- 不含查询的文件不再计算正文摘要；命中结果里的摘要、修订号和上下文与原来相同。
+- 读取时限（5秒）、单文件上限（2 MiB）、忽略目录、路径安全检查都没有变化。
+
+### 16.4 验证
+
+- `tests/tools/test_whole_repository_search.py`：二进制判断对0～0x17F的每个码点及若干非ASCII字符与原规则
+  逐一比对；捷径只在不会漏行的查询上启用；含锚点与不含锚点的查询在CRLF与LF文件上命中相同的行；
+  不含查询的20个文件各只判断一次；超长行计数的新口径与原字面量合同的旧口径；上限数值。
+- 既有搜索测试（POSIX与Windows内存端口两套）全部通过；描述符摘要测试更新快照合同的摘要，原字面量合同的
+  摘要保持不变。
+- 真实仓库：vLLM副本、产品默认时限与上限。`report_build_time_ninja`由5.00秒超时变为2.46秒返回7处命中；
+  其余三类查询见ADR 0145的表格。
+
+### 16.5 未解决
+
+更大的仓库仍会超时且没有部分结果（需要改搜索输出合同）；每个文件重新逐级打开并核对根身份的开销未动；
+Glob仍用原上限。

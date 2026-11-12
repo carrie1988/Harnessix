@@ -14,11 +14,12 @@ MAX_SEARCH_NAMES_BYTES = 2 * 1024 * 1024
 MAX_SEARCH_DEPTH = 32
 MAX_SEARCH_FILE_BYTES = 2 * 1024 * 1024
 MAX_SEARCH_TOTAL_BYTES = 16 * 1024 * 1024
-# 快照与正则搜索按整仓库设定（Django、SymPy等仓库条目上万、源码数十MiB）；
-# 原字面量合同保持上面的上限。
-MAX_SNAPSHOT_SEARCH_ENTRIES = 50000
-MAX_SNAPSHOT_SEARCH_NAMES_BYTES = 8 * 1024 * 1024
-MAX_SNAPSHOT_SEARCH_TOTAL_BYTES = 64 * 1024 * 1024
+# 快照与正则搜索按整仓库设定；原字面量合同保持上面的上限。
+# 真实仓库vLLM有6,682个文件、约100 MiB文本，原先的64 MiB读取上限使任何全仓搜索都以limit_exceeded结束
+# （Beta 0.10.0b20复测B20-05）。上限放宽到四倍后，能搜多大的仓库由读取时限决定，而不是由这里。
+MAX_SNAPSHOT_SEARCH_ENTRIES = 200000
+MAX_SNAPSHOT_SEARCH_NAMES_BYTES = 32 * 1024 * 1024
+MAX_SNAPSHOT_SEARCH_TOTAL_BYTES = 256 * 1024 * 1024
 MAX_SEARCH_RECORD_BYTES = 24 * 1024
 # 快照与正则搜索的预览预算：即使每行都是需转义的最长片段，单个带20行上下文的命中
 # （41行×约800字节）也放得下；字节上限同时约束节点数，远低于公开输出扫描的节点预算。

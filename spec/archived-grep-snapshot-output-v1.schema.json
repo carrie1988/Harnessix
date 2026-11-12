@@ -226,19 +226,19 @@
       "additionalProperties": false,
       "properties": {
         "entries_scanned": {
-          "maximum": 50000,
+          "maximum": 200000,
           "minimum": 0,
           "title": "Entries Scanned",
           "type": "integer"
         },
         "files_read": {
-          "maximum": 50000,
+          "maximum": 200000,
           "minimum": 0,
           "title": "Files Read",
           "type": "integer"
         },
         "bytes_read": {
-          "maximum": 67108864,
+          "maximum": 268435456,
           "minimum": 0,
           "title": "Bytes Read",
           "type": "integer"
