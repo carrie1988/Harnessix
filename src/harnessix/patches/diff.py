@@ -32,9 +32,15 @@ def _patch_edits(
 ) -> Iterator[PatchEditDiff]:
     for patch in patches:
         shift = 0
-        for index, (start, stop, replacement) in enumerate(
-            _edit_ranges(patch.before, patch.proposal.edits, operation, len(patch.after))
-        ):
+        # 传入计划的后像摘要：区间与写入文本必须是算出该后像的那一组，含此前版本保存的计划。
+        ranges = _edit_ranges(
+            patch.before,
+            patch.proposal.edits,
+            operation,
+            len(patch.after),
+            patch.manifest.after_sha256,
+        )
+        for index, (start, stop, replacement) in enumerate(ranges):
             _checkpoint(operation)
             yield PatchEditDiff(
                 path=patch.manifest.path,
