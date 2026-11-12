@@ -39,7 +39,7 @@ ledger_migrations._fault = fault
 with PatchWorkspaces(Path(root)).open(UUID(workspace_id)) as copy:
     groups = managed_batches.ManagedPatchBatches(copy)
     if mode == 'save':
-        proposal = PatchBatchProposal.model_validate_json(Path(proposal_path).read_text())
+        proposal = PatchBatchProposal.model_validate_json(Path(proposal_path).read_bytes())
         prepared = prepare_patch_batch(copy.workspace, proposal, ReadOperation())
         groups.save(prepared, 'stable', ReadOperation())
     elif mode == 'reply':

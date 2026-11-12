@@ -61,7 +61,7 @@ async def test_approval_crash_boundaries(
     provider = ScriptedProvider([tool_step("test.read"), answer()])
     async with AgentRuntime(store, provider, ApprovalCountingTool(counter)) as runtime:
         turn = (await store.get_thread(thread.thread_id)).turns[-1]
-        assert (int(counter.read_text()) if counter.exists() else 0) == count
+        assert (int(counter.read_text(encoding="utf-8")) if counter.exists() else 0) == count
         assert provider.requests == []
         if resumable:
             assert turn.status == TurnStatus.WAITING_APPROVAL
@@ -80,13 +80,13 @@ async def test_approval_crash_boundaries(
             completed = await runtime.resume_turn(thread.thread_id, turn.turn_id)
             assert completed.status == TurnStatus.COMPLETED
             assert [request.step for request in provider.requests] == [2]
-            assert int(counter.read_text()) == 1
+            assert int(counter.read_text(encoding="utf-8")) == 1
         else:
             assert turn.status == TurnStatus.INTERRUPTED
             assert not pending_calls(turn)
             assert all(i.status != ItemStatus.STARTED for i in turn.items)
             assert await runtime.resume_turn(thread.thread_id, turn.turn_id) == turn
-            assert (int(counter.read_text()) if counter.exists() else 0) == count
+            assert (int(counter.read_text(encoding="utf-8")) if counter.exists() else 0) == count
         assert replay(await store.events(thread.thread_id)) == await store.get_thread(
             thread.thread_id
         )

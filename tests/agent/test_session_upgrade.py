@@ -23,9 +23,15 @@ from tests.agent.attempt_helpers import accounted_answer
 async def test_old_transcript_migrates_without_rewriting_history(
     tmp_path: Path, version: int
 ) -> None:
-    fixture = json.loads((Path(__file__).parent / f"fixtures/session-v{version}.json").read_text())
+    fixture = json.loads(
+        (Path(__file__).parent / f"fixtures/session-v{version}.json").read_text(encoding="utf-8")
+    )
     store = SQLiteSessionStore(tmp_path / "session.db")
-    sql = files("harnessix.session.migrations").joinpath("0001_initial.sql").read_text()
+    sql = (
+        files("harnessix.session.migrations")
+        .joinpath("0001_initial.sql")
+        .read_text(encoding="utf-8")
+    )
     thread_id = UUID(fixture["snapshot"]["thread_id"])
     snapshot = json.dumps(fixture["snapshot"], ensure_ascii=False)
     originals = [json.dumps(event, ensure_ascii=False) for event in fixture["events"]]
@@ -64,7 +70,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
         sql2 = (
             files("harnessix.session.migrations")
             .joinpath("0002_projection_version.sql")
-            .read_text()
+            .read_text(encoding="utf-8")
         )
         with sqlite3.connect(store.path) as database:
             database.executescript(sql2)
@@ -75,7 +81,9 @@ async def test_old_transcript_migrates_without_rewriting_history(
             database.execute("UPDATE agent_threads SET projection_version = 2")
     if version >= 3:
         sql3 = (
-            files("harnessix.session.migrations").joinpath("0003_semantic_contract.sql").read_text()
+            files("harnessix.session.migrations")
+            .joinpath("0003_semantic_contract.sql")
+            .read_text(encoding="utf-8")
         )
         with sqlite3.connect(store.path) as database:
             database.executescript(sql3)
@@ -85,7 +93,11 @@ async def test_old_transcript_migrates_without_rewriting_history(
             )
             database.execute("UPDATE agent_threads SET projection_version = 3")
     if version >= 4:
-        sql4 = files("harnessix.session.migrations").joinpath("0004_model_attempts.sql").read_text()
+        sql4 = (
+            files("harnessix.session.migrations")
+            .joinpath("0004_model_attempts.sql")
+            .read_text(encoding="utf-8")
+        )
         with sqlite3.connect(store.path) as database:
             database.executescript(sql4)
             database.execute(
@@ -95,7 +107,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
             database.execute("UPDATE agent_threads SET projection_version = 4")
     if version >= 5:
         for number, name in [(5, "0005_response_billing.sql"), (6, "0006_artifacts.sql")]:
-            sql = files("harnessix.session.migrations").joinpath(name).read_text()
+            sql = files("harnessix.session.migrations").joinpath(name).read_text(encoding="utf-8")
             with sqlite3.connect(store.path) as database:
                 database.executescript(sql)
                 database.execute(
@@ -104,7 +116,11 @@ async def test_old_transcript_migrates_without_rewriting_history(
                 )
                 database.execute("UPDATE agent_threads SET projection_version = 5")
     if version >= 6:
-        sql = files("harnessix.session.migrations").joinpath("0007_managed_patch.sql").read_text()
+        sql = (
+            files("harnessix.session.migrations")
+            .joinpath("0007_managed_patch.sql")
+            .read_text(encoding="utf-8")
+        )
         with sqlite3.connect(store.path) as database:
             database.executescript(sql)
             database.execute(
@@ -116,7 +132,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
         sql = (
             files("harnessix.session.migrations")
             .joinpath("0008_managed_patch_batch.sql")
-            .read_text()
+            .read_text(encoding="utf-8")
         )
         with sqlite3.connect(store.path) as database:
             database.executescript(sql)
@@ -129,7 +145,7 @@ async def test_old_transcript_migrates_without_rewriting_history(
         sql = (
             files("harnessix.session.migrations")
             .joinpath("0009_batch_diff_artifacts.sql")
-            .read_text()
+            .read_text(encoding="utf-8")
         )
         with sqlite3.connect(store.path) as database:
             database.executescript(sql)

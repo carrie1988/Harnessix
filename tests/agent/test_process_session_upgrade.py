@@ -58,7 +58,7 @@ def legacy_v8_database(path: Path) -> tuple[UUID, list[str], str]:
         hashlib.sha256(fixture_path.read_bytes()).hexdigest()
         == "f8c5413a0d0af920b6c1fcd4e7e286fb14b000045a5832b29663c26c11f02cc3"
     )
-    fixture = json.loads(fixture_path.read_text())
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
     events = [json.dumps(event, ensure_ascii=False) for event in fixture["events"]]
     snapshot = json.dumps(fixture["snapshot"], ensure_ascii=False)
     thread_id = UUID(fixture["snapshot"]["thread_id"])
@@ -74,7 +74,7 @@ def legacy_v8_database(path: Path) -> tuple[UUID, list[str], str]:
             version = int(migration.name.split("_", 1)[0])
             if version > 9:
                 continue
-            sql = migration.read_text()
+            sql = migration.read_text(encoding="utf-8")
             checksum = hashlib.sha256(sql.encode()).hexdigest()
             assert checksum == _SESSION_MIGRATION_SHA256[version - 1]
             database.executescript(sql)

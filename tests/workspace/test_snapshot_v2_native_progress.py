@@ -57,7 +57,7 @@ def _frozen_verify():
     if directory is None:
         pytest.skip("冻结旧实现 oracle 仅在显式提供原件时运行")
     path = Path(directory) / "src/harnessix/workspace/snapshot_v2.py"
-    tree = ast.parse(path.read_text())
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     function = next(
         node
         for node in tree.body

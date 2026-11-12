@@ -110,7 +110,7 @@ async def test_host_command_runs_only_after_a_human_approval(tmp_path: Path) -> 
         completed = await case.approve_and_resume()
         result = _result(completed)
         assert result.outcome == "succeeded"
-        assert (case.workspace / "outside.txt").read_text() == "outside\n"
+        assert (case.workspace / "outside.txt").read_text(encoding="utf-8") == "outside\n"
         plan = case.router.status(case.approval.plan_id).plan
         assert plan.binding.tool == "host_command.host-shell"
         assert {(item.kind, item.access) for item in plan.resources} == {

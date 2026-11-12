@@ -44,7 +44,7 @@ def test_lock_rejects_extra_or_changed_upstream_files(tmp_path: Path, change: st
     else:
         (task / "tests/test.sh").write_text("echo changed\n")
     with pytest.raises(SystemExit, match="不一致"):
-        swebench_tasks._verify(source, json.loads(lock.read_text())["tasks"][0])
+        swebench_tasks._verify(source, json.loads(lock.read_text(encoding="utf-8"))["tasks"][0])
 
 
 def test_prepare_builds_derived_image_and_only_adds_docker_image(
@@ -56,7 +56,7 @@ def test_prepare_builds_derived_image_and_only_adds_docker_image(
     built: list[tuple[list[str], str]] = []
 
     def fake_run(command: list[str], **kwargs: object) -> None:
-        built.append((command, Path(command[-1], "Dockerfile").read_text()))
+        built.append((command, Path(command[-1], "Dockerfile").read_text(encoding="utf-8")))
 
     monkeypatch.setattr(swebench_tasks, "_uv_binaries", lambda env, workdir: None)
     monkeypatch.setattr(swebench_tasks, "_image_id", lambda ref: "sha256:" + "1" * 64)
@@ -73,10 +73,12 @@ def test_prepare_builds_derived_image_and_only_adds_docker_image(
     assert "UV_INDEX_URL=https://pypi.example/simple" in dockerfile
     assert "ENV REQUESTS_CA_BUNDLE=/etc/harbor-offline/ca-bundle.pem" in dockerfile
     assert "/etc/ssl/certs/ca-certificates.crt /etc/harbor-offline/raw-mirror-ca.pem" in dockerfile
-    prepared = (tmp_path / "prepared/django__django-1/task.toml").read_text()
+    prepared = (tmp_path / "prepared/django__django-1/task.toml").read_text(encoding="utf-8")
     assert prepared == (
         '[verifier]\ntimeout_sec = 1\n\n[environment]\ndocker_image = "'
         + task["image"]
         + '"\ncpus = 1\n'
     )
-    assert (tmp_path / "prepared/django__django-1/tests/test.sh").read_text() == "echo test\n"
+    assert (tmp_path / "prepared/django__django-1/tests/test.sh").read_text(
+        encoding="utf-8"
+    ) == "echo test\n"

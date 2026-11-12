@@ -132,5 +132,5 @@ def test_real_exit_building_copy_is_quarantined(tmp_path, cut):
     with pytest.raises(KernelError) as error:
         factory.open(UUID(bundle.name))
     assert error.value.code == "patch_copy_not_ready"
-    assert (source / "main.py").read_text() == "before"
+    assert (source / "main.py").read_text(encoding="utf-8") == "before"
     assert Path(bundle).exists()

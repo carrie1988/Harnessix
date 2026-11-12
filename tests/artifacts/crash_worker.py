@@ -52,7 +52,7 @@ async def main():
 
 
 def record(path):
-    path.write_text(str((int(path.read_text()) if path.exists() else 0) + 1))
+    path.write_text(str((int(path.read_text(encoding="utf-8")) if path.exists() else 0) + 1))
 
 
 if __name__ == "__main__":

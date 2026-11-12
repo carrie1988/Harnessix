@@ -190,7 +190,7 @@ async def test_windows_timeout_terminates_complete_job_tree(tmp_path: Path) -> N
             workspace=workspace,
             environment={},
         )
-    child_pid = int(marker.read_text())
+    child_pid = int(marker.read_text(encoding="utf-8"))
     assert lease.state == "exited" and lease.stop_reason == "timeout"
     await _wait_stopped(child_pid)
 

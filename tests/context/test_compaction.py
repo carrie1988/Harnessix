@@ -440,12 +440,7 @@ def test_summary_rejects_blank_nul_and_invalid_utf8(text_value):
         CompactionSummary(compaction_id=uuid4(), text=text_value)
 
 
-@pytest.mark.parametrize(
-    "value",
-    ["🙂" * 1024, '"\\\n' * 256, "字" * 1024, "x" * 1_000_000],
-    # 用例名会写进环境变量，Windows上限32767字符；百万字符的参数不能直接当名字。
-    ids=["emoji", "escapes", "cjk", "million-ascii"],
-)
+@pytest.mark.parametrize("value", ["🙂" * 1024, '"\\\n' * 256, "字" * 1024, "x" * 1_000_000])
 async def test_summary_budget_measures_complete_utf8_json_projection(value):
     thread = thread_with()
     prepared = await plan(thread)

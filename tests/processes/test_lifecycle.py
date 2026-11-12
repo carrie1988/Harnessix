@@ -38,7 +38,7 @@ else:
         await stopped(pid)
     finally:
         if pid is None and marker.exists():
-            pid = int(marker.read_text())
+            pid = int(marker.read_text(encoding="utf-8"))
         await cleanup(pid)
 
 
@@ -71,7 +71,7 @@ else: time.sleep(30)
             await asyncio.gather(task, return_exceptions=True)
         for marker in (child, grandchild):
             if marker.exists():
-                await cleanup(int(marker.read_text()))
+                await cleanup(int(marker.read_text(encoding="utf-8")))
 
 
 async def test_detached_pipe_holder_does_not_hang_or_claim_containment(tmp_path):
@@ -97,7 +97,7 @@ else:
         assert await asyncio.to_thread(running, pid)  # 显式验证不是OS Sandbox，测试自身负责清理。
     finally:
         if pid is None and marker.exists():
-            pid = int(marker.read_text())
+            pid = int(marker.read_text(encoding="utf-8"))
         await cleanup(pid)
 
 
@@ -174,7 +174,7 @@ async def test_cancelling_close_repeatedly_still_reaps(tmp_path):
         await host.aclose()
         await asyncio.gather(task, *([closing] if closing else []), return_exceptions=True)
         if marker.exists():
-            await cleanup(int(marker.read_text()))
+            await cleanup(int(marker.read_text(encoding="utf-8")))
 
 
 async def test_group_signal_failure_is_not_success_and_closes_admission(tmp_path, monkeypatch):

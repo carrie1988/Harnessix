@@ -57,7 +57,7 @@ def test_resource_checksums_equal_frozen_complete_v32_contract():
     assert resource_checksums() == dict(enumerate(_SESSION_MIGRATION_CHECKSUMS, 1))
     assert len(_SESSION_MIGRATION_CHECKSUMS) == 32
     for name in ("0031_unknown_tool_rejection.sql", "0032_tool_result_working_set.sql"):
-        sql = files("harnessix.session.migrations").joinpath(name).read_text()
+        sql = files("harnessix.session.migrations").joinpath(name).read_text(encoding="utf-8")
         body = "\n".join(line for line in sql.splitlines() if not line.startswith("--"))
         assert body.strip() == "SELECT 1;"
 

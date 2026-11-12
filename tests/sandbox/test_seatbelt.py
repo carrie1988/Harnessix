@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,10 @@ import pytest
 from harnessix.agent.errors import KernelError
 from harnessix.sandbox.native_policy import NativeSandboxFacts, build_native_sandbox_policy
 from harnessix.sandbox.seatbelt import seatbelt_argv, seatbelt_policy
+
+pytestmark = pytest.mark.skipif(
+    os.name == "nt", reason="原生进程沙箱只在Linux与macOS上提供，策略与参数全是POSIX路径"
+)
 
 HOME = Path("/Users/dev")
 WORKSPACE = HOME / "src/app"

@@ -12,6 +12,8 @@ import pytest
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.preflight_environment import validate_windows_git
+from harnessix.product_ui.git_detection import bindable_windows_git
 from harnessix.tools import git as git_tools
 from harnessix.tools import runtime as tool_runtime
 from harnessix.tools.contracts import ReadToolError
@@ -25,7 +27,12 @@ def _git() -> Path:
     executable = shutil.which("git")
     if executable is None:
         pytest.skip("Git不可用")
-    return Path(executable).resolve()
+    found = Path(executable).resolve()
+    if os.name == "nt":
+        # Git for Windows默认安装里PATH上的cmd\\git.exe是多硬链接文件，产品绑定拒绝它；
+        # 与产品启动时的探测一致，换成同一安装里可绑定的git.exe。
+        found = bindable_windows_git(found, validate_windows_git) or found
+    return found
 
 
 def _command(root: Path, *arguments: str) -> None:

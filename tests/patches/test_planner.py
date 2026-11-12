@@ -121,7 +121,7 @@ def test_verify_rejects_source_or_workspace_drift(tmp_path, change):
         else "patch_source_changed"
     )
     if change == "content":
-        assert path.read_text() == "USER EDIT"
+        assert path.read_text(encoding="utf-8") == "USER EDIT"
 
 
 @pytest.mark.parametrize("kind", ["before", "after", "manifest", "proposal", "mutable"])
@@ -183,7 +183,7 @@ def test_full_image_byte_bounds(tmp_path, monkeypatch, kind):
             with pytest.raises(KernelError) as error:
                 prepare_patch(workspace, args, ReadOperation())
             assert error.value.code == "patch_limit_exceeded"
-    assert path.read_text() == "before"
+    assert path.read_text(encoding="utf-8") == "before"
 
 
 @pytest.mark.parametrize("kind", ["cancel", "timeout"])
@@ -229,4 +229,4 @@ def test_missing_anchor_reports_where_the_current_text_differs(tmp_path, source,
         with pytest.raises(KernelError) as error:
             prepare_patch(workspace, args, ReadOperation())
     assert error.value.code == "patch_context_not_found"
-    assert hint in error.value.message and path.read_text() == source
+    assert hint in error.value.message and path.read_text(encoding="utf-8") == source

@@ -604,7 +604,7 @@ async def test_detached_head_is_observed_without_switching_branch(tmp_path):
             runtime, owner, target, router, transactions, reader(root, tmp_path / "git-state")
         )
         assert actual.head_ref == "HEAD"
-        assert (root / ".git/HEAD").read_text().strip() == actual.head_oid
+        assert (root / ".git/HEAD").read_text(encoding="utf-8").strip() == actual.head_oid
 
 
 @pytest.mark.parametrize("fault", ["whole-timeout", "parent-cancel"])

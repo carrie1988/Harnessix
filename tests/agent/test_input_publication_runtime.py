@@ -390,7 +390,10 @@ async def test_trusted_approval_rejection_precedes_owner_and_action_audit(tmp_pa
                 assert await runtime.store.get_thread(thread.thread_id) == before
                 assert audit.events(request.plan_id) == audit_before
                 assert router.status(request.plan_id).state == "pending_approval"
-                assert executor.calls == 0 and (root / "file.txt").read_text() == "before"
+                assert (
+                    executor.calls == 0
+                    and (root / "file.txt").read_text(encoding="utf-8") == "before"
+                )
                 await runtime.reply_approval(
                     thread.thread_id,
                     waiting.turn_id,

@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pytest
 from pydantic import AwareDatetime, TypeAdapter
@@ -391,6 +391,14 @@ def _commit_core(case, tmp_path):
     )
 
 
+def _named_zone(factory, key):
+    """按名称取时区；宿主没有IANA时区数据库时跳过（Windows不自带，需另装tzdata）。"""
+    try:
+        return factory(key)
+    except ZoneInfoNotFoundError:
+        pytest.skip("本机没有IANA时区数据库")
+
+
 def _executable_timezone(kind, callbacks, marker):
     class CustomTimezone(tzinfo):
         def utcoffset(self, value):
@@ -410,7 +418,7 @@ def _executable_timezone(kind, callbacks, marker):
         dst = CustomTimezone.dst
         tzname = CustomTimezone.tzname
 
-    return CustomTimezone() if kind == "custom" else ZoneSubclass("UTC")
+    return CustomTimezone() if kind == "custom" else _named_zone(ZoneSubclass, "UTC")
 
 
 @pytest.mark.parametrize("tz_kind", ["custom", "zoneinfo-subclass"])
@@ -494,11 +502,11 @@ def test_supported_exact_timezone_types_preserve_commit_canonical_bytes(
         timestamp = TypeAdapter(AwareDatetime).validate_json('"2026-10-07T08:09:10-07:00"')
         assert type(timestamp.tzinfo) is TzInfo
     else:
-        zone = {
-            "utc": UTC,
-            "offset": timezone(timedelta(hours=5, minutes=30)),
-            "zoneinfo": ZoneInfo("Asia/Shanghai"),
-        }[tz_kind]
+        zone = (
+            _named_zone(ZoneInfo, "Asia/Shanghai")
+            if tz_kind == "zoneinfo"
+            else {"utc": UTC, "offset": timezone(timedelta(hours=5, minutes=30))}[tz_kind]
+        )
         timestamp = datetime(2026, 10, 7, 8, 9, 10, tzinfo=zone)
     monkeypatch.setattr(plan_support, "NOW", timestamp)
     core = _commit_core(case, tmp_path)

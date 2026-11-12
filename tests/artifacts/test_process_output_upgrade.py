@@ -22,7 +22,9 @@ from tests.artifacts.helpers import latest_migration
 
 
 def _version10_database(path: Path) -> dict[str, object]:
-    fixture = json.loads((Path(__file__).parent / "fixtures/session-v7-artifact.json").read_text())
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures/session-v7-artifact.json").read_text(encoding="utf-8")
+    )
     with sqlite3.connect(path) as database:
         database.execute("PRAGMA application_id=1213748043")
         database.execute(
@@ -36,7 +38,7 @@ def _version10_database(path: Path) -> dict[str, object]:
             version = int(migration.name[:4])
             if version > 10:
                 continue
-            sql = migration.read_text()
+            sql = migration.read_text(encoding="utf-8")
             database.executescript(sql)
             database.execute(
                 "INSERT INTO agent_migrations VALUES (?, ?)",

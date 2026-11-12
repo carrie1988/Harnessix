@@ -72,7 +72,7 @@ def ledger_file(tmp_path: Path, allocation="70", known="0.000068") -> Path:
 
 
 def period(path: Path) -> dict:
-    return json.loads(path.read_text())["periods"][0]
+    return json.loads(path.read_text(encoding="utf-8"))["periods"][0]
 
 
 def bounds() -> BailianVerificationBounds:
@@ -312,7 +312,7 @@ def test_unsafe_or_inconsistent_existing_ledger_is_not_repaired(tmp_path, case):
     elif case == "wrong_period":
         selected = uuid4()
     elif case == "inconsistent_total":
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         data["periods"][0]["known_cost"] = "0"
         path.write_text(json.dumps(data))
     else:

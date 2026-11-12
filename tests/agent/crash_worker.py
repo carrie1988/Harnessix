@@ -35,7 +35,7 @@ class CountingTool:
         )
 
     async def execute(self, call: ToolCallContent, cancel: CancelToken) -> ToolResultContent:
-        count = int(self.path.read_text()) if self.path.exists() else 0
+        count = int(self.path.read_text(encoding="utf-8")) if self.path.exists() else 0
         self.path.write_text(str(count + 1))
         return ToolResultContent(call_id=call.call_id, outcome="succeeded", output=count + 1)
 

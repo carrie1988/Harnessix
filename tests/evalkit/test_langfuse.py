@@ -529,7 +529,7 @@ def test_export_refuses_symlinked_output_and_non_private_report(
     with pytest.raises(SystemExit):
         cli.main(["export", "--report", str(source), "--output", str(tmp_path / "link.json")])
     assert json.loads(capsys.readouterr().out)["reason"] == "file_path_denied"
-    assert target.read_text() == "untouched"
+    assert target.read_text(encoding="utf-8") == "untouched"
     source.chmod(0o644)
     with pytest.raises(SystemExit):
         cli.main(["export", "--report", str(source), "--output", str(tmp_path / "e.json")])
@@ -589,7 +589,7 @@ def test_cli_network_path_over_real_loopback_http(
     assert json.loads(capsys.readouterr().out)["reason"] == "submitted"
     assert requests[0][0] == "/prefix/api/public/otel/v1/traces"
     assert all(authorization == "Basic cHVibGljOnByaXZhdGU=" for _, authorization, _ in requests)
-    export = json.loads(output.read_text())
+    export = json.loads(output.read_text(encoding="utf-8"))
     events = [event for _, _, body in requests[1:] for event in body["batch"]]
     assert {event["id"] for event in events} == {score["id"] for score in export["scores"]}
 

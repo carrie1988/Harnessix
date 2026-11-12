@@ -314,7 +314,7 @@ async def test_launch_binding_matches_plan_through_product_chain(
     ) as case:
         result = _result(await case.approve_and_resume())
         assert (result.outcome, result.error) == ("succeeded", None)
-        assert (case.workspace / "ran.txt").read_text() == "ran\n"
+        assert (case.workspace / "ran.txt").read_text(encoding="utf-8") == "ran\n"
         sandbox = case.router.status(case.approval.plan_id).plan.execution.sandbox
         assert (sandbox.level, sandbox.backend) == ("host_sandboxed", backend)
         # 沙箱内命令由宿主以系统身份当场批准，用户不会看到待审批（ADR 0113）。
@@ -390,4 +390,4 @@ async def test_pending_sandbox_approval_is_filled_in_on_resume(
             case.agent._approval_responder = case.agent._held_responder  # type: ignore[attr-defined]
             resumed = await case.agent.resume_turn(case.thread_id, case.turn_id)
             assert _result(resumed).outcome == "succeeded"
-            assert (case.workspace / "resumed.txt").read_text() == "resumed\n"
+            assert (case.workspace / "resumed.txt").read_text(encoding="utf-8") == "resumed\n"

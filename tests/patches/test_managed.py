@@ -266,7 +266,7 @@ def test_cancel_before_replace_is_consumed_failed(case, monkeypatch, point):
     result = copy.execute(record.plan_id, record.approval_fingerprint, operation)
     assert result.state == "failed"
     assert result.error_code == "cancelled"
-    assert (copy.workspace.root / "nested/main.py").read_text() == "before\n"
+    assert (copy.workspace.root / "nested/main.py").read_text(encoding="utf-8") == "before\n"
     assert not list(copy._bundle.root.glob("*.patch"))
     with failure("patch_not_executable"):
         copy.execute(record.plan_id, record.approval_fingerprint, ReadOperation())
@@ -334,7 +334,7 @@ def test_late_drift_never_overwritten(case, monkeypatch, change):
     assert (
         copy.execute(record.plan_id, record.approval_fingerprint, ReadOperation()).state == "failed"
     )
-    assert target.read_text() != "after\n"
+    assert target.read_text(encoding="utf-8") != "after\n"
 
 
 @pytest.mark.parametrize(
@@ -422,7 +422,7 @@ def test_sql_failure_before_intent_does_not_write(case):
     copy._db.execute("PRAGMA query_only=ON")
     with failure("patch_storage_unavailable"):
         copy.execute(record.plan_id, record.approval_fingerprint, ReadOperation())
-    assert (copy.workspace.root / "nested/main.py").read_text() == "before\n"
+    assert (copy.workspace.root / "nested/main.py").read_text(encoding="utf-8") == "before\n"
     assert copy.get(record.plan_id).state == "approved"
 
 

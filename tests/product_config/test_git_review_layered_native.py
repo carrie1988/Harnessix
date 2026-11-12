@@ -354,7 +354,7 @@ def test_metadata_reads_exact_slots_without_callback_attribute_lookup(host_case,
 
 def test_full_bound_and_owner_check_bodies_keep_frozen_ast(frozen):
     def bodies(path, outer):
-        tree = ast.parse(Path(path).read_text())
+        tree = ast.parse(Path(path).read_text(encoding="utf-8"))
         function = next(
             node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == outer
         )
@@ -432,7 +432,7 @@ async def test_review_local_progress_never_executes_instance_shadow_or_magic(
 
 def test_review_provider_class_stays_within_readability_limit():
     for module in (hosts, review):
-        tree = ast.parse(Path(module.__file__).read_text())
+        tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
         for node in tree.body:
             if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                 assert node.end_lineno - node.lineno + 1 <= 100, node.name

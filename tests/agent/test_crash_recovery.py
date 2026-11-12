@@ -87,5 +87,5 @@ async def test_process_crash_recovers_without_replaying_tool(
                 assert retried.status is TurnStatus.COMPLETED
                 assert retried.retry_of_turn_id == turn.turn_id
 
-    assert (int(counter.read_text()) if counter.exists() else 0) == count
+    assert (int(counter.read_text(encoding="utf-8")) if counter.exists() else 0) == count
     assert len(provider.requests) == (1 if point == "runtime.after_turn_started" else 0)

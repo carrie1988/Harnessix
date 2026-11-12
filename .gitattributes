@@ -1,10 +1,10 @@
-* text=auto
+# 文本文件在所有平台都以LF检出：仓库里大量内容按字节校验摘要（证据包、冻结源码、测试输入），
+# Windows默认的CRLF检出会让这些校验与读取源码的测试全部失败。
+* text=auto eol=lf
 LICENSE text eol=lf
 *.sql text eol=lf
 *.sh text eol=lf
 uv.lock text eol=lf
-# 按字节校验摘要的冻结测试输入：Windows检出时不能转成CRLF
-tests/workspace/fixtures/workspace_paths_before.py text eol=lf
 pyproject.toml text eol=lf
 governance/sbom.cyclonedx.json -text
 governance/license-scan-v1.json -text

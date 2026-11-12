@@ -92,4 +92,4 @@ def test_historical_process_output_schema_remains_frozen(
     name: str, schema: dict[str, object]
 ) -> None:
     path = Path(__file__).parents[2] / "spec" / f"{name}-v1.schema.json"
-    assert json.loads(path.read_text()) == schema
+    assert json.loads(path.read_text(encoding="utf-8")) == schema

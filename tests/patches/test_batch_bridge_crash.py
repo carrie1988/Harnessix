@@ -75,7 +75,9 @@ async def test_real_exit_same_call_observation_only(group_case, tmp_path, monkey
         await child(factory, workspace_id, fixture, cut)
         assert snapshot(target) == before
     plan = (
-        ManagedPatchBatchCallPlan.model_validate_json(fixture.with_suffix(".plan").read_text())
+        ManagedPatchBatchCallPlan.model_validate_json(
+            fixture.with_suffix(".plan").read_text(encoding="utf-8")
+        )
         if cut != "plan_saved"
         else None
     )

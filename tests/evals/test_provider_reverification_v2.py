@@ -183,7 +183,9 @@ def test_parse_and_private_reader_preserve_exact_version(tmp_path, monkeypatch, 
     assert type(restored) is model_for(version) and restored == parsed
     assert restored.model_dump_json() == text
     assert calls == [(str(plan_path), {"max_bytes": 64 * 1024})]
-    assert plan_path.read_text() == text and plan_path.stat().st_mode & 0o777 == 0o600
+    assert (
+        plan_path.read_text(encoding="utf-8") == text and plan_path.stat().st_mode & 0o777 == 0o600
+    )
 
 
 def test_v2_schema_keeps_literal_sixty_and_thirty_eight():
@@ -821,7 +823,7 @@ def test_parser_rejects_duplicate_json_keys_even_with_equal_values(tmp_path, cas
     text = json.dumps(payload(V2), separators=(",", ":"))
     _, target = invalid_private_plan(tmp_path, text, case)
     with pytest.raises(ValueError):
-        plans.parse_reverification_plan(target.read_text())
+        plans.parse_reverification_plan(target.read_text(encoding="utf-8"))
 
 
 def test_cli_registers_0600_v2_and_repeat_is_byte_idempotent(tmp_path, capsys):

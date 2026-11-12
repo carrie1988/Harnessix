@@ -332,7 +332,7 @@ def test_generator_cli_reads_the_exec_environment_and_the_default_users_home(
     )
     harnessix_configs.main()
     assert json.loads(capsys.readouterr().out)["language"] == "go"
-    environment = _profile_environment(target.read_text())
+    environment = _profile_environment(target.read_text(encoding="utf-8"))
     assert environment["HOME"] == "/home/agent"
     assert environment["GOFLAGS"] == "-mod=mod"
     assert not {"MODEL_API_KEY", "OPENAI_API_KEY"} & set(environment)

@@ -80,7 +80,7 @@ def test_declared_spec_version_must_match_pinned_schema(tmp_path: Path) -> None:
 @pytest.mark.parametrize("change", ["version", "source", "orphan", "credential", "hash"])
 def test_unreviewed_or_inconsistent_inputs_fail_closed(tmp_path: Path, change: str) -> None:
     lock, project = _inputs(tmp_path)
-    body = lock.read_text()
+    body = lock.read_text(encoding="utf-8")
     replacements = {
         "version": ('version = "1.0"', 'version = "1.1"'),
         "source": ("https://pypi.org/simple", "https://other.example/simple"),

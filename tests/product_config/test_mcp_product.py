@@ -118,6 +118,7 @@ def test_cli_lists_trusts_and_untrusts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))  # Windows的用户目录取自USERPROFILE
     _write_config(tmp_path, {"fixture": _fixture_server(tmp_path / "pid")})
     with pytest.raises(SystemExit) as listed:
         mcp_main(["list"])
@@ -196,9 +197,9 @@ async def test_host_server_tools_wait_for_approval_and_run_after_it(tmp_path: Pa
         assert turn.status is TurnStatus.COMPLETED
         results = [i.content for i in turn.items if isinstance(i.content, ToolResultContent)]
         assert [result.outcome for result in results] == ["succeeded"]
-        assert (workspace / "marker").read_text() == "token-from-user-env"
+        assert (workspace / "marker").read_text(encoding="utf-8") == "token-from-user-env"
         assert "token-from-user-env" not in json.dumps(results[0].model_dump(mode="json"))
-        pid = int(pid_file.read_text())
+        pid = int(pid_file.read_text(encoding="utf-8"))
     assert _process_gone(pid)
     audit.close()
     plans.close()

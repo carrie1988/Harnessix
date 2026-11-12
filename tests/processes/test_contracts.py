@@ -209,4 +209,4 @@ async def test_pipe_error_and_forced_close_never_claim_natural_eof():
 )
 def test_generated_process_schemas(name, model):
     path = Path(__file__).parents[2] / "spec" / f"process-{name}-v1.schema.json"
-    assert json.loads(path.read_text()) == model.model_json_schema()
+    assert json.loads(path.read_text(encoding="utf-8")) == model.model_json_schema()

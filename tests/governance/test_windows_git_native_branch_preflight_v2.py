@@ -54,7 +54,7 @@ def test_original_sixteen_input_contract_is_still_exact():
 def test_reason_is_exact_literal_from_actual_source_and_stage(stage, reason):
     literals = set()
     for name in ("contract.py", "identity.py", "preflight.py", "observe.py"):
-        tree = ast.parse((SCRIPTS / name).read_text())
+        tree = ast.parse((SCRIPTS / name).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if (
                 isinstance(node, ast.Raise)

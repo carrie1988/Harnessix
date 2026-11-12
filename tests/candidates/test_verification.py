@@ -61,9 +61,11 @@ def test_overlay_adds_other_candidates_scratch_without_touching_the_original(
     assert scratch_files(source) == [Path("harnessix_scratch/repro.py")]
 
     with overlay_workspace(target, source, tmp_path / "copy") as merged:
-        assert (merged / "harnessix_scratch" / "repro.py").read_text() == "print('a')\n"
-        assert (merged / "pkg" / "mod.py").read_text() == "VALUE = 'b'\n"
-    assert (target / "harnessix_scratch" / "repro.py").read_text() == "print('b')\n"
+        assert (merged / "harnessix_scratch" / "repro.py").read_text(
+            encoding="utf-8"
+        ) == "print('a')\n"
+        assert (merged / "pkg" / "mod.py").read_text(encoding="utf-8") == "VALUE = 'b'\n"
+    assert (target / "harnessix_scratch" / "repro.py").read_text(encoding="utf-8") == "print('b')\n"
     assert not (tmp_path / "copy").exists()
 
 
@@ -122,4 +124,4 @@ def test_snapshot_profiles_check_on_private_writable_copies(tmp_path: Path) -> N
 
     runs = cross_check(profile, workspaces, (Check("make", "a"),), tmp_path / "s", runner=runner)
     assert [run.result for run in runs] == ["passed"]
-    assert (workspaces["a"] / "pkg" / "mod.py").read_text() == "VALUE = 'a'\n"
+    assert (workspaces["a"] / "pkg" / "mod.py").read_text(encoding="utf-8") == "VALUE = 'a'\n"

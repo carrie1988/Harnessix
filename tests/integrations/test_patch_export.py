@@ -50,7 +50,7 @@ def snapshot(repo: Path) -> str:
 def export(repo: Path, base: str, logs: Path) -> str:
     logs.mkdir()
     bash(patch_command(str(repo), base, PurePosixPath(str(logs))))
-    return (logs / "patch.diff").read_text()
+    return (logs / "patch.diff").read_text(encoding="utf-8")
 
 
 def test_patch_includes_new_files_and_leaves_the_index_alone(tmp_path: Path) -> None:

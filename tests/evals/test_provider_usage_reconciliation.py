@@ -175,7 +175,7 @@ def test_same_request_cannot_be_reconciled_twice_under_another_identity(tmp_path
 def test_reopen_rejects_tampered_reconciliation_or_downgraded_schema(tmp_path, mutation):
     path, plan, continuation, request_id = pending_usage(tmp_path)
     VerificationBudgetLedger.reconcile_usage(path, reconciliation_for(path, request_id))
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     current = data["periods"][0]
     if mutation == "record":
         current["usage_reconciliations"][0]["cost_estimate"] = "0.000841"

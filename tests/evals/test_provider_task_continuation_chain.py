@@ -99,7 +99,7 @@ def test_successors_only_append_and_preserve_every_prior_record_and_cost(tmp_pat
     path, plan, previous, record = pending_chain(tmp_path, register=False)
     assert period(path)["requests"][-1]["status"] == "unknown"
     for _ in range(2):
-        before = json.loads(path.read_text())
+        before = json.loads(path.read_text(encoding="utf-8"))
         old_period = before["periods"][0]
         VerificationBudgetLedger.authorize_task_continuation(path, record)
         expected = {
@@ -115,7 +115,7 @@ def test_successors_only_append_and_preserve_every_prior_record_and_cost(tmp_pat
                 }
             ],
         }
-        assert json.loads(path.read_text()) == expected
+        assert json.loads(path.read_text(encoding="utf-8")) == expected
         assert period(path)["task_continuation"] == previous.model_dump(mode="json")
         with scoped(path, plan, record) as owner:
             assert owner.task_continuation == record
@@ -244,7 +244,7 @@ def test_v2_retains_original_five_yuan_task_and_sixty_yuan_period_caps(tmp_path,
     path, plan, previous = pending_beta(tmp_path, register=False)
     if cap == "period":
         # 在任何承接登记前构造更紧的原周期额度，不重签已经冻结的历史。
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         current = data["periods"][0]
         current["requests"][0]["cost_estimate"] = current["known_cost"] = "38"
         current["bounded_reverification"]["prior_requests_sha256"] = digest(

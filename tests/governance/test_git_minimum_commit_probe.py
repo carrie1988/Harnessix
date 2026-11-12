@@ -477,12 +477,14 @@ def test_exact_two_selector_collection_and_default_plugin_not_loaded(pytestconfi
     items = [SimpleNamespace(nodeid=nodeid) for nodeid in probe_module.SELECTORS]
     probe_module.pytest_collection_modifyitems(items)
     assert not pytestconfig.pluginmanager.hasplugin("tests.product_config.git_minimum_commit_probe")
-    assert "git_minimum_commit_probe" not in (ROOT / "pyproject.toml").read_text()
+    assert "git_minimum_commit_probe" not in (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
 
 def test_manual_carrier_pins_only_two_cases_and_preserves_limits_failure_and_isolation():
-    workflow = (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text()
-    original = (ROOT / ".github/workflows/ci.yml").read_text()
+    workflow = (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text(
+        encoding="utf-8"
+    )
+    original = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "on:\n  workflow_dispatch:\n" in workflow
     assert "permissions:\n  contents: read\n" in workflow
     for pin in (

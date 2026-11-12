@@ -124,7 +124,7 @@ def test_empty_plan_schema_parse_private_read_and_snapshot(tmp_path):
 
 def test_v2_records_exact_fifty_yuan_reset_without_inheriting_old_cost(tmp_path):
     path = empty_ledger(tmp_path)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     data["periods"][0]["allocation"] = "50"
     path.write_text(json.dumps(data))
     plan = budget_plan_v2(path)
@@ -214,7 +214,7 @@ def test_registration_preserves_old_period_and_plan_and_cannot_replace_new_plan(
     old_bytes = old_path.read_bytes()
     old_period = {**period(old_path), "status": "closed"}
     path = empty_ledger(tmp_path)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     data["periods"].append(old_period)
     path.write_text(json.dumps(data))
     plan = budget_plan(path)
@@ -231,7 +231,7 @@ def test_registration_preserves_old_period_and_plan_and_cannot_replace_new_plan(
     with task_scope(path, plan) as ledger:
         request = ledger.reserve(amount_units("1"), {})
         ledger.settle(request, amount_units("1"), sent=True)
-    assert json.loads(path.read_text())["periods"][1] == old_period
+    assert json.loads(path.read_text(encoding="utf-8"))["periods"][1] == old_period
     assert old_period["bounded_reverification"] == old_plan.model_dump(mode="json")
     assert old_path.read_bytes() == old_bytes
 

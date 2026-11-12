@@ -35,4 +35,4 @@ from harnessix.patches.diff_document_contracts import (
 def test_frozen_document_contract(name, model, expected):
     path = Path(__file__).parents[2] / "spec" / f"{name}-v1.schema.json"
     assert hashlib.sha256(path.read_bytes()).hexdigest() == expected
-    assert json.loads(path.read_text()) == TypeAdapter(model).json_schema()
+    assert json.loads(path.read_text(encoding="utf-8")) == TypeAdapter(model).json_schema()

@@ -47,12 +47,12 @@ def test_action_plane_public_schemas_match_generated_contracts() -> None:
     for name, model in contracts.items():
         persisted = json.loads((root / f"{name}-v1.schema.json").read_text(encoding="utf-8"))
         assert persisted == model.model_json_schema()
-    assert json.loads((root / "public-process-output-summary-v2.schema.json").read_text()) == (
-        PublicProcessOutputSummaryV2.model_json_schema()
-    )
-    assert json.loads((root / "public-process-output-summary-v3.schema.json").read_text()) == (
-        PublicProcessOutputSummaryV3.model_json_schema()
-    )
-    assert json.loads((root / "public-process-output-summary-v4.schema.json").read_text()) == (
-        PublicProcessOutputSummaryV4.model_json_schema()
-    )
+    assert json.loads(
+        (root / "public-process-output-summary-v2.schema.json").read_text(encoding="utf-8")
+    ) == (PublicProcessOutputSummaryV2.model_json_schema())
+    assert json.loads(
+        (root / "public-process-output-summary-v3.schema.json").read_text(encoding="utf-8")
+    ) == (PublicProcessOutputSummaryV3.model_json_schema())
+    assert json.loads(
+        (root / "public-process-output-summary-v4.schema.json").read_text(encoding="utf-8")
+    ) == (PublicProcessOutputSummaryV4.model_json_schema())

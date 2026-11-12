@@ -22,5 +22,5 @@ async def test_host_hard_exit_does_not_falsely_claim_process_group_containment(t
         assert await asyncio.to_thread(running, pid)
     finally:
         if pid is None and marker.exists():
-            pid = int(marker.read_text())
+            pid = int(marker.read_text(encoding="utf-8"))
         await cleanup(pid, group=True)

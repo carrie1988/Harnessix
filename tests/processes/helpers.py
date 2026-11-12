@@ -22,7 +22,11 @@ def runtime(root, **kwargs):
 
 
 def _ready(path: Path):
-    return int(path.read_text()) if path.exists() and path.read_text().strip() else None
+    return (
+        int(path.read_text(encoding="utf-8"))
+        if path.exists() and path.read_text(encoding="utf-8").strip()
+        else None
+    )
 
 
 async def ready(path: Path):

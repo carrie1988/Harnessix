@@ -113,5 +113,10 @@ def test_workflow_actions_are_sha_pinned() -> None:
 
 
 def test_make_install_consumes_locked_dependencies() -> None:
-    install = (ROOT / "Makefile").read_text().split("install:\n", 1)[1].split("\n\n", 1)[0]
+    install = (
+        (ROOT / "Makefile")
+        .read_text(encoding="utf-8")
+        .split("install:\n", 1)[1]
+        .split("\n\n", 1)[0]
+    )
     assert "uv sync --locked --all-extras --dev" in install

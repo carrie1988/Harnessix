@@ -146,7 +146,7 @@ def test_lock_identity_drift_cannot_inherit_old_evidence(tmp_path: Path, mutatio
     from scripts.license_contracts import LicenseEvidenceError
 
     lock, _, _ = _fixture(tmp_path)
-    text = lock.read_text()
+    text = lock.read_text(encoding="utf-8")
     if mutation == "version":
         text = text.replace('version="1.0"', 'version="999.0.0"')
     elif mutation == "source":

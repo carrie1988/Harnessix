@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -50,7 +51,9 @@ def test_missing_key_says_what_to_type_with_the_configured_variable(
         path,
     )
     assert text.startswith("Harnessix 无法启动：缺少模型的 API Key。")
-    assert f"export {names[0]}=你的API Key" in text
+    posix, powershell = f"export {names[0]}=你的API Key", f'$env:{names[0]}="你的API Key"'
+    command = powershell if os.name == "nt" else posix
+    assert command in text
     assert "2. 重新运行刚才的命令。" in text and "harnessix code doctor" in text
     assert "[通过]" not in text and "secret_unavailable" not in text
 

@@ -86,6 +86,6 @@ def test_definition_schemas_are_frozen_without_modifying_old_contract():
         ("read-file-input-v4.schema.json", ReadFileInputV4),
         ("read-file-view-output.schema.json", ReadFileViewOutput),
     ):
-        assert json.loads((root / name).read_text()) == model.model_json_schema()
+        assert json.loads((root / name).read_text(encoding="utf-8")) == model.model_json_schema()
     with pytest.raises(ValidationError):
         ReadFileInputV4(path="x.py", view="definition")

@@ -329,7 +329,7 @@ def test_single_carried_and_generic_multiple_carried_are_supported(tmp_path):
             }
         )
     current["reserved_cost"] = "21.07824"
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     data["periods"][0] = current
     write_data(path, data)
     record = continuation_for(path, plan)
@@ -430,7 +430,7 @@ def test_prior_beta_hold_still_counts_against_original_five_yuan(tmp_path):
 
 def test_period_cap_counts_all_known_and_old_reservations(tmp_path):
     path, plan, _ = pending_beta(tmp_path, register=False)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     current = data["periods"][0]
     # 让原60元上限比5元task上限更紧；重建测试前缀摘要而非改动已登记承接。
     current["requests"][0]["cost_estimate"] = "38.5"
@@ -517,7 +517,7 @@ def test_v4_reader_validates_original_prefix_and_all_suffix_ownership(tmp_path, 
     with scoped(path, plan, record) as owner:
         request = owner.reserve(amount_units("0.1"), {})
         owner.settle(request, 0, sent=False)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     current = data["periods"][0]
     request = current["requests"][-1]
     if case == "unmarked":
@@ -560,7 +560,7 @@ def test_old_formats_reject_continuation_fields(tmp_path, schema, tag):
     ):
         pass
     record = continuation_for(path, plan)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     assert data["schema"] == "harnessix.provider-verification-budget/" + schema
     current = data["periods"][0]
     if tag == "record":
@@ -615,7 +615,7 @@ def test_actual_old_reader_accepts_original_beta_but_fails_closed_on_v4(tmp_path
 @pytest.mark.parametrize("target", ["top", "inactive", "active"])
 def test_save_preserves_non_request_history_in_every_period(tmp_path, target):
     path, plan, _ = pending_beta(tmp_path, register=False)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     data["periods"].append({"period_id": str(uuid4()), "status": "closed", "requests": []})
     write_data(path, data)
     record = continuation_for(path, plan)

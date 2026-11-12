@@ -134,7 +134,7 @@ async def test_declared_secret_is_not_authorized_by_matching_field_and_hash(
             {"summary": encoded}
         )
         assert executor.calls == 1 and executor.reconciliations == 0
-        assert (root / "file.txt").read_text() == "unchanged"
+        assert (root / "file.txt").read_text(encoding="utf-8") == "unchanged"
     finally:
         gate.close()
         plans.close()

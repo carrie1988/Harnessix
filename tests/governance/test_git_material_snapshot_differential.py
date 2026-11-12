@@ -229,7 +229,9 @@ def test_explicit_windows_diagnostic_requires_original_source_pe_and_pdb_authori
 
 
 def test_manual_workflow_has_four_independent_steps_and_keeps_original_sdk_failure_gate():
-    workflow = (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text()
+    workflow = (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text(
+        encoding="utf-8"
+    )
     for case in ("hash-direct", "hash-held", "write-direct", "write-held"):
         selector = (
             "tests/product_config/test_git_material_snapshot_differential.py"
@@ -271,7 +273,9 @@ def test_manual_workflow_has_four_independent_steps_and_keeps_original_sdk_failu
 
 def test_runner_symbol_path_is_only_resolved_in_step_environment():
     workflow = yaml.safe_load(
-        (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text()
+        (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text(
+            encoding="utf-8"
+        )
     )
     job = workflow["jobs"]["minimum-commit-probe"]
     key = "HARNESSIX_GIT_NATIVE_DIFFERENTIAL_SYMBOLS"
@@ -303,7 +307,9 @@ def test_runner_symbol_path_is_only_resolved_in_step_environment():
 
 def test_sdk_fixture_parent_is_original_preflight_symbol_root():
     workflow = yaml.safe_load(
-        (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text()
+        (ROOT / ".github/workflows/windows-git-minimum-commit-probe.yml").read_text(
+            encoding="utf-8"
+        )
     )
     steps = workflow["jobs"]["minimum-commit-probe"]["steps"]
     sdk = next(step for step in steps if step.get("name") == "原两个案例及低敏只读侧车")

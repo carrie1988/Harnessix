@@ -362,7 +362,7 @@ async def test_windows_git_owner_timeout_and_cancellation_leave_no_active_lease(
         assert marker.exists(), "基准拒绝必须覆盖已实际启动的目标和子进程"
     if marker.exists():
         # 就绪标记创建前PID正文已经关闭；只读取已发布的完整PID，不重试或忽略空值。
-        await _wait_stopped(int(marker.with_name(marker.name + ".pid").read_text()))
+        await _wait_stopped(int(marker.with_name(marker.name + ".pid").read_text(encoding="utf-8")))
 
 
 def test_windows_git_readiness_publication_with_pinned_workspace(tmp_path, capsys):

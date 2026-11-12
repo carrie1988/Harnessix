@@ -84,7 +84,7 @@ async def test_custom_authorization_at_actual_public_surfaces(tmp_path, read_onl
             assert executor.calls == 1 and executor.reconciliations == 0
             await assert_runtime_surfaces(runtime, store, thread, turn, provider, exporter, reader)
         assert_stores_safe(tmp_path)
-        assert (root / "file.txt").read_text() == "unchanged"
+        assert (root / "file.txt").read_text(encoding="utf-8") == "unchanged"
     finally:
         observer.close()
         audit.close()

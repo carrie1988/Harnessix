@@ -242,7 +242,7 @@ async def test_confirmed_write_keeps_audit_and_never_reexecutes_after_global_rej
                 assert router.status(request.plan_id) == frozen
                 assert [e.model_dump_json() for e in router.events(request.plan_id)] == audit_before
                 assert executor.calls == 1 and executor.reconciliations == 0
-                assert (root / "file.txt").read_text() == "changed"
+                assert (root / "file.txt").read_text(encoding="utf-8") == "changed"
                 assert len(provider.requests) == 1
                 assert CANARY not in (await store.get_thread(thread.thread_id)).model_dump_json()
                 assert all(

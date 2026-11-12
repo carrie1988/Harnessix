@@ -96,7 +96,7 @@ async def test_undeclared_custom_success_does_not_publish_body(
         events = actions.events(plan_id)
         assert events[-1].to_state == "succeeded"
         assert events[-1].output_sha256 == canonical_digest(body)
-        assert (root / "file.txt").read_text() == "unchanged"
+        assert (root / "file.txt").read_text(encoding="utf-8") == "unchanged"
     finally:
         audit.close()
         plans.close()
