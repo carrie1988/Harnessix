@@ -4,7 +4,7 @@ status: current
 version: 8
 code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners: [core]
-modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery]
+modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery, trusted_actions]
 related_adrs:
   - docs/adr/0076-code-readability-and-structural-governance.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
@@ -16,6 +16,7 @@ related_tests:
   - tests/processes/test_posix_owner_zombie_group.py
   - tests/tools/test_windows_read_adapter.py
   - tests/delivery/test_trusted_action_patch.py
+  - tests/trusted_actions/test_plan_error_boundaries.py
   - tests/processes/test_runtime_zombie_group.py
   - tests/agent/test_resume_cancel_before_start.py
   - tests/product_config/test_git_user_source_files.py
@@ -84,6 +85,7 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
+- **Windows上带可执行权限位的补丁（0.10.0b15）**：解析阶段拒绝的原码`delivery_metadata_unsupported`此前未登记在公开码表，被换成`action_plan_failed`，整轮按未知效果中断；现在保留原码，作为可修正的失败返回，工作区没有变化。见[Trusted Actions模块设计](../modules/trusted-actions.md)。
 - **Windows上补丁目标存在性不符（0.10.0b15）**：`create`遇到已有文件、`edit`/`replace`/`delete`遇到缺失文件，此前在Windows上被审批预览记为未知效果并中断整轮；现在与POSIX一样在规划前判为可修正的拒绝（`workspace_patch_target_exists`、`workspace_patch_target_missing`），工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。
 - **Windows上的补丁前置条件补全（0.10.0b15）**：提案修复读取整个目标文件的函数此前在Windows后端恒返回空，精确锚定的edit不会被补上当前SHA；现在Windows后端用同一次原生稳定观察读取，行为与POSIX一致。读不到时仍保持原提案，后续核对不变，见[Coding Tool Runtime模块设计](../modules/tools.md)。
 - **Git用户观察的读取超时**：本地读取时限到期此前被报成“来源发生变化”（复核时）或“路径无效”（初次捕获时），现报`git_user_observation_timeout`（可重试）。时限仍为5秒，与执行时快照复核共用，按用户决定不放宽。
@@ -246,7 +248,7 @@ b6发布前在247上用b5做对照：一次修改8个各在12层子目录下的�
 
 智谱端点真实验证（2026-11-11，用户提供Key）：按Harnessix实际请求形状探测`glm-5.3-flash`，流式用量、工具调用、`max_tokens`均被接受，带工具的多轮对话不回传思考内容不报错，思考Token计入输出；产品层面配置向导、`doctor --probe-model`与一个完整的TUI缺陷修复任务（含运行测试）通过，状态栏按人民币牌价显示费用上限。免费的`glm-4.7-flash`第二轮请求遇到限流（429），不作为推荐模型。
 
-Windows完整测试集（2026-11-11）：CI的Windows任务只跑到一部分，改在Windows实机上用真实git检出跑完整测试集。首轮3557项失败或报错，归为93类原因，绝大多数出在测试与仓库设置：文本文件按CRLF检出（现统一LF）、测试按本机编码读文件、参数值过长的用例名超过Windows环境变量上限、临时目录权限不是“本人与SYSTEM”、Git交付夹具把Windows路径声明为POSIX平台、只在POSIX上存在的原生沙箱用例。修正这些之后剩413项，其中查出两处产品缺陷（上文两条“Windows上…”）。其余失败集中在尚未接入产品的内置Git交付用例，另行处理。
+Windows完整测试集（2026-11-11）：CI的Windows任务只跑到一部分，改在Windows实机上用真实git检出跑完整测试集。首轮3557项失败或报错，归为93类原因，绝大多数出在测试与仓库设置：文本文件按CRLF检出（现统一LF）、测试按本机编码读文件、参数值过长的用例名超过Windows环境变量上限、临时目录权限不是“本人与SYSTEM”、Git交付夹具把Windows路径声明为POSIX平台、只在POSIX上存在的原生沙箱用例。修正这些之后剩413项，从中查出三处产品缺陷（上文三条“Windows上…”）。其余失败集中在尚未接入产品的内置Git交付用例，另行处理。
 
 ## 11. 源码映射
 

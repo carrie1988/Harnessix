@@ -56,6 +56,8 @@ _RESOLVER_ERRORS = {
     "workspace_patch_arguments_invalid": "Workspace Patch参数类型不一致",
     "workspace_patch_cwd_unsupported": "Workspace Patch只支持根级cwd",
     "delivery_path_denied": "Workspace Patch路径不允许写入",
+    # Windows没有可执行权限位；保留原码，这次拒绝才能作为可修正的失败返回而不是中断整轮。
+    "delivery_metadata_unsupported": "本平台不支持请求的文件权限；Windows上请省略mode或用420",
     "git_workspace_mismatch": "Git Push与规划Workspace不一致",
     "git_repository_changed": "Git仓库绑定已经变化",
     "git_push_input_invalid": "Git Push输入无效",

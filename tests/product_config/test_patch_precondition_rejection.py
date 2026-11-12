@@ -198,10 +198,17 @@ async def test_real_change_still_requires_approval_and_executes(tmp_path, change
         )
         proposal = proposal.model_copy(update={"files": (item,)})
         thread, waiting, _ = await patch_turn(runtime, provider, root, proposal)
+        if change == "mode-only" and os.name == "nt":
+            # Windows没有可执行权限位：这是可修正的拒绝，Turn继续，文件不变（0.10.0b15前整轮中断）。
+            assert waiting.status is TurnStatus.COMPLETED and result(waiting).outcome == "failed"
+            assert result(waiting).error.code == "delivery_metadata_unsupported"
+            assert target.read_bytes() == b"old\n"
+            return
         assert waiting.status is TurnStatus.WAITING_APPROVAL
         approval = _approval(waiting)
         assert router.status(approval.plan_id).state == "pending_approval"
-        assert target.read_bytes() == b"old\n" and target.stat().st_mode & 0o777 == 0o644
+        assert target.read_bytes() == b"old\n"
+        assert os.name == "nt" or target.stat().st_mode & 0o777 == 0o644
         assert transactions.load(approval.plan_id).state == "prepared"
         await runtime.reply_approval(
             thread.thread_id,
@@ -214,7 +221,7 @@ async def test_real_change_still_requires_approval_and_executes(tmp_path, change
         assert completed.status is TurnStatus.COMPLETED and result(completed).outcome == "succeeded"
         assert router.status(approval.plan_id).state == "succeeded"
         assert target.read_bytes() == item.content.encode()
-        assert target.stat().st_mode & 0o777 == item.mode
+        assert os.name == "nt" or target.stat().st_mode & 0o777 == item.mode
 
 
 @pytest.mark.parametrize("no_change_first", [False, True])

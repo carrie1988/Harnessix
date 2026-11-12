@@ -18,6 +18,8 @@ from harnessix.agent.reducer import pending_calls, replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
+from harnessix.delivery.trusted_action import resolve_workspace_patch
+from harnessix.delivery.trusted_action_contracts import WorkspacePatchFile, WorkspacePatchInput
 from harnessix.domain.models import EffectClass, RiskLevel
 from harnessix.execution.contracts import canonical_digest
 from harnessix.execution.store import SQLiteExecutionPlanStore
@@ -28,6 +30,7 @@ from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
 from harnessix.trusted_actions.contracts import ActionExecutionOutcome, build_trusted_tool_binding
 from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
+from harnessix.trusted_actions.preparation_rejection import _WORKSPACE_PATCH_PLANNING_FAILURES
 from harnessix.trusted_actions.public_errors import (
     _DECODER_ERRORS,
     _RESOLVER_ERRORS,
@@ -220,6 +223,27 @@ def test_every_registered_error_uses_only_fixed_message(
         assert sanitized.code == code and sanitized.message == message
         assert not sanitized.retryable
         _assert_no_leak(str(sanitized))
+
+
+def test_every_correctable_patch_planning_rejection_survives_the_resolve_stage() -> None:
+    """内置Patch把这些规划拒绝投影为可修正的失败；解析阶段若不登记原码，
+
+    它就被换成action_plan_failed，投影永远不会生效，整轮按未知效果中断
+    （Windows上带可执行权限位的Patch在0.10.0b15前就是这样）。
+    """
+
+    assert _WORKSPACE_PATCH_PLANNING_FAILURES <= _RESOLVER_ERRORS.keys()
+
+
+def test_windows_executable_mode_keeps_its_code_through_the_resolve_stage() -> None:
+    proposal = WorkspacePatchInput(
+        files=(WorkspacePatchFile(operation="create", path="run.sh", content="x", mode=0o755),)
+    )
+    with pytest.raises(KernelError) as refused:
+        resolve_workspace_patch(proposal, "windows")
+    public = sanitize_plan_exception(refused.value, stage="resolve")
+    assert public.code == "delivery_metadata_unsupported"
+    assert "420" in public.message and public.message != refused.value.message
 
 
 @pytest.mark.parametrize("stage", ["decode", "resolve", "policy"])

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 46
-code_revision: af16bc871ed3f5809e992c587fde00479d42d870
+version: 47
+code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
 modules:
@@ -52,6 +52,12 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：解析阶段保留“文件权限不支持”的原码（0.10.0b15）
+
+- 内置Patch把一组规划期拒绝投影为可修正的失败结果（[`workspace_patch_planning_rejection`](../../src/harnessix/trusted_actions/preparation_rejection.py)），其中包括`delivery_metadata_unsupported`。但解析阶段的公开错误码表（[`public_errors._RESOLVER_ERRORS`](../../src/harnessix/trusted_actions/public_errors.py)）没有登记它，原码在到达投影前就被换成`action_plan_failed`，投影从不生效。
+- 实际触发点只有Windows：Patch带可执行权限位（`mode`为493）时解析器拒绝，整轮按未知效果中断（2026-11-11在Windows实机发现）。现在登记该码并给出固定消息“本平台不支持请求的文件权限；Windows上请省略mode或用420”，模型改正后可以继续。
+- 测试：[规划期可修正拒绝的码必须全部登记在解析阶段码表](../../tests/trusted_actions/test_plan_error_boundaries.py)（两张表的一致性，任何宿主都运行）；[真实产品路径](../../tests/product_config/test_patch_precondition_rejection.py)在Windows实机通过。
 
 ## 当前增量：策略 v2 与沙箱外命令身份（ADR 0113）
 
