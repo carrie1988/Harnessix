@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 21
-code_revision: 0a05e8c3af81ee30523515bd0917532766d8234b
+version: 22
+code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
 modules:
@@ -87,6 +87,12 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 正则解释会静默无命中，回退把这类查询变为可用结果而不改变显式`match_mode=literal`的语义。
 
 # Coding Tool Runtime模块设计
+
+## 当前增量：Windows上也为精确锚定的edit补SHA（0.10.0b15）
+
+- 提案修复（[`fill_patch_preconditions`](../../src/harnessix/agent/call_repair.py)）要读整个目标文件，确认锚点唯一后补上当前SHA-256。`CodingToolRuntime.read_workspace_file`此前只实现了POSIX读根，Windows上恒返回None，修复从不生效：模型带着过期或缺失的`expected_sha256`提交edit时，macOS与Linux进入审批，Windows直接报`workspace_patch_precondition_failed`，模型要重读文件再提交一次（2026-11-11在Windows实机跑完整测试集时发现）。
+- 现在由读后端[`_ReadBackend.read_complete_bytes`](../../src/harnessix/tools/read_backend.py)按平台选择实现：POSIX沿用同一FD观察；Windows用[`windows_file_read.read_complete_bytes`](../../src/harnessix/tools/windows_file_read.py)，取同一次原生稳定观察里的完整字节，路径策略、链接拒绝与2 MiB扫描上限和`read_file`相同。读不到时仍返回None并保持原提案，规划与执行前照旧按SHA核对。
+- 测试：[Windows适配器](../../tests/tools/test_windows_read_adapter.py)覆盖完整字节、超限、目录、缺失与拒读路径，以及运行时经Windows后端读取（修复前失败）；[真实产品路径](../../tests/product_config/test_patch_call_repair.py)在Windows实机通过。
 
 ## 当前增量：会话期间不再锁住工作区根目录内的改名（0.10.0b12）
 
@@ -1087,6 +1093,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 22 | `152c9c28` 增量 | 2026-11-11 | 提案修复的整文件读取补上Windows后端，精确锚定的edit在Windows上也能补SHA（0.10.0b15） |
 | 21 | `0a05e8c3` 增量 | 2026-11-11 | Windows读工具的会话根允许根目录内改名，根本身仍固定（0.10.0b12） |
 | 20 | `5702881f267ad6b5e4ea3092e6578f8c9105ad08` | 搜索预览整行放得下时返回整行，只有超长行才截取窗口，模型不必为抄写编辑锚点重读文件；读工具把POSIX工作区根目录的绝对路径按挂载点映射，根目录之外与`..`越界仍拒绝 |
 | 12 | `f84583e5560998683cf07d6b4c138c4f7ff3ad1a` | Git Diff固定追加`--full-index`，使跨副本完整正文SHA-256不依赖`core.abbrev`；完整Blob OID按实际Git对象格式输出且不限40位，不改变Schema、评分或容量；详见[Git Diff完整对象身份详设](../changes/m09-r4-git-diff-full-object-identity.md) |

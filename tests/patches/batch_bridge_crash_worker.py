@@ -55,7 +55,7 @@ async def main():
         async with ManagedPatchBatchBridge(copy) as bridge:
             if cut.startswith("recover:"):
                 plan = ManagedPatchBatchCallPlan.model_validate_json(
-                    path.with_suffix(".plan").read_text()
+                    path.with_suffix(".plan").read_text(encoding="utf-8")
                 )
                 await bridge.recover(call, scope, CancelToken(), plan=plan, approval=approval(plan))
             else:

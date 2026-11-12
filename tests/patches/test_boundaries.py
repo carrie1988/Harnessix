@@ -139,7 +139,7 @@ async def test_cancel_inflight_host_thread_is_joined_and_releases_read_fd(tmp_pa
             await asyncio.gather(worker, return_exceptions=True)
         with pytest.raises(OSError):
             os.fstat(seen[0])
-    assert path.read_text() == "before"
+    assert path.read_text(encoding="utf-8") == "before"
 
 
 def test_verify_timeout_is_not_mislabeled_as_corrupt(tmp_path, monkeypatch):

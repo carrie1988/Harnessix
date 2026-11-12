@@ -20,7 +20,9 @@ from tests.artifacts.helpers import latest_migration
 
 
 def old_database(path):
-    fixture = json.loads((Path(__file__).parent / "fixtures/session-v7-artifact.json").read_text())
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures/session-v7-artifact.json").read_text(encoding="utf-8")
+    )
     with sqlite3.connect(path) as db:
         db.execute("PRAGMA application_id=1213748043")
         db.execute(
@@ -31,7 +33,7 @@ def old_database(path):
         ):
             if not migration.name.endswith(".sql") or int(migration.name[:4]) > 8:
                 continue
-            sql = migration.read_text()
+            sql = migration.read_text(encoding="utf-8")
             db.executescript(sql)
             db.execute(
                 "INSERT INTO agent_migrations VALUES (?,?)",

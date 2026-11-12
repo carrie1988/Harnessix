@@ -202,7 +202,9 @@ async def test_gateway_advertises_compact_descriptor_and_applies_after_approval(
         )
         completed = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
         assert completed.status is TurnStatus.COMPLETED
-        assert (root / "src/modified.py").read_text() == OLD.replace("return 1", "return 2")
+        assert (root / "src/modified.py").read_text(encoding="utf-8") == OLD.replace(
+            "return 1", "return 2"
+        )
 
 
 async def test_invalid_combination_fails_without_approval_or_effect(tmp_path):
@@ -213,7 +215,7 @@ async def test_invalid_combination_fails_without_approval_or_effect(tmp_path):
         assert turn.status is TurnStatus.COMPLETED
         assert results[0].outcome == "failed"
         assert results[0].error.code == "tool_invalid_arguments"
-        assert (root / "src/modified.py").read_text() == OLD
+        assert (root / "src/modified.py").read_text(encoding="utf-8") == OLD
 
 
 async def test_create_under_a_missing_parent_is_a_correctable_failure(tmp_path):

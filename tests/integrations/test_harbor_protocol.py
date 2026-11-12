@@ -341,7 +341,7 @@ def test_startup_failure_still_writes_a_complete_receipt(tmp_path: Path, monkeyp
     with pytest.raises(SystemExit) as exited:
         protocol_runner.main()
     assert exited.value.code == 1
-    receipt = json.loads(output.read_text())
+    receipt = json.loads(output.read_text(encoding="utf-8"))
     assert receipt["spec_version"] == "harnessix.harbor-protocol-result/v1"
     assert (receipt["trial_id"], receipt["reason"]) == (str(trial), "server_unavailable")
     assert receipt["runner_error"] == "AgentSDKError:server_closed"
@@ -418,4 +418,4 @@ def test_existing_state_is_not_implicitly_restarted(tmp_path: Path, monkeypatch)
         protocol_runner.main()
     assert failure.value.code == 1
     assert run.await_count == 0
-    assert (state / "existing").read_text() == "preserve"
+    assert (state / "existing").read_text(encoding="utf-8") == "preserve"

@@ -198,10 +198,17 @@ async def test_real_change_still_requires_approval_and_executes(tmp_path, change
         )
         proposal = proposal.model_copy(update={"files": (item,)})
         thread, waiting, _ = await patch_turn(runtime, provider, root, proposal)
+        if change == "mode-only" and os.name == "nt":
+            # Windows没有可执行权限位：这是可修正的拒绝，Turn继续，文件不变（0.10.0b15前整轮中断）。
+            assert waiting.status is TurnStatus.COMPLETED and result(waiting).outcome == "failed"
+            assert result(waiting).error.code == "delivery_metadata_unsupported"
+            assert target.read_bytes() == b"old\n"
+            return
         assert waiting.status is TurnStatus.WAITING_APPROVAL
         approval = _approval(waiting)
         assert router.status(approval.plan_id).state == "pending_approval"
-        assert target.read_bytes() == b"old\n" and target.stat().st_mode & 0o777 == 0o644
+        assert target.read_bytes() == b"old\n"
+        assert os.name == "nt" or target.stat().st_mode & 0o777 == 0o644
         assert transactions.load(approval.plan_id).state == "prepared"
         await runtime.reply_approval(
             thread.thread_id,
@@ -214,7 +221,7 @@ async def test_real_change_still_requires_approval_and_executes(tmp_path, change
         assert completed.status is TurnStatus.COMPLETED and result(completed).outcome == "succeeded"
         assert router.status(approval.plan_id).state == "succeeded"
         assert target.read_bytes() == item.content.encode()
-        assert target.stat().st_mode & 0o777 == item.mode
+        assert os.name == "nt" or target.stat().st_mode & 0o777 == item.mode
 
 
 @pytest.mark.parametrize("no_change_first", [False, True])
@@ -346,6 +353,11 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
         ("delete-missing", "workspace_patch_target_missing"),
         ("edit-missing", "workspace_patch_target_missing"),
         ("replace-missing", "workspace_patch_target_missing"),
+        # 目标是目录：模型把目录当文件新建、修改或删除。此前所有平台上都被记为未知效果并停整轮。
+        ("create-directory", "workspace_patch_target_exists"),
+        ("edit-directory", "workspace_patch_target_missing"),
+        ("replace-directory", "workspace_patch_target_missing"),
+        ("delete-directory", "workspace_patch_target_missing"),
         # 带setuid位的文件仍不进入事务（0777等普通权限自ADR 0068第2版起保留，见
         # tests/delivery/test_preserved_file_modes.py）；拒绝必须是可修正的失败结果，
         # 不能像E0c django-11133/sympy-13031那样被审批预览记为未知效果并停整轮。
@@ -394,6 +406,16 @@ async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
             )
         elif kind == "replace-missing":
             item = original.model_copy(update={"path": "src/absent.py"})
+        elif kind == "create-directory":
+            item = original.model_copy(
+                update={"operation": "create", "path": "src", "expected_sha256": None}
+            )
+        elif kind == "edit-directory":
+            item = original.model_copy(update={**edit, "path": "src"})
+        elif kind == "replace-directory":
+            item = original.model_copy(update={"path": "src"})
+        elif kind == "delete-directory":
+            item = _proposal().files[2].model_copy(update={"path": "src"})
         elif kind == "missing-anchor":
             item = original.model_copy(
                 update={
@@ -419,6 +441,8 @@ async def test_deterministic_patch_rejection_is_recoverable_tool_feedback(
             transactions.load(plan_id)
         assert missing.value.code == "delivery_transaction_not_found"
         assert_unchanged(root)
+        if kind.endswith("-directory"):
+            assert "目录" in output.error.message
         if kind.endswith("-mode"):
             assert output.error.message.endswith("本次Patch未执行，工作区没有变化")
             for name in ("src/modified.py", "tests/deleted.txt"):

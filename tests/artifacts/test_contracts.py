@@ -59,7 +59,7 @@ def test_frozen_artifact_schema(name, model, frozen):
     active_path = (
         path.with_name(f"{name}-v2.schema.json") if name == "archived-grep-output" else path
     )
-    assert json.loads(active_path.read_text()) == model.model_json_schema()
+    assert json.loads(active_path.read_text(encoding="utf-8")) == model.model_json_schema()
 
 
 @pytest.mark.parametrize(

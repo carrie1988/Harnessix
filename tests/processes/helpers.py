@@ -1,8 +1,10 @@
 import asyncio
 import os
+import select
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from harnessix.processes.contracts import ProcessRequest
@@ -20,7 +22,11 @@ def runtime(root, **kwargs):
 
 
 def _ready(path: Path):
-    return int(path.read_text()) if path.exists() and path.read_text().strip() else None
+    return (
+        int(path.read_text(encoding="utf-8"))
+        if path.exists() and path.read_text(encoding="utf-8").strip()
+        else None
+    )
 
 
 async def ready(path: Path):
@@ -60,3 +66,22 @@ async def cleanup(pid, *, group=False):
     except ProcessLookupError:
         pass
     await stopped(pid)
+
+
+def zombie_leader() -> subprocess.Popen[bytes]:
+    """独立进程组里已退出、尚未被wait回收的组长。"""
+
+    read_end, write_end = os.pipe()
+    process = subprocess.Popen(
+        (sys.executable, "-c", "import time; time.sleep(30)"),
+        start_new_session=True,
+        pass_fds=(write_end,),
+    )
+    os.close(write_end)
+    os.killpg(process.pid, signal.SIGTERM)
+    # 子进程退出时关闭继承的写端，读端随即EOF；不wait，组长保持僵尸。
+    ready_ends, _, _ = select.select([read_end], [], [], 10)
+    assert ready_ends and os.read(read_end, 1) == b"", "子进程未按时退出"
+    os.close(read_end)
+    time.sleep(0.2)
+    return process

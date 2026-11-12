@@ -233,7 +233,7 @@ async def test_timeout_kills_descendant_process_group(tmp_path: Path) -> None:
             environment={},
         )
         lease = await handle.wait()
-    child_pid = int(marker.read_text())
+    child_pid = int(marker.read_text(encoding="utf-8"))
     assert lease.state == "exited" and lease.stop_reason == "timeout"
     assert lease.returncode == -signal.SIGKILL
     await stopped(child_pid)

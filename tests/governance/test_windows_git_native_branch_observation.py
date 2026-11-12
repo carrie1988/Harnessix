@@ -304,18 +304,18 @@ def test_only_fixed_members_are_extracted_and_verified(tmp_path, monkeypatch):
 
 def test_hardware_scripts_preserve_auto_continue_and_full_machine_guards(tmp_path):
     preflight.debugger_scripts(tmp_path, CORE)
-    loaded = (tmp_path / "on-git-load.cdb").read_text()
+    loaded = (tmp_path / "on-git-load.cdb").read_text(encoding="utf-8")
     assert loaded.count("ba e 1") == 2
     assert ") { .if ((dwo(git+0x70b6f" in loaded
     assert "wo(git+0x70b74+0x4)" in loaded and "by(git+0x70bc1+0x6)" in loaded
     assert "git!mingw_fstat-git == 0x315ca0" in loaded
     for phase in ("fstat", "index"):
-        handler = (tmp_path / ("on-" + phase + ".cdb")).read_text()
+        handler = (tmp_path / ("on-" + phase + ".cdb")).read_text(encoding="utf-8")
         assert "@ebx == 0" in handler and "@rdi == 0" in handler
         assert "@rip-git" in handler and handler.endswith("gc\n")
         for forbidden in (".call", ".dump", " db ", " bp ", "%ma", "%mu"):
             assert forbidden not in handler
-    assert ".childdbg 1" in (tmp_path / "bootstrap.cdb").read_text()
+    assert ".childdbg 1" in (tmp_path / "bootstrap.cdb").read_text(encoding="utf-8")
 
 
 def test_nonwindows_preflight_and_explicit_execution_are_refused(tmp_path):
@@ -341,7 +341,7 @@ def test_default_dryrun_does_not_launch_debugger(tmp_path, monkeypatch):
     monkeypatch.setattr(observe, "run_debugger", lambda *args: pytest.fail("执行"))
     report = tmp_path / "report"
     assert observe.run(ROOT, tmp_path / "private", report, False, "") == 0
-    result = json.loads((report / "result.json").read_text())
+    result = json.loads((report / "result.json").read_text(encoding="utf-8"))
     assert result["status"] == "PREPARED_NOT_EXECUTED"
     assert not result["branch_gate_passed"] and not result["execution_performed"]
     assert not result["original_sdk_acceptance"] and result["historical_root"] == "UNKNOWN"
@@ -401,7 +401,7 @@ def test_failure_cases_keep_nonzero_exit_even_when_branch_gate_is_complete(tmp_p
     monkeypatch.setattr(observe, "run_debugger", simulated_started_debugger)
     report = tmp_path / "report"
     assert observe.run(ROOT, private, report, True, "d" * 40) == 1
-    result = json.loads((report / "result.json").read_text())
+    result = json.loads((report / "result.json").read_text(encoding="utf-8"))
     assert result["branch_gate_passed"] and result["pytest_exit"] == 1
     assert result["historical_run_result"] == "FAIL_RETAINED"
     assert not result["original_sdk_acceptance"] and result["historical_root"] == "UNKNOWN"
@@ -470,7 +470,7 @@ def test_launch_failure_does_not_claim_native_execution(tmp_path, monkeypatch):
     monkeypatch.setattr(observe.subprocess, "Popen", unavailable)
     report = tmp_path / "report"
     assert observe.run(ROOT, private, report, True, "d" * 40) == 2
-    result = json.loads((report / "result.json").read_text())
+    result = json.loads((report / "result.json").read_text(encoding="utf-8"))
     assert not result["execution_performed"] and not result["branch_gate_passed"]
     assert "不得公开" not in json.dumps(result)
 
@@ -499,7 +499,9 @@ def test_watchdog_stops_debugger_without_leave_alive_flag(tmp_path, monkeypatch)
 
 
 def test_workflow_is_manual_single_windows_job_with_exact_budgets_and_no_raw_upload():
-    body = (ROOT / ".github/workflows/windows-git-native-branch-observation.yml").read_text()
+    body = (ROOT / ".github/workflows/windows-git-native-branch-observation.yml").read_text(
+        encoding="utf-8"
+    )
     workflow = yaml.safe_load(body)
     trigger = workflow.get("on", workflow.get(True))
     assert set(trigger) == {"workflow_dispatch"}

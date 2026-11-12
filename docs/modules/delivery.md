@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 56
-code_revision: 386dd2c30c86865529d9163afa27344c15462ba9
+version: 58
+code_revision: 2574a498a9d36de2d4ae2b6d00568efa96af60fd
 owners:
   - core
 modules:
@@ -71,6 +71,19 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Delivery模块设计
+
+## 当前增量：目标是目录也是可修正的拒绝（0.10.0b16）
+
+- 模型把目录当文件操作时（在已有目录的路径上`create`，或对目录`edit`、`replace`、`delete`），规划前的存在性确认此前认不出目录，交给严格规划器后失败被记为未知效果，整轮任务中断。这在所有平台上都存在（2026-11-11逐项探测模型常见的补丁错误时发现）。
+- [`planner._target_kind`](../../src/harnessix/delivery/planner.py)现在返回目标是普通文件、目录还是不存在：`create`遇到目录报`workspace_patch_target_exists`（提示改为目录内的文件路径），其余操作遇到目录报`workspace_patch_target_missing`（提示Patch只处理文件）。设备、FIFO等其他类型与被拒路径仍交严格规划器，结论不变。
+- 测试：[同一组断言在各平台宿主上运行](../../tests/delivery/test_trusted_action_patch.py)；[真实产品路径](../../tests/product_config/test_patch_precondition_rejection.py)新增四个目录用例，在macOS与Windows实机通过。
+
+## 当前增量：Windows上目标存在性不符也是可修正的拒绝（0.10.0b15）
+
+- 补丁规划前先确认目标与操作相符：`create`的目标已是普通文件报`workspace_patch_target_exists`，`edit`、`replace`、`delete`的目标不存在报`workspace_patch_target_missing`。两者都是尚未执行的确定性拒绝，模型收到后可以改正再提交。
+- 这一步此前只在POSIX上做。Windows上同样的提案落到严格规划器，失败不属于可修正的拒绝，被审批预览记为未知效果（`uncertain_effect`，原因`trusted_action_review_failed`），整轮任务中断（2026-11-11在Windows实机跑完整测试集时发现）。
+- 现在由`planner._target_file_exists`（0.10.0b16起为[`_target_kind`](../../src/harnessix/delivery/planner.py)）按宿主平台观察：POSIX沿用原读根；Windows用`WindowsWorkspaceRoot.observe`只看类型不读内容，父目录不存在与文件不存在同样算缺失。目录、被拒路径和观察失败仍交严格规划器分类，结论不变。
+- 测试：[同一组断言在各平台宿主上运行](../../tests/delivery/test_trusted_action_patch.py)；[真实产品路径](../../tests/product_config/test_patch_precondition_rejection.py)的六个存在性用例在Windows实机通过。
 
 ## 完整Core CAS与单次控制边界
 
@@ -1869,6 +1882,8 @@ v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 58 | `2574a498` 增量 | 2026-11-12 | 目标是目录时同样判为可修正的拒绝，所有平台（0.10.0b16） |
+| 57 | `152c9c28` 增量 | 2026-11-11 | 补丁规划前的目标存在性确认补上Windows宿主，不符时是可修正的拒绝而不再中断整轮（0.10.0b15） |
 | 39 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f三组Windows材料原生Job结果、核心Job可读性失败与Snapshot候选本机回归边界；完整Git与Backup v2仍开放 |
 | 30 | `871dc3c12deb5fbea227af3dd628b39fea545622` | 2026-10-01 | 同步完整对象目录实际CAS回读、七字段／直接边、两树／并集核验及原8MiB tree补验；来源、授权及默认交付另行接线 |
 | 29 | `9e176d7be18dea2ba98106cdbeb2c72c0e41ff3c` | 2026-10-01 | 同步七个完整对象目录模型、八个纯接口、规范字节、失败／取消与后继CAS及业务授权边界；固定新增源码身份见专项验证包 |

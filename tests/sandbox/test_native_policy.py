@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,10 @@ from harnessix.sandbox.native_policy import (
     sandbox_environment,
     sandbox_reserved_environment_problem,
     workspace_git_directories,
+)
+
+posix_only = pytest.mark.skipif(
+    os.name == "nt", reason="原生进程沙箱只在Linux与macOS上提供，策略与参数全是POSIX路径"
 )
 
 HOME = Path("/Users/dev")
@@ -39,6 +44,7 @@ def facts(**overrides: object) -> NativeSandboxFacts:
     return NativeSandboxFacts(**(values | overrides))  # type: ignore[arg-type]
 
 
+@posix_only
 def test_read_write_policy_confines_writes_and_protects_git() -> None:
     policy = build_native_sandbox_policy(facts())
     assert policy.writable_roots == tuple(
@@ -52,6 +58,7 @@ def test_read_write_policy_confines_writes_and_protects_git() -> None:
     assert NativeSandboxPolicy.model_validate_json(policy.model_dump_json()) == policy
 
 
+@posix_only
 def test_read_only_mode_binds_the_workspace_read_only() -> None:
     policy = build_native_sandbox_policy(facts(workspace_mode="read_only"))
     assert str(WORKSPACE) not in policy.writable_roots
@@ -59,6 +66,7 @@ def test_read_only_mode_binds_the_workspace_read_only() -> None:
     assert policy.read_only_roots == (str(WORKSPACE),)
 
 
+@posix_only
 def test_linux_policy_uses_platform_deny_list_and_private_loopback() -> None:
     policy = build_native_sandbox_policy(
         facts(backend="bubblewrap", blocked_loopback_ports=(7890,))
@@ -68,11 +76,13 @@ def test_linux_policy_uses_platform_deny_list_and_private_loopback() -> None:
     assert policy.blocked_loopback_ports == ()
 
 
+@posix_only
 def test_seatbelt_keeps_sorted_unique_blocked_proxy_ports() -> None:
     policy = build_native_sandbox_policy(facts(blocked_loopback_ports=(7892, 7890, 7890)))
     assert policy.blocked_loopback_ports == (7890, 7892)
 
 
+@posix_only
 def test_protected_harnessix_paths_and_env_override_are_honoured(tmp_path: Path) -> None:
     state = Path("/opt/state/harnessix")
     policy = build_native_sandbox_policy(
@@ -102,12 +112,14 @@ def test_overlapping_or_unsafe_roots_are_refused(overrides: dict[str, object]) -
     assert error.value.code in {"sandbox_root_overlaps_denied", "sandbox_path_invalid"}
 
 
+@posix_only
 def test_write_root_may_contain_denied_paths_which_stay_masked() -> None:
     policy = build_native_sandbox_policy(facts(write_roots=(HOME / ".config",)))
     assert str(HOME / ".config") in policy.writable_roots
     assert str(HOME / ".config/gh") in policy.denied_paths
 
 
+@posix_only
 def test_policy_contract_rejects_tampering() -> None:
     policy = build_native_sandbox_policy(facts())
     payload = policy.model_dump(mode="json")

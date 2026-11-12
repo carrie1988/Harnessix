@@ -224,7 +224,7 @@ async def test_git_rejects_executable_filters_and_configuration_includes(
     if kind == "clean":
         # 正向对照证明Git Diff确会触发clean，而不是无效辅助程序夹具。
         _command(root, "-c", "core.fsmonitor=false", "diff", "--no-ext-diff", "--no-textconv", "--")
-        assert marker.read_text() == "executed"
+        assert marker.read_text(encoding="utf-8") == "executed"
         marker.unlink()
     async with CodingToolRuntime(root, git_executable=_git()) as tools:
         result = await execute(tools, "git_diff")

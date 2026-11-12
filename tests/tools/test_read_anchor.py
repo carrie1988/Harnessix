@@ -27,10 +27,10 @@ from tests.tools.test_windows_read_adapter import _FakeWindowsRoot
 
 def test_new_schema_keeps_both_frozen_input_versions():
     root = Path(__file__).parents[2] / "spec"
-    assert json.loads((root / "read-file-input-v2.schema.json").read_text()) == (
+    assert json.loads((root / "read-file-input-v2.schema.json").read_text(encoding="utf-8")) == (
         ReadFileInputV2.model_json_schema()
     )
-    assert json.loads((root / "read-file-input-v3.schema.json").read_text()) == (
+    assert json.loads((root / "read-file-input-v3.schema.json").read_text(encoding="utf-8")) == (
         ReadFileInputV3.model_json_schema()
     )
     assert "anchor" not in ReadFileInputV2.model_json_schema()["properties"]

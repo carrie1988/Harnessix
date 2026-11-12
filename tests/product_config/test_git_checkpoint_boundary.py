@@ -124,7 +124,7 @@ async def test_saved_first_marker_is_owned_after_later_caught_checkpoint_failure
 def _actual_source_transport_blocks():
     blocks = []
     for module in (git_user_observation, git_prepared_link_proof):
-        tree = ast.parse(Path(module.__file__).read_text())
+        tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
         blocks.extend(
             (module, node)
             for node in ast.walk(tree)

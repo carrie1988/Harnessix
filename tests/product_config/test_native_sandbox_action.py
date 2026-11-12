@@ -75,7 +75,7 @@ def _case(
 
 def _report(case: Any, name: str) -> str:
     path = case.workspace / name
-    return path.read_text() if path.exists() else "<missing>"
+    return path.read_text(encoding="utf-8") if path.exists() else "<missing>"
 
 
 async def test_sandboxed_command_writes_workspace_but_not_protected_paths(
@@ -99,7 +99,7 @@ async def test_sandboxed_command_writes_workspace_but_not_protected_paths(
         report = _report(case, "report.txt")
         assert completed.status is TurnStatus.COMPLETED, report
         assert _result(completed).outcome == "succeeded", report
-        assert (case.workspace / "source.txt").read_text() == "changed\n"
+        assert (case.workspace / "source.txt").read_text(encoding="utf-8") == "changed\n"
         for marker in (
             "ssh-denied",
             "env-denied",

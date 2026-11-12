@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -50,6 +51,9 @@ from harnessix.workspace.snapshot_v2 import _encode_snapshot
 from tests.delivery.test_git_inventory_contracts import _check, _commit, _read, _reference, _tree
 from tests.delivery.test_git_inventory_materials import _nodes
 from tests.delivery.test_git_tree_projection import _mutation
+
+# 夹具默认声明宿主平台：部分用例把宿主上的真实观察装进计划，声明平台必须与之相同。
+HOST_PLATFORM = "windows" if os.name == "nt" else "posix"
 
 NOW = datetime(2026, 10, 7, 8, 9, 10, tzinfo=UTC)
 ZERO = "0" * 64
@@ -359,6 +363,13 @@ def _call_case(cas, graph, action, commit_message):
     return call, commit_spec, bodies
 
 
+def _worktree_parent(tmp_path, platform):
+    """父目录按声明平台的路径写法给出；声明平台与宿主不同时用固定路径（计划只是声明，不落盘）。"""
+    if platform == HOST_PLATFORM:
+        return str(tmp_path / "worktrees")
+    return r"C:\Harnessix\worktrees" if platform == "windows" else "/harnessix/worktrees"
+
+
 def _core_case(cas, graph, tmp_path, fmt, action, platform, commit_message):
     """冻结 A/D 意图及全对象范围为完整 Core，无路由摘要回边。"""
     from harnessix.product_config.git_delivery_plan_contracts import (
@@ -368,7 +379,7 @@ def _core_case(cas, graph, tmp_path, fmt, action, platform, commit_message):
     )
 
     call, commit_spec, bodies = _call_case(cas, graph, action, commit_message)
-    parent = r"C:\Harnessix\worktrees" if platform == "windows" else str(tmp_path / "worktrees")
+    parent = _worktree_parent(tmp_path, platform)
     intents = tuple(
         ProductGitWorktreeIntent(
             role=role,
@@ -425,7 +436,7 @@ def make_case(
     tmp_path,
     fmt="sha256",
     action="checkpoint",
-    platform="posix",
+    platform=HOST_PLATFORM,
     depth=2,
     commit_message="正式交付\n",
 ):

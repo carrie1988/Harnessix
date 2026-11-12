@@ -15,7 +15,12 @@ from harnessix.tools.contracts import (
     ReadFileSnapshotOutput,
 )
 from harnessix.tools.search_contracts import GlobInput, GlobOutput, GrepInput, GrepOutput
-from harnessix.tools.windows_file_read import list_files, read_file, read_file_snapshot
+from harnessix.tools.windows_file_read import (
+    list_files,
+    read_complete_bytes,
+    read_file,
+    read_file_snapshot,
+)
 from harnessix.tools.windows_read_port import WindowsReadPort, WindowsRoot, session_workspace_root
 from harnessix.tools.windows_search import glob_files, grep_files
 from harnessix.tools.workspace import ReadOperation
@@ -68,6 +73,9 @@ class WindowsReadRuntime:
         self, args: ReadFileInput, operation: ReadOperation
     ) -> ReadFileSnapshotOutput:
         return read_file_snapshot(self._port, args, operation)
+
+    def read_complete_bytes(self, path: str, operation: ReadOperation) -> bytes:
+        return read_complete_bytes(self._port, path, operation)
 
     def glob(
         self,

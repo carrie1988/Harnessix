@@ -43,7 +43,7 @@ async def main():
 
 
 def record_read(path: Path) -> None:
-    count = int(path.read_text()) if path.exists() else 0
+    count = int(path.read_text(encoding="utf-8")) if path.exists() else 0
     path.write_text(str(count + 1))
 
 

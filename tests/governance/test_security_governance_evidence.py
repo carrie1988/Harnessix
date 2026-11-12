@@ -1286,7 +1286,7 @@ def test_query_bundle_keeps_current_scope_and_host_binding_limits_explicit() -> 
     assert facts["archive_rights_blockers"] == 12
     full = verification["full_regression"]
     assert full["status"] in {"pending", "passed"}
-    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    metadata = (bundle / "README.md").read_text(encoding="utf-8").split("---", 2)[1]
     if full["status"] == "pending":
         assert "\nstatus: draft\n" in metadata
         assert full["is_acceptance"] is False
@@ -1339,7 +1339,7 @@ def test_event_seal_bundle_does_not_claim_default_history_authorization() -> Non
     assert verification["diagrams"]["diagrams"] == 5
     assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
     full = verification["full_regression"]
-    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    metadata = (bundle / "README.md").read_text(encoding="utf-8").split("---", 2)[1]
     assert full["status"] in {"pending", "passed"}
     if full["status"] == "pending":
         assert "\nstatus: draft\n" in metadata and full["is_acceptance"] is False
@@ -1393,7 +1393,7 @@ def test_authenticated_store_bundle_does_not_claim_default_product_closure() -> 
     assert verification["diagrams"]["diagrams"] == 4
     assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
     full = verification["full_regression"]
-    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    metadata = (bundle / "README.md").read_text(encoding="utf-8").split("---", 2)[1]
     assert full["status"] in {"pending", "passed"}
     if full["status"] == "pending":
         assert "\nstatus: draft\n" in metadata and full["is_acceptance"] is False
@@ -1454,7 +1454,7 @@ def test_managed_session_key_evidence_keeps_platform_and_release_boundaries() ->
     assert verification["diagrams"]["diagrams"] == 5
     assert review["decision"] == "release_blocked" and review["overall_0_9_complete"] is False
     full = verification["full_regression"]
-    metadata = (bundle / "README.md").read_text().split("---", 2)[1]
+    metadata = (bundle / "README.md").read_text(encoding="utf-8").split("---", 2)[1]
     assert full["status"] in {"pending", "passed"}
     if full["status"] == "pending":
         assert "\nstatus: draft\n" in metadata and full["is_acceptance"] is False

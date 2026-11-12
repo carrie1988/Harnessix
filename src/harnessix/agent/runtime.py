@@ -1059,6 +1059,17 @@ class AgentRuntime:
         return turn
 
     async def resume_turn(self, thread_id: UUID, turn_id: UUID) -> Turn:
+        try:
+            return await self._resume_turn(thread_id, turn_id)
+        except asyncio.CancelledError:
+            # 取消可能在开始执行之前到达（取锁、读取Thread期间）。尚未开始的Turn同样提交确定性的
+            # 取消终态，否则它停在accepted（宿主关闭的宽限期很短时复现）。正在由其他任务执行的Turn、
+            # 等待审批或提问的Turn保持原状。
+            if turn_id not in self._active:
+                await self._cancel_task(thread_id, turn_id, only_accepted=True)
+            raise
+
+    async def _resume_turn(self, thread_id: UUID, turn_id: UUID) -> Turn:
         self._ensure_open()
         token = CancelToken()
         task = asyncio.current_task()
@@ -1179,16 +1190,22 @@ class AgentRuntime:
                 raise
         return True
 
-    async def _cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
-        settling = asyncio.create_task(self._settle_cancel_task(thread_id, turn_id))
+    async def _cancel_task(
+        self, thread_id: UUID, turn_id: UUID, *, only_accepted: bool = False
+    ) -> None:
+        settling = asyncio.create_task(self._settle_cancel_task(thread_id, turn_id, only_accepted))
         try:
             await asyncio.shield(settling)
         except asyncio.CancelledError:
             await _drain(settling)
             raise
 
-    async def _settle_cancel_task(self, thread_id: UUID, turn_id: UUID) -> None:
+    async def _settle_cancel_task(
+        self, thread_id: UUID, turn_id: UUID, only_accepted: bool
+    ) -> None:
         thread = await self.store.get_thread(thread_id)
+        if only_accepted and get_turn(thread, turn_id).status != TurnStatus.ACCEPTED:
+            return
         if thread.active_turn_id == turn_id:
             await self._record_cancel(thread_id, turn_id)
             await self._finish(

@@ -178,7 +178,7 @@ def test_extra_or_duplicate_result_is_not_silently_excluded(
     shutil.copytree(job / "trial-0-0", duplicate)
     if foreign_lock:
         path = duplicate / "lock.json"
-        value = json.loads(path.read_text())
+        value = json.loads(path.read_text(encoding="utf-8"))
         value["task"]["digest"] = "sha256:" + "a" * 64
         path.write_text(json.dumps(value))
     with pytest.raises(EvalkitError) as error:
@@ -189,7 +189,7 @@ def test_extra_or_duplicate_result_is_not_silently_excluded(
 def test_naive_time_requires_explicit_source_timezone(tmp_path: Path) -> None:
     job = harbor_job(tmp_path / "job", [Trial()])
     path = job / "result.json"
-    value = json.loads(path.read_text())
+    value = json.loads(path.read_text(encoding="utf-8"))
     value["finished_at"] = "2026-11-05T10:30:00"
     path.write_text(json.dumps(value))
     with pytest.raises(EvalkitError) as error:
@@ -205,7 +205,7 @@ def test_automatic_retries_are_not_collapsed_into_one_final_result(
 ) -> None:
     job = harbor_job(tmp_path / "job", [Trial()])
     path = job / ("result.json" if observed else "lock.json")
-    value = json.loads(path.read_text())
+    value = json.loads(path.read_text(encoding="utf-8"))
     if observed:
         value["stats"]["n_retries"] = 1
     else:

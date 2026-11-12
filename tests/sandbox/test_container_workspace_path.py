@@ -167,9 +167,9 @@ def test_snapshot_mode_mounts_a_disposable_writable_copy(
     assert tmpfs.startswith("/tmp:rw,nosuid,nodev,") and "noexec" not in tmpfs
 
     builder.create_workspace_snapshot(execution, workspace, "65532:65532")
-    assert (copy / "pkg" / "main.py").read_text() == "print('source')\n"
+    assert (copy / "pkg" / "main.py").read_text(encoding="utf-8") == "print('source')\n"
     (copy / "pkg" / "main.py").write_text("changed\n")  # 副本可写
-    assert (workspace / "pkg" / "main.py").read_text() == "print('source')\n"
+    assert (workspace / "pkg" / "main.py").read_text(encoding="utf-8") == "print('source')\n"
 
     builder.remove_workspace_snapshot(execution)
     assert not copy.exists() and workspace.exists()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from collections.abc import Sequence
 from pathlib import Path
@@ -11,6 +12,10 @@ from pydantic import ValidationError
 
 from harnessix.sandbox.native_contracts import NATIVE_GUARANTEES, HostSandboxProbeV2
 from harnessix.sandbox.native_probe import probe_native_sandbox
+
+posix_only = pytest.mark.skipif(
+    os.name == "nt", reason="原生进程沙箱只在Linux与macOS上提供，策略与参数全是POSIX路径"
+)
 
 
 def _executable(path: Path) -> Path:
@@ -31,6 +36,7 @@ def _runner(*, version: str = "bubblewrap 0.6.1\n", code: int = 0, stderr: str =
     return run, calls
 
 
+@posix_only
 def test_bubblewrap_verified_probe_lists_guarantees(tmp_path: Path) -> None:
     run, calls = _runner()
     probe = probe_native_sandbox(
@@ -44,6 +50,7 @@ def test_bubblewrap_verified_probe_lists_guarantees(tmp_path: Path) -> None:
     assert HostSandboxProbeV2.model_validate_json(probe.model_dump_json()) == probe
 
 
+@posix_only
 @pytest.mark.parametrize(
     ("stderr", "reason"),
     [
@@ -73,6 +80,7 @@ def test_bubblewrap_missing_is_reported(tmp_path: Path) -> None:
     assert calls == []
 
 
+@posix_only
 def test_seatbelt_nested_sandbox_is_recognised_without_running(tmp_path: Path) -> None:
     run, calls = _runner()
     probe = probe_native_sandbox(
@@ -85,6 +93,7 @@ def test_seatbelt_nested_sandbox_is_recognised_without_running(tmp_path: Path) -
     assert calls == []
 
 
+@posix_only
 def test_seatbelt_preflight_success_and_failure(tmp_path: Path) -> None:
     executable = _executable(tmp_path / "sandbox-exec")
     ok, _ = _runner()
@@ -108,6 +117,7 @@ def test_other_platforms_have_no_backend() -> None:
     assert probe.backend is None and probe.reason_code == "native_backend_platform_mismatch"
 
 
+@posix_only
 def test_probe_contract_rejects_inconsistent_claims(tmp_path: Path) -> None:
     run, _ = _runner()
     probe = probe_native_sandbox(

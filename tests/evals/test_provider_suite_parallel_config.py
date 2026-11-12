@@ -118,7 +118,9 @@ def test_generator_explicitly_selects_version_without_starting_execution(
     if flag:
         args.append("--parallel-tool-calls")
     generator.main(args)
-    config = CodingEvalProviderSuiteRunConfig.model_validate_json(output.read_text())
+    config = CodingEvalProviderSuiteRunConfig.model_validate_json(
+        output.read_text(encoding="utf-8")
+    )
     assert config.spec_version == (V2 if flag else V1)
     assert config.provider_config.capabilities.parallel_tool_calls is flag
     assert len(config.suite.plan.cases) == 10

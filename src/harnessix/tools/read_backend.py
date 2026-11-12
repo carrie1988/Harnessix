@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 from harnessix.agent.errors import KernelError
 from harnessix.processes.owner_protocol import OutputRedactionSource
-from harnessix.tools import git
-from harnessix.tools.workspace import Workspace
+from harnessix.tools import files, git
+from harnessix.tools.workspace import ReadOperation, Workspace
 
 if TYPE_CHECKING:
     from harnessix.tools.windows_read import WindowsReadRuntime
@@ -22,6 +22,13 @@ class _ReadBackend:
     windows: WindowsReadRuntime | None
     implementation: str
     git_runtime: git.GitReadRuntime | None
+
+    def read_complete_bytes(self, path: str, operation: ReadOperation) -> bytes | None:
+        """用本平台的读根读取完整文件字节；超过扫描上限时POSIX返回None，Windows按limit_exceeded失败。"""
+        if self.workspace is not None:
+            return files.read_complete_bytes(self.workspace, path, operation)
+        assert self.windows is not None
+        return self.windows.read_complete_bytes(path, operation)
 
 
 def build_read_backend(

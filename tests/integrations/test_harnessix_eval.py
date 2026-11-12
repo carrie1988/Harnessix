@@ -168,7 +168,9 @@ def test_native_identity_must_bind_to_its_own_trial(tmp_path: Path, field: str) 
         native_of = lambda d: d["agent_result"]["metadata"]["harnessix"]  # noqa: E731
         change_result(job, lambda d: native_of(d).update(trial_id="x"), "trial-0-0")
     else:
-        turn = json.loads((job / "trial-0-0/result.json").read_text())["agent_result"]["metadata"]
+        turn = json.loads((job / "trial-0-0/result.json").read_text(encoding="utf-8"))[
+            "agent_result"
+        ]["metadata"]
         change_result(
             job,
             lambda d: d["agent_result"]["metadata"]["harnessix"].update(

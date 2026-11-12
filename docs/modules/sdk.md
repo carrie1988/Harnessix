@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 11
-code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
+version: 12
+code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
 modules:
@@ -25,6 +25,11 @@ supersedes: []
 ---
 
 # SDK模块设计
+
+## 当前增量：服务端退出时带上它自己报告的原因（0.10.0b14）
+
+- App Server启动失败时把`{"code","message","retryable"}`写在stderr最后一行后退出，消息是面向用户的公开文案。此前`SubprocessAgentTransport`只报“App Server输出流已经关闭”（`server_closed`），用户看不到原因。现在输出流关闭后最多等1秒读完stderr；最后一行恰为这三个字段、错误码与消息的形状合规时，错误消息为“App Server已退出：<消息>（<错误码>）”，错误码仍是`server_closed`。
+- 其他内容（回溯、日志、带多余字段的JSON、含控制字符或超过300字的消息）一律不外传，仍报原来的固定文案；`SubprocessTransportSnapshot`仍不含stderr正文。回归见`test_a_server_that_exits_reports_its_own_public_error`。
 
 ## 当前增量：声明思考预览能力（0.10.0b9）
 
@@ -501,7 +506,7 @@ sequenceDiagram
 |---|---|---|
 | `protocolVersion` | 固定`AGENT_PROTOCOL_VERSION` | 只发送2.0，无版本范围协商 |
 | `clientInfo.name` | 构造参数，默认`harnessix-python-sdk` | 由Protocol模型校验 |
-| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与包版本（当前0.10.0b14）独立，不自动读取安装版本 |
+| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与包版本（当前0.10.0b15）独立，不自动读取安装版本 |
 | `clientInstanceId` | 注入或`uuid4()` | SDK不持久；调用方负责重连复用 |
 | `capabilities.itemDeltas` | 硬编码`true` | 调用方不能关闭；其他能力使用模型默认值 |
 | `limits` | `InitializeParams`默认 | 构造接口不允许调用方自定义 |
@@ -1245,6 +1250,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 12 | `dad55d32` 增量 | 2026-11-11 | 服务端退出时带上它在stderr最后一行报告的公开错误（0.10.0b14） |
 | 11 | `1d857b39` 增量 | 2026-11-10 | 握手声明`reasoning_deltas`（0.10.0b9） |
 | 8 | `f11359447f3bc68ffb97a100bb8b4bbcc1a891e5` | 2026-09-20 | 0.9.3a拆分子进程职责，限制Pending与Abandoned总量，增加取消安全Close和低敏资源快照 |
 | 7 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 同步f3物理删除Action HTTP Client、旧SDK测试和第二公共入口 |

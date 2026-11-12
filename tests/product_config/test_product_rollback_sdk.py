@@ -42,16 +42,20 @@ class ProductBundle(ScriptedProvider):
         return None
 
 
-async def wait_turn(client, thread_id, status):
-    for _ in range(1000):
+async def wait_turn(client, thread_id, status, *, timeout_seconds=60.0):
+    """等待后台Turn进入目标状态。期限按时钟计：Windows上每次进程启动都慢，按轮询次数会提前放弃。"""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_seconds
+    while True:
         thread = await client.get_thread(thread_id)
         turn = thread.latest_turn
         if turn is not None and turn.status == status:
             return turn
         if turn is not None and turn.status in {"failed", "interrupted"}:
             raise AssertionError(f"默认产品任务失败：{turn.error.code if turn.error else 'none'}")
+        if loop.time() >= deadline:
+            raise AssertionError(f"默认产品任务未在{timeout_seconds:g}秒观察期限内达到目标状态")
         await asyncio.sleep(0.01)
-    raise AssertionError("默认产品任务未在10秒观察期限内达到目标状态")
 
 
 async def contents(client, thread_id, turn_id, model):
@@ -200,7 +204,9 @@ async def test_default_product_hard_exit_reconciles_without_replaying_members(
     assert process.returncode == 73, process.stderr.decode("utf-8", errors="replace")
     ids = {
         key: UUID(value)
-        for key, value in json.loads((tmp_path / "identities.json").read_text()).items()
+        for key, value in json.loads(
+            (tmp_path / "identities.json").read_text(encoding="utf-8")
+        ).items()
     }
     before = {
         str(leaf.relative_to(root)): leaf.read_bytes()

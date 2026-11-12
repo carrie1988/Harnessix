@@ -299,7 +299,7 @@ def _frozen_final_verifier():
     if directory is None:
         pytest.skip("冻结旧实现 oracle 仅在显式提供原件时运行")
     path = Path(directory) / "src/harnessix/product_config/git_delivery_source.py"
-    tree = ast.parse(path.read_text())
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     function = next(
         node
         for node in tree.body
@@ -383,7 +383,7 @@ def test_complete_unknown_source_verifier_native_cas_and_file_trace_matches_froz
     path = Path(directory) / "src/harnessix/product_config/git_delivery_source.py"
     functions = [
         node
-        for node in ast.parse(path.read_text()).body
+        for node in ast.parse(path.read_text(encoding="utf-8")).body
         if isinstance(node, ast.FunctionDef)
         and node.name in {"verify_git_delivery_source", "_verify_final_snapshot"}
     ]
@@ -728,7 +728,7 @@ def test_actual_user_source_callers_single_unwrap_retains_original_nested_identi
         module._verify_final_snapshot(source.workspace, root, checkpoint, snapshot_ports)
 
     monkeypatch.setattr(user_module, "verify_git_delivery_source", verify)
-    tree = ast.parse(Path(user_module.__file__).read_text())
+    tree = ast.parse(Path(user_module.__file__).read_text(encoding="utf-8"))
     caller = next(
         node
         for node in ast.walk(tree)

@@ -47,7 +47,7 @@ async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, t
         if process.returncode is None:
             process.kill()
             await process.wait()
-    assert (int(counter.read_text()) if counter.exists() else 0) == count
+    assert (int(counter.read_text(encoding="utf-8")) if counter.exists() else 0) == count
     provider = FakeProvider()
     reads = []
 
@@ -64,7 +64,7 @@ async def test_real_read_process_crash_does_not_repeat(tmp_path, point, count, t
             assert await runtime.resume_turn(thread.thread_id, turn.turn_id) == turn
             assert provider.requests == []
             assert reads == []
-            assert (int(counter.read_text()) if counter.exists() else 0) == count
+            assert (int(counter.read_text(encoding="utf-8")) if counter.exists() else 0) == count
             assert replay(await store.events(thread.thread_id)) == await store.get_thread(
                 thread.thread_id
             )

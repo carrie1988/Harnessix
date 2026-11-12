@@ -268,7 +268,10 @@ def test_task_contract_is_versioned_strict_and_fingerprinted() -> None:
     ],
 )
 def test_public_schema_is_frozen(name: str, model: type[ContractModel]) -> None:
-    assert json.loads(Path(f"spec/{name}-v1.schema.json").read_text()) == model.model_json_schema()
+    assert (
+        json.loads(Path(f"spec/{name}-v1.schema.json").read_text(encoding="utf-8"))
+        == model.model_json_schema()
+    )
 
 
 def test_success_requires_behavior_regression_git_and_answer_evidence() -> None:

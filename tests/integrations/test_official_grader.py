@@ -115,7 +115,9 @@ def test_report_categories_map_to_verdicts_and_unjudged_trials_stay_unscored(
         ("error", None, "environment", "container_unavailable"),
         ("not_graded", None, None, None),
     ]
-    predictions = (tmp_path / "work/A-attempt0/predictions.jsonl").read_text().splitlines()
+    predictions = (
+        (tmp_path / "work/A-attempt0/predictions.jsonl").read_text(encoding="utf-8").splitlines()
+    )
     assert [json.loads(line)["instance_id"] for line in predictions] == [
         "case-0",
         "case-1",
@@ -132,7 +134,9 @@ def _status(trial: TrialRecord) -> tuple[str, bool | None]:
 
 
 def _submitted(tmp_path: Path) -> list[str]:
-    lines = (tmp_path / "work/A-attempt0/predictions.jsonl").read_text().splitlines()
+    lines = (
+        (tmp_path / "work/A-attempt0/predictions.jsonl").read_text(encoding="utf-8").splitlines()
+    )
     return [json.loads(line)["instance_id"] for line in lines]
 
 

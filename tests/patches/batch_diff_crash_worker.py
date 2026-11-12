@@ -76,4 +76,4 @@ async def main(data):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(json.loads(Path(sys.argv[1]).read_text())))
+    asyncio.run(main(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))))

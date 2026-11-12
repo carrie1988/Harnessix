@@ -107,5 +107,5 @@ from harnessix.patches.managed_contracts import CopyManifest, PatchRecord
 )
 def test_frozen_patch_plan_schema(name, model, frozen):
     path = Path(__file__).parents[2] / "spec" / f"{name}-v1.schema.json"
-    assert json.loads(path.read_text()) == model.model_json_schema()
+    assert json.loads(path.read_text(encoding="utf-8")) == model.model_json_schema()
     assert hashlib.sha256(path.read_bytes()).hexdigest() == frozen

@@ -217,8 +217,8 @@ async def test_command_writes_workspace_and_changes_persist(tmp_path: Path) -> N
         result = _result(completed)
         assert result.outcome == "succeeded"
         assert await case.stdout(result) == b"done\n"
-        assert (case.workspace / "source.txt").read_text() == "changed\n"
-        assert (case.workspace / "created.txt").read_text() == "new\n"
+        assert (case.workspace / "source.txt").read_text(encoding="utf-8") == "changed\n"
+        assert (case.workspace / "created.txt").read_text(encoding="utf-8") == "new\n"
         plan = case.router.status(case.approval.plan_id).plan
         sandbox = plan.execution.sandbox
         assert (sandbox.level, sandbox.backend, sandbox.network) == ("host_guarded", "host", "full")
@@ -243,7 +243,7 @@ async def test_reconcile_reads_ledger_without_replaying_command(tmp_path: Path) 
         arguments = RunCommandInput.model_validate(route.plan.invocation.arguments)
         outcome = await restarted.reconcile(route.plan, arguments)
         assert (outcome.kind, outcome.error_code) == ("succeeded", None)
-        assert (case.workspace / "count.txt").read_text() == "run\n"
+        assert (case.workspace / "count.txt").read_text(encoding="utf-8") == "run\n"
 
 
 async def test_command_gets_only_profile_environment(
@@ -255,7 +255,8 @@ async def test_command_gets_only_profile_environment(
         completed = await case.approve_and_resume()
         assert _result(completed).outcome == "succeeded"
         names = {
-            line.split("=", 1)[0] for line in (case.workspace / "env.txt").read_text().splitlines()
+            line.split("=", 1)[0]
+            for line in (case.workspace / "env.txt").read_text(encoding="utf-8").splitlines()
         }
         assert "HARNESSIX_TEST_MODEL_KEY" not in names
         assert EXTERNAL_BOUNDARY_ENVIRONMENT not in names

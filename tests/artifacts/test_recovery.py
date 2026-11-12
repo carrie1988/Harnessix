@@ -60,7 +60,7 @@ async def test_process_crash_keeps_blob_result_atomic_without_reexecution(
         if process.returncode is None:
             process.kill()
             await process.wait()
-    assert counter.read_text() == "1"
+    assert counter.read_text(encoding="utf-8") == "1"
     provider = FakeProvider()
     artifacts = SQLiteArtifactStore(session)
 
@@ -75,7 +75,7 @@ async def test_process_crash_keeps_blob_result_atomic_without_reexecution(
             turn = (await session.get_thread(thread.thread_id)).turns[-1]
             assert turn.status == TurnStatus.INTERRUPTED
             assert await runtime.resume_turn(thread.thread_id, turn.turn_id) == turn
-            assert not provider.requests and counter.read_text() == "1"
+            assert not provider.requests and counter.read_text(encoding="utf-8") == "1"
         refs = [r.output["artifact"] for r in results(turn) if r.outcome == "succeeded"]
         assert len(refs) == int(published)
         with sqlite3.connect(session.path) as db:

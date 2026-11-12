@@ -159,7 +159,7 @@ def test_task_parser_and_reader_reject_mixed_or_coerced_fields(tmp_path, field, 
         plans.parse_reverification_plan(text)
     with pytest.raises(ValueError):
         plans.read_reverification_plan(str(config))
-    assert config.read_text() == text
+    assert config.read_text(encoding="utf-8") == text
 
 
 @pytest.mark.parametrize("version", [V1, V2])
@@ -169,7 +169,7 @@ def test_suite_parser_and_reader_reject_task_field_even_null(tmp_path, version, 
     data["task_id"] = task_id
     config = write_plan(tmp_path, json.dumps(data))
     with pytest.raises(ValueError):
-        plans.parse_reverification_plan(config.read_text())
+        plans.parse_reverification_plan(config.read_text(encoding="utf-8"))
     with pytest.raises(ValueError):
         plans.read_reverification_plan(str(config))
 

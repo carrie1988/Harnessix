@@ -358,9 +358,11 @@ else:
 
 
 def write_json(path: Path, value: object) -> None:
+    # 合同文件在所有平台都是LF（见.gitattributes）；不随Windows的文本模式换成CRLF。
     path.write_text(
         json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
 

@@ -42,7 +42,7 @@ supersedes: []
 
 # Product UI终端产品模块设计
 
-## 当前增量：审批窗口、计时与几处提示（0.10.0b15）
+## 当前增量：审批窗口、计时与几处提示（0.10.0b16）
 
 两轮Beta反馈里不涉及设计取舍的界面问题，逐条以测试复现后修复：
 
@@ -52,7 +52,7 @@ supersedes: []
 - **诊断与导出可以指定状态目录（HX-07）。** [`data_cli`](../../src/harnessix/product_ui/data_cli.py)的`export`、`diagnostics`增加`--state-directory`，规则与`harnessix code`相同；一个会话也没读到时，回执增加`threads: 0`、所查的`state_directory`和一句提示，避免把空结果当成没有问题。
 - **连接失败后怎样继续（HX-05）。** [`rendering`](../../src/harnessix/product_ui/rendering.py)的`provider_transport`一行补上“已完成的修改都保留着，直接发送‘继续’就能接着做”。
 
-## 当前增量：`--thinking`不再静默失效（0.10.0b15）
+## 当前增量：`--thinking`不再静默失效（0.10.0b16）
 
 - Beta反馈HX-03：[`configure_cli`](../../src/harnessix/product_ui/configure_cli.py)的`_thinking_options`在`--thinking-protocol auto`且端点没有默认预设时，把协议留空，`--thinking off`被原样写入却到不了模型。
 - 现在用户显式写了`--thinking`而预设没有协议时，先查[`explicit_thinking_switch`](../../src/harnessix/product_config/wizard.py)（见[产品配置模块设计](product-config.md)）；查到就启用该协议，设置随请求发出。
@@ -1122,8 +1122,8 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 40 | `7357576a` 增量 | 2026-11-11 | 审批窗口从开头显示并可翻页、计时不归零、配置目录与诊断提示、连接失败后的继续提示（0.10.0b15，Beta反馈RT-01、HX-08、HX-12、HX-07、HX-05） |
-| 39 | `80fb499a` 增量 | 2026-11-11 | `configure`：显式`--thinking`按已求证开关生效，无开关可用时拒绝并给出出路（0.10.0b15，Beta反馈HX-03） |
+| 40 | `7357576a` 增量 | 2026-11-11 | 审批窗口从开头显示并可翻页、计时不归零、配置目录与诊断提示、连接失败后的继续提示（0.10.0b16，Beta反馈RT-01、HX-08、HX-12、HX-07、HX-05） |
+| 39 | `80fb499a` 增量 | 2026-11-11 | `configure`：显式`--thinking`按已求证开关生效，无开关可用时拒绝并给出出路（0.10.0b16，Beta反馈HX-03） |
 | 38 | `b3bf0da1` 增量 | 2026-11-11 | 沙箱外命令：只读免询问、保存前缀规则、查看与撤销（ADR 0128，0.10.0b14） |
 | 37 | `acd37114` 增量 | 2026-11-11 | Windows上`data delete`持锁删除锁目录外数据、释放后删除余下目录（0.10.0b13） |
 | 36 | `00848577` 增量 | 2026-11-10 | 配置向导先选服务商（DeepSeek、阿里云百炼、智谱）和模型，成功后说明下一步；`--json`保留机器格式（0.10.0b11） |

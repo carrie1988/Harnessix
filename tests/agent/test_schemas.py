@@ -95,7 +95,7 @@ def test_generated_schemas_match_code() -> None:
         "model-smoke-report-v1.schema.json": SmokeReport.model_json_schema(),
     }
     for name, schema in expected.items():
-        assert json.loads((root / name).read_text()) == schema
+        assert json.loads((root / name).read_text(encoding="utf-8")) == schema
 
 
 def test_event_version_and_unknown_fields_fail_closed() -> None:

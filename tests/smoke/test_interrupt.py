@@ -31,6 +31,6 @@ def test_real_cli_sigint_settles_turn_and_cleans_session(provider, tmp_path):
     assert not process.stderr and CANARY not in process.stdout
     report = SmokeReport.model_validate_json(process.stdout)
     assert report.reason == "cancelled" and report.attempts_started is None
-    snapshot = json.loads(result_path.read_text())
+    snapshot = json.loads(result_path.read_text(encoding="utf-8"))
     assert snapshot["status"] == "cancelled"
     assert not Path(snapshot["workspace"]).exists()

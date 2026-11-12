@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from types import MappingProxyType
+from typing import Literal
 from uuid import UUID, uuid4
 
 from harnessix.agent.errors import KernelError
@@ -30,6 +31,7 @@ from harnessix.delivery.preserved_mode_contracts import (
     needs_preserved_modes,
 )
 from harnessix.delivery.workspace_patch_errors import _no_change_error
+from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.workspace import ReadOperation, Workspace
 from harnessix.workspace.contracts import (
     PlatformKind,
@@ -286,6 +288,42 @@ def _read_existing_file(
         finally:
             native.close()
     raise KernelError("workspace_platform_unsupported", "Workspace事务平台与宿主不一致")
+
+
+def _target_kind(
+    root: Path, path: str, platform: PlatformKind
+) -> Literal["file", "directory", "missing"] | None:
+    """目标是普通文件、目录还是不存在；其他类型、被拒路径、观察失败或平台与宿主不一致时返回None。"""
+
+    if platform == "posix" and os.name == "posix":
+        try:
+            with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+                try:
+                    with workspace.open(path, ReadOperation(), directory=False):
+                        return "file"
+                except ReadToolError as error:
+                    if error.code != "wrong_file_type":
+                        return None
+                with workspace.open(path, ReadOperation(), directory=True):
+                    return "directory"
+        except FileNotFoundError:
+            return "missing"
+        except (OSError, ReadToolError):
+            return None
+    if platform == "windows" and os.name == "nt":
+        from harnessix.workspace.windows import WindowsWorkspaceRoot
+
+        native = WindowsWorkspaceRoot(root)
+        try:
+            return native.observe(path, access="read", include_content=False).kind
+        except KernelError as error:
+            # 父目录不存在时目标同样不存在，与POSIX的FileNotFoundError一致。
+            return "missing" if error.code == "workspace_parent_missing" else None
+        except (OSError, ValueError):
+            return None
+        finally:
+            native.close()
+    return None
 
 
 def _read_all(descriptor: int, *, checkpoint: Callable[[], None] | None = None) -> bytes:

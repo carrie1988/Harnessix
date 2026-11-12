@@ -8,38 +8,19 @@ cleanup_failed。子进程收到SIGTERM后已退出，事件循环poll之前升�
 from __future__ import annotations
 
 import os
-import select
 import signal
 import subprocess
-import sys
 import time
 from types import SimpleNamespace
 
 import pytest
 
+from tests.processes.helpers import zombie_leader
+
 pytestmark = pytest.mark.skipif(os.name != "posix", reason="POSIX进程组语义")
 
 if os.name == "posix":
     from harnessix.processes.posix_owner import _Owner
-
-
-def _zombie_leader() -> subprocess.Popen[bytes]:
-    """独立进程组里已退出、尚未被wait回收的组长。"""
-
-    read_end, write_end = os.pipe()
-    process = subprocess.Popen(
-        (sys.executable, "-c", "import time; time.sleep(30)"),
-        start_new_session=True,
-        pass_fds=(write_end,),
-    )
-    os.close(write_end)
-    os.killpg(process.pid, signal.SIGTERM)
-    # 子进程退出时关闭继承的写端，读端随即EOF；不wait，组长保持僵尸。
-    ready, _, _ = select.select([read_end], [], [], 10)
-    assert ready and os.read(read_end, 1) == b"", "子进程未按时退出"
-    os.close(read_end)
-    time.sleep(0.2)
-    return process
 
 
 def _owner(process: subprocess.Popen[bytes]) -> _Owner:
@@ -54,7 +35,7 @@ def _owner(process: subprocess.Popen[bytes]) -> _Owner:
 
 
 def test_escalating_after_the_leader_exited_is_not_a_cleanup_failure() -> None:
-    process = _zombie_leader()
+    process = zombie_leader()
     owner = _owner(process)
     owner.stop_reason = "output_limit"
     owner.stop_started = time.monotonic() - 1
@@ -66,7 +47,7 @@ def test_escalating_after_the_leader_exited_is_not_a_cleanup_failure() -> None:
 
 
 def test_stopping_a_command_that_already_exited_is_not_a_cleanup_failure() -> None:
-    process = _zombie_leader()
+    process = zombie_leader()
     owner = _owner(process)
 
     owner._request_stop("output_limit")

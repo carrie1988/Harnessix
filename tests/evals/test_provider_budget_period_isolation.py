@@ -23,7 +23,7 @@ def independent_ledger(tmp_path: Path) -> Path:
     directory = tmp_path / "new-period"
     directory.mkdir(mode=0o700)
     path = ledger_file(directory, allocation="60", known="0")
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     data["periods"][0].update(period_id=str(NEW_PERIOD), requests=[])
     path.write_text(json.dumps(data))
     return path
@@ -31,7 +31,7 @@ def independent_ledger(tmp_path: Path) -> Path:
 
 def test_independent_period_does_not_inherit_or_erase_old_unknown_requests(tmp_path):
     old_path = ledger_file(tmp_path, known="3.646408")
-    old = json.loads(old_path.read_text())
+    old = json.loads(old_path.read_text(encoding="utf-8"))
     old["periods"][0]["requests"].extend(
         {
             "request_id": str(uuid4()),

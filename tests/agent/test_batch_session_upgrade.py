@@ -16,7 +16,9 @@ from harnessix.session.sqlite import SQLiteSessionStore
 
 def legacy_database(path):
     """使用真实旧 wheel 导出记录及冻结1–7迁移，作为故障注入夹具。"""
-    fixture = json.loads((Path(__file__).parent / "fixtures/session-v6.json").read_text())
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures/session-v6.json").read_text(encoding="utf-8")
+    )
     events = [json.dumps(event, ensure_ascii=False) for event in fixture["events"]]
     snapshot = json.dumps(fixture["snapshot"], ensure_ascii=False)
     thread_id = fixture["snapshot"]["thread_id"]
@@ -28,7 +30,7 @@ def legacy_database(path):
         for item in sorted(files("harnessix.session.migrations").iterdir(), key=lambda p: p.name):
             if not item.name.endswith(".sql") or int(item.name.split("_")[0]) > 7:
                 continue
-            sql = item.read_text()
+            sql = item.read_text(encoding="utf-8")
             db.executescript(sql)
             db.execute(
                 "INSERT INTO agent_migrations VALUES (?,?)",

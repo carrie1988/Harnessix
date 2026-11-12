@@ -117,7 +117,7 @@ related_tests:
 supersedes: []
 ---
 
-## 当前增量：显式思考档位的开关协议（0.10.0b15）
+## 当前增量：显式思考档位的开关协议（0.10.0b16）
 
 - Beta反馈HX-03：`configure --vendor bailian --model qwen3.8-flash --thinking off`把`thinking: off`写进了Profile，但百炼的qwen3.8系列没有思考协议，设置从未发给模型；该模型在服务端默认思考，首轮4096个输出Token全部是思考内容，没有任何产出。
 - [`explicit_thinking_switch`](../../src/harnessix/product_config/wizard.py)列出“服务端默认思考、但已求证可用参数开关”的模型族：百炼`dashscope.aliyuncs.com`上的`qwen3.8-max*`与`qwen3.8-flash*`使用`dashscope_enable_thinking`（百炼文档2026-11-11核对：两者为混合思考、默认开启；同系列另有只能思考的型号，因此按已核对的型号前缀列出）。
@@ -2297,7 +2297,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 141 | `80fb499a` 增量 | 2026-11-11 | `explicit_thinking_switch`：百炼qwen3.8-max/flash在用户显式指定思考档位时启用`enable_thinking`开关（0.10.0b15，Beta反馈HX-03） |
+| 141 | `80fb499a` 增量 | 2026-11-11 | `explicit_thinking_switch`：百炼qwen3.8-max/flash在用户显式指定思考档位时启用`enable_thinking`开关（0.10.0b16，Beta反馈HX-03） |
 | 140 | `7d847780` 增量 | 2026-11-11 | Git用户来源读取时限5秒放宽到30秒，仅此路径（0.10.0b14） |
 | 139 | `b3bf0da1` 增量 | 2026-11-11 | `command_rules`：只读命令识别与命令前缀规则（ADR 0128，0.10.0b14） |
 | 138 | `dd13503b` 增量 | 2026-11-11 | PowerShell固定前缀补上`ProgramFiles(x86)`；旧参数仍接受（0.10.0b14） |

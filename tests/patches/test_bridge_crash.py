@@ -71,7 +71,7 @@ async def test_real_exit_recovers_same_call_without_preparing_or_writing(
     before = target.stat()
     plan_path = fixture.with_suffix(".plan")
     plan = (
-        ManagedPatchCallPlan.model_validate_json(plan_path.read_text())
+        ManagedPatchCallPlan.model_validate_json(plan_path.read_text(encoding="utf-8"))
         if plan_path.exists()
         else None
     )

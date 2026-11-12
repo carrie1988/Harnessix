@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import Callable, Sequence
+import re
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 
 from pydantic import ValidationError
@@ -25,6 +26,36 @@ def _frame_id(frame: bytes) -> str | int:
     if isinstance(request_id, bool) or not isinstance(request_id, (str, int)):
         raise AgentSDKError("invalid_request", "Request缺少有效JSON-RPC id")
     return request_id
+
+
+_STREAM_CLOSED = "App Server输出流已经关闭"
+_ERROR_CODE = re.compile(r"[a-z][a-z0-9_]{0,63}")
+
+
+def _reported_error(stderr_tail: bytes) -> str | None:
+    """服务端退出前写在stderr最后一行的公开错误；不是这种固定形状的内容一律不外传。
+
+    服务端启动失败时把`{"code","message","retryable"}`写到stderr后退出（消息是面向用户的公开文案）。
+    此前客户端只报“输出流已经关闭”，用户看不到原因（2026-11-11：Key无效时界面只显示连接中断）。
+    """
+
+    lines = stderr_tail.decode("utf-8", "replace").strip().splitlines()
+    try:
+        document = json.loads(lines[-1]) if lines else None
+    except ValueError:
+        return None
+    if not isinstance(document, dict) or set(document) != {"code", "message", "retryable"}:
+        return None
+    code, message = document["code"], document["message"]
+    if (
+        not isinstance(code, str)
+        or not isinstance(message, str)
+        or _ERROR_CODE.fullmatch(code) is None
+        or not 0 < len(message) <= 300
+        or any(ord(character) < 32 for character in message)
+    ):
+        return None
+    return f"{message}（{code}）"
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,7 +157,11 @@ class _ResponseRouter:
             future.cancel()
             self._capacity.release()
 
-    async def read(self, process: asyncio.subprocess.Process) -> None:
+    async def read(
+        self,
+        process: asyncio.subprocess.Process,
+        closed_message: Callable[[], Awaitable[str]] | None = None,
+    ) -> None:
         assert process.stdout is not None
         try:
             while response := await process.stdout.readline():
@@ -156,7 +191,8 @@ class _ResponseRouter:
         except (OSError, RuntimeError):
             self.fail("server_closed", "App Server响应读取失败")
         else:
-            self.fail("server_closed", "App Server输出流已经关闭")
+            message = _STREAM_CLOSED if closed_message is None else await closed_message()
+            self.fail("server_closed", message)
 
 
 class _ChildProcess:
@@ -192,12 +228,22 @@ class _ChildProcess:
                 except OSError:
                     raise AgentSDKError("server_start_failed", "App Server子进程启动失败") from None
                 self.reader_task = asyncio.create_task(
-                    self.router.read(self.process), name="harnessix-sdk-reader"
+                    self.router.read(self.process, self._closed_message),
+                    name="harnessix-sdk-reader",
                 )
                 self.stderr_task = asyncio.create_task(
                     self._drain_stderr(self.process), name="harnessix-sdk-stderr"
                 )
             return self.process
+
+    async def _closed_message(self) -> str:
+        """输出流关闭时的说明：服务端退出前报告了公开错误就带上原因。"""
+
+        if self.stderr_task is not None:
+            # 服务端已经关闭stdout，stderr通常随即读完；最多等1秒。
+            await asyncio.wait((self.stderr_task,), timeout=1)
+        reported = _reported_error(bytes(self.stderr_tail))
+        return _STREAM_CLOSED if reported is None else f"App Server已退出：{reported}"
 
     async def _drain_stderr(self, process: asyncio.subprocess.Process) -> None:
         assert process.stderr is not None

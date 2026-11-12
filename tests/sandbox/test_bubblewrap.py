@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -20,6 +21,10 @@ from harnessix.sandbox.bubblewrap import (
 )
 from harnessix.sandbox.native_contracts import NativeSandboxPolicy
 from harnessix.sandbox.native_policy import NativeSandboxFacts, build_native_sandbox_policy
+
+posix_only = pytest.mark.skipif(
+    os.name == "nt", reason="原生进程沙箱只在Linux与macOS上提供，策略与参数全是POSIX路径"
+)
 
 
 def _policy(root: Path, **overrides: object) -> NativeSandboxPolicy:
@@ -50,6 +55,7 @@ def test_argv_limit_matches_process_spec() -> None:
     assert ProcessSpec.model_fields["argv"].metadata[0].max_length == PROCESS_ARGV_LIMIT
 
 
+@posix_only
 def test_translation_orders_mounts_so_protections_win(tmp_path: Path) -> None:
     policy = _policy(tmp_path)
     masks = BubblewrapMasks(directories=(str(tmp_path / "home/.ssh"),), files=())
@@ -83,6 +89,7 @@ def test_translation_orders_mounts_so_protections_win(tmp_path: Path) -> None:
     assert _pairs(argv, "--tmpfs", 1) == [("/tmp",), ("/run",)]
 
 
+@posix_only
 def test_overflow_fails_closed_with_distinct_reasons(tmp_path: Path) -> None:
     policy = _policy(tmp_path)
     command = ("/bin/sh", "-c", "true")
@@ -98,12 +105,14 @@ def test_overflow_fails_closed_with_distinct_reasons(tmp_path: Path) -> None:
     assert error.value.code == "workspace_secret_files_unmaskable"
 
 
+@posix_only
 def test_seatbelt_policy_is_rejected(tmp_path: Path) -> None:
     policy = _policy(tmp_path, backend="seatbelt")
     with pytest.raises(KernelError):
         bubblewrap_argv(policy, executable="/b", command=("x",), masks=BubblewrapMasks())
 
 
+@posix_only
 def test_only_existing_denied_paths_are_masked_by_real_target(tmp_path: Path) -> None:
     home = tmp_path / "home"
     (home / ".aws").mkdir(parents=True)
@@ -118,6 +127,7 @@ def test_only_existing_denied_paths_are_masked_by_real_target(tmp_path: Path) ->
     assert not any(".kube" in item for item in masks.directories)
 
 
+@posix_only
 def test_nested_denied_paths_keep_only_the_outermost_mask(tmp_path: Path) -> None:
     """外层遮盖已隐藏内层；再遮盖内层会让bwrap在只读空目录里建挂载点而启动失败。"""
     home = tmp_path / "home"
@@ -137,6 +147,7 @@ def test_nested_denied_paths_keep_only_the_outermost_mask(tmp_path: Path) -> Non
     assert masks.files == ()
 
 
+@posix_only
 def test_private_tmp_is_emptied_before_each_command(tmp_path: Path) -> None:
     policy = _policy(tmp_path)
     prepare_private_directories(policy)

@@ -177,7 +177,10 @@ async def test_complete_usage_settles_before_success_and_preserves_history(
     assert latest["task_id"] == "BETA-001"
     assert latest["max_output_tokens"] == 3072 and latest["max_attempts"] == 1
     assert latest["region"] == "cn-beijing"
-    assert json.loads(path.read_text())["schema"] == "harnessix.provider-verification-budget/v1"
+    assert (
+        json.loads(path.read_text(encoding="utf-8"))["schema"]
+        == "harnessix.provider-verification-budget/v1"
+    )
 
 
 @pytest.mark.parametrize(

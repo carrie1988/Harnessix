@@ -94,7 +94,7 @@ def old_record(tmp_path):
         capture_output=True,
         timeout=30,
     )
-    record = json.loads((root.parent / "old-record.json").read_text())
+    record = json.loads((root.parent / "old-record.json").read_text(encoding="utf-8"))
     assert Path(record["module"]).is_relative_to(archive)
     assert record["execute_calls"] == 1
     return root, record

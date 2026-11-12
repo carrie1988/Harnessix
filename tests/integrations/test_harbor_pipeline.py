@@ -142,7 +142,9 @@ def test_holdout_harbor_specs_share_the_primary_rule_cap_and_balanced_relay(spec
         kwargs = agent["kwargs"]
         if "config_file" in kwargs:
             assert (ROOT / kwargs["config_file"]).is_file()
-            assert "host.docker.internal:18100/v1" in (ROOT / kwargs["config_file"]).read_text()
+            assert "host.docker.internal:18100/v1" in (ROOT / kwargs["config_file"]).read_text(
+                encoding="utf-8"
+            )
         else:
             assert kwargs["model_relays"].endswith("=host.docker.internal:18100")
         if "prompt_template_path" in kwargs:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 import sqlite3
 from dataclasses import replace
 from pathlib import Path
@@ -24,6 +25,7 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.contracts import WorkspaceTransactionRecord
+from harnessix.delivery.planner import _target_kind
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action import (
     PRODUCT_ACTION_SOURCE,
@@ -826,3 +828,21 @@ async def test_post_approval_source_drift_fails_before_router_claim_or_effect(
     leases.close()
     plans.close()
     audit.close()
+
+
+def test_target_kind_is_observed_the_same_way_on_every_host(tmp_path: Path) -> None:
+    """规划前先看清目标是文件、目录还是不存在：与操作不符的都是可修正的拒绝。
+
+    Windows以前不做这一步；目录在所有平台上都没有被认出来。两种情况下严格规划器的失败
+    都被记为未知效果并停掉整轮（0.10.0b15、0.10.0b16修复）。
+    """
+
+    host = "windows" if os.name == "nt" else "posix"
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg/app.py").write_bytes(b"x\n")
+    assert _target_kind(tmp_path, "pkg/app.py", host) == "file"
+    assert _target_kind(tmp_path, "pkg/missing.py", host) == "missing"
+    assert _target_kind(tmp_path, "nodir/missing.py", host) == "missing"
+    assert _target_kind(tmp_path, "pkg", host) == "directory"
+    other = "posix" if host == "windows" else "windows"
+    assert _target_kind(tmp_path, "pkg/app.py", other) is None

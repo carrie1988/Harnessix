@@ -827,8 +827,8 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 22 | `5d18bb3e` 增量 | 2026-11-11 | 取消收尾时照常发布已对账命令的终态输出：发布改用宿主核对作用域，取消运行中的命令得到确定的`process_cancelled`而不是`unknown`（0.10.0b15，Beta反馈HX-10） |
-| 21 | `dad55d32` 增量 | 2026-11-11 | Action Review/Output发布容忍执行期间的Steering，其余Session变化仍按`sequence_conflict`拒绝（0.10.0b15，Beta反馈HX-01） |
+| 22 | `5d18bb3e` 增量 | 2026-11-11 | 取消收尾时照常发布已对账命令的终态输出：发布改用宿主核对作用域，取消运行中的命令得到确定的`process_cancelled`而不是`unknown`（0.10.0b16，Beta反馈HX-10） |
+| 21 | `dad55d32` 增量 | 2026-11-11 | Action Review/Output发布容忍执行期间的Steering，其余Session变化仍按`sequence_conflict`拒绝（0.10.0b16，Beta反馈HX-01） |
 | 20 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 动作输出存储识别命令输出预览v4（`trusted-process-output/v4`，预览为流的末尾），旧版本按`LEGACY_PREVIEW_VERSIONS`识别 |
 | 19 | `29402f7` 增量基础 | 2026-10-07 | 同步 Artifact 单件显式只读参数、prepared 全集 Evidence/ReadSet 与无外部回调的同步终端核验；不记录最终验收结论 |
 | 13 | `0bc942bce8aeb22747a06515732936d1a312cd02` | 2026-09-20 | 0.9.3c增加只读Action Artifact purpose/call恢复清单；孤儿只计数、不读取正文或自动删除 |
@@ -899,7 +899,7 @@ action_review分支调用原[`protect_review_jsonl`](../../src/harnessix/agent/p
 [实际认证发布恢复](../../tests/product_config/test_git_delivery_review_controls.py)与
 [实际SDK消费](../../tests/product_config/test_git_delivery_review.py)。默认Git执行仍待独立接线验收。
 
-## Action Artifact发布与用户介入：Steering和取消（0.10.0b15）
+## Action Artifact发布与用户介入：Steering和取消（0.10.0b16）
 
 [`publish_action_review`](../../src/harnessix/artifacts/action_review_store.py)在规划审批材料时发布，[`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)在命令执行结束后发布；两者都拿调用方在规划或执行**之前**取得的Thread Sequence作为`expected_sequence`。命令可能运行数分钟，这期间用户可以提交Steering（ADR 0072第8条：当前Tool Result先完成，补充输入进入下一模型步骤）。
 

@@ -386,7 +386,9 @@ def test_materialization_fails_closed_for_case_path_and_manifest_mismatch(tmp_pa
 def test_materialization_detects_changed_head(tmp_path: Path) -> None:
     item = _materialize(tmp_path, "javascript-slug-lowercase")
     target = item.workspace / "src/slug.mjs"
-    target.write_text(target.read_text().replace("value.trim()", "value.trim().toLowerCase()"))
+    target.write_text(
+        target.read_text(encoding="utf-8").replace("value.trim()", "value.trim().toLowerCase()")
+    )
     subprocess.run((_git(), "add", "src/slug.mjs"), cwd=item.workspace, check=True)
     subprocess.run(
         (

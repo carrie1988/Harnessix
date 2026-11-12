@@ -622,7 +622,7 @@ def test_budget_entry_only_forwards_scope_and_keeps_guard_owner():
     tree = ast.parse(
         (
             Path(__file__).parents[2] / "scripts" / "run_engineering_provider_suite_budgeted.py"
-        ).read_text()
+        ).read_text(encoding="utf-8")
     )
     function = next(
         n

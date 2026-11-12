@@ -111,7 +111,7 @@ def _write_trial(
 
 def change_result(job: Path, mutate: Callable[[dict[str, Any]], None], trial: str) -> None:
     path = job / trial / "result.json"
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     mutate(data)
     path.write_text(json.dumps(data))
 

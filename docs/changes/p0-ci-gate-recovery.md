@@ -1,10 +1,10 @@
 ---
 doc_type: change-design
 status: current
-version: 6
-code_revision: c7b13fb3b4eb8cce15b97c90acfbf849ad280ba9
+version: 9
+code_revision: 2574a498a9d36de2d4ae2b6d00568efa96af60fd
 owners: [core]
-modules: [governance, documentation, evals, product_config, product_ui, models, processes]
+modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery, trusted_actions]
 related_adrs:
   - docs/adr/0076-code-readability-and-structural-governance.md
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
@@ -14,6 +14,11 @@ related_tests:
   - tests/evals/test_grader.py
   - tests/integration/test_task_pack_execution.py
   - tests/processes/test_posix_owner_zombie_group.py
+  - tests/tools/test_windows_read_adapter.py
+  - tests/delivery/test_trusted_action_patch.py
+  - tests/trusted_actions/test_plan_error_boundaries.py
+  - tests/processes/test_runtime_zombie_group.py
+  - tests/agent/test_resume_cancel_before_start.py
   - tests/product_config/test_git_user_source_files.py
 supersedes: []
 ---
@@ -80,7 +85,14 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
+- **补丁目标是目录（0.10.0b16）**：在已有目录的路径上`create`，或对目录`edit`/`replace`/`delete`，此前在所有平台上被审批预览记为未知效果并中断整轮；现在规划前认出目录，判为可修正的拒绝，工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。
+- **Windows上带可执行权限位的补丁（0.10.0b15）**：解析阶段拒绝的原码`delivery_metadata_unsupported`此前未登记在公开码表，被换成`action_plan_failed`，整轮按未知效果中断；现在保留原码，作为可修正的失败返回，工作区没有变化。见[Trusted Actions模块设计](../modules/trusted-actions.md)。
+- **Windows上补丁目标存在性不符（0.10.0b15）**：`create`遇到已有文件、`edit`/`replace`/`delete`遇到缺失文件，此前在Windows上被审批预览记为未知效果并中断整轮；现在与POSIX一样在规划前判为可修正的拒绝（`workspace_patch_target_exists`、`workspace_patch_target_missing`），工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。
+- **Windows上的补丁前置条件补全（0.10.0b15）**：提案修复读取整个目标文件的函数此前在Windows后端恒返回空，精确锚定的edit不会被补上当前SHA；现在Windows后端用同一次原生稳定观察读取，行为与POSIX一致。读不到时仍保持原提案，后续核对不变，见[Coding Tool Runtime模块设计](../modules/tools.md)。
 - **Git用户观察的读取超时**：本地读取时限到期此前被报成“来源发生变化”（复核时）或“路径无效”（初次捕获时），现报`git_user_observation_timeout`（可重试）。时限仍为5秒，与执行时快照复核共用，按用户决定不放宽。
+- **macOS僵尸进程组，宿主进程运行时一侧（0.10.0b14）**：`HostProcessRuntime._settle`发信号被拒绝时，等asyncio回收直接子进程（最多2秒）后再试一次；此前子进程自行退出、尚未回收时被记为`cleanup_failed`并关闭运行时准入。信号确实发不出去时结论不变。0.10.0b11修的是`posix_owner`里的同类判断，这一处当时没有修到。
+- **恢复任务在开始执行前被取消（0.10.0b14）**：取消在`resume_turn`取锁、读取Thread期间到达时，尚未开始的Turn（`accepted`）现在提交取消终态，不再停在`accepted`；等待审批或提问的Turn、其他任务正在执行的Turn不变，见[Agent模块设计](../modules/agent.md)。
+- **服务端退出的原因（0.10.0b14）**：SDK子进程传输在输出流关闭时，把服务端写在stderr最后一行的公开错误（固定三字段）带进`server_closed`的消息；其他stderr内容仍不外传，见[SDK模块设计](../modules/sdk.md)。
 - **Git来源读取时限（0.10.0b14）**：单次读取的局部时限由5秒放宽到30秒，超时仍报可重试的`git_user_observation_timeout`；执行时快照复核的时限不变。
 - **沙箱外命令的审批（0.10.0b14，ADR 0128）**：服务端仍为每条沙箱外命令产生审批；交互客户端对内置只读命令和用户保存的命令前缀自动批准并写明原因。规则文件是工作区状态目录下新增的私有JSON，缺失或损坏时按没有规则处理。无人值守运行不变。
 - **Windows命令读取`ProgramFiles(x86)`（0.10.0b14）**：环境变量名合同不变；PowerShell固定前缀在命令运行前向系统查询并补上该变量（用户决定方案A）。命令的启动参数因此变化，旧显式配置的参数仍接受。
@@ -118,7 +130,11 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
+0.10.0b15发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 0.10.0b14发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
+0.10.0b14修正macOS上`HostProcessRuntime`把已退出、未回收的子进程误报为清理失败（见[进程模块设计](../modules/processes.md)）：`HostProcessRuntime`增加17行（261→278），即方法`_signal_group`（含说明共15行）与`_settle`里两处调用换行。等待回收必须拿到本次运行的`capture.exited`并经过可被测试替换的`_signal`，所以留在类内。
+0.10.0b14修正恢复任务在开始执行前被取消时Turn停在`accepted`（见[Agent模块设计](../modules/agent.md)）：`agent/runtime.py`（3480→3497）与`AgentRuntime`（3195→3212）各增加17行，即`resume_turn`外层的取消处理（原方法体改名`_resume_turn`，共11行）与`_cancel_task`、`_settle_cancel_task`的`only_accepted`参数及判断（6行）。取消终态的提交复用既有的`_cancel_task`，没有新增第二条路径。
+0.10.0b14同时放宽两项测试自身的时间假设（只改测试）：`tests/product_config/test_git_user_observation.py`里“期限内已开始、随后到期”的两个用例给Git操作0.5秒总预算，却要求第一步真实读取或子进程启动先在预算内完成；CI macOS负载高时预算在子进程启动前耗尽，用例等不到启动（2026-11-11）。总预算改为3秒，随后的等待相应延长。
 0.10.0b14放宽Git来源读取时限（见[产品配置模块设计](../modules/product-config.md)）：`workspace/snapshot.py`的`_PosixRoot`增加1行（116→117），即`observe`的可选参数`read_timeout_seconds`；读取操作的构造放在模块函数`_read_operation`，默认时限下与原来完全一致。
 0.10.0b14按用户决定（2026-11-11）把`windows-trusted-execution`五个原生验证步骤的时限统一放宽到10分钟（原为3分钟，备份与恢复两步为5分钟）：第一步实际用时接近3分钟，经常超时，其后的Windows产品测试全部被跳过。治理测试中冻结的数值同步更新为批准后的10分钟，其余步骤内容仍与基线逐项一致；该任务仍不进入发布门禁。
 0.10.0b14沙箱外命令减少询问（[ADR 0128](../adr/0128-host-command-approval-rules.md)）：`ProductController`增加2行（378→380），即构造参数`automation`与对外暴露的`rule_offer`；判定、存储与界面文案分别放在新模块`product_config/command_rules.py`、`product_ui/approval_rules.py`和模块函数`_remember_label`。`InteractionPresenter`通过合并F1帮助的条目选择保持在100行。
@@ -233,6 +249,8 @@ b6发布前在247上用b5做对照：一次修改8个各在12层子目录下的�
 用户要求核查状态栏Token与费用。逐轮复算确认成功步骤准确；修正中断请求被当作上限、按前缀匹配牌价、DeepSeek以美元显示三处，状态栏标注“本轮”，见[Product UI模块设计](../modules/product-ui.md)“费用显示的准确性”。
 
 智谱端点真实验证（2026-11-11，用户提供Key）：按Harnessix实际请求形状探测`glm-5.3-flash`，流式用量、工具调用、`max_tokens`均被接受，带工具的多轮对话不回传思考内容不报错，思考Token计入输出；产品层面配置向导、`doctor --probe-model`与一个完整的TUI缺陷修复任务（含运行测试）通过，状态栏按人民币牌价显示费用上限。免费的`glm-4.7-flash`第二轮请求遇到限流（429），不作为推荐模型。
+
+Windows完整测试集（2026-11-11）：CI的Windows任务只跑到一部分，改在Windows实机上用真实git检出跑完整测试集。首轮3557项失败或报错，归为93类原因，绝大多数出在测试与仓库设置：文本文件按CRLF检出（现统一LF）、测试按本机编码读文件、参数值过长的用例名超过Windows环境变量上限、临时目录权限不是“本人与SYSTEM”、Git交付夹具把Windows路径声明为POSIX平台、只在POSIX上存在的原生沙箱用例。修正这些之后剩413项，从中查出三处产品缺陷（上文三条“Windows上…”）。其余失败集中在尚未接入产品的内置Git交付用例，另行处理。
 
 ## 11. 源码映射
 
