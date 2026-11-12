@@ -32,6 +32,7 @@ from harnessix.product_ui.interactions import (
     pending_question,
 )
 from harnessix.product_ui.main_view import ProductMainView
+from harnessix.product_ui.turn_pacing import TurnPacing
 
 PRODUCT_QUIT_DEADLINE_SECONDS = 20.0
 
@@ -50,6 +51,7 @@ _BINDINGS: list[Binding | tuple[str, str] | tuple[str, str, str]] = [
     Binding("ctrl+u", "question", "回答", priority=True),
     Binding("ctrl+x", "cancel_turn", "取消任务", priority=True),
     Binding("ctrl+s", "steer_turn", "补充说明"),
+    Binding("ctrl+f", "wrap_up_turn", "让它收尾", priority=True),
     Binding("ctrl+r", "reconnect", "重新连接"),
     Binding("ctrl+n", "new_thread", "新建会话"),
     Binding("ctrl+e", "toggle_auto_accept", "自动接受修改", priority=True),
@@ -57,10 +59,12 @@ _BINDINGS: list[Binding | tuple[str, str] | tuple[str, str, str]] = [
     Binding("ctrl+q", "quit_product", "退出"),
 ]
 _MAIN_SCREEN_ACTIONS = frozenset(
-    {"approval", "toggle_auto_accept", "question", "cancel_turn", "steer_turn"}
+    {"approval", "toggle_auto_accept", "question", "cancel_turn", "steer_turn", "wrap_up_turn"}
 )
 # 只在可用时显示和响应的操作，底部快捷键栏随状态变化。
-_CONTEXTUAL_ACTIONS = frozenset({"approval", "question", "cancel_turn", "steer_turn", "reconnect"})
+_CONTEXTUAL_ACTIONS = frozenset(
+    {"approval", "question", "cancel_turn", "steer_turn", "wrap_up_turn", "reconnect"}
+)
 
 
 def available_actions(state: ProductControllerState) -> frozenset[str]:
@@ -80,6 +84,7 @@ def available_actions(state: ProductControllerState) -> frozenset[str]:
             ("question", question is not None),
             ("cancel_turn", control is not None and control.can_cancel),
             ("steer_turn", control is not None and control.can_steer),
+            ("wrap_up_turn", control is not None and control.can_steer),
             ("reconnect", state.phase is ControllerPhase.BROKEN),
         )
         if present
@@ -95,7 +100,7 @@ def action_enabled(action: str, state: ProductControllerState, *, modal_open: bo
     return action not in _CONTEXTUAL_ACTIONS or action in available_actions(state)
 
 
-class ProductApp(App[CloseReport]):
+class ProductApp(TurnPacing, App[CloseReport]):
     """Harnessix Code首个可恢复全屏终端入口。"""
 
     TITLE, SUB_TITLE = "Harnessix Code", "生产级 Coding Agent"

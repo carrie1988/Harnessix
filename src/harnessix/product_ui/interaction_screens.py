@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -26,6 +26,7 @@ from harnessix.product_ui.interactions import (
     PendingQuestion,
 )
 from harnessix.product_ui.tool_summary import describe_tool
+from harnessix.product_ui.turn_checkpoint import CheckpointChoice, checkpoint_minutes
 
 _MODAL_CSS = """
 ModalScreen { align: center middle; }
@@ -308,13 +309,81 @@ class SteerScreen(ModalScreen[str | None]):
         self.dismiss(None)
 
 
+class CheckpointScreen(ModalScreen[CheckpointChoice]):
+    """任务实际运行满一段时间后的询问：继续、收尾或停止；无人回应时先暂停本轮再等用户。"""
+
+    CSS = _MODAL_CSS
+    BINDINGS = [Binding("escape", "close_modal", "关闭")]
+
+    def __init__(
+        self, minutes: int, pause_after_seconds: float, pause: Callable[[], Awaitable[bool]]
+    ) -> None:
+        super().__init__()
+        self._minutes, self._pause_after, self._pause = minutes, pause_after_seconds, pause
+        self.paused = False
+        self._answered = False
+
+    def compose(self) -> ComposeResult:
+        with Container(classes="interaction-dialog"):
+            yield Label(f"任务已实际运行 {self._minutes} 分钟", classes="interaction-title")
+            yield Static(
+                "等待你审批的时间没有计入。任务还在继续运行；"
+                f"{checkpoint_minutes(self._pause_after)} 分钟内没有选择会先暂停本轮。\n"
+                "继续：再运行一段时间后再问。收尾：让它停止追加工作，直接给出总结。停止：结束本轮。",
+                id="checkpoint-text",
+                markup=False,
+                classes="interaction-content",
+            )
+            with Horizontal(classes="interaction-buttons"):
+                yield Button("继续", id="checkpoint-continue", variant="primary")
+                yield Button("收尾", id="checkpoint-wrap-up")
+                yield Button("停止", id="checkpoint-stop")
+
+    def on_mount(self) -> None:
+        self.set_timer(self._pause_after, self._pause_unanswered)
+
+    async def _pause_unanswered(self) -> None:
+        if self.paused or self._answered:
+            return
+        self.paused = True
+        if not await self._pause():
+            # 没有可暂停的任务（已经自己结束，或暂停没有成功）：不再占着屏幕。
+            self.paused = False
+            self.answer("continue")
+        elif not self._answered:
+            self.query_one("#checkpoint-text", Static).update(
+                "没有人回应，本轮已暂停，已完成的修改都保留着。\n"
+                "继续：接着做没做完的部分。收尾：让它直接给出总结。停止：就停在这里。"
+            )
+
+    def answer(self, choice: CheckpointChoice) -> None:
+        """关闭询问并返回选择；按钮、Esc、定时器可能先后触发，只生效一次。"""
+        if not self._answered:
+            self._answered = True
+            self.dismiss(choice)
+
+    @on(Button.Pressed)
+    def _button_pressed(self, event: Button.Pressed) -> None:
+        choices: dict[str | None, CheckpointChoice] = {
+            "checkpoint-continue": "continue",
+            "checkpoint-wrap-up": "wrap_up",
+            "checkpoint-stop": "stop",
+        }
+        self.answer(choices[event.button.id])
+
+    def action_close_modal(self) -> None:
+        # 关闭不等于停止任务：还在运行时按继续处理；已经暂停时就停在这里。
+        self.answer("stop" if self.paused else "continue")
+
+
 USAGE_HELP = "\n\n".join(
     (
         "开始任务：在底部输入框写下要做的事，按 Enter 发送。",
         # 中文段落里不放空格：终端按空格折行，长中文串会整体挪到下一行。
         "审批：Agent要修改文件或在沙箱外运行命令时，会自动弹出审批窗口。看过差异后选择批准或拒绝；"
         "拒绝时写明原因，Agent会据此调整。关掉的审批可按Ctrl+A再打开。",
-        "任务运行中：Ctrl+S 补充说明，Ctrl+X 取消任务。",
+        "任务运行中：Ctrl+S 补充说明，Ctrl+F 让它收尾并给出总结，Ctrl+X 取消任务。"
+        "实际运行每满60分钟会问一次是否继续（等待审批的时间不计）。",
         "会话：Ctrl+N 新建会话，在左侧列表切换。下次在同一目录打开，会回到上次的会话。",
         "自动接受修改：Ctrl+E 开关。开启后，本会话的文件修改不再逐个审批，命令仍按规则审批。",
         "退出：Ctrl+Q。遇到错误时按 F1，可查看原因和处理办法。",

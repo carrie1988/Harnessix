@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 46
+version: 47
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -27,6 +27,8 @@ related_tests:
   - tests/product_ui/test_controller_interactions.py
   - tests/product_ui/test_interactions.py
   - tests/product_ui/test_interaction_screens.py
+  - tests/product_ui/test_time_checkpoint.py
+  - tests/product_ui/test_wrap_up.py
   - tests/product_ui/test_app_interactions.py
   - tests/product_ui/test_rendering.py
   - tests/product_ui/test_app.py
@@ -41,6 +43,28 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：一键收尾与运行时间检查点（ADR 0148）
+
+真实试用里一轮任务在整60分钟时被内核时限判为“未完成”（其中包含14次等待审批的时间），而任务其实早已做完、
+模型还在自己追加验证。界面为此增加两项操作，都在[`turn_pacing.py`](../../src/harnessix/product_ui/turn_pacing.py)，
+以Mixin `TurnPacing`并入`ProductApp`（自己的定时器和动作，主应用类不增长）：
+
+- **一键收尾（`Ctrl+F`）**：`wrap_up`向当前Turn发送固定的补充说明`WRAP_UP_MESSAGE`（与`Ctrl+S`同一条Steer通道）。
+  Turn不可补充说明时报`turn_control_stale`。
+- **运行时间检查点**：[`turn_checkpoint.py`](../../src/harnessix/product_ui/turn_checkpoint.py)的`ActiveTimeMeter`
+  按Turn累计实际运行时间——每秒观察一次当前Turn的状态，只有已接受、准备上下文、调用模型、执行工具、收尾这些状态计时，
+  等待审批、等待操作、等待回答不计；Turn变了就从零开始。满60分钟且没有其他窗口打开时，`run_checkpoint`弹出
+  [`CheckpointScreen`](../../src/harnessix/product_ui/interaction_screens.py)：继续（重新计时）、收尾（发送收尾说明）、
+  停止（取消Turn），`Esc`等同继续。5分钟无人回应时窗口调用暂停回调取消Turn并改为“已暂停”的说明；此后选继续或收尾，
+  等Turn结束后提交新的一轮（`CONTINUE_PROMPT`、`WRAP_UP_PROMPT`），选停止就停在这里。询问期间任务自己结束，
+  定时器关闭窗口。暂停失败时关闭窗口并显示错误。
+- **内核时限**：[`interactive_turn_budget`](../../src/harnessix/product_ui/turn_budget.py)把终端界面的墙钟预算放到
+  协议上限86,400秒作为兜底；`exec`的预算不变。计时只在界面进程内，不写入会话记录，重新打开界面后从零开始。
+
+判断“Turn还在运行”用`ACTIVE_TURN_STATES`：`active_turn_control`对已结束的Turn也返回控制对象，不能用它是否为空来判断。
+回归见`test_time_checkpoint.py`（计时规则、及时继续、选择收尾、无人回应后暂停再继续或收尾、暂停后停止、任务先结束）
+与`test_wrap_up.py`。
 
 ## 当前增量：审批清单列出将新建的目录（ADR 0137）
 
@@ -342,7 +366,7 @@ flowchart LR
 | 10 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) | `TranscriptLine`、`transcript_lines`、`thread_label` | 理解Plan、Tool、持久正文、临时流和终端标记隔离 |
 | 11 | [`error_help.py`](../../src/harnessix/product_ui/error_help.py) | `ProductErrorHelp`、`product_error_help` | 理解稳定错误目录和未知码脱敏回退 |
 | 12 | [`main_view.py`](../../src/harnessix/product_ui/main_view.py) | `ProductMainView` | 理解基础Widget、Usage/Cost状态及Composer门禁 |
-| 13 | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py) | 四类Screen | 理解审批、问题、Steer和帮助Modal的本地返回合同 |
+| 13 | [`interaction_screens.py`](../../src/harnessix/product_ui/interaction_screens.py) | 五类Screen | 理解审批、问题、Steer、运行时间询问和帮助Modal的本地返回合同 |
 | 14 | [`interaction_presenter.py`](../../src/harnessix/product_ui/interaction_presenter.py) | `InteractionPresenter` | 理解Modal与Controller Intent之间的唯一适配 |
 | 15 | [`app.py`](../../src/harnessix/product_ui/app.py) | `ProductApp`、`ControllerUpdated` | 理解Textual焦点、快捷键、Worker和View生命周期 |
 | 16 | [`cli.py`](../../src/harnessix/product_ui/cli.py) | `code_main`、`_server_command` | 理解状态目录布局、可选依赖和stdio组合根 |
@@ -708,7 +732,7 @@ Tool Result显示Outcome、稳定错误及Diff Artifact可用性。Gap使用固�
 
 `ProductApp(App[CloseReport])`拥有Textual生命周期，`ProductMainView`包含Session Picker、`RichLog` Transcript、状态行和
 单行Composer。快捷键为`Ctrl+N`新建、`Ctrl+R`重连、`Ctrl+A`审批、`Ctrl+U`回答、`Ctrl+X`取消Turn、`Ctrl+S`补充
-Turn、`F1`错误帮助和`Ctrl+Q`有界关闭。退出TUI不会发送`turn/cancel`；Textual拆卸后主视图拒绝迟到快照，避免访问
+Turn、`Ctrl+F`让Turn收尾、`F1`错误帮助和`Ctrl+Q`有界关闭。退出TUI不会发送`turn/cancel`；Textual拆卸后主视图拒绝迟到快照，避免访问
 已经卸载的子Widget。产品退出的20秒外层期限属于本地连接生命周期，不是Turn取消命令或Provider请求期限。
 
 ```text
@@ -1143,6 +1167,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 47 | `ce5b7386` 增量 | 2026-11-12 | 一键收尾`Ctrl+F`；终端界面的运行时间检查点：按Turn累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；内核墙钟预算在交互模式下放到86,400秒（`turn_pacing.py`、`turn_checkpoint.py`、`CheckpointScreen`，ADR 0148） |
 | 46 | `74b08375` 增量 | 2026-11-12 | `configure`新增`--thinking-effort`、`--thinking-budget`（到不了模型的设置直接拒绝）；旧配置没有思考强度时在空会话与`doctor`里提示重新configure（`config_hints.py`）；宿主补发的说明显示为“提示”行（ADR 0146、0147） |
 | 45 | `151ab594` 增量 | 2026-11-12 | `configure`新增`--service-failure-retries`：付费交互模式下服务方故障后的自动重试次数（0～20，默认5），写入产品配置（ADR 0144） |
 | 44 | `d387a5cd` 增量 | 2026-11-12 | 审批清单列出补丁将新建的目录；父路径拒绝在对话里只显示原因（0.10.0b21，ADR 0137） |

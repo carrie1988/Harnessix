@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from harnessix.product_ui.turn_checkpoint import INTERACTIVE_TIMEOUT_SECONDS
 from harnessix.protocol.contracts import PublicBudget
 
 # 运行时内核的Budget默认值（16步/10万Token/120秒）面向单元与持久化夹具；真实编码任务
-# 平均需要数十步与数十万Token，产品客户端显式传入下列预算。墙钟包含等待人工审批的时间。
+# 平均需要数十步与数十万Token，产品客户端显式传入下列预算。墙钟包含等待人工审批的时间
+# （终端界面另有安排，见interactive_turn_budget）。
 # 无人值守运行的上限；累计Token含缓存命中、不等于费用，此前的100万会截断约三分之一的真实长任务。
 PRODUCT_TURN_BUDGET = PublicBudget(
     max_steps=100,
@@ -20,7 +22,7 @@ PRODUCT_TURN_BUDGET = PublicBudget(
 LOCAL_TURN_BUDGET = PRODUCT_TURN_BUDGET.model_copy(update={"max_tokens": 6_000_000})
 
 
-# 交互模式下用户能看到费用并随时取消，累计Token不再作为任务上限；步数和时限仍然生效。
+# 交互模式下用户能看到费用并随时取消，累计Token不再作为任务上限；步数上限仍然生效。
 UNCAPPED_TOKENS = 1_000_000_000
 
 
@@ -29,8 +31,15 @@ def turn_budget_for(pricing: str) -> PublicBudget:
 
 
 def interactive_turn_budget(pricing: str, *, cost_visible: bool) -> PublicBudget:
-    """本地端点或费用可见时取消累计Token上限；费用未知的云模型保留上限。"""
+    """本地端点或费用可见时取消累计Token上限；费用未知的云模型保留上限。
 
+    时限由界面的运行时间检查点负责（实际运行每满60分钟询问一次，等待审批不计），
+    内核墙钟预算放到最大值，不再在第60分钟把任务判为失败。
+    """
+
+    interactive = PRODUCT_TURN_BUDGET.model_copy(
+        update={"timeout_seconds": INTERACTIVE_TIMEOUT_SECONDS}
+    )
     if pricing != "free" and not cost_visible:
-        return PRODUCT_TURN_BUDGET
-    return PRODUCT_TURN_BUDGET.model_copy(update={"max_tokens": UNCAPPED_TOKENS})
+        return interactive
+    return interactive.model_copy(update={"max_tokens": UNCAPPED_TOKENS})

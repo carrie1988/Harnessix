@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 5
+version: 6
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0146-thinking-intensity-tiers.md
   - docs/adr/0147-interactive-prompt-for-announced-steps.md
   - docs/adr/0124-completion-guard-for-unattended-turns.md
+  - docs/adr/0148-interactive-run-time-checkpoint-and-wrap-up.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -36,6 +37,8 @@ related_tests:
   - tests/agent/test_completion_guard.py
   - tests/product_ui/test_config_hints.py
   - tests/product_ui/test_rendering_host_notices.py
+  - tests/product_ui/test_wrap_up.py
+  - tests/product_ui/test_time_checkpoint.py
 supersedes: []
 ---
 
@@ -49,13 +52,13 @@ supersedes: []
 |---|---|---|---|
 | 一 | 批准后整轮中断，显示“存在未知效果”，获批操作没有执行（B20-02） | 过期计划以确定的失败结束，本轮继续 | [ADR 0142](../adr/0142-stale-approved-plan-fails-without-effect.md) |
 | 二 | 一次流式中断结束了进行到第57次请求的任务，要手动“继续” | 付费交互模式下服务方故障连续至多自动重试5次 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md) |
-
 | 三 | 大仓库在根目录搜索5秒后超时，没有任何结果（B20-05） | 搜索提速约3.5倍，整仓上限放宽到四倍 | [ADR 0145](../adr/0145-whole-repository-search-on-large-repositories.md) |
-
 | 四 | 产品负责人试用：第一步思考十分钟，任务两小时没有做完 | 思考强度档位，核实过的模型默认中档 | [ADR 0146](../adr/0146-thinking-intensity-tiers.md) |
 | 五 | 模型只说了接下来要做什么就显示“已完成” | 交互模式提示它继续；宿主说明显示为“提示” | [ADR 0147](../adr/0147-interactive-prompt-for-announced-steps.md) |
+| 六 | 任务在第60分钟被判为“未完成”，等待审批的时间也算在内；任务做完了模型还在追加工作，只能取消 | 实际运行每满60分钟询问一次，等待审批不计；`Ctrl+F`一键收尾 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md) |
 
-第1～14节描述第一项；第二至五项的设计分别集中在第15～18节。后续批次（收窄目录绑定、生成进度与实时用量）落地时在本文追加。
+第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，第六项在第20节。
+后续批次（完成规则、收窄目录绑定、生成进度与实时用量）落地时在本文追加。
 
 ## 2. 需求背景
 
@@ -379,3 +382,48 @@ flowchart LR
 - 交互模式的提示在12次运行里触发1次（模型宣布了下一步却没有动作），提示后该次任务正常完成并通过项目测试；
   其余11次没有触发，最终答复没有被误判。
 
+
+## 20. 第六项：一键收尾与运行时间检查点
+
+### 20.1 背景与决定
+
+同一次试用里，第一轮在整60分钟时被内核时限判为“未完成”，其中包含14次等待审批的时间。负责人的决定：
+终端界面实际运行满60分钟时询问是否继续，等待审批的时间不计；无人值守不变；提供一键收尾，询问里也给出收尾的选择
+（[ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)）。
+
+### 20.2 设计
+
+- `product_ui/turn_budget.py`：`interactive_turn_budget`的墙钟预算取协议上限86,400秒（兜底）；`exec`的预算不变。
+- `product_ui/turn_checkpoint.py`：`ActiveTimeMeter`按Turn累计实际运行时间，只有Agent自己在工作的状态计时；
+  常量（60分钟、5分钟、继续与收尾的固定说明）集中在这里。
+- `product_ui/interaction_screens.py`：`CheckpointScreen`——继续、收尾、停止；无人回应时调用暂停回调并改为
+  “已暂停”的说明；按钮、`Esc`、定时器先后触发时只生效一次。
+- `product_ui/turn_pacing.py`：Mixin `TurnPacing`并入`ProductApp`。每秒观察一次当前Turn；到点且没有其他窗口时
+  启动`run_checkpoint`；询问期间任务自己结束则关闭窗口。`run_checkpoint`按当时的情况执行选择：
+  本轮还在运行——收尾发送Steer说明，停止取消Turn；本轮已因无人回应暂停——等Turn结束后提交新的一轮。
+  `Ctrl+F`的`wrap_up`也在这里。
+
+### 20.3 边界
+
+- 计时只在界面进程内：重新打开界面后从零开始；只对界面当前显示的会话计时；24小时的内核预算兜底。
+- 暂停通过取消Turn实现，界面显示“已取消”；继续是新的一轮，模型从会话记录里接着做。
+- 收尾是对模型的请求：正在生成的一步会先做完；需要立即停下仍用`Ctrl+X`。
+- 没有放进内核：那需要改Turn与预算的持久化模型和协议合同，两处模块规模已在可读性预算上限，
+  且与进行中的第二轮开发改同一批文件。
+
+### 20.4 验证
+
+- `tests/product_ui/test_time_checkpoint.py`：等待状态不计时、新的一轮从零开始；交互预算与`exec`预算；
+  真实Runtime、协议服务与界面下的六个场景——及时选继续（同一轮完成，没有多余消息）、任务先结束（窗口自动关闭）、
+  选收尾（收尾说明进入同一轮）、无人回应后暂停再选继续或收尾（新的一轮带固定说明）、暂停后停止。
+- `tests/product_ui/test_wrap_up.py`：`Ctrl+F`发送收尾说明；没有运行中的任务时不可用。
+- 真实模型：真实终端界面（tmux驱动、逐条批准），百炼qwen3.8-flash，负责人的原任务（从零创建演示黑洞的3D网页），中档思考。
+  只把60分钟与5分钟缩短，其余为产品原样（验证时的代码同时包含下一项的完成规则），五个场景各一次，全部通过：
+
+| 场景 | 设置 | 结果 |
+|---|---|---|
+| 每次询问都及时选继续 | 每45秒询问 | 询问19次，任务在同一轮正常完成（15.2分钟） |
+| 第一次询问无人回应 | 每45秒询问，20秒后暂停 | 本轮暂停并显示“已暂停”；选继续后新的一轮带着固定说明开始，之后正常完成 |
+| 询问里选收尾 | 200秒时询问 | 模型给出总结，本轮正常结束 |
+| `Ctrl+F` | 第一次审批之后按下 | 34秒后本轮以总结正常结束 |
+| 审批窗口停留70秒 | 每45秒询问 | 四次询问出现在实际运行45～48秒处，等待的70秒没有计入 |
