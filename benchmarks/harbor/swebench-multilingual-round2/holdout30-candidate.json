@@ -44,17 +44,17 @@
   "primary_grader": "swebench-official",
   "notes": [
     "Round-2 candidate on holdout30, the task set of the 2026-11-10 formal run. These tasks were analysed in depth for this round, so the result is a seen-set reference, not evidence of generalisation.",
-    "harnessix: round-2 product bundle agent-57dabb53, same arm settings as on the test set. Reference arms: multilingual-holdout30-formal-447fe024 (current version and mini, 2 attempts).",
+    "harnessix: round-2 product bundle agent-7b852d9f, same arm settings as on the test set. Reference arms: multilingual-holdout30-formal-447fe024 (current version and mini, 2 attempts).",
     "Primary metric: the official SWE-bench resolve of the exported whole-repository patch; wall time per trial is reported beside it with equal weight. Four concurrent trials, offline agent phase, same model replicas."
   ],
   "arms": [
     {
       "arm_id": "harnessix",
       "system": "harnessix",
-      "system_version": "0.10.0b12+round2-57dabb53",
+      "system_version": "0.10.0b12+round2-7b852d9f",
       "artifacts": [
-        "/data/harnessix/harbor/agent-57dabb53/harnessix-bundle.tar.gz",
-        "/data/harnessix/harbor/agent-57dabb53/product.json"
+        "/data/harnessix/harbor/agent-7b852d9f/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-7b852d9f/product.json"
       ],
       "agent": {
         "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
@@ -62,10 +62,10 @@
           "MODEL_API_KEY": "local-replica-no-key"
         },
         "kwargs": {
-          "install_bundle": "/data/harnessix/harbor/agent-57dabb53/harnessix-bundle.tar.gz",
+          "install_bundle": "/data/harnessix/harbor/agent-7b852d9f/harnessix-bundle.tar.gz",
           "bundle_root": "/opt",
           "python_executable": "/opt/harnessix/bin/python",
-          "server_config_template": "/data/harnessix/harbor/agent-57dabb53/product.json",
+          "server_config_template": "/data/harnessix/harbor/agent-7b852d9f/product.json",
           "server_config": "/etc/harnessix-eval/product.json",
           "action_config": "/etc/harnessix-eval/actions.json",
           "task_command_environment": true,
