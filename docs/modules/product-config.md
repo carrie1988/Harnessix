@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 144
+version: 145
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -189,7 +189,7 @@ supersedes: []
 - **零配置**：
   - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
-- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v4`（v4起要求工具调用之间的进度说明也使用用户的语言；提交时缺少Git作者身份就询问用户，不得沿用历史里其他人的身份）；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v5`（v4起要求工具调用之间的进度说明也使用用户的语言；提交时缺少Git作者身份就询问用户，不得沿用历史里其他人的身份；v5加入完成规则：只做被要求的事，用项目已有的检查验证一次，无法用现有工具验证的要求写进最终回答而不另造检查手段，做完立即给出最终回答，ADR 0149）；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
@@ -2304,6 +2304,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 145 | `ce5b7386` 增量 | 2026-11-12 | 本机命令的系统指令升为v5，加入完成规则（做完就结束、已有检查只验证一次、无法验证的写进最终回答）；容器与外部边界指令不变（ADR 0149） |
 | 144 | `74b08375` 增量 | 2026-11-12 | `ModelProfile.thinking_effort`（低、中、高）与`thinking_budget_tokens`：字段类型、端点映射与校验在`profile_options.py`；向导对百炼qwen3.8-max/flash默认中档（`effort_tiers_verified`）；终端界面的完成守卫用交互模式（ADR 0146、0147） |
 | 143 | `151ab594` 增量 | 2026-11-12 | 交互模式下服务方故障后连续至多自动重试，次数由配置项`service_failure_retries`决定（0～20，默认5，`configure --service-failure-retries`写入）；向导生成配置的`max_attempts`由4改为6，合同上界由5放宽到6；宿主运行选项的字段类型移到`runtime_options.py`（ADR 0144） |
 | 142 | `cf52cadc` 增量 | 2026-11-11 | 百炼qwen3.8-max/flash默认预设`dashscope_enable_thinking`（只在工具步骤思考），取代`explicit_thinking_switch`；声明窗口时默认输出上限不超过窗口的四分之一，思考是否放得下按同一上限判断（0.10.0b19） |

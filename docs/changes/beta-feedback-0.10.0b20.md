@@ -22,6 +22,7 @@ related_adrs:
   - docs/adr/0147-interactive-prompt-for-announced-steps.md
   - docs/adr/0124-completion-guard-for-unattended-turns.md
   - docs/adr/0148-interactive-run-time-checkpoint-and-wrap-up.md
+  - docs/adr/0149-completion-rule-in-native-instructions.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -37,6 +38,7 @@ related_tests:
   - tests/agent/test_completion_guard.py
   - tests/product_ui/test_config_hints.py
   - tests/product_ui/test_rendering_host_notices.py
+  - tests/product_config/test_zero_config.py
   - tests/product_ui/test_wrap_up.py
   - tests/product_ui/test_time_checkpoint.py
 supersedes: []
@@ -56,9 +58,10 @@ supersedes: []
 | 四 | 产品负责人试用：第一步思考十分钟，任务两小时没有做完 | 思考强度档位，核实过的模型默认中档 | [ADR 0146](../adr/0146-thinking-intensity-tiers.md) |
 | 五 | 模型只说了接下来要做什么就显示“已完成” | 交互模式提示它继续；宿主说明显示为“提示” | [ADR 0147](../adr/0147-interactive-prompt-for-announced-steps.md) |
 | 六 | 任务在第60分钟被判为“未完成”，等待审批的时间也算在内；任务做完了模型还在追加工作，只能取消 | 实际运行每满60分钟询问一次，等待审批不计；`Ctrl+F`一键收尾 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md) |
+| 七 | 任务早已做完，模型又自己验证、修改了一个多小时 | 本机模式的模型指令加入完成规则：做完就结束，已有检查只验证一次，无法验证的写进最终回答 | [ADR 0149](../adr/0149-completion-rule-in-native-instructions.md) |
 
-第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，第六项在第20节。
-后续批次（完成规则、收窄目录绑定、生成进度与实时用量）落地时在本文追加。
+第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
+第六、七项在第20、21节。后续批次（收窄目录绑定、生成进度与实时用量）落地时在本文追加。
 
 ## 2. 需求背景
 
@@ -418,7 +421,7 @@ flowchart LR
   选收尾（收尾说明进入同一轮）、无人回应后暂停再选继续或收尾（新的一轮带固定说明）、暂停后停止。
 - `tests/product_ui/test_wrap_up.py`：`Ctrl+F`发送收尾说明；没有运行中的任务时不可用。
 - 真实模型：真实终端界面（tmux驱动、逐条批准），百炼qwen3.8-flash，负责人的原任务（从零创建演示黑洞的3D网页），中档思考。
-  只把60分钟与5分钟缩短，其余为产品原样（验证时的代码同时包含下一项的完成规则），五个场景各一次，全部通过：
+  只把60分钟与5分钟缩短，其余为产品原样（验证时的代码同时包含第七项的完成规则），五个场景各一次，全部通过：
 
 | 场景 | 设置 | 结果 |
 |---|---|---|
@@ -427,3 +430,42 @@ flowchart LR
 | 询问里选收尾 | 200秒时询问 | 模型给出总结，本轮正常结束 |
 | `Ctrl+F` | 第一次审批之后按下 | 34秒后本轮以总结正常结束 |
 | 审批窗口停留70秒 | 每45秒询问 | 四次询问出现在实际运行45～48秒处，等待的70秒没有计入 |
+
+## 21. 第七项：本机模式指令的完成规则
+
+### 21.1 背景
+
+负责人的真实试用里，网页在第一轮就写出来了，任务又运行了一个多小时：模型没有浏览器可用，就写脚本检查HTML结构、
+搭建本地服务，再根据这些检查继续改页面，先后运行43条命令。指令只推着它验证，没有一句说明什么算做完
+（[ADR 0149](../adr/0149-completion-rule-in-native-instructions.md)）。
+
+### 21.2 设计
+
+- `product_config/agent_context.py`：本机命令的系统指令升为`harnessix.native-execution-instructions/v5`，
+  在“交付前复核”之前加入完成规则——只做被要求的事；用项目已有的检查验证一次，通过后不再重复；
+  用现有工具无法验证的要求不另造检查手段，写进最终回答请用户确认；做完立即给出最终回答。
+- 容器命令与外部边界（评测使用）的两套指令不变。
+
+### 21.3 边界
+
+- 规则约束的是范围和次数，不是放弃验证：“不得为通过而削弱测试”“报告已做的检查与缺口”两条原样保留。
+- 靠指令约束，模型不一定每次都遵守；停不下来时由第六项的两种操作结束。
+
+### 21.4 验证
+
+- `tests/product_config/test_zero_config.py::test_local_mode_instructions_say_when_the_work_is_done`：
+  规则四句都在本机指令里，原有的验证要求仍在，另外两套指令里没有。
+- 真实模型：真实终端界面（tmux驱动、逐条批准），百炼qwen3.8-flash，负责人的原任务（从零创建演示黑洞的3D网页）。
+  完成规则的前后对照（单次上限20分钟；“前”取自第19节及此前的记录）：
+
+| 设置 | 加规则前 | 加规则后 |
+|---|---|---|
+| 关闭思考 | 0/1完成（20分钟，43次请求） | 2/2完成，4.7与6.3分钟，各16次请求 |
+| 中档（默认） | 3/3完成，5.0、5.7、7.5分钟；三次共运行4条命令 | 1/1完成，3.8分钟，没有运行命令 |
+| 最强档 | 60分钟被时限终止（0.10.0b20） | 0/2完成（20分钟）：第一步思考近10分钟、2.9万Token，没有运行任何命令 |
+
+- 最强档没有完成的原因是思考量，不是反复验证；这是默认值取中档的原因（第17节）。
+- 真实仓库任务（python-slugify，中档）加规则后1/1完成，项目测试仍然运行。
+- 样本量小，“关闭思考、加规则前”只有一次。
+- 第六项验证的五次中档运行（都带完成规则）里有两次用时较长（12.8与15.2分钟）：时间花在补丁参数被拒绝后的
+  重试和对自己页面的反复修改上（各只运行1条命令），不是另造验证手段。补丁参数的问题由第二轮开发的修复覆盖。

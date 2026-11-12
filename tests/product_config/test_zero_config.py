@@ -94,12 +94,29 @@ async def test_native_instructions_are_separate_from_generic_ones(tmp_path: Path
     generic = await _runtime_instruction(tmp_path, generic_execution=True)
     native = await _runtime_instruction(tmp_path, generic_execution=True, native_execution=True)
     assert generic["source"] == "harnessix.generic-execution-instructions/v6"
-    assert native["source"] == "harnessix.native-execution-instructions/v4"
+    assert native["source"] == "harnessix.native-execution-instructions/v5"
     assert "Inside execution containers" in generic["content"]
     assert "host_command.<profile>" in native["content"]
     assert "Inside execution containers" not in native["content"]
     with pytest.raises(ValueError):
         build_product_agent_context(tmp_path, max_output_tokens=1000, native_execution=True)
+
+
+async def test_local_mode_instructions_say_when_the_work_is_done(tmp_path: Path) -> None:
+    """真实试用里网页早已做完，模型却又做了三轮验证并给页面加自检功能：指令此前只推着它验证，
+    没有一句说明什么算做完。完成规则只写进本机模式的指令，评测用的几套指令保持原样。"""
+    native = await _runtime_instruction(tmp_path, generic_execution=True, native_execution=True)
+    rule = " ".join(native["content"].split())
+    assert "Do what the request asks and stop there" in rule
+    assert "Verify with the checks the project already has, once" in rule
+    assert "do not build new tooling to check it: name it in the final answer" in rule
+    assert "give the final answer right away" in rule
+    # 原有的验证要求仍在：完成规则约束的是范围和次数，不是放弃验证。
+    assert "Never weaken tests to obtain a pass" in rule
+    assert "Report observed checks and any remaining environment or verification gaps" in rule
+    for options in ({"generic_execution": True}, {}):
+        other = await _runtime_instruction(tmp_path, **options)
+        assert "stop there" not in other["content"]
 
 
 def test_user_entry_requests_zero_config_explicitly_without_touching_environment(
