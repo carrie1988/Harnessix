@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,7 +17,7 @@ def _config(value: str | None) -> pytest.Config:
     return SimpleNamespace(getoption=lambda name: value)  # type: ignore[return-value]
 
 
-@pytest.mark.parametrize("total", [1, 2, 3, 4])
+@pytest.mark.parametrize("total", [1, 2, 3, 6])
 def test_every_test_file_belongs_to_exactly_one_shard(total: int) -> None:
     tests = (ROOT / "tests").rglob("test_*.py")
     files = sorted(path.relative_to(ROOT).as_posix() for path in tests)
@@ -25,9 +26,19 @@ def test_every_test_file_belongs_to_exactly_one_shard(total: int) -> None:
     assert all(1 <= owner <= total for owner in owners)
     # 稳定：重复计算、Windows路径写法都落在同一片。
     assert owners == [shard_of(name.replace("/", "\\"), total) for name in files]
-    # 没有哪一片是空的，最大的一片不超过平均值的1.5倍（按文件数）。
-    sizes = [owners.count(index) for index in range(1, total + 1)]
-    assert min(sizes) > 0 and max(sizes) <= 1.5 * len(files) / total
+    assert all(owners.count(index) > 0 for index in range(1, total + 1))
+
+
+@pytest.mark.parametrize("total", [3, 6])
+def test_known_slow_files_are_spread_evenly(total: int) -> None:
+    weights = json.loads((ROOT / "tests/shard_weights.json").read_text(encoding="utf-8"))["files"]
+    assert weights, "耗时表为空：用scripts/shard_weights.py从CI日志重新生成"
+    assert all((ROOT / name).is_file() for name in weights), "耗时表里有已不存在的测试文件"
+    load = [0.0] * total
+    for name, seconds in weights.items():
+        load[shard_of(name, total) - 1] += seconds
+    # 贪心分配的结果：最重与最轻的一片相差不超过表里最慢的那个文件。
+    assert max(load) - min(load) <= max(weights.values())
 
 
 def test_shard_option_is_optional_and_parsed() -> None:

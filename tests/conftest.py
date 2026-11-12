@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import functools
+import json
 import os
 import re
 import subprocess
@@ -18,6 +20,13 @@ _UUID_TEXT = re.compile(
 _MAX_ID_CHARS = 200
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "nightly: 单项耗时数分钟的容量用例；每次推送的CI跳过，由nightly工作流每天运行",
+    )
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--shard",
@@ -27,10 +36,33 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
-def shard_of(test_file: str, total: int) -> int:
-    """测试文件所属的分片（从1起）。只依赖文件路径，各进程、各平台结果相同。"""
+_SHARD_WEIGHTS = Path(__file__).with_name("shard_weights.json")
 
-    return zlib.crc32(test_file.replace("\\", "/").encode("utf-8")) % total + 1
+
+@functools.cache
+def _heavy_file_shards(total: int) -> dict[str, int]:
+    """耗时已知的文件按“从重到轻、放进当前最轻的一片”分配，各片总耗时接近。"""
+
+    weights: dict[str, float] = json.loads(_SHARD_WEIGHTS.read_text(encoding="utf-8"))["files"]
+    load = [0.0] * total
+    assigned: dict[str, int] = {}
+    for name, seconds in sorted(weights.items(), key=lambda item: (-item[1], item[0])):
+        lightest = load.index(min(load))
+        load[lightest] += seconds
+        assigned[name] = lightest + 1
+    return assigned
+
+
+def shard_of(test_file: str, total: int) -> int:
+    """测试文件所属的分片（从1起）。只依赖文件路径与仓库内的耗时表，各进程、各平台结果相同。
+
+    耗时表（shard_weights.json，由scripts/shard_weights.py从CI日志生成）只列慢文件；
+    其余文件很轻，按路径的CRC32均匀分散。表里没有的新文件不需要登记。
+    """
+
+    name = test_file.replace("\\", "/")
+    heavy = _heavy_file_shards(total).get(name)
+    return heavy if heavy is not None else zlib.crc32(name.encode("utf-8")) % total + 1
 
 
 def _requested_shard(config: pytest.Config) -> tuple[int, int] | None:

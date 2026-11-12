@@ -22,8 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.12", "3.13"]
-        # 全量测试按文件拆成3片并行（tests/conftest.py的--shard），每片各自用满4核。
-        shard: [1, 2, 3]
+        # 全量测试按文件拆成6片并行（tests/conftest.py的--shard，慢文件按实测耗时均摊），每片各自用满4核。
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -34,7 +34,8 @@ jobs:
       - run: uv sync --locked --all-extras --dev
       # 临时目录不放在/tmp：bubblewrap用私有挂载覆盖/tmp，真实沙箱测试的HOME会被遮住。
       # -n auto按CPU核数并行（GitHub托管Linux为4核），单进程约需1小时40分。
-      - run: uv run pytest -n auto --durations=20 --ignore=tests/governance --shard ${{ matrix.shard }}/3 --basetemp="$RUNNER_TEMP/pytest"
+      # 标记为nightly的容量用例（单项数分钟）不在这里跑，见nightly.yml。
+      - run: uv run pytest -n auto --durations=20 -m "not nightly" --ignore=tests/governance --shard ${{ matrix.shard }}/6 --basetemp="$RUNNER_TEMP/pytest"
       - run: uv run python -m examples.kernel_search
         if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_artifacts
@@ -125,8 +126,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 与Linux相同，按文件拆成3片并行；其余只需跑一遍的步骤放在第1片。
-        shard: [1, 2, 3]
+        # 与Linux相同按文件分片；托管macOS最多同时跑5个任务，所以是5片。只需跑一遍的步骤放在第1片。
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -145,7 +146,7 @@ jobs:
         if: ${{ matrix.shard == 1 }}
       - run: uv run pytest tests/benchmarks
         if: ${{ matrix.shard == 1 }}
-      - run: uv run pytest -n auto --durations=20 --shard ${{ matrix.shard }}/3 tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
+      - run: uv run pytest -n auto --durations=20 -m "not nightly" --shard ${{ matrix.shard }}/5 tests/tools tests/artifacts tests/patches tests/processes tests/evals tests/context tests/execution tests/workspace tests/sandbox tests/secrets tests/delivery tests/trusted_actions tests/mcp tests/skills tests/hooks tests/product_config tests/product_ui
       - run: uv run python -m examples.kernel_files
         if: ${{ matrix.shard == 1 }}
       - run: uv run python -m examples.kernel_search

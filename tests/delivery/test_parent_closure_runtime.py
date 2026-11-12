@@ -52,7 +52,9 @@ def _prepare(root, desired, store):
     )
 
 
-@pytest.mark.parametrize("count", [1, 128, 255])
+# 255是成员数上限：发布与回滚各要逐个成员重验整份记录，托管CI上单项耗时6～12分钟，放到每天运行的
+# nightly工作流；128走同一条路径，留在每次推送的CI里。
+@pytest.mark.parametrize("count", [1, 128, pytest.param(255, marks=pytest.mark.nightly)])
 def test_real_capacity_publish_independent_rollback_and_readonly_reopen(tmp_path, count):
     root, state = tmp_path / "workspace", tmp_path / "state"
     desired = _files(root, count)
