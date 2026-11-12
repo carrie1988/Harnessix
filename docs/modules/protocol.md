@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 12
+version: 13
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -27,6 +27,16 @@ supersedes: []
 ---
 
 # Protocol模块设计
+
+## 当前增量：生成进度能力（ADR 0156）
+
+- `ClientCapabilities.generation_progress`与`ServerCapabilities.generation_progress`（线上为`generationProgress`，默认`false`，
+  `initialize-params-v2`/`initialize-result-v2`增补）。只有客户端同时声明`item_deltas`与`generation_progress`，服务端才下发生成进度。
+- 生成进度沿用`PublicItemDelta`格式，条目身份由`uuid5(turn_id, "harnessix.generation-progress/v1:<step>")`约定；`delta`是一行
+  `<思考字节数> <正文字节数> <工具参数字节数> <工具名或->`，每行都是本步骤到目前为止的累计值，客户端只需要最近一行，序号有缺口不影响。
+  不新增字段，未声明的客户端行为不变。
+- `protocol_json_size`移到[`codec.py`](../../src/harnessix/protocol/codec.py)：它没有调用方，属于编解码辅助；合同文件因此留出新增字段的空间。
+- 详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
 ## 当前增量：思考预览能力（0.10.0b9）
 
@@ -1152,7 +1162,7 @@ Command联合和Query联合共14份Schema。`make spec`应在合同变化后重�
 
 ### 23.3 Public Protocol辅助函数
 
-`protocol_json_size`返回一个`ProtocolModel`按线上别名、键排序、紧凑JSON编码后的UTF-8字节数，可供传输
+`protocol_json_size`（位于`codec.py`）返回一个`ProtocolModel`按线上别名、键排序、紧凑JSON编码后的UTF-8字节数，可供传输
 门禁复用。生产编码不调用它，但`publish_frame`直接比较实际原帧字节与协商`maxMessageBytes`；它是已实现
 但尚未贯穿产品传输的辅助能力。
 
@@ -1541,6 +1551,7 @@ Params摘要、State、Outcome摘要和两个时间。执行时重新读取并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 13 | `a22e64ee` 增量 | 2026-11-13 | 握手增加`generation_progress`能力，生成进度沿用Delta格式；`protocol_json_size`由`contracts.py`移到`codec.py`（没有调用方，行为不变）（ADR 0156） |
 | 12 | `1d857b39` 增量 | 2026-11-10 | 握手增加`reasoning_deltas`能力，思考预览沿用Delta格式（0.10.0b9） |
 | 8 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表保持Protocol 1.0公开字段，由Session提供先筛选后分页与稳定游标；不增加外部Action服务 |
 | 7 | `cb3f3ea834624d5a8f84396952eba212650065d1` | 2026-09-20 | 增加Protocol Request低敏容量、终态Plan-first离线保留、accepted全局保护和执行前置摘要语义 |

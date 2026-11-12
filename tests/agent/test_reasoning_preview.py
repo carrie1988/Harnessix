@@ -7,10 +7,11 @@ from uuid import uuid4
 
 from openai.types.chat import ChatCompletionChunk
 
+from harnessix.agent.generation_progress import generation_progress_item_id
 from harnessix.agent.models import ItemDelta, TextContent
 from harnessix.agent.reasoning_preview import MAX_REASONING_PREVIEW_BYTES, reasoning_item_id
 from harnessix.agent.runtime import AgentRuntime
-from harnessix.app_server.service import without_reasoning
+from harnessix.app_server.preview_streams import NO_PREVIEWS
 from harnessix.models._chat_stream import ChatStream
 from harnessix.models.contracts import (
     ReasoningDelta,
@@ -80,7 +81,9 @@ async def test_runtime_publishes_reasoning_on_its_own_sequence(tmp_path: Path) -
 
     preview = reasoning_item_id(turn.turn_id, 1)
     reasoning = [d for d in deltas if d.item_id == preview]
-    text = [d for d in deltas if d.item_id != preview]
+    # 生成进度是另一条预览流（只有数字），与正文、思考各用各的序号。
+    progress = generation_progress_item_id(turn.turn_id, 1)
+    text = [d for d in deltas if d.item_id not in (preview, progress)]
     # 正文开始即视为思考收尾；之后再出现的思考不再预览，不影响模型步骤。
     assert [(d.stream_sequence, d.delta) for d in reasoning] == [(1, "想")]
     # 正文序号不被思考预览占用，界面不会误判正文缺口。
@@ -170,7 +173,7 @@ def _page(*deltas: PublicItemDelta) -> EventsNextResult:
 def test_clients_without_the_capability_get_text_deltas_only() -> None:
     turn_id, text_item = uuid4(), uuid4()
     page = _page(_delta(turn_id, 1, 1, "想"), _delta(turn_id, 1, 1, "答", item_id=text_item))
-    assert [d.delta for d in without_reasoning(page).deltas] == ["答"]
+    assert [d.delta for d in NO_PREVIEWS.visible(page).deltas] == ["答"]
 
 
 def test_the_tui_shows_recent_reasoning_and_drops_it_after_the_step() -> None:

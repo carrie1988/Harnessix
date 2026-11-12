@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 33
+version: 34
 code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
@@ -47,6 +47,16 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：工具参数的生成进度（ADR 0156）
+
+- [`ToolArgumentsProgress`](../../src/harnessix/models/contracts.py)是新的Provider事件：只有累计UTF-8字节数`utf8_bytes`与工具名`tool`（未知时为空），
+  没有参数内容，不进入Item、模型历史或输出计量。模型整段生成写文件的参数时，流里此前没有任何可见的增量。
+- [`_progress.ArgumentProgress`](../../src/harnessix/models/_progress.py)负责节流：第一批参数片段立即上报，之后每满256字节再报；空片段不报。
+  [`ChatStream`](../../src/harnessix/models/_chat_stream.py)在`_append_arguments`里、[`AnthropicStream`](../../src/harnessix/models/_anthropic_stream.py)在`input_json_delta`处接入。
+  工具调用本身仍在整段到齐并通过校验后才给出，行为不变。
+- 多候选回退（`product_config/runtime.py`）把未登记的新事件视为“已有输出”，进度事件出现后不再切换候选，与正文增量一致。
+- 回归见`tests/agent/test_generation_progress.py`。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
 ## 当前增量：思考内容转发（0.10.0b9）
 
@@ -829,6 +839,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 34 | `a22e64ee` 增量 | 2026-11-13 | 新增Provider事件`ToolArgumentsProgress`（累计UTF-8字节数与工具名，没有内容）；OpenAI Chat与Anthropic两个流式适配器在收到工具参数片段时经`_progress.ArgumentProgress`上报，第一批立即、之后每满256字节（ADR 0156） |
 | 33 | `74b08375` 增量 | 2026-11-12 | `OpenAIChatConfig.reasoning_effort`：随开启思考的请求在顶层思考格式下发送强度档位，与`thinking_budget`二选一；`thinking_budget`不再要求`max_completion_tokens`（百炼`max_tokens`只限制正文）（ADR 0146） |
 | 32 | `151ab594` 增量 | 2026-11-12 | `ModelHTTPConfig.max_attempts`上界由5放宽到6，配合向导的“首次请求加至多5次重试”（ADR 0144）；重试逻辑不变 |
 | 31 | `e5141ec7` 增量 | 2026-11-12 | 正常结束的空响应不再由适配器判为协议错误，改由Runtime一处判定并可补发提示继续；删除`semantic_output_missing`（ADR 0109第6版） |

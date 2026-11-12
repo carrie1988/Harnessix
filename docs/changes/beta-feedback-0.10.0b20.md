@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 7
+version: 8
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0124-completion-guard-for-unattended-turns.md
   - docs/adr/0148-interactive-run-time-checkpoint-and-wrap-up.md
   - docs/adr/0149-completion-rule-in-native-instructions.md
+  - docs/adr/0156-generation-progress-and-live-usage-estimate.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -43,6 +44,7 @@ related_tests:
   - tests/product_ui/test_wrap_up.py
   - tests/product_ui/test_time_checkpoint.py
   - tests/workspace/test_plan_binding_ignores_directory_members.py
+  - tests/agent/test_generation_progress.py
 supersedes: []
 ---
 
@@ -62,9 +64,10 @@ supersedes: []
 | 六 | 任务在第60分钟被判为“未完成”，等待审批的时间也算在内；任务做完了模型还在追加工作，只能取消 | 实际运行每满60分钟询问一次，等待审批不计；`Ctrl+F`一键收尾 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md) |
 | 七 | 任务早已做完，模型又自己验证、修改了一个多小时 | 本机模式的模型指令加入完成规则：做完就结束，已有检查只验证一次，无法验证的写进最终回答 | [ADR 0149](../adr/0149-completion-rule-in-native-instructions.md) |
 | 八 | 审批期间工作区里多出无关文件，批准后操作没有执行，要重新发起、再批准一次 | 计划对目录只绑定对象与权限，不绑定有哪些成员 | [ADR 0143](../adr/0143-plans-bind-directories-without-their-members.md) |
+| 九 | 一次模型请求持续几分钟，界面只有静止的“思考中”，Token与费用不变，看起来像卡死 | 请求进行中显示生成阶段与估算的Token、费用 | [ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md) |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节。后续批次（生成进度与实时用量）落地时在本文追加。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节。
 
 ## 2. 需求背景
 
@@ -515,3 +518,66 @@ flowchart LR
 |---|---|---|
 | 新建文件 | 批准2次（第一次过期后重新发起），约34秒 | 批准1次，约13秒，文件写入 |
 | 运行需要审批的命令 | 批准3次，约34秒 | 批准1次，约17秒 |
+
+## 23. 第九项：请求进行中的生成进度与用量估算
+
+### 23.1 背景与决定
+
+负责人试用时两次发问：运行几分钟了为什么Token数和费用没变，是不是卡死了。那次请求持续10分钟：思考2.8万Token，
+再整段生成写文件的参数；思考预览到64 KiB为止，工具参数没有任何增量，用量要等请求结束才报回。
+决定按对齐过的方案实现：状态行按阶段变化并显示估算，底栏在请求进行中显示估算的用量与费用
+（[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)）。
+
+### 23.2 设计
+
+- `models/contracts.py`：Provider事件`ToolArgumentsProgress`（累计UTF-8字节数、工具名）。`models/_progress.py`的
+  `ArgumentProgress`节流（第一批立即，之后每满256字节）；两个流式适配器在累计参数片段处上报。
+- `agent/generation_progress.py`：`GenerationProgress`按思考、正文、工具参数三类累计本步骤的字节数，有变化时每秒
+  至多发出一行累计值的临时`ItemDelta`，落在节流期内的变化到期补发；条目身份由轮次与步骤号派生，序号独立。
+  `agent/model_text.py`在`preview`与`accept`里接线，响应结束时取消待补发的一行；`agent/runtime.py`不变。
+- `protocol/contracts.py`：握手的两个能力对象各增加`generation_progress`；`protocol_json_size`（没有调用方）移到
+  `protocol/codec.py`，为合同文件留出空间。
+- `app_server/preview_streams.py`：`PreviewStreams(reasoning, progress)`取代原来的思考开关，握手时确定，
+  `events/next`用`visible`滤掉连接没有声明的预览增量。
+- `sdk/agent_client.py`：`AgentClient(generation_progress=False)`；终端界面的会话以`True`创建。
+- `product_ui`：`projection.py`识别进度流并只留最近一行，记录最近一次已结算请求的Token数；
+  `generation_estimate.py`给出阶段与估算；`activity_indicator.py`与`main_view.py`显示，进度连续5秒没有变化时
+  运行提示改为“模型服务 N 秒未返回新内容”；`cost_estimate.py`的费用文案支持“≈”。
+
+### 23.3 与对齐方案的两处差异
+
+- 进度覆盖思考与正文，不只是工具参数：思考预览有64 KiB上限，上限之后数字又会停住。
+- 没有新增协议通知，而是复用Delta通道并加能力位：协议没有服务端主动推送的通道；对未声明的客户端
+  （`harnessix exec`、默认SDK客户端）同样不可见。
+
+### 23.4 实测发现：百炼不逐段返回补丁内容
+
+第一次真实界面验证里，生成修改内容的阶段从未出现：一次27秒的补丁请求全程显示“思考中 · 约 10 tokens”。
+在产品的服务进程里记录适配器收到的每个片段后确认：百炼先返回参数开头的10个字节，随后16秒没有任何片段，
+最后一次返回其余3.4 KB。直接请求百炼做对照：内容是顶层字符串字段时逐段返回（约700个片段），内容在数组里的对象中
+（补丁工具的结构）时整段返回。两处据此修改：节流期内的变化到期补发（否则开头10个字节被节流吞掉，阶段不切换）；
+进度没有变化时显示“模型服务 N 秒未返回新内容”。生成补丁期间的Token数在百炼上无法估算，这是服务商的行为。
+
+### 23.5 边界
+
+- 估算按3个UTF-8字节折合1个Token；输入按最近一次已结算请求的Token数估算，本会话第一次请求不估输入，
+  上下文压缩之后会偏大。请求结束时数字换成实际值。
+- 自定义Provider适配器不发进度事件时，生成工具参数期间估算不更新，其余不受影响。
+- 未声明能力的客户端在模型生成期间每秒至多被唤醒一次（空页），随即重新轮询。
+
+### 23.6 验证
+
+- `tests/agent/test_generation_progress.py`：适配器的上报与节流（两种协议，按字节计）；运行时每秒至多一次、
+  无变化不发、不建Item；最近一行的解析；四种能力组合的过滤，以及经协议的端到端用例（声明的客户端收到进度，
+  不声明的一行也收不到）；界面的阶段、估算、清除、不进入对话区；底栏在请求进行中与结算后的文案；估算的取整。
+- 原有三个断言“实时增量只有正文”的用例改为只看正文增量（进度是另一条只有数字的流）。
+- 运行时：节流期内的变化在窗口结束时补发，响应结束后不再补发（真实时钟的用例）。界面：进度5秒没有变化时的文案。
+- 真实终端界面（tmux驱动，百炼qwen3.8-flash，中档思考，每秒采样运行提示与底栏）：
+
+| 任务 | 观察到的显示 |
+|---|---|
+| 新建一个约150行的网页（一次修改） | 第6秒“思考中 · 约 10 tokens”；第7秒“正在生成修改内容 · 约 50 tokens”；第12～28秒“正在生成修改内容 · 模型服务 5～20 秒未返回新内容”；审批后“生成回复中 · 约 60 tokens”；结束时底栏为实际值“本轮 16,152 tokens” |
+| 负责人的黑洞网页任务（修改前的版本，20分钟） | 思考阶段每秒更新：第一次请求结束时显示约9,500，服务商报回9,276；底栏随之变化（“本轮 约 57,000 tokens · 费用≈¥0.0982”）；进度数字没有出现在对话区 |
+
+- 经协议直接连接产品服务进程：补发生效后，参数开头的10个字节在1秒内发布（`105 0 10 apply_patch_batch`），
+  26秒后整段到达时发布最终值。

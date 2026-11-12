@@ -21,6 +21,7 @@ from harnessix.app_server.handshake import (
     prepare_initialization,
     validation_path,
 )
+from harnessix.app_server.preview_streams import NO_PREVIEWS
 from harnessix.app_server.query_runtime import UnexpectedQueryError
 from harnessix.app_server.service import AgentApplicationService, AgentServiceError
 from harnessix.protocol.codec import ProtocolDecodeError, decode_client_frame
@@ -123,7 +124,7 @@ class AgentProtocolServer:
         self.state = ConnectionState.NEW
         self.client_instance_id: UUID | None = None
         self.item_deltas_enabled = False
-        self.reasoning_deltas_enabled = False
+        self.previews = NO_PREVIEWS
 
     def _error(
         self,
@@ -181,7 +182,7 @@ class AgentProtocolServer:
             return await self.service.next_events(
                 _params(EventsNextParams, params),
                 include_deltas=self.item_deltas_enabled,
-                include_reasoning=self.reasoning_deltas_enabled,
+                previews=self.previews,
             )
         if method == "events/replay":
             return await self.service.replay_events(_params(EventsReplayParams, params))
@@ -289,7 +290,7 @@ class AgentProtocolServer:
             # 无await提交已保护候选；失败/取消时原NEW、身份、能力和协商限额均不变。
             self.client_instance_id = candidate.client_instance_id
             self.item_deltas_enabled = candidate.item_deltas_enabled
-            self.reasoning_deltas_enabled = candidate.reasoning_deltas_enabled
+            self.previews = candidate.previews
             self.limits = candidate.limits
             self.state = ConnectionState.INITIALIZED_PENDING_ACK
         return (published,)

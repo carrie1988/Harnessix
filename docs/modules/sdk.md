@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 13
+version: 14
 code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
@@ -35,6 +35,12 @@ supersedes: []
 
 - App Server启动失败时把`{"code","message","retryable"}`写在stderr最后一行后退出，消息是面向用户的公开文案。此前`SubprocessAgentTransport`只报“App Server输出流已经关闭”（`server_closed`），用户看不到原因。现在输出流关闭后最多等1秒读完stderr；最后一行恰为这三个字段、错误码与消息的形状合规时，错误消息为“App Server已退出：<消息>（<错误码>）”，错误码仍是`server_closed`。
 - 其他内容（回溯、日志、带多余字段的JSON、含控制字符或超过300字的消息）一律不外传，仍报原来的固定文案；`SubprocessTransportSnapshot`仍不含stderr正文。回归见`test_a_server_that_exits_reports_its_own_public_error`。
+
+## 当前增量：可选的生成进度能力（ADR 0156）
+
+- `AgentClient(..., generation_progress=False)`：为`True`时握手声明`generation_progress`，`next_events`的`deltas`里会出现生成进度增量
+  （约定身份见[Protocol模块设计](protocol.md)）。默认不声明：把增量直接当作文本输出的客户端（如`harnessix exec`的进度输出）不会收到一行行数字。
+  终端界面在[`product_ui/session.py`](../../src/harnessix/product_ui/session.py)里声明。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
 ## 当前增量：声明思考预览能力（0.10.0b9）
 
@@ -1255,6 +1261,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 14 | `a22e64ee` 增量 | 2026-11-13 | `AgentClient(generation_progress=...)`：握手时是否声明生成进度能力，默认不声明；终端界面声明（ADR 0156） |
 | 13 | `95421ad6` 增量 | 2026-11-11 | 新增`read_event_page`：事件页被以超限拒绝时减半页长重读，终端界面与无人值守客户端共用（0.10.0b17） |
 | 12 | `dad55d32` 增量 | 2026-11-11 | 服务端退出时带上它在stderr最后一行报告的公开错误（0.10.0b14） |
 | 11 | `1d857b39` 增量 | 2026-11-10 | 握手声明`reasoning_deltas`（0.10.0b9） |

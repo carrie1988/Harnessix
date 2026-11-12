@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import ValidationError
 
 from harnessix.app_server.frame_publication import encode, error_frame
+from harnessix.app_server.preview_streams import NO_PREVIEWS, PreviewStreams
 from harnessix.protocol.contracts import (
     AGENT_PROTOCOL_VERSION,
     InitializeParams,
@@ -29,7 +30,7 @@ class PreparedInitialization:
     client_instance_id: UUID
     item_deltas_enabled: bool
     limits: ProtocolLimits
-    reasoning_deltas_enabled: bool = False
+    previews: PreviewStreams = NO_PREVIEWS
 
 
 def validation_path(error: ValidationError) -> tuple[str | int, ...]:
@@ -77,14 +78,20 @@ def prepare_initialization(
         max_replay_events=min(limits.max_replay_events, params.limits.max_replay_events),
     )
     # 思考预览复用正文Delta通道，只有同时开启item_deltas才生效。
-    reasoning = params.capabilities.item_deltas and params.capabilities.reasoning_deltas
+    # 思考预览与生成进度都复用正文Delta通道，只有同时开启item_deltas才生效。
+    requested = params.capabilities
+    previews = PreviewStreams(
+        reasoning=requested.item_deltas and requested.reasoning_deltas,
+        progress=requested.item_deltas and requested.generation_progress,
+    )
     result = InitializeResult(
         server_info=ServerInfo(version=version),
         capabilities=ServerCapabilities(
             methods=methods,
             artifact_pages=artifact_pages,
             item_deltas=params.capabilities.item_deltas,
-            reasoning_deltas=reasoning,
+            reasoning_deltas=previews.reasoning,
+            generation_progress=previews.progress,
         ),
         limits=effective,
     )
@@ -97,5 +104,5 @@ def prepare_initialization(
         client_instance_id=params.client_instance_id,
         item_deltas_enabled=params.capabilities.item_deltas,
         limits=effective,
-        reasoning_deltas_enabled=reasoning,
+        previews=previews,
     )

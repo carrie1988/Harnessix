@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 625,
-    "physical_lines": 131549,
-    "logical_lines": 114712,
-    "documented_modules": 625,
-    "classes": 1216,
-    "documented_classes": 627,
-    "functions": 5191,
-    "documented_functions": 1743,
+    "source_files": 629,
+    "physical_lines": 131964,
+    "logical_lines": 115014,
+    "documented_modules": 629,
+    "classes": 1222,
+    "documented_classes": 633,
+    "functions": 5212,
+    "documented_functions": 1755,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -264,7 +264,7 @@
     },
     {
       "path": "src/harnessix/protocol/contracts.py",
-      "lines": 658
+      "lines": 647
     },
     {
       "path": "src/harnessix/sandbox/container.py",
@@ -518,7 +518,7 @@
       "path": "src/harnessix/app_server/server.py",
       "qualname": "AgentProtocolServer",
       "kind": "class",
-      "line": 104,
+      "line": 105,
       "lines": 199,
       "documented": true
     },
@@ -528,7 +528,7 @@
       "path": "src/harnessix/app_server/service.py",
       "qualname": "AgentApplicationService",
       "kind": "class",
-      "line": 75,
+      "line": 64,
       "lines": 430,
       "documented": true
     },
@@ -1034,8 +1034,8 @@
       "path": "src/harnessix/models/_anthropic_stream.py",
       "qualname": "AnthropicStream",
       "kind": "class",
-      "line": 67,
-      "lines": 212,
+      "line": 68,
+      "lines": 213,
       "documented": false
     },
     {
@@ -1044,7 +1044,7 @@
       "path": "src/harnessix/models/_anthropic_stream.py",
       "qualname": "AnthropicStream.feed",
       "kind": "function",
-      "line": 89,
+      "line": 91,
       "lines": 89,
       "documented": false,
       "decision_complexity": 47
@@ -1077,7 +1077,7 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream",
       "kind": "class",
-      "line": 171,
+      "line": 179,
       "lines": 159,
       "documented": false
     },
@@ -1087,8 +1087,8 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream.feed",
       "kind": "function",
-      "line": 200,
-      "lines": 75,
+      "line": 209,
+      "lines": 74,
       "documented": false,
       "decision_complexity": 39
     },
@@ -1649,7 +1649,7 @@
       "qualname": "RecoverableAgentSession",
       "kind": "class",
       "line": 103,
-      "lines": 262,
+      "lines": 263,
       "documented": true
     },
     {
@@ -1763,8 +1763,8 @@
       "path": "src/harnessix/sdk/agent_client.py",
       "qualname": "AgentClient",
       "kind": "class",
-      "line": 81,
-      "lines": 326,
+      "line": 89,
+      "lines": 324,
       "documented": true
     },
     {

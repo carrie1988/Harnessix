@@ -278,6 +278,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0147：交互模式下只宣布下一步的回复](0147-interactive-prompt-for-announced-steps.md)：修订ADR 0124；终端界面里模型只说接下来要做什么却没有动作时，宿主提示一次并继续，向用户提问的回复不算；宿主说明在界面上显示为“提示”。
 - [ADR 0148：交互模式的运行时间检查点与一键收尾](0148-interactive-run-time-checkpoint-and-wrap-up.md)：终端界面不再由内核墙钟预算在第60分钟终止任务；界面累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；`Ctrl+F`一键发送收尾说明。无人值守不变。
 - [ADR 0149：本机模式指令的完成规则](0149-completion-rule-in-native-instructions.md)：本机命令的系统指令升为v5，写明只做被要求的事、用已有检查验证一次、无法验证的写进最终回答、做完立即结束；容器与外部边界指令不变。
+- [ADR 0156：请求进行中的生成进度与用量估算](0156-generation-progress-and-live-usage-estimate.md)：适配器上报工具参数的累计字节数，运行时按思考、正文、工具参数三类每秒至多发布一行累计值（只有数字），复用Delta通道并由新能力位`generation_progress`控制；终端界面据此显示生成阶段、估算的Token与费用，请求结束后换回实际用量。0150～0155由第二轮开发占用。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

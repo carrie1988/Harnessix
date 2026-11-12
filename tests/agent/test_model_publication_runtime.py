@@ -8,6 +8,7 @@ import hashlib
 
 import pytest
 
+from harnessix.agent.generation_progress import generation_progress_item_id
 from harnessix.agent.models import ToolResultContent, TurnStatus, Usage
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished, ModelUsageObserved, UsageObservation
@@ -118,11 +119,16 @@ async def test_direct_model_text_persistence_replay_next_history_and_telemetry(t
                     CANARY not in p and (case != "split_base64" or text not in p) for p in public
                 )
                 assert len(provider.requests) == provider.closed_streams == 2
+                # 生成进度是另一条只有数字的预览流（同样经过上面的泄漏检查），序号独立于正文。
+                body = [
+                    d
+                    for d in deltas
+                    if d.turn_id == first.turn_id
+                    and d.item_id != generation_progress_item_id(d.turn_id, d.model_step)
+                ]
                 if case == "safe":
-                    assert "".join(d.delta for d in deltas if d.turn_id == first.turn_id) == safe
-                assert [d.stream_sequence for d in deltas if d.turn_id == first.turn_id] == list(
-                    range(1, sum(d.turn_id == first.turn_id for d in deltas) + 1)
-                )
+                    assert "".join(d.delta for d in body) == safe
+                assert [d.stream_sequence for d in body] == list(range(1, len(body) + 1))
             assert all(CANARY.encode() not in p.read_bytes() for p in tmp_path.glob("*.db*"))
         finally:
             observer.close()

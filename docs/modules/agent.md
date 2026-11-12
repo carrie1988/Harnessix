@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 60
+version: 61
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -67,6 +67,19 @@ supersedes: []
 
 - 宿主关闭时取消后台的恢复任务。取消在`resume_turn`取锁、读取Thread期间到达时，此前Turn停在`accepted`：没有任务执行它，也没有终态（2026-11-11 CI负载下`test_service_shutdown_is_bounded_and_persists_cancel`复现，关闭的宽限期很短时才遇到）。现在`resume_turn`对尚未开始的Turn同样提交确定性的取消终态（`cancelled`，“调用方任务取消”），与进入执行循环之后被取消的结果一致。
 - 只处理状态仍为`accepted`的Turn。正在由另一个任务执行的Turn、等待审批或等待提问回答的Turn保持原状，下次打开仍可继续。回归见`tests/agent/test_resume_cancel_before_start.py`（三种情况各一例）。
+
+## 当前增量：生成进度（ADR 0156）
+
+- [`generation_progress.GenerationProgress`](../../src/harnessix/agent/generation_progress.py)由`ModelTextPublication`按需创建，累计本步骤已生成的UTF-8字节数：
+  思考（`preview`里遇到`ReasoningDelta`时计数，覆盖思考预览到64 KiB上限之后的部分）、正文（`accept`里的`TextDelta`）、
+  工具参数（适配器的`ToolArgumentsProgress`，在`preview`里消费，不会走到“不支持的Provider事件”）。
+- 有变化时每秒至多发布一次，落在节流期内的变化到期补发（`asyncio`定时器；`ResponseCompleted`到达时`close`取消）。
+  补发不可省：实测百炼在补丁内容生成完之前不返回任何片段，参数开头的十个字节之后可能几十秒没有新事件。
+  每次发布一行`<思考> <正文> <参数> <工具名或->`，每行都是累计值；以临时`ItemDelta`发出，
+  条目身份为`uuid5(turn_id, "harnessix.generation-progress/v1:<step>")`，使用独立序号。只有数字和工具名，不经公开文本保护
+  也不含任何模型输出；不建Item、不进模型历史、不写入会话记录、不计入输出上限。
+- `latest_counts`供客户端读出最近一行；格式不符时返回空，客户端不显示估算。
+- 回归见`tests/agent/test_generation_progress.py`。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
 ## 当前增量：思考预览（0.10.0b9）
 
@@ -997,6 +1010,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 61 | `a22e64ee` 增量 | 2026-11-13 | 模型请求进行中的生成进度：`generation_progress.py`按类别（思考、正文、工具参数）累计本步骤已生成的UTF-8字节数，每秒至多以临时`ItemDelta`发布一行累计值，条目身份确定、序号独立，不建Item、不进模型历史（ADR 0156） |
 | 60 | `74b08375` 增量 | 2026-11-12 | 完成守卫增加交互模式`interactive`：只在回复宣布了下一步却没有动作时补发提示，向用户提问的回复不算，完整守卫的判定不变；`AgentRuntime(completion_guard=...)`接受布尔值或模式名（ADR 0147） |
 | 59 | `151ab594` 增量 | 2026-11-12 | `continue_after_unknown_usage`开关改为`UnknownUsagePolicy`：交互模式下服务方故障（连接与超时、429、5xx）造成的用量未知连续至多自动重试5次，其他原因照旧停止；判定在`provider_stop.service_failures_within`（ADR 0144，Beta 0.10.0b20复测） |
 | 58 | `d387a5cd` 增量 | 2026-11-12 | 补SHA的锚点唯一性判定忽略CRLF/LF差异，与编辑规划一致（0.10.0b21，ADR 0141） |

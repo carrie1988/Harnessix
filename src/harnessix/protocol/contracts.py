@@ -116,6 +116,7 @@ class ProtocolLimits(ProtocolModel):
 class ClientCapabilities(ProtocolModel):
     item_deltas: bool = False
     reasoning_deltas: bool = False
+    generation_progress: bool = False
     server_requests: bool = True
     artifact_pages: bool = True
     replay: bool = True
@@ -143,6 +144,7 @@ class ServerCapabilities(ProtocolModel):
     artifact_pages: bool = True
     item_deltas: bool = False
     reasoning_deltas: bool = False
+    generation_progress: bool = False
 
     @model_validator(mode="after")
     def stable_capabilities(self) -> ServerCapabilities:
@@ -625,19 +627,6 @@ class ArtifactPageResult(ProtocolModel):
     offset: int = Field(ge=0, le=10000, strict=True)
     text: str = Field(max_length=24 * 1024)
     next_offset: int | None = Field(default=None, ge=0, le=10000, strict=True)
-
-
-def protocol_json_size(value: ProtocolModel) -> int:
-    """返回规范线上JSON字节数，供传输门禁复用。"""
-
-    encoded = json.dumps(
-        value.model_dump(mode="json", by_alias=True),
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode()
-    return len(encoded)
 
 
 def validate_server_output[ProtocolOutput: ProtocolModel](

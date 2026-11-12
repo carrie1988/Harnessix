@@ -461,6 +461,43 @@
       "title": "TextStarted",
       "type": "object"
     },
+    "ToolArgumentsProgress": {
+      "additionalProperties": false,
+      "description": "工具调用参数的生成进度：只有累计UTF-8字节数与工具名，供界面显示；不进入Item、模型历史或输出计量。",
+      "properties": {
+        "type": {
+          "const": "tool_arguments_progress",
+          "default": "tool_arguments_progress",
+          "title": "Type",
+          "type": "string"
+        },
+        "utf8_bytes": {
+          "maximum": 1000000000,
+          "minimum": 1,
+          "title": "Utf8 Bytes",
+          "type": "integer"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool"
+        }
+      },
+      "required": [
+        "utf8_bytes"
+      ],
+      "title": "ToolArgumentsProgress",
+      "type": "object"
+    },
     "ToolCallCompleted": {
       "additionalProperties": false,
       "properties": {
@@ -664,6 +701,7 @@
       "text_completed": "#/$defs/TextCompleted",
       "text_delta": "#/$defs/TextDelta",
       "text_started": "#/$defs/TextStarted",
+      "tool_arguments_progress": "#/$defs/ToolArgumentsProgress",
       "tool_call_completed": "#/$defs/ToolCallCompleted",
       "tool_call_rejected": "#/$defs/ToolCallRejected"
     },
@@ -684,6 +722,9 @@
     },
     {
       "$ref": "#/$defs/ReasoningDelta"
+    },
+    {
+      "$ref": "#/$defs/ToolArgumentsProgress"
     },
     {
       "$ref": "#/$defs/ToolCallCompleted"

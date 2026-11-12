@@ -10,6 +10,7 @@ import pytest
 from harnessix.agent import runtime as runtime_module
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
+from harnessix.agent.generation_progress import generation_progress_item_id
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     Budget,
@@ -68,7 +69,9 @@ async def test_text_deltas_idempotency_and_trace_context(tmp_path: Path) -> None
         await runtime.cancel(thread.thread_id, turn.turn_id)
     assert len(provider.requests) == 1
     assert provider.closed_streams == 1
-    assert [delta.delta for delta in deltas] == ["答案"]
+    # 生成进度是另一条只有数字的预览流，这里只看正文增量。
+    progress = generation_progress_item_id(turn.turn_id, 1)
+    assert [delta.delta for delta in deltas if delta.item_id != progress] == ["答案"]
     events = await store.events(thread.thread_id)
     assert "delta" not in {e.payload.type for e in events}
     assert replay(events) == await store.get_thread(thread.thread_id)

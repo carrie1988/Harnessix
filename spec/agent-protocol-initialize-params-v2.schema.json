@@ -13,6 +13,11 @@
           "title": "Reasoningdeltas",
           "type": "boolean"
         },
+        "generationProgress": {
+          "default": false,
+          "title": "Generationprogress",
+          "type": "boolean"
+        },
         "serverRequests": {
           "default": true,
           "title": "Serverrequests",

@@ -15,6 +15,7 @@ from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._billing import merge_billing
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
 from harnessix.models._json import json_object_or_none, strict_json
+from harnessix.models._progress import ArgumentProgress
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -168,6 +169,13 @@ def _at_output_limit(
         return "length", []
 
 
+def _append_arguments(stream: ChatStream, call: CallParts, fragment: str) -> list[ProviderEvent]:
+    """累计一段工具参数，并按节流上报已收到的字节数。"""
+    stream._characters += len(fragment)
+    call.arguments += fragment
+    return stream._progress.add(fragment, stream._names.get(call.name or ""))
+
+
 class ChatStream:
     def __init__(
         self,
@@ -193,6 +201,7 @@ class ChatStream:
         self._finish: str | None = None
         self._usage: Usage | None = None
         self._calls: dict[int, CallParts] = {}
+        self._progress = ArgumentProgress()
         self._billing = ResponseBillingMetadata()
         self._observation = UsageObservation()
         self._last_observed: tuple[UsageObservation, ResponseBillingMetadata] | None = None
@@ -260,8 +269,7 @@ class ChatStream:
                         raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_CHANGED)
                     call.name = part.function.name
                 if part.function.arguments is not None:
-                    self._characters += len(part.function.arguments)
-                    call.arguments += part.function.arguments
+                    events.extend(_append_arguments(self, call, part.function.arguments))
         if self._characters > self._request.budget.max_output_chars:
             raise ChatProtocolError(ChatProtocolReason.OUTPUT_CHAR_LIMIT_EXCEEDED)
         if choice.finish_reason is not None:

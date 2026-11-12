@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 47
+version: 48
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,25 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：请求进行中的生成阶段与用量估算（ADR 0156）
+
+真实试用里一次模型请求持续10分钟（思考2.8万Token，再整段生成写文件的参数），界面只有静止的“思考中”，Token与费用一直是0，
+用户两次问是不是卡死了。服务商在请求结束时才报回用量；现在界面用运行时发来的生成进度做估算：
+
+- **投影**（[`projection.py`](../../src/harnessix/product_ui/projection.py)）：按约定身份把生成进度流标为`progress`。进度流每行都是累计值，
+  只保留最近到达的一行，序号有缺口也不影响；与思考预览一样只属于正在调用模型、尚未结算的步骤，步骤结算或轮次结束后清除；不进入对话区。
+  `ProductViewState.last_request_tokens`记录最近一次已结算请求的Token数。
+- **估算**（[`generation_estimate.py`](../../src/harnessix/product_ui/generation_estimate.py)）：`in_flight_request`只在当前Turn处于调用模型且已有进度时返回
+  `InFlightRequest`——阶段（有工具参数时为“正在生成修改内容”，工具不是`apply_patch_batch`时为“正在生成操作内容”；否则有正文为“生成回复中”；
+  否则“思考中”）、已生成的估算Token数（三类字节数之和除以3）、输入的估算（最近一次已结算请求的Token数，没有时为0）。
+- **显示**：运行提示（[`activity_indicator.py`](../../src/harnessix/product_ui/activity_indicator.py)）为“⠹ 正在生成修改内容 · 约 3,400 tokens · 已运行 2 分 05 秒”；
+  底栏（[`main_view.py`](../../src/harnessix/product_ui/main_view.py)）的进展换成同一阶段，用量为“本轮 约 38,000 tokens”，费用为“费用≈¥…”（`CostUpperBound.text(estimated=True)`）。
+  请求结束后换回服务商报回的用量与“≤”。估算值只保留两到三位有效数字。没有进度流时（服务端不支持）界面与此前完全相同。
+- **没有新进度时**：估算连续5秒（`SILENCE_NOTICE_SECONDS`）没有变化，运行提示改为“正在生成修改内容 · 模型服务 18 秒未返回新内容”，
+  秒数随定时器增加；有新进度后恢复。实测百炼在补丁内容生成完之前不返回任何片段，这段时间显示的就是这一行。
+- 握手：[`session.py`](../../src/harnessix/product_ui/session.py)以`generation_progress=True`创建`AgentClient`。
+- 回归见`tests/agent/test_generation_progress.py`。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
 ## 当前增量：一键收尾与运行时间检查点（ADR 0148）
 
@@ -1167,6 +1186,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 48 | `a22e64ee` 增量 | 2026-11-13 | 请求进行中显示生成阶段与用量估算：运行提示“思考中／正在生成修改内容／生成回复中 · 约 N tokens”，底栏“本轮 约 N tokens · 费用≈…”；投影识别生成进度流（只留最近一行、不进入对话），握手声明`generation_progress`（`generation_estimate.py`，ADR 0156） |
 | 47 | `ce5b7386` 增量 | 2026-11-12 | 一键收尾`Ctrl+F`；终端界面的运行时间检查点：按Turn累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；内核墙钟预算在交互模式下放到86,400秒（`turn_pacing.py`、`turn_checkpoint.py`、`CheckpointScreen`，ADR 0148） |
 | 46 | `74b08375` 增量 | 2026-11-12 | `configure`新增`--thinking-effort`、`--thinking-budget`（到不了模型的设置直接拒绝）；旧配置没有思考强度时在空会话与`doctor`里提示重新configure（`config_hints.py`）；宿主补发的说明显示为“提示”行（ADR 0146、0147） |
 | 45 | `151ab594` 增量 | 2026-11-12 | `configure`新增`--service-failure-retries`：付费交互模式下服务方故障后的自动重试次数（0～20，默认5），写入产品配置（ADR 0144） |

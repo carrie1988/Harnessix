@@ -12,6 +12,7 @@ from harnessix.protocol.contracts import (
     MAX_PROTOCOL_COLLECTION,
     JsonRpcNotification,
     JsonRpcRequest,
+    ProtocolModel,
 )
 
 DEFAULT_MAX_MESSAGE_BYTES = 1_048_576
@@ -92,3 +93,16 @@ def decode_client_frame(
         return JsonRpcNotification.model_validate(value)
     except ValidationError:
         raise ProtocolDecodeError(-32600, "invalid_request", "JSON-RPC Envelope无效") from None
+
+
+def protocol_json_size(value: ProtocolModel) -> int:
+    """返回规范线上JSON字节数，供传输门禁复用。"""
+
+    encoded = json.dumps(
+        value.model_dump(mode="json", by_alias=True),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return len(encoded)

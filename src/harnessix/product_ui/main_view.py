@@ -14,6 +14,7 @@ from harnessix.product_ui.activity_indicator import ActivityIndicator
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
 from harnessix.product_ui.cost_estimate import cost_upper_bound
 from harnessix.product_ui.errors import ProductUIError
+from harnessix.product_ui.generation_estimate import InFlightRequest, approximate, in_flight_request
 from harnessix.product_ui.interactions import (
     ACTIVE_TURN_STATES,
     UsageCostView,
@@ -56,19 +57,42 @@ def _activity_text(state: ProductControllerState) -> str:
     turn = state.thread_view.current_turn if state.thread_view is not None else None
     if turn is None:
         return "就绪"
+    in_flight = in_flight_request(state.thread_view)
+    if in_flight is not None:
+        return in_flight.phase_label
     return turn_status_label(turn.status) + _STATUS_KEYS.get(turn.status, "")
 
 
-def _cost_text(state: ProductControllerState, usage: UsageCostView) -> str:
+def _cost_text(
+    state: ProductControllerState, usage: UsageCostView, in_flight: InFlightRequest | None
+) -> str:
     if state.pricing == "free":
         return "本地 0 元"
     if state.list_price is None:
         return "费用未知"
+    # 请求进行中时加上这次请求的估算，写“≈”；请求结束后换回服务商报回的用量。
+    extra_input, extra_output = (
+        (0, 0) if in_flight is None else (in_flight.input_tokens, in_flight.output_tokens)
+    )
     bound = cost_upper_bound(
-        state.list_price, input_tokens=usage.input_tokens, output_tokens=usage.output_tokens
-    ).text()
+        state.list_price,
+        input_tokens=usage.input_tokens + extra_input,
+        output_tokens=usage.output_tokens + extra_output,
+    ).text(estimated=in_flight is not None)
     # 中断的请求用量服务商未报告，“≤”只对已报告部分成立，不能当作本轮上限。
     return f"已知{bound} · 另有中断的请求可能已计费" if usage.interrupted_model_call else bound
+
+
+def _tokens_text(usage: UsageCostView, in_flight: InFlightRequest | None) -> str:
+    """已结算的用量照实显示；请求进行中时加上这次请求的估算并标明“约”。"""
+
+    if in_flight is None:
+        used = f"{usage.total_tokens:,}"
+    else:
+        used = f"约 {approximate(usage.total_tokens + in_flight.total_tokens):,}"
+    if usage.max_tokens is None or usage.max_tokens >= UNCAPPED_TOKENS:
+        return f"{used} tokens"
+    return f"{used}/{usage.max_tokens:,} tokens"
 
 
 def _status_text(state: ProductControllerState) -> str:
@@ -76,12 +100,9 @@ def _status_text(state: ProductControllerState) -> str:
     usage = usage_cost_view(state.thread_view)
     usage_text = ""
     if usage is not None:
-        tokens = (
-            f"{usage.total_tokens:,} tokens"
-            if usage.max_tokens is None or usage.max_tokens >= UNCAPPED_TOKENS
-            else f"{usage.total_tokens:,}/{usage.max_tokens:,} tokens"
-        )
-        usage_text = f" · 本轮 {tokens} · {_cost_text(state, usage)}"
+        in_flight = in_flight_request(state.thread_view)
+        tokens = _tokens_text(usage, in_flight)
+        usage_text = f" · 本轮 {tokens} · {_cost_text(state, usage, in_flight)}"
     sandbox = "" if state.model is None else f" · {state.model}"
     sandbox += "" if state.sandbox is None else f" · {state.sandbox}"
     if state.auto_accept_edits:

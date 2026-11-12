@@ -28,6 +28,7 @@ from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._billing import merge_billing
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._json import json_object_or_none
+from harnessix.models._progress import ArgumentProgress
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -79,6 +80,7 @@ class AnthropicStream:
         self._counts: dict[str, int] = {}
         self._characters = 0
         self._call_ids: set[str] = set()
+        self._progress = ArgumentProgress()
         self._attempt_id = attempt_id
         self._response_id: str | None = None
         self._model: str | None = None
@@ -153,7 +155,7 @@ class AnthropicStream:
             if isinstance(event.delta, InputJSONDelta) and block.type == "tool_use":
                 self._add_characters(len(event.delta.partial_json))
                 block.arguments += event.delta.partial_json
-                return []
+                return self._progress.add(event.delta.partial_json, self._names.get(block.name))
             raise InvalidWireData("Delta 与内容 Block 不匹配")
         if isinstance(event, RawMessageDeltaEvent):
             if any(not block.closed for block in self._blocks.values()):

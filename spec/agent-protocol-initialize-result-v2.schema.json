@@ -82,6 +82,11 @@
           "default": false,
           "title": "Reasoningdeltas",
           "type": "boolean"
+        },
+        "generationProgress": {
+          "default": false,
+          "title": "Generationprogress",
+          "type": "boolean"
         }
       },
       "required": [

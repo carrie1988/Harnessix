@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from uuid import UUID
 
+from harnessix.agent.generation_progress import generation_progress_item_id
 from harnessix.agent.reasoning_preview import reasoning_item_id
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.protocol.contracts import (
@@ -49,6 +50,8 @@ class TransientItemStream:
     gap: bool = False
     # 思考预览流（条目身份由reasoning_preview约定）：不会有持久Item覆盖，步骤结束即清除。
     reasoning: bool = False
+    # 生成进度流（条目身份由generation_progress约定）：只有最近一行的累计字节数，不进入对话。
+    progress: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +88,8 @@ class ProductViewState:
     current_turn: TurnProjection | None = None
     recent_events: tuple[ReplayCheckpoint, ...] = ()
     live_gap: bool = False
+    # 最近一次已结算的模型请求的Token数：下一次请求的输入大致是它，供请求进行中的估算使用。
+    last_request_tokens: int | None = None
 
     def item_for(self, item_id: UUID) -> ProjectedItem | None:
         return next((entry for entry in self.items if entry.item.item_id == item_id), None)
@@ -236,6 +241,7 @@ def _apply_event(state: ProductViewState, event: PublicEvent) -> ProductViewStat
             return replace(state, current_turn=replace(current, model_step=data.step))
         return replace(
             state,
+            last_request_tokens=data.usage.total_tokens,
             current_turn=replace(
                 current,
                 usage=_added_usage(current.usage, data.usage),
@@ -278,6 +284,8 @@ def apply_item_delta(state: ProductViewState, delta: PublicItemDelta) -> Product
 
     if delta.thread_id != state.thread.thread_id:
         raise ProductUIError("projection_thread_mismatch", "Delta与Thread投影身份不匹配")
+    if delta.item_id == generation_progress_item_id(delta.turn_id, delta.model_step):
+        return _with_progress(state, delta)
     persisted = state.item_for(delta.item_id)
     if persisted is not None and persisted.final:
         return state
@@ -312,23 +320,44 @@ def apply_item_delta(state: ProductViewState, delta: PublicItemDelta) -> Product
     )
 
 
+def _with_progress(state: ProductViewState, delta: PublicItemDelta) -> ProductViewState:
+    """生成进度流每行都是累计值：只保留最近到达的一行。
+
+    不比较序号：增量按到达顺序交付，序号有缺口不影响；同一步骤的请求重试后序号从1重新开始，
+    按序号取舍会让界面一直停在上一次尝试的数字上。
+    """
+
+    stream = TransientItemStream(
+        item_id=delta.item_id,
+        turn_id=delta.turn_id,
+        model_step=delta.model_step,
+        last_sequence=delta.stream_sequence,
+        text=delta.delta,
+        progress=True,
+    )
+    others = tuple(entry for entry in state.streams if entry.item_id != delta.item_id)
+    return replace(
+        state, streams=tuple(sorted((*others, stream), key=lambda entry: str(entry.item_id)))
+    )
+
+
 def apply_events_next(state: ProductViewState, page: EventsNextResult) -> ProductViewState:
     """先应用权威Replay，再应用不推进游标的Live Delta。"""
 
     updated = apply_replay_page(state, page.replay)
     for delta in page.deltas:
         updated = apply_item_delta(updated, delta)
-    return replace(_without_stale_reasoning(updated), live_gap=updated.live_gap or page.live_gap)
+    return replace(_without_stale_previews(updated), live_gap=updated.live_gap or page.live_gap)
 
 
-def _without_stale_reasoning(state: ProductViewState) -> ProductViewState:
-    """思考预览只属于正在调用模型、尚未结算用量的当前步骤；步骤结算或轮次结束后清除。"""
+def _without_stale_previews(state: ProductViewState) -> ProductViewState:
+    """思考预览与生成进度只属于正在调用模型、尚未结算用量的当前步骤；步骤结算或轮次结束后清除。"""
 
     turn = state.current_turn
     kept = tuple(
         stream
         for stream in state.streams
-        if not stream.reasoning
+        if not (stream.reasoning or stream.progress)
         or (
             turn is not None
             and turn.status == "calling_model"

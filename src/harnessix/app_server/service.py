@@ -10,11 +10,11 @@ from uuid import UUID, uuid5
 
 from harnessix.agent.approvals import SYSTEM_APPROVAL_ACTOR_PREFIX
 from harnessix.agent.models import Budget, ItemDelta, Thread, Turn, TurnStatus
-from harnessix.agent.reasoning_preview import reasoning_item_id
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.app_server.command_runtime import AgentServiceError as AgentServiceError
 from harnessix.app_server.command_runtime import execute_command
+from harnessix.app_server.preview_streams import NO_PREVIEWS, PreviewStreams
 from harnessix.app_server.query_runtime import execute_query, poll_events, replay_snapshot
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.protocol.contracts import (
@@ -59,17 +59,6 @@ def _budget(value: object) -> Budget | None:
 
 def _resolved_workspace(value: str) -> Path:
     return Path(value).resolve(strict=True)
-
-
-def without_reasoning(page: EventsNextResult) -> EventsNextResult:
-    """未声明reasoning_deltas的客户端不收思考预览增量，原有正文增量与行为不变。"""
-
-    kept = tuple(
-        delta
-        for delta in page.deltas
-        if delta.item_id != reasoning_item_id(delta.turn_id, delta.model_step)
-    )
-    return page if kept == page.deltas else page.model_copy(update={"deltas": kept})
 
 
 class AgentApplicationService:
@@ -477,10 +466,10 @@ class AgentApplicationService:
         params: EventsNextParams,
         *,
         include_deltas: bool = True,
-        include_reasoning: bool = False,
+        previews: PreviewStreams = NO_PREVIEWS,
     ) -> EventsNextResult:
         """先准入查询再注册信号；最终原Replay/Delta统一保护，Delta仍为可丢失显示。"""
-        if type(include_deltas) is not bool or type(include_reasoning) is not bool:
+        if type(include_deltas) is not bool or type(previews) is not PreviewStreams:
             raise AgentServiceError("invalid_params", "协议参数无效")
 
         async def operation() -> EventsNextResult:
@@ -499,6 +488,6 @@ class AgentApplicationService:
                 ),
                 closed=lambda: self._closed,
             )
-            return page if include_reasoning else without_reasoning(page)
+            return previews.visible(page)
 
         return await execute_query(self.runtime, params, operation)

@@ -222,7 +222,9 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
     lines.extend(
         _stream_line(stream)
         for stream in view.streams
-        if stream.item_id not in final_ids and not (stream.reasoning and stream.gap)
+        if stream.item_id not in final_ids
+        and not (stream.reasoning and stream.gap)
+        and not stream.progress
     )
     return tuple(lines)
 

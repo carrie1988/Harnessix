@@ -147,6 +147,7 @@ class RecoverableAgentSession:
                     client_instance_id=self._state_store.state().client_instance_id,
                     client_name="harnessix-code-tui",
                     client_version="0.9.1",
+                    generation_progress=True,
                 )
                 self.connection = ProductConnection(generation, ConnectionPhase.HANDSHAKING)
                 await client.initialize()

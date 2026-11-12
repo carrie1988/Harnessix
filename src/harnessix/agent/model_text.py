@@ -8,6 +8,7 @@ from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
+from harnessix.agent.generation_progress import GenerationProgress
 from harnessix.agent.ids import new_id
 from harnessix.agent.models import (
     EventPayload,
@@ -28,6 +29,8 @@ from harnessix.agent.reasoning_preview import ReasoningPreview
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
+    ReasoningDelta,
+    ResponseCompleted,
     TextCompleted,
     TextDelta,
     TextStarted,
@@ -57,6 +60,7 @@ class ModelTextPublication:
     characters: int = 0
     sequence: int = 0
     reasoning: ReasoningPreview | None = None
+    progress: GenerationProgress | None = None
 
     def account(self, count: int) -> None:
         self.characters += count
@@ -73,17 +77,28 @@ class ModelTextPublication:
         if isinstance(event, TextDelta):
             self.account(len(event.delta))
             item.text += event.delta
+            self._progress().text(event.delta)
             prefix = await protect_text(self.protection, event.content_id, event.delta, self.token)
             self.publish(item, prefix)
         else:
             await _complete(self, item, event)
 
     async def preview(self, event: ProviderEvent) -> bool:
-        """思考增量交给本步骤的思考预览；返回True表示已消费。"""
+        """思考增量交给本步骤的思考预览，并与工具参数的进度一起计入生成进度；返回True表示已消费。"""
 
         if self.reasoning is None:
             self.reasoning = ReasoningPreview(self.request, self.token, self.protection, self.emit)
-        return await self.reasoning.observe(event)
+        if isinstance(event, ReasoningDelta):
+            self._progress().reasoning(event.delta)
+        elif isinstance(event, ResponseCompleted):
+            self._progress().close()
+        # 进度事件也先经过思考预览：它不是思考增量，预览据此收尾（思考到此结束）。
+        return await self.reasoning.observe(event) or self._progress().observe(event)
+
+    def _progress(self) -> GenerationProgress:
+        if self.progress is None:
+            self.progress = GenerationProgress(self.request, self.emit)
+        return self.progress
 
     def validate_prefix(self, item: _TextItem, prefix: str, *, final: bool = False) -> None:
         if not item.text.startswith(prefix, item.released) or (

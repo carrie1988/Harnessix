@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 12
+version: 13
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -25,9 +25,18 @@ supersedes: []
 
 # App Server模块设计
 
+## 当前增量：预览流按能力过滤（ADR 0156）
+
+- [`preview_streams.PreviewStreams`](../../src/harnessix/app_server/preview_streams.py)记录一个连接声明了哪些预览流：`reasoning`（思考预览）与
+  `progress`（生成进度）。两者都复用正文Delta通道，都只在客户端同时声明`item_deltas`时生效。握手结果`PreparedInitialization.previews`、
+  `AgentProtocolServer.previews`与`AgentApplicationService.next_events(previews=...)`传递的是同一个对象，取代原来的`reasoning_deltas_enabled`与`include_reasoning`。
+- `PreviewStreams.visible(page)`按约定的条目身份滤掉没有声明的预览增量；未声明的客户端若收到进度行，会把它当成助手正文显示。
+- 进度增量会结束一次长轮询；对未声明的连接，过滤后是空页，客户端随即重新轮询（每秒至多一次，只在模型生成期间）。
+- 回归见`tests/agent/test_generation_progress.py`（过滤的四种组合，以及经协议的端到端用例）。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
+
 ## 当前增量：思考预览按能力过滤（0.10.0b9）
 
-- 握手记录`reasoning_deltas`；`events/next`对未声明该能力的连接用[`without_reasoning`](../../src/harnessix/app_server/service.py)按约定身份滤掉思考预览增量，正文增量与原有长轮询行为不变。
+- 握手记录`reasoning_deltas`；`events/next`对未声明该能力的连接按约定身份滤掉思考预览增量（现由`PreviewStreams.visible`完成，见上一节），正文增量与原有长轮询行为不变。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -374,7 +383,7 @@ Secret、完整环境、Provider Header或不应公开的路径。未预期异�
 | Artifact | 仅在能力存在时路由 | 委托Scoped Reader | Thread归属、Workspace能力和Artifact读取 |
 
 Server返回Result时重新以Protocol模型的线上别名序列化，`publish_frame`比较完整UTF8含换行字节与
-协商`maxMessageBytes`，超限返回`response_too_large`，合规后继续检查原帧。`protocol_json_size`不是生产门禁路径。
+协商`maxMessageBytes`，超限返回`response_too_large`，合规后继续检查原帧。`protocol_json_size`（在`protocol/codec.py`）不是生产门禁路径。
 
 ## 11. 写命令事务编排
 
@@ -1369,6 +1378,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 13 | `a22e64ee` 增量 | 2026-11-13 | 预览流（思考预览、生成进度）的开关合并为`preview_streams.PreviewStreams`，握手时按客户端能力确定，`events/next`据此滤掉未声明的预览增量；新增`generation_progress`能力（ADR 0156） |
 | 12 | `1d857b39` 增量 | 2026-11-10 | 未声明`reasoning_deltas`的连接不收思考预览增量（0.10.0b9） |
 | 11 | `6376b10c` 增量 | 2026-11-10 | 薄CLI对自身不处理的待审批项先等3秒系统决定，修复`exec`在沙箱命令自动批准前误判需要人工（0.10.0b2） |
 | 10 | `44d044fe12a04cb33482143bd5a03b1183685394` | 2026-11-10 | 同步合入主线的薄CLI行为：事件页因`response_too_large`被拒时与`public_output_limit`一样减半页长重读 |

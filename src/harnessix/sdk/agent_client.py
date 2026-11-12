@@ -78,6 +78,14 @@ class InProcessAgentTransport:
         await self.server.close()
 
 
+def _capabilities(generation_progress: bool) -> ClientCapabilities:
+    """正文与思考预览的增量照常声明；生成进度流是一行行数字，只有会单独处理它的客户端才声明。"""
+
+    return ClientCapabilities(
+        item_deltas=True, reasoning_deltas=True, generation_progress=generation_progress
+    )
+
+
 class AgentClient:
     """Agent Protocol 2.0异步SDK；领域requestId由调用方控制并可安全复用。"""
 
@@ -88,8 +96,10 @@ class AgentClient:
         client_instance_id: UUID | None = None,
         client_name: str = "harnessix-python-sdk",
         client_version: str = "0.8.0",
+        generation_progress: bool = False,
     ) -> None:
         self.transport = transport
+        self.generation_progress = generation_progress
         self.client_instance_id = client_instance_id or uuid4()
         self.client_name = client_name
         self.client_version = client_version
@@ -108,11 +118,7 @@ class AgentClient:
     async def _send(self, method: str, params: dict[str, JsonValue]) -> JsonValue:
         self._sequence += 1
         return await exchange_agent_request(
-            self.transport,
-            method,
-            params,
-            self._sequence,
-            self.initialized,
+            self.transport, method, params, self._sequence, self.initialized
         )
 
     async def _notify(self, method: str, params: dict[str, JsonValue]) -> None:
@@ -133,7 +139,7 @@ class AgentClient:
                 protocol_version=AGENT_PROTOCOL_VERSION,
                 client_info=ClientInfo(name=self.client_name, version=self.client_version),
                 client_instance_id=self.client_instance_id,
-                capabilities=ClientCapabilities(item_deltas=True, reasoning_deltas=True),
+                capabilities=_capabilities(self.generation_progress),
             )
             try:
                 result = _validate_result(
