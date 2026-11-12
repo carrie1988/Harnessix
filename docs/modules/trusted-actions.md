@@ -1876,3 +1876,10 @@ Audit 的完整父历史沿[成对 Blob 读端口](../changes/m09-r4-git-checkpo
 ### 当前增量：原准备拒绝的窄结算
 
 `workspace_patch_preparation_rejection`仅接受原内置Review绑定的SHA／no-op原生来源标记；核对当前相同Plan／Binding仍未批准，原Router CAS确认为denied后才给固定failed反馈。直接同code／自建类型、外部Review、过期Plan、已批准／执行状态和Executor异常保留原边界；不重放unknown。字段与顺序、拒绝后恢复及真实变化审批见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。
+
+**2026-11-12修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)第2版）。**
+[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)给模型的失败说明补上整批未应用的事实
+（[`unapplied_batch_notice`](../../src/harnessix/delivery/workspace_patch_errors.py)，按调用里的文件项数措辞）：
+已定位的拒绝在`files[i]`前缀与原正文之后追加；规划期的边界拒绝（`workspace_path_denied`、`delivery_path_denied`等固定码表）
+没有下标，同样追加。未定位的准备拒绝正文已写明未执行，不变。接受条件、Route关闭顺序与结果结构不变；
+这些错误码在界面上仍显示原有的用户文案。
