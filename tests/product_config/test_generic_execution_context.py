@@ -24,7 +24,7 @@ async def test_generic_context_preserves_task_rules_without_forced_repair_stages
     runtime = [item for item in fragments if item["kind"] == "runtime_instruction"]
     assert [item["source"] for item in runtime] == [
         "harnessix.generic-execution-instructions/v6",
-        "harnessix.working-habits/v1",
+        "harnessix.working-habits/v2",
     ]
     instructions = runtime[0]["content"]
     assert "exec_command.<profile>" in instructions

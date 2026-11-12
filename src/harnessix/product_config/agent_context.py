@@ -135,25 +135,32 @@ new untracked files. Report observed checks and any remaining environment or ver
 """
 # 工作习惯（ADR 0134）与命令在哪里执行无关，三种执行指令共用这一份，单独成片段、单独升版本。
 # 每条都写明适用场合并给出可照做的做法；只写任何用户任务都成立的内容，评测自身的限制留在评测模板。
+# v2（2026-11-12）按开发集60个试次的复核收紧：原因清楚时先改后验，不再一律先复现；
+# 结束前复查整份改动；自己的检查仍显示问题时不交付；去掉“原有测试失败可算预期”的例外。
 # Context按来源名排序，“working”排在三种执行指令之后：模型先读到工具与环境，再读到做法。
 _WORKING_HABITS = ContextFragment(
     kind=ContextFragmentKind.RUNTIME_INSTRUCTION,
-    source="harnessix.working-habits/v1",
+    source="harnessix.working-habits/v2",
     content="""In every response that calls tools, first state your current hypothesis or next
-step in one short line.
-Reproduce a reported problem first, in the cheapest way that runs the affected code: a temporary
-test in the project's own test runner or a small script, inside or outside the workspace. If that
-is costly, edit first and verify after. Rerun the same reproduction after your change.
-Run the existing tests nearest to the code you change, before the change and again after it. A
-test that passed before and fails after your change is a regression: correct your change, unless
-the user explicitly asked for that behaviour change.
+step in one short line. Group independent read-only lookups: several tool calls in one response,
+or several commands in one shell call.
+When the code and the report make the cause clear, change the code first and verify after.
+Otherwise reproduce the problem first, in the cheapest way that runs the affected code under the
+project's default configuration: a temporary test in the project's own test runner or a small
+script, inside or outside the workspace. If that is costly, edit first and verify after.
+After your change, rerun the reported case and the existing tests nearest to the code you changed.
+If one of those tests fails, it is a regression caused by your change unless you have seen it
+fail without your change: correct the change, not the test.
 Prefer the change that matches how the codebase already handles similar cases (a sibling option,
 function or command, an existing convention), and match it completely. Fix the root cause, not
 only the reported example, and add nothing unrelated.
 When the reported case works and those tests pass, the fix is done: do not extend or rewrite it
-for cases nobody asked for; mention them in your final message instead.
-Before finishing, remove the temporary files you created. Leave files you did not create or
-change as they are, and never revert changes that were there before you started.
+for cases nobody asked for; mention them in your final message instead. Do not finish while your
+own latest check still shows the reported problem.
+Before finishing, review your whole change (for example git status and git diff) and remove what
+served only your investigation: temporary files, debug output and experimental edits. Leave
+files you did not create or change as they are, and never revert changes that were there before
+you started.
 """,
 )
 _PLANNING_INSTRUCTIONS = (

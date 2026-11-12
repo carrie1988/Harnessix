@@ -79,7 +79,7 @@
           "external_boundary": true,
           "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
           "normalize_workspace_modes": false,
-          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task-v4.j2",
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task-v5.j2",
           "network_isolation": true,
           "git_read_tools": true
         },

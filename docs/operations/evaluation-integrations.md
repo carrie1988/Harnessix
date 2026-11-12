@@ -333,7 +333,7 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
      同一环境预设与900秒命令期限），模型经容器回环端口转发。命令走外部边界Profile，系统指令为
      `harnessix.external-boundary-execution-instructions/v3`（ADR 0121第2版），其后附带产品默认的工作习惯片段
-     `harnessix.working-habits/v1`（ADR 0134）。
+     `harnessix.working-habits/v2`（ADR 0134第2版）。
    - 产品配置覆盖：product.json由产品向导生成，只允许`EVAL_ALLOWED_OVERRIDES`登记的字段，每项都是已知的评测与产品差异：
      只有`completion_guard`开启（无人值守）。压缩点自ADR 0132起沿用产品默认（`half_window`，有真实用量后按真实输入Token校准）：
      此前的`third_window`覆盖在Multilingual正式评测中实际于约5.3万Token（窗口的20%）触发，48次压缩约占全场12%的时间。

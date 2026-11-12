@@ -17,7 +17,7 @@
   },
   "summary": {
     "source_files": 623,
-    "physical_lines": 132404,
+    "physical_lines": 132411,
     "logical_lines": 115332,
     "documented_modules": 623,
     "classes": 1230,
@@ -1452,7 +1452,7 @@
       "path": "src/harnessix/product_config/agent_context.py",
       "qualname": "build_product_agent_context",
       "kind": "function",
-      "line": 402,
+      "line": 409,
       "lines": 186,
       "documented": true,
       "decision_complexity": 50

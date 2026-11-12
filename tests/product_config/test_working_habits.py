@@ -18,7 +18,7 @@ from harnessix.product_config.agent_context import (
     build_product_agent_context,
 )
 
-HABITS_SOURCE = "harnessix.working-habits/v1"
+HABITS_SOURCE = "harnessix.working-habits/v2"
 # 指令按100列折行，断言按空白归一后的句子比较，不绑定折行位置。
 HABITS = " ".join(_WORKING_HABITS.content.split())
 MODEL_FACING_TEXTS = (
@@ -81,10 +81,10 @@ async def test_fixed_stage_workflow_without_command_tools_gets_no_habits(
     assert HABITS_SOURCE not in await _runtime_sources(tmp_path, **options)
 
 
-def test_habits_stay_about_a_dozen_lines_and_hold_for_any_user_task() -> None:
+def test_habits_stay_under_twenty_lines_and_hold_for_any_user_task() -> None:
     text = _WORKING_HABITS.content
     assert text.isascii()
-    assert len(text.encode()) <= 1300
+    assert len(text.encode()) <= 1800 and text.count("\n") <= 20
     lowered = text.lower()
     for evaluation_only in (
         "benchmark",
@@ -103,19 +103,28 @@ def test_habits_cover_hypothesis_reproduction_regression_consistency_stopping_an
     for habit in (
         "In every response that calls tools, first state your current hypothesis or next step "
         "in one short line.",
-        "Reproduce a reported problem first, in the cheapest way that runs the affected code",
-        "Rerun the same reproduction after your change.",
-        "Run the existing tests nearest to the code you change, before the change and again after "
-        "it.",
-        "A test that passed before and fails after your change is a regression: correct your "
-        "change, unless the user explicitly asked for that behaviour change.",
+        "Group independent read-only lookups: several tool calls in one response, or several "
+        "commands in one shell call.",
+        "When the code and the report make the cause clear, change the code first and verify "
+        "after.",
+        "Otherwise reproduce the problem first, in the cheapest way that runs the affected code "
+        "under the project's default configuration",
+        "After your change, rerun the reported case and the existing tests nearest to the code "
+        "you changed.",
+        "it is a regression caused by your change unless you have seen it fail without your "
+        "change: correct the change, not the test.",
         "Prefer the change that matches how the codebase already handles similar cases",
         "Fix the root cause, not only the reported example, and add nothing unrelated.",
         "the fix is done: do not extend or rewrite it for cases nobody asked for",
-        "Before finishing, remove the temporary files you created.",
+        "Do not finish while your own latest check still shows the reported problem.",
         "never revert changes that were there before you started.",
     ):
         assert habit in HABITS, habit
+
+
+def test_habits_do_not_excuse_a_broken_existing_test() -> None:
+    """v1的例外条款（“除非用户明确要求这种行为变化”）被用来把弄坏的原有测试认定为预期。"""
+    assert "unless the user explicitly asked for that behaviour change" not in HABITS
 
 
 def test_code_reachable_only_through_the_project_test_setup_can_be_reproduced_in_place() -> None:
@@ -132,10 +141,14 @@ def test_code_reachable_only_through_the_project_test_setup_can_be_reproduced_in
 
 
 def test_cleanup_is_limited_to_what_the_agent_created() -> None:
-    """“让最终diff只剩自己的源码改动”曾让模型还原开始前就存在的改动；清理只针对自己创建的临时文件。"""
+    """“让最终diff只剩自己的源码改动”曾让模型还原开始前就存在的改动；清理只针对自己为排查留下的东西。
+
+    v2要求结束前复查整份改动：开发集里13个步数用尽的未解决试次有6个把临时测试或调试输出留在了补丁里。
+    """
     assert (
-        "remove the temporary files you created. Leave files you did not create or change as "
-        "they are" in HABITS
+        "review your whole change (for example git status and git diff) and remove what served "
+        "only your investigation: temporary files, debug output and experimental edits. Leave "
+        "files you did not create or change as they are" in HABITS
     )
     for text in MODEL_FACING_TEXTS:
         for sweeping in ("final diff", "build outputs", "only your source change"):
