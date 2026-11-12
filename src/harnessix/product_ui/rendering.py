@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Final
 from uuid import UUID
 
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_item_id
+from harnessix.agent.completion_guard import completion_notice_item_id
 from harnessix.agent.request_notes import request_note_ids
 from harnessix.agent.session_baseline import is_session_baseline_notice
+from harnessix.agent.step_notices import step_notice_item_id
+from harnessix.agent.truncation_recovery import truncation_notice_item_id
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem, TransientItemStream
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
@@ -32,6 +36,13 @@ _REJECTION_REASONS = {
     "invalid_arguments_json": "工具参数不是合法JSON",
 }
 _PLAN_MARKS: Final = {"completed": "✓", "in_progress": "▸", "pending": "○"}
+# 宿主在Turn中途补发给模型的三类英文说明。它们是持久的用户消息Item，但不是用户说的话：
+# 界面各用一行中文交代发生了什么，不显示英文正文。
+_HOST_NOTICE_TEXT: Final = (
+    (completion_notice_item_id, "模型停下时任务还没有完成，已提示它继续"),
+    (truncation_notice_item_id, "模型的回复被截断，已提示它简短继续"),
+    (step_notice_item_id, "已把重复或前后结果不一致的命令、修改告知模型"),
+)
 # 常见失败的白话说明与处理办法；其余失败显示原始说明并附错误码。
 _FAILURE_TEXT: Final = {
     "provider_authentication": (
@@ -198,6 +209,7 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
         if isinstance(entry.item.content, PublicToolResultContent)
     }
     model_only = _model_only_item_ids(view)
+    host_notices = _host_notice_texts(view)
     lines = [
         line
         for entry in view.items
@@ -208,7 +220,7 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
         and entry.item.item_id not in model_only
         # 会话基线的两条英文说明同样只给模型看，不当作用户发言显示。
         and not is_session_baseline_notice(entry.turn_id, entry.item.item_id)
-        for line in _entry_lines(entry, results)
+        for line in _shown_lines(entry, results, host_notices)
     ]
     final_ids = {entry.item.item_id for entry in view.items if entry.final}
     lines.extend(
@@ -230,6 +242,47 @@ def _model_only_item_ids(view: ProductViewState) -> set[UUID]:
         hidden.add(cancelled_turn_notice_item_id(turn_id))
         hidden |= request_note_ids(turn_id, item_ids)
     return hidden
+
+
+def _shown_lines(
+    entry: ProjectedItem, results: dict[UUID, ProjectedItem], host_notices: dict[UUID, str]
+) -> tuple[TranscriptLine, ...]:
+    notice = host_notices.get(entry.item.item_id)
+    if notice is None:
+        return _entry_lines(entry, results)
+    return (TranscriptLine(entry.item.item_id, "提示", notice, final=entry.final),)
+
+
+def _host_notice_texts(view: ProductViewState) -> dict[UUID, str]:
+    """宿主补发说明的Item身份到界面短句；身份由Turn与步骤派生，一个Turn的步骤数不超过它的Item数。"""
+
+    by_turn: dict[UUID, list[ProjectedItem]] = {}
+    for entry in view.items:
+        by_turn.setdefault(entry.turn_id, []).append(entry)
+    texts: dict[UUID, str] = {}
+    for turn_id, entries in by_turn.items():
+        user_messages = {
+            entry.item.item_id
+            for entry in entries
+            if isinstance(entry.item.content, PublicTextContent)
+            and entry.item.content.kind == "user_message"
+        }
+        # 只有用户自己那一条输入的Turn（绝大多数）不必逐步派生身份。
+        if len(user_messages) < 2:
+            continue
+        for step in range(1, len(entries) + 1):
+            for item_id, (_, text) in zip(
+                _host_notice_item_ids(turn_id, step), _HOST_NOTICE_TEXT, strict=True
+            ):
+                if item_id in user_messages:
+                    texts[item_id] = text
+    return texts
+
+
+@lru_cache(maxsize=8192)
+def _host_notice_item_ids(turn_id: UUID, step: int) -> tuple[UUID, ...]:
+    """界面每次刷新都重算展示行；派生身份是纯函数，按Turn与步骤记住即可。"""
+    return tuple(item_id_of(turn_id, step) for item_id_of, _ in _HOST_NOTICE_TEXT)
 
 
 def _stream_line(stream: TransientItemStream) -> TranscriptLine:

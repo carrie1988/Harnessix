@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 38
-code_revision: 008485773f840df8a920cf750480a8a363761167
+version: 39
+code_revision: 4fb234fb74077c6a85f299cc7bd048f0c6ad440e
 owners:
   - product
 modules:
@@ -46,6 +46,16 @@ supersedes: []
 补丁在不存在的目录里新建文件时，差异正文以`new directory <路径>`行开头。[`diff_view.py`](../../src/harnessix/product_ui/diff_view.py)
 把这些行并入文件清单，显示为“新建目录  路径”，“共 N 个文件”仍只计文件。[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)
 为`workspace_wrong_file_type`与`workspace_parent_missing`保留中文原因。回归见`test_diff_view.py`、`test_tool_summary.py`。
+
+## 当前增量：宿主补发的说明显示为“提示”（ADR 0124、0109、0135）
+
+- 完成守卫、截断恢复与工具步骤说明（命令账本）是宿主在Turn中途写给模型的英文`user_message` Item。此前它们按用户消息显示，
+  界面上成了“你：[Harnessix host notice] …”，像是用户自己说的话。
+- [`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)现在按Item身份识别这三类说明
+  （`completion_notice_item_id`、`truncation_notice_item_id`、`step_notice_item_id`，由Turn与步骤派生），各显示为一行弱化的“提示”
+  加一句中文（如“模型的回复被截断，已提示它简短继续”），不显示英文正文。判定只按身份、不按正文前缀：用户自己输入同样的文字仍显示为“你”。
+- 会话基线与预算、目录说明保持不显示（见下两节）。只有用户自己那一条输入的Turn不做身份派生；派生结果按Turn与步骤缓存。
+  回归见[`test_rendering_host_notices.py`](../../tests/product_ui/test_rendering_host_notices.py)。
 
 ## 当前增量：不显示会话基线的宿主说明（ADR 0131）
 
@@ -1106,6 +1116,8 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 39 | `4fb234fb` 增量 | 2026-11-12 | 完成守卫、截断恢复与工具步骤说明显示为“提示”加一句中文，不再显示成用户发言 |
+| 38 | ADR 0137增量 | 2026-11-12 | 审批窗口列出补丁将新建的目录 |
 | 37 | `57dd7d7f` 增量 | 2026-11-11 | 对话记录不显示预算与目录说明（ADR 0132） |
 | 36 | `00848577` 增量 | 2026-11-10 | 配置向导先选服务商（DeepSeek、阿里云百炼、智谱）和模型，成功后说明下一步；`--json`保留机器格式（0.10.0b11） |
 | 35 | `f4a6dfb0` 增量 | 2026-11-10 | 费用显示：中断请求不当作上限、按确切型号匹配牌价、一律人民币、标注本轮（0.10.0b10） |
