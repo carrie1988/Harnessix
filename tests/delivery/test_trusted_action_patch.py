@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 import sqlite3
 from dataclasses import replace
 from pathlib import Path
@@ -24,6 +25,7 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.contracts import WorkspaceTransactionRecord
+from harnessix.delivery.planner import _target_file_exists
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action import (
     PRODUCT_ACTION_SOURCE,
@@ -826,3 +828,20 @@ async def test_post_approval_source_drift_fails_before_router_claim_or_effect(
     leases.close()
     plans.close()
     audit.close()
+
+
+def test_target_presence_is_observed_the_same_way_on_every_host(tmp_path: Path) -> None:
+    """create遇到已有文件、其余操作遇到缺失文件，要在规划前判为可修正的拒绝。
+
+    Windows以前不做这一步，严格规划器的失败被记为未知效果并停掉整轮（0.10.0b15修复）。
+    """
+
+    host = "windows" if os.name == "nt" else "posix"
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg/app.py").write_bytes(b"x\n")
+    assert _target_file_exists(tmp_path, "pkg/app.py", host) is True
+    assert _target_file_exists(tmp_path, "pkg/missing.py", host) is False
+    assert _target_file_exists(tmp_path, "nodir/missing.py", host) is False
+    assert _target_file_exists(tmp_path, "pkg", host) is None
+    other = "posix" if host == "windows" else "windows"
+    assert _target_file_exists(tmp_path, "pkg/app.py", other) is None

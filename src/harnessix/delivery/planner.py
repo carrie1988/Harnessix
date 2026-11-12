@@ -30,6 +30,7 @@ from harnessix.delivery.preserved_mode_contracts import (
     needs_preserved_modes,
 )
 from harnessix.delivery.workspace_patch_errors import _no_change_error
+from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.workspace import ReadOperation, Workspace
 from harnessix.workspace.contracts import (
     PlatformKind,
@@ -286,6 +287,35 @@ def _read_existing_file(
         finally:
             native.close()
     raise KernelError("workspace_platform_unsupported", "Workspace事务平台与宿主不一致")
+
+
+def _target_file_exists(root: Path, path: str, platform: PlatformKind) -> bool | None:
+    """目标是否为现有普通文件；目录、被拒路径、观察失败或平台与宿主不一致时返回None。"""
+
+    if platform == "posix" and os.name == "posix":
+        try:
+            with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+                with workspace.open(path, ReadOperation(), directory=False):
+                    return True
+        except FileNotFoundError:
+            return False
+        except (OSError, ReadToolError):
+            return None
+    if platform == "windows" and os.name == "nt":
+        from harnessix.workspace.windows import WindowsWorkspaceRoot
+
+        native = WindowsWorkspaceRoot(root)
+        try:
+            kind = native.observe(path, access="read", include_content=False).kind
+        except KernelError as error:
+            # 父目录不存在时目标同样不存在，与POSIX的FileNotFoundError一致。
+            return False if error.code == "workspace_parent_missing" else None
+        except (OSError, ValueError):
+            return None
+        finally:
+            native.close()
+        return {"file": True, "missing": False}.get(kind)
+    return None
 
 
 def _read_all(descriptor: int, *, checkpoint: Callable[[], None] | None = None) -> bytes:

@@ -24,7 +24,11 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionRecord,
 )
 from harnessix.delivery.path_case import CASE_CONFLICT, reject_case_aliases
-from harnessix.delivery.planner import DesiredWorkspaceFile, _read_existing_file
+from harnessix.delivery.planner import (
+    DesiredWorkspaceFile,
+    _read_existing_file,
+    _target_file_exists,
+)
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
 from harnessix.delivery.trusted_action_contracts import (
@@ -49,7 +53,7 @@ from harnessix.patches.contracts import ExactEdit
 from harnessix.patches.planner import apply_exact_edits
 from harnessix.tools.contracts import MAX_SCAN_BYTES, ReadToolError
 from harnessix.tools.files import _decode
-from harnessix.tools.workspace import ReadOperation, Workspace
+from harnessix.tools.workspace import ReadOperation
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     CanonicalActionResource,
@@ -417,19 +421,10 @@ def _require_target_presence_before_planning(
 ) -> None:
     """先于无变化判定确认目标存在性与操作相符；其余观察异常仍交严格规划器分类。"""
 
-    if platform != "posix" or os.name != "posix":
-        return
-    try:
-        with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
-            with workspace.open(path, ReadOperation(), directory=False):
-                exists = True
-    except FileNotFoundError:
-        exists = False
-    except (OSError, ReadToolError):
-        return
-    if operation == "create" and exists:
+    exists = _target_file_exists(root, path, platform)
+    if operation == "create" and exists is True:
         raise _target_exists_error()
-    if operation != "create" and not exists:
+    if operation != "create" and exists is False:
         raise _target_missing_error(operation)
 
 
