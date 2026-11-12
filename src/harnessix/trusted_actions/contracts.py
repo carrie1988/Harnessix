@@ -47,9 +47,12 @@ ReconciliationConclusion = Literal["succeeded", "failed", "unknown", "manual_int
 
 TERMINAL_ROUTE_STATES = frozenset({"denied", "succeeded", "failed", "manual_intervention"})
 
+# 执行前复核发现批准时绑定的Workspace事实已变化；此时计划尚未执行（ADR 0142）。
+STALE_PLAN_CODE = "execution_plan_stale"
 ALLOWED_ROUTE_TRANSITIONS: dict[str, frozenset[str]] = {
     "pending_approval": frozenset({"ready", "denied"}),
-    "ready": frozenset({"running"}),
+    # ready→failed只用于执行前复核发现计划已过期（STALE_PLAN_CODE）：尚未Claim，确定没有效果。
+    "ready": frozenset({"running", "failed"}),
     "running": frozenset({"succeeded", "failed", "unknown"}),
     "unknown": frozenset({"reconciling", "manual_intervention"}),
     "reconciling": frozenset({"succeeded", "failed", "unknown", "manual_intervention"}),

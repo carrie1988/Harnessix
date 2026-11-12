@@ -15,6 +15,7 @@ from harnessix.domain.errors import UncertainEffectError
 from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import (
+    STALE_PLAN_CODE,
     ActionExecutionOutcome,
     ActionRoutePlan,
     ActionRouteSnapshot,
@@ -39,7 +40,13 @@ if TYPE_CHECKING:
 
 async def execute_action(router: TrustedActionRouter, plan_id: UUID) -> ActionExecutionOutcome:
     """Claim已批准计划并执行一次；取消后对账，发送后失败保留未知效果而不重试。"""
-    current, definition, arguments = router._prepare_execution(plan_id)
+    try:
+        current, definition, arguments = router._prepare_execution(plan_id)
+    except KernelError as error:
+        rejected = _reject_stale_plan(router, plan_id, error)
+        if rejected is None:
+            raise
+        return rejected
     plan = current.plan
     claim = router._audit.claim_operation(
         plan_id,
@@ -102,6 +109,32 @@ async def execute_action(router: TrustedActionRouter, plan_id: UUID) -> ActionEx
     if cancelled is not None:
         raise cancelled
     return outcome
+
+
+def _reject_stale_plan(
+    router: TrustedActionRouter, plan_id: UUID, error: KernelError
+) -> ActionExecutionOutcome | None:
+    """批准后、Claim前Workspace事实已变化：计划以确定失败结束，不留在ready，也不算未知效果。
+
+    此时没有Operation、没有调用Executor，确定没有任何效果。旧批准绑定的事实已不成立，
+    不能刷新后复用；调用方按当前内容重新发起，重新规划并重新审批（ADR 0142）。
+    """
+    if error.code != STALE_PLAN_CODE:
+        return None
+    current = router._audit.load(plan_id)
+    if current.state != "ready":
+        return None
+    identity = current.plan.external_action_id
+    router._audit.transition(
+        plan_id,
+        expected={"ready"},
+        target="failed",
+        external_action_id=identity,
+        error_code=STALE_PLAN_CODE,
+    )
+    return ActionExecutionOutcome(
+        kind="failed", external_action_id=identity, error_code=STALE_PLAN_CODE
+    )
 
 
 async def reconcile_action(router: TrustedActionRouter, plan_id: UUID) -> ActionExecutionOutcome:

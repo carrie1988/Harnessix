@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 48
+version: 49
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -19,7 +19,9 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0142-stale-approved-plan-fails-without-effect.md
 related_tests:
+  - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_git_review_fresh_owner.py
   - tests/product_config/test_git_fresh_owner_reader.py
   - tests/trusted_actions/test_runtime_owner_observer.py
@@ -677,6 +679,7 @@ stateDiagram-v2
     pending_approval --> ready: approved
     pending_approval --> denied: rejected
     ready --> running: execute claim
+    ready --> failed: plan stale before claim
     running --> succeeded: definite success
     running --> failed: definite failure
     running --> unknown: effect uncertain/interrupted
@@ -698,10 +701,10 @@ stateDiagram-v2
 |---|---|---:|---|---|
 | `denied` | Policy或审批拒绝 | 否 | 无 | 不得执行 |
 | `pending_approval` | Planner | 是 | ready/denied | 等待唯一Plan决定 |
-| `ready` | Planner或批准 | 是 | running | 可由一个执行调用Claim |
+| `ready` | Planner或批准 | 是 | running/failed | 可由一个执行调用Claim；执行前复核发现计划过期时直接failed |
 | `running` | Router.execute | 是 | succeeded/failed/unknown | Executor可能正在或已经产生效果 |
 | `succeeded` | Execute/Reconcile | 否 | 无 | 确认成功 |
-| `failed` | Execute/Reconcile | 否 | 无 | 确认失败 |
+| `failed` | Execute/Reconcile/执行前复核 | 否 | 无 | 确认失败（含未执行的过期计划） |
 | `unknown` | Execute/恢复/Reconcile | 是 | reconciling/manual | 禁止重放，只可查证 |
 | `reconciling` | Router.reconcile | 是 | 四类结论 | 正在查询持久账本或外部事实 |
 | `manual_intervention` | 无恢复能力或Reconcile | 否 | 无 | 自动化不能安全判定 |
@@ -1119,7 +1122,7 @@ Plan ID作为关联字段而非未经授权的公开标识，并将Store失败�
 | `bindings` | 可选source过滤 | 返回深拷贝稳定排序 | 只读 | 无I/O | 宿主；Port进一步过滤 |
 | `plan` | Definition存在，参数/资源/Context有效 | 两Store保存Plan，返回初态 | 相同完整Plan可收敛 | 同步，无Deadline | 宿主或Port |
 | `decide` | Policy需审批，Checkpoint无冲突 | 保存决定并迁移Route | 相同决定重试收敛 | 同步 | 仅Router调用者，Port不暴露 |
-| `execute` | Route ready、Plan/Workspace/Approval当前 | 恰调用Executor一次并记录结论 | 不是可重放API；状态CAS | 取消落盘后重抛 | 宿主或匹配Port |
+| `execute` | Route ready、Plan/Approval当前 | 恰调用Executor一次并记录结论；Workspace已变化时不调用Executor，返回failed（`execution_plan_stale`） | 不是可重放API；状态CAS | 取消落盘后重抛 | 宿主或匹配Port |
 | `reconcile` | Route unknown、Binding仍匹配 | 不执行原效果，只确认事实 | unknown后可再次对账 | 取消留reconciling | 宿主或匹配Port |
 | `recover_interrupted` | 无其他活跃Owner | running/reconciling→unknown | 对已恢复状态再次调用无变化 | 同步 | 冷启动宿主 |
 | `status/events` | Plan存在且Store完整 | 返回验证后的投影/全链 | 只读 | 损坏失败关闭 | Port只暴露同来源status |
@@ -1652,6 +1655,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 49 | `d387a5cd` 增量 | 2026-11-12 | 批准后、执行前工作区变化的计划以确定失败结束（`execution_plan_stale`，ready→failed），不再中断整轮（0.10.0b21，ADR 0142） |
 | 48 | `d387a5cd` 增量 | 2026-11-12 | Patch父路径拒绝（父目录不存在、父级不是目录）登记进解析阶段码表，作为可修正的失败回传，不再中断整轮（0.10.0b21，ADR 0137） |
 | 46 | `f8c3ceab4599779fd2a350c3e2ae395e3cbf6608` | 2026-11-10 | 同步主线：公开结果支持命令输出摘要v4；进程类调用的`profile`参数可以省略，传入时须与工具绑定的Profile一致，Eval仍要求显式给出 |
 | 45 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅格式化，行为不变 |
@@ -1884,3 +1888,15 @@ Audit 的完整父历史沿[成对 Blob 读端口](../changes/m09-r4-git-checkpo
 ### 当前增量：原准备拒绝的窄结算
 
 `workspace_patch_preparation_rejection`仅接受原内置Review绑定的SHA／no-op原生来源标记；核对当前相同Plan／Binding仍未批准，原Router CAS确认为denied后才给固定failed反馈。直接同code／自建类型、外部Review、过期Plan、已批准／执行状态和Executor异常保留原边界；不重放unknown。字段与顺序、拒绝后恢复及真实变化审批见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。
+
+### 当前增量：批准后过期的计划以确定失败结束
+
+[ADR 0142](../adr/0142-stale-approved-plan-fails-without-effect.md)。`execute`在Claim之前复核Workspace Snapshot；
+批准时绑定的事实已经变化（`execution_plan_stale`）且Route仍是`ready`时，`_reject_stale_plan`用一次CAS把Route
+迁到`failed`并写入审计事件，不创建Operation、不调用Executor，`execute`返回
+`ActionExecutionOutcome(kind="failed", error_code="execution_plan_stale")`。Gateway据此生成普通的失败工具结果，
+说明是按错误码选择的固定文本（未执行、无改动、需重新发起并再次审批）。旧计划成为终态，不刷新Snapshot、不复用旧批准；
+模型重新发起后是新的调用、新的计划和新的审批。
+
+Route不是`ready`时复核失败照旧抛出；进入Executor之后发现的变化仍按原规则保守处理。此前这种情况没有结果，
+Turn终结时被当作未知效果而中断整轮（Beta B20-02，补丁审批与命令审批都会遇到）。

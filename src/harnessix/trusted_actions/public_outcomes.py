@@ -62,6 +62,8 @@ _COMMON_CODES = frozenset(
         "reconciliation_attempts_exhausted",
         "host_interrupted",
         "approval_rejected",
+        # 批准后、执行前工作区已变化：没有执行，确定没有效果（ADR 0142）。
+        "execution_plan_stale",
     }
 )
 _PROCESS_STOPS = {

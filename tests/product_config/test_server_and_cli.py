@@ -681,10 +681,22 @@ async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
         else:
             raise AssertionError("默认产品Patch未在批准后完成")
         assert current.latest_turn is not None
-        assert current.latest_turn.status == ("interrupted" if source_drift else "completed")
+        # 批准后来源被外部改写：计划以确定的失败结束（未执行），本轮继续并正常完成。
+        assert current.latest_turn.status == "completed"
         if source_drift:
-            assert current.latest_turn.error is not None
-            assert current.latest_turn.error.code == "uncertain_effect"
+            replay = await client.replay_events(thread.thread_id, limit=256)
+            failures = [
+                content.error.code
+                for event in replay.events
+                if getattr(
+                    content := getattr(getattr(event.data, "item", None), "content", None),
+                    "kind",
+                    None,
+                )
+                == "tool_result"
+                and content.error is not None
+            ]
+            assert "execution_plan_stale" in failures
         await client.close()
 
     monkeypatch.setattr("harnessix.product_config.server.build_provider_bundle", build)
@@ -699,7 +711,7 @@ async def test_product_server_sdk_approves_review_and_applies_workspace_patch(
     )
 
     assert target.read_bytes() == (b"external\n" if source_drift else b"new\n")
-    assert len(bundle.requests) == (2 if source_drift else 3)
+    assert len(bundle.requests) == 3
 
 
 async def test_product_server_advertises_default_scoped_artifact_reader(

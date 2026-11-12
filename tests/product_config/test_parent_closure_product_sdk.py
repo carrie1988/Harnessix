@@ -246,7 +246,7 @@ async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
         await client.initialize()
         try:
             thread = await client.create_thread(str(root), request_id="drift-thread")
-            bundle.steps = (_action_step(proposal),)
+            bundle.steps = (_action_step(proposal), answer("工作区已变化，本次没有修改"))
             await client.start_turn(thread.thread_id, "修改文件", request_id="drift-patch")
             waiting = await wait_turn(client, thread.thread_id, "waiting_approval")
             approvals = await contents(
@@ -264,11 +264,14 @@ async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
                     decision=PublicApprovalDecision(outcome="approved", actor="reviewer"),
                 )
             )
-            stopped = await wait_turn(client, thread.thread_id, "interrupted")
+            # 过期计划以确定的失败结束（未执行、无改动），模型收到反馈后本轮照常结束。
+            stopped = await wait_turn(client, thread.thread_id, "completed")
             results = await contents(
                 client, thread.thread_id, stopped.turn_id, PublicToolResultContent
             )
-            assert results[-1].outcome != "succeeded"
+            assert results[-1].outcome == "failed"
+            assert results[-1].error is not None
+            assert results[-1].error.code == "execution_plan_stale"
             assert all((root / item.path).read_bytes() == b"before\n" for item in proposal.files)
             assert (root / "d00/user.txt").read_bytes() == b"user-owned\n"
             with SQLiteWorkspaceTransactionStore(
@@ -278,7 +281,7 @@ async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
                     "SELECT transaction_id FROM workspace_transactions"
                 ).fetchone()
             assert _versions(state, UUID(target))[0].state == "prepared"
-            assert len(bundle.requests) == 1
+            assert len(bundle.requests) == 2
         finally:
             await client.close()
 

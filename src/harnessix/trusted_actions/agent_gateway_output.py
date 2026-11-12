@@ -25,7 +25,11 @@ from harnessix.agent.models import (
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
 from harnessix.domain.models import ApprovalDecision, ToolDescriptor, utc_now
 from harnessix.execution.contracts import SecretVersionBinding, canonical_digest
-from harnessix.trusted_actions.contracts import ActionExecutionOutcome, ActionRouteSnapshot
+from harnessix.trusted_actions.contracts import (
+    STALE_PLAN_CODE,
+    ActionExecutionOutcome,
+    ActionRouteSnapshot,
+)
 from harnessix.trusted_actions.output_budget import (
     DEFAULT_OUTPUT_BUDGET,
     bounded_projection,
@@ -402,6 +406,15 @@ def _check_secret_output(
     checkpoint()
 
 
+# 只登记内核自身产生、含义固定的失败码；其余失败沿用通用说明，不拼接任何执行正文。
+_FAILURE_MESSAGES = {
+    STALE_PLAN_CODE: (
+        "批准后、执行前工作区发生了变化，本次操作没有执行，没有产生任何改动；"
+        "请按当前内容重新发起这次操作（需要再次审批）"
+    ),
+}
+
+
 def build_result(
     route: ActionRouteSnapshot,
     call: ToolCallContent,
@@ -415,9 +428,10 @@ def build_result(
     state = outcome.kind
     error = None
     if state != "succeeded":
+        code = outcome.error_code or "trusted_action_failed"
         error = AgentFailure(
-            code=outcome.error_code or "trusted_action_failed",
-            message="Trusted Action未成功；详细事实请查询审计记录",
+            code=code,
+            message=_FAILURE_MESSAGES.get(code, "Trusted Action未成功；详细事实请查询审计记录"),
         )
     effect = TrustedActionEffect(
         plan_id=route.plan.execution.plan_id,

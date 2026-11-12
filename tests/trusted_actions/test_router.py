@@ -473,10 +473,41 @@ async def test_write_requires_exact_approval_and_workspace_freshness(tmp_path: P
     )
     assert approved.state == "ready"
     target.write_text("drift", encoding="utf-8")
-    with pytest.raises(KernelError) as stale:
-        await actions.execute(planned.plan.execution.plan_id)
-    assert stale.value.code == "execution_plan_stale"
-    assert executor.calls == 0
+    stale = await actions.execute(planned.plan.execution.plan_id)
+    # 批准后、执行前工作区已变化：确定没有效果的失败，不是未知效果。
+    assert (stale.kind, stale.error_code) == ("failed", "execution_plan_stale")
+    assert executor.calls == 0 and audit.operations() == ()
+    assert actions.status(planned.plan.execution.plan_id).state == "failed"
+    assert target.read_text(encoding="utf-8") == "drift"
+    plans.close()
+    audit.close()
+
+
+async def test_stale_plan_is_rejected_once_and_a_new_call_plans_again(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    (root / "file.txt").write_text("before", encoding="utf-8")
+    tool = binding(
+        effect=EffectClass.NON_IDEMPOTENT_WRITE, risk=RiskLevel.HIGH, recovery="durable_ledger"
+    )
+    executor = FakeExecutor(ActionExecutionOutcome(kind="succeeded", output={"revision": "after"}))
+    actions, plans, audit = router(root, definition(tool, executor))
+    first = actions.plan(invocation(tool), context(root)).plan.execution.plan_id
+    actions.decide(first, ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"))
+    (root / "file.txt").write_text("drift", encoding="utf-8")
+    assert (await actions.execute(first)).error_code == "execution_plan_stale"
+
+    # 旧计划已是终态：再次执行不会重新复核或启动效果。
+    with pytest.raises(KernelError) as finished:
+        await actions.execute(first)
+    assert finished.value.code == "execution_plan_stale" and executor.calls == 0
+    assert [event.to_state for event in actions.events(first)][-2:] == ["ready", "failed"]
+
+    # 模型按当前内容重新发起：新的计划、新的批准，照常执行。
+    second = actions.plan(invocation(tool), context(root)).plan.execution.plan_id
+    assert second != first
+    actions.decide(second, ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="reviewer"))
+    assert (await actions.execute(second)).kind == "succeeded" and executor.calls == 1
     plans.close()
     audit.close()
 

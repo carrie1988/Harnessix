@@ -895,11 +895,12 @@ async def test_post_approval_source_drift_fails_before_router_claim_or_effect(
     record = planner.load(route.plan, proposal)
     target.write_text("external\n", encoding="utf-8")
 
-    with pytest.raises(KernelError) as stale:
-        await router.execute(record.transaction_id)
+    stale = await router.execute(record.transaction_id)
 
-    assert stale.value.code == "execution_plan_stale"
-    assert router.status(record.transaction_id).state == "ready"
+    # 确定没有效果的失败：未Claim Operation、事务仍为prepared、目标保持外部编辑后的内容。
+    assert (stale.kind, stale.error_code) == ("failed", "execution_plan_stale")
+    assert router.status(record.transaction_id).state == "failed"
+    assert audit.operations() == ()
     assert transactions.load(record.transaction_id).state == "prepared"
     assert target.read_text(encoding="utf-8") == "external\n"
     transactions.close()
