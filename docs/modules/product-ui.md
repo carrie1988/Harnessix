@@ -41,6 +41,12 @@ supersedes: []
 
 # Product UI终端产品模块设计
 
+## 当前增量：审批清单列出将新建的目录（ADR 0137）
+
+补丁在不存在的目录里新建文件时，差异正文以`new directory <路径>`行开头。[`diff_view.py`](../../src/harnessix/product_ui/diff_view.py)
+把这些行并入文件清单，显示为“新建目录  路径”，“共 N 个文件”仍只计文件。[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)
+为`workspace_wrong_file_type`与`workspace_parent_missing`保留中文原因。回归见`test_diff_view.py`、`test_tool_summary.py`。
+
 ## 当前增量：不显示会话基线的宿主说明（ADR 0131）
 
 - Agent在会话开始时记录工作区已有的未提交改动，并在这些改动被还原或删除时提示模型一次（见[Agent模块设计](agent.md)“会话基线”）。两条说明都是给模型看的英文`user_message`。[`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)按`is_session_baseline_notice(turn_id, item_id)`跳过它们，对话里不出现用户没有说过的话；界面既有文字不变。回归见`tests/agent/test_session_baseline.py`。
