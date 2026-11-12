@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 617,
-    "physical_lines": 130025,
-    "logical_lines": 113628,
+    "physical_lines": 130037,
+    "logical_lines": 113640,
     "documented_modules": 617,
     "classes": 1209,
     "documented_classes": 620,
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/harnessix/delivery/trusted_action.py",
-      "lines": 617
+      "lines": 621
     },
     {
       "path": "src/harnessix/evals/delivery.py",

@@ -27,7 +27,7 @@ from harnessix.delivery.path_case import CASE_CONFLICT, reject_case_aliases
 from harnessix.delivery.planner import (
     DesiredWorkspaceFile,
     _read_existing_file,
-    _target_file_exists,
+    _target_kind,
 )
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.transaction_action_executor import WorkspaceTransactionActionExecutor
@@ -421,24 +421,28 @@ def _require_target_presence_before_planning(
 ) -> None:
     """先于无变化判定确认目标存在性与操作相符；其余观察异常仍交严格规划器分类。"""
 
-    exists = _target_file_exists(root, path, platform)
-    if operation == "create" and exists is True:
-        raise _target_exists_error()
-    if operation != "create" and exists is False:
-        raise _target_missing_error(operation)
+    kind = _target_kind(root, path, platform)
+    if operation == "create" and kind is not None and kind != "missing":
+        raise _target_exists_error(kind)
+    if operation != "create" and kind is not None and kind != "file":
+        raise _target_missing_error(operation, kind)
 
 
-def _target_exists_error() -> KernelError:
+def _target_exists_error(kind: str) -> KernelError:
     return workspace_patch_preparation_error(
         "workspace_patch_target_exists",
-        "create目标已存在；请read_file后用edit或replace，或先delete",
+        "create目标已存在；请read_file后用edit或replace，或先delete"
+        if kind == "file"
+        else "create目标是已有目录；请改为目录内的文件路径",
     )
 
 
-def _target_missing_error(operation: str) -> KernelError:
+def _target_missing_error(operation: str, kind: str) -> KernelError:
     return workspace_patch_preparation_error(
         "workspace_patch_target_missing",
-        f"{operation}目标不是现有普通文件；新文件请用create",
+        f"{operation}目标不是现有普通文件；新文件请用create"
+        if kind == "missing"
+        else f"{operation}目标是目录；Patch只处理文件，请对目录内的文件逐个操作",
     )
 
 
@@ -588,9 +592,9 @@ def _require_target_presence(item: WorkspacePatchFile, mutation: WorkspaceMutati
 
     if item.operation == "create":
         if mutation.before.presence != "absent":
-            raise _target_exists_error()
+            raise _target_exists_error("file")
     elif mutation.before.presence != "file":
-        raise _target_missing_error(item.operation)
+        raise _target_missing_error(item.operation, "missing")
 
 
 def _request_id(plan_id: UUID) -> str:

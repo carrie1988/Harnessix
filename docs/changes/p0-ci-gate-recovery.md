@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 8
-code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
+version: 9
+code_revision: 2574a498a9d36de2d4ae2b6d00568efa96af60fd
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery, trusted_actions]
 related_adrs:
@@ -85,6 +85,7 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
+- **补丁目标是目录（0.10.0b16）**：在已有目录的路径上`create`，或对目录`edit`/`replace`/`delete`，此前在所有平台上被审批预览记为未知效果并中断整轮；现在规划前认出目录，判为可修正的拒绝，工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。
 - **Windows上带可执行权限位的补丁（0.10.0b15）**：解析阶段拒绝的原码`delivery_metadata_unsupported`此前未登记在公开码表，被换成`action_plan_failed`，整轮按未知效果中断；现在保留原码，作为可修正的失败返回，工作区没有变化。见[Trusted Actions模块设计](../modules/trusted-actions.md)。
 - **Windows上补丁目标存在性不符（0.10.0b15）**：`create`遇到已有文件、`edit`/`replace`/`delete`遇到缺失文件，此前在Windows上被审批预览记为未知效果并中断整轮；现在与POSIX一样在规划前判为可修正的拒绝（`workspace_patch_target_exists`、`workspace_patch_target_missing`），工作区没有变化，Turn继续。见[Delivery模块设计](../modules/delivery.md)。
 - **Windows上的补丁前置条件补全（0.10.0b15）**：提案修复读取整个目标文件的函数此前在Windows后端恒返回空，精确锚定的edit不会被补上当前SHA；现在Windows后端用同一次原生稳定观察读取，行为与POSIX一致。读不到时仍保持原提案，后续核对不变，见[Coding Tool Runtime模块设计](../modules/tools.md)。
