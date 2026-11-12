@@ -148,9 +148,9 @@ def test_verify_timeout_is_not_mislabeled_as_corrupt(tmp_path, monkeypatch):
         prepared = prepare_patch(workspace, proposal(workspace), ReadOperation())
         original = planner._target
 
-        def timeout(before, proposal, operation):
+        def timeout(before, proposal, operation, recorded_sha256):
             operation.deadline = 0
-            return original(before, proposal, operation)
+            return original(before, proposal, operation, recorded_sha256)
 
         monkeypatch.setattr(planner, "_target", timeout)
         with pytest.raises(KernelError) as error:

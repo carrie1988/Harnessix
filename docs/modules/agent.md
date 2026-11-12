@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 57
-code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
+version: 58
+code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
@@ -49,6 +49,11 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：补SHA认得只差换行的锚点（0.10.0b21，ADR 0141）
+
+- 提案修复[`call_repair._anchored_sha256`](../../src/harnessix/agent/call_repair.py)在edit的`expected_sha256`缺失或过期、而每段`old_text`都在当前文件中唯一出现时补上当前文件的SHA-256。“唯一出现”此前只按逐字计数；CRLF文件上模型发回的多行`old_text`是LF换行，计数为0，不补，调用随后因SHA不符被拒。
+- 现在与编辑规划同一顺序判定（`_anchors_once`）：先逐字计数，一处也没有时忽略CRLF/LF差异再计数，都要求恰好一处。规划器仍是最终裁决，补上的SHA在规划与执行前照常核对。回归见`tests/agent/test_call_repair.py`。
 
 ## 当前增量：空回复补发提示继续（0.10.0b20，ADR 0109第6版）
 
@@ -992,6 +997,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 58 | `d387a5cd` 增量 | 2026-11-12 | 补SHA的锚点唯一性判定忽略CRLF/LF差异，与编辑规划一致（0.10.0b21，ADR 0141） |
 | 57 | `e5141ec7` 增量 | 2026-11-12 | 空回复与无正文截断由宿主补发提示继续；步骤终态判定集中到`settle_reply`；空摘要用独立代码并可跳过（0.10.0b20，ADR 0109第6版） |
 | 47 | `dad55d32` 增量 | 2026-11-11 | 恢复任务在开始执行前被取消时，尚未开始的Turn提交取消终态；等待中的Turn不动（0.10.0b14） |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |

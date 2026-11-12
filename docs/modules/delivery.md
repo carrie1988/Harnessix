@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 58
-code_revision: 2574a498a9d36de2d4ae2b6d00568efa96af60fd
+version: 59
+code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
   - tests/delivery/test_preserved_file_modes.py
   - tests/delivery/test_path_case_aliases.py
@@ -71,6 +72,15 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Delivery模块设计
+
+## 当前增量：CRLF与混合换行文件上的edit（ADR 0141）
+
+- `apply_patch_batch`的edit此前只做逐字节匹配：模型从`read_file`读到带`\r\n`的正文，发回的多行`old_text`却是`\n`，在CRLF区永远匹配不上；单行锚点命中后又把`\n`写进CRLF区（Beta测试`state-ocr`事件594–726）。
+- 现在锚点先逐字节匹配，一处也没有时忽略CRLF/LF差异再匹配并映射回原始字节区间；`new_text`里的换行按被替换处的风格写入，CRLF处保持CRLF，LF处保持LF。规则在[`patches/planner.py`](../../src/harnessix/patches/planner.py)，见[Patch模块设计](patches.md)的当前增量与[ADR 0141](../adr/0141-newline-aware-exact-edits.md)。
+- `expected_sha256`、事务前后像与结果里的`content_sha256`仍按文件的真实字节计算；create与replace写入的字节不变（用LF正文整文件替换CRLF文件，结果是整个文件变为LF）。批次原子性、审批绑定、回滚与各项上限不变；拒绝说明的语言与结构不变。
+- [`_validate_mutation`](../../src/harnessix/delivery/trusted_action.py)复核已保存的事务时把记录的后像摘要交给`apply_exact_edits(recorded_sha256=...)`：按此前语义（只逐字节匹配、`new_text`原样写入）算出该摘要的事务照旧通过，升级前保存或发布的修改仍可执行、对账与回滚；两种语义都算不出的后像仍被拒绝。
+- 提案阶段补SHA的唯一性判定（`agent/call_repair.py`）与规划器同一顺序：先逐字计数，一处也没有时忽略CRLF/LF差异再计数，都要求恰好一处；见[Agent模块设计](agent.md)。
+- 测试：[Delivery路径](../../tests/delivery/test_trusted_action_patch.py)、[产品路径换行回归](../../tests/product_config/test_patch_newlines.py)、[升级前发布的修改仍可回滚](../../tests/product_config/test_product_patch_rollback.py)。改动只处理字节串，没有平台分支；Windows上的结果见ADR 0141的验证一节。
 
 ## 当前增量：目标是目录也是可修正的拒绝（0.10.0b16）
 
@@ -1882,6 +1892,7 @@ v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 59 | `d387a5cd` 增量 | 2026-11-12 | edit的锚点忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格；复核已保存事务时认得此前语义算出的后像（ADR 0141） |
 | 58 | `2574a498` 增量 | 2026-11-12 | 目标是目录时同样判为可修正的拒绝，所有平台（0.10.0b16） |
 | 57 | `152c9c28` 增量 | 2026-11-11 | 补丁规划前的目标存在性确认补上Windows宿主，不符时是可修正的拒绝而不再中断整轮（0.10.0b15） |
 | 39 | `0f1948c3a258943698a8fe3e4309b81e78b8d5b3` | 2026-10-04 | 同步固定0f三组Windows材料原生Job结果、核心Job可读性失败与Snapshot候选本机回归边界；完整Git与Backup v2仍开放 |

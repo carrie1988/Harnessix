@@ -270,6 +270,84 @@ async def test_exact_edit_preserves_unread_file_content_and_mode(tmp_path: Path)
     audit.close()
 
 
+CRLF_SOURCE = "def f():\r\n    a = 1\r\n    b = 2\r\n"
+
+
+def _crlf_edit(root: Path, old_text: str, new_text: str) -> WorkspacePatchInput:
+    """在CRLF文件上的一处edit；expected_sha256按文件的真实字节计算。"""
+    root.mkdir()
+    (root / "app.py").write_text(CRLF_SOURCE, encoding="utf-8", newline="")
+    return WorkspacePatchInput(
+        files=(
+            WorkspacePatchFile(
+                operation="edit",
+                path="app.py",
+                expected_sha256=_sha(CRLF_SOURCE),
+                edits=(ExactEdit(old_text=old_text, new_text=new_text),),
+            ),
+        )
+    )
+
+
+def _edit_before_newline_handling(
+    before: bytes, edits: tuple[ExactEdit, ...], *_: object, **__: object
+) -> bytes:
+    """ADR 0141之前的edit语义（只逐字节匹配、new_text原样写入），用来造出升级前保存的事务。"""
+    [edit] = edits
+    return before.replace(edit.old_text.encode(), edit.new_text.encode())
+
+
+async def test_exact_edit_on_a_crlf_file_matches_lf_text_and_keeps_crlf(tmp_path: Path) -> None:
+    # 回归（Beta RT-06）：模型发回的多行old_text是LF换行；事务的前后像摘要仍绑定真实字节。
+    root = tmp_path / "workspace"
+    proposal = _crlf_edit(root, "    a = 1\n    b = 2\n", "    a = 10\n    b = 20\n    c = 30\n")
+    router, _, _, plans, audit, transactions, leases, route = _planned_action(
+        root, tmp_path, proposal
+    )
+    after = "def f():\r\n    a = 10\r\n    b = 20\r\n    c = 30\r\n"
+    [mutation] = transactions.load(route.plan.execution.plan_id).plan.mutations
+    assert (mutation.before.sha256, mutation.after.sha256) == (_sha(CRLF_SOURCE), _sha(after))
+
+    outcome = await router.execute(route.plan.execution.plan_id)
+
+    assert outcome.kind == "succeeded"
+    assert (root / "app.py").read_bytes() == after.encode()
+    transactions.close()
+    leases.close()
+    plans.close()
+    audit.close()
+
+
+async def test_transaction_recorded_before_newline_handling_still_loads_and_executes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 升级前保存的事务（如Beta事件726）：单行锚点命中CRLF区，LF的new_text被原样写入后像。
+    # 升级后执行、对账与回滚都会重新核对该事务，必须按当时的语义认得它。
+    root = tmp_path / "workspace"
+    proposal = _crlf_edit(root, "    a = 1", "    a = 1\n    z = 0")
+    recorded_after = CRLF_SOURCE.replace("    a = 1", "    a = 1\n    z = 0")
+
+    with monkeypatch.context() as earlier_release:
+        earlier_release.setattr(
+            "harnessix.delivery.trusted_action.apply_exact_edits", _edit_before_newline_handling
+        )
+        router, _, planner, plans, audit, transactions, leases, route = _planned_action(
+            root, tmp_path, proposal
+        )
+    [mutation] = transactions.load(route.plan.execution.plan_id).plan.mutations
+    assert mutation.after.sha256 == _sha(recorded_after)
+
+    assert planner.load(route.plan, proposal).plan.mutations == (mutation,)
+    outcome = await router.execute(route.plan.execution.plan_id)
+
+    assert outcome.kind == "succeeded"
+    assert (root / "app.py").read_bytes() == recorded_after.encode()
+    transactions.close()
+    leases.close()
+    plans.close()
+    audit.close()
+
+
 def test_exact_edit_rejects_ambiguous_anchor_without_preparing_effect(tmp_path: Path) -> None:
     root = tmp_path / "workspace"
     root.mkdir()

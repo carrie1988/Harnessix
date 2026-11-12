@@ -5,9 +5,9 @@
 - read_file只携带存档编号与分页参数时改为read_artifact；
 - apply_patch_batch（Workspace Patch合同）：外层的单文件字段并入files，补齐只有edits时的
   edit操作，去掉edit上默认的mode与空content；
-- edit的expected_sha256缺失或过期、而每段old_text都在当前文件中唯一出现时，由宿主读取当前文件
-  补上其SHA-256：精确锚定已证明模型看到的是要改的当前内容。规划与执行前仍按该SHA核对，
-  replace与delete仍要求模型给出正确SHA。
+- edit的expected_sha256缺失或过期、而每段old_text都在当前文件中唯一出现（逐字，或只差CRLF/LF
+  换行）时，由宿主读取当前文件补上其SHA-256：唯一锚定已证明模型看到的是要改的当前内容。
+  规划与执行前仍按该SHA核对，replace与delete仍要求模型给出正确SHA。
 """
 
 from __future__ import annotations
@@ -185,9 +185,20 @@ async def _anchored_sha256(entry: Mapping[str, JsonValue], read: ReadWorkspaceFi
         text = body.decode("utf-8")
     except UnicodeDecodeError:
         return None
-    if any(text.count(anchor) != 1 for anchor in texts):
+    if not all(_anchors_once(text, anchor) for anchor in texts):
         return None
     return hashlib.sha256(body).hexdigest()
+
+
+def _anchors_once(text: str, anchor: str) -> bool:
+    """与编辑规划同一顺序：先逐字匹配；一处也没有时忽略CRLF/LF差异再匹配，都要求恰好一处。
+
+    CRLF文件上模型发回的多行old_text常是LF换行（ADR 0141）；规划器仍是最终裁决。
+    """
+    exact = text.count(anchor)
+    if exact:
+        return exact == 1
+    return text.replace("\r\n", "\n").count(anchor.replace("\r\n", "\n")) == 1
 
 
 def _is_workspace_patch(tool: str, definitions: Mapping[str, ToolDescriptor]) -> bool:

@@ -268,6 +268,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0126：会话历史的增量校验](0126-incremental-session-history-verification.md)：进程内缓存已验证的链前缀，游标读取只校验本次返回的事件，交付的数据仍全部经过认证；全量读取行为不变。
 - [ADR 0127：本机stdio MCP与逐个信任](0127-host-stdio-mcp-with-per-server-trust.md)：修订ADR 0073第2条；只读用户级`mcp.json`，逐个显式信任并绑定定义指纹，每次工具调用审批，仓库级配置与远端MCP不在1.0。
 - [ADR 0128：沙箱外命令的免询问规则](0128-host-command-approval-rules.md)：修订ADR 0113第2.2节；服务端策略不变，交互客户端对内置只读命令和用户保存的命令前缀自动批准并留痕，规则按工作区保存在本机，可查看和撤销。
+- [ADR 0141：CRLF与混合换行文件上的精确编辑](0141-newline-aware-exact-edits.md)：edit的锚点先逐字节匹配，找不到时忽略CRLF/LF差异再匹配并映射回原始字节区间；`new_text`的换行按被替换处的风格写入；升级前保存的计划按当时的语义复核，仍可执行与回滚。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

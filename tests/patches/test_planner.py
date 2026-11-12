@@ -75,7 +75,8 @@ def test_multiple_edits_use_original_coordinates_not_chained_replacement(tmp_pat
         ("abcdef", (("abc", "x"), ("cde", "y")), "patch_overlapping_edits"),
         ("ab", (("a", ""), ("b", "ab")), "patch_no_change"),
         ("é", (("e\u0301", "x"),), "patch_context_not_found"),
-        ("before\r\n", (("before\n", "after\n"),), "patch_context_not_found"),
+        # 只差CRLF/LF换行的锚点能匹配（见test_planner_newlines.py）；孤立的\r不算换行。
+        ("before\rnext", (("before\nnext", "after\nnext"),), "patch_context_not_found"),
     ],
 )
 def test_invalid_matches_fail_without_modification(tmp_path, source, edits, code):

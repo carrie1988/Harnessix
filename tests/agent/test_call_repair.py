@@ -180,6 +180,31 @@ async def test_anchored_edits_get_the_current_sha_and_others_keep_theirs():
     ]
 
 
+async def test_anchors_that_differ_only_in_line_endings_also_get_the_current_sha():
+    # CRLF文件上模型发回的多行old_text是LF换行（Beta RT-06）。补SHA与规划器用同一顺序判定唯一：
+    # 先逐字匹配，一处也没有时忽略CRLF/LF差异再匹配。
+    crlf = b"a = 1\r\nb = 2\r\nc = 3\r\n"
+    # 两处都只在忽略换行时命中：不唯一，不补。
+    twice = b"a = 1\r\nb = 2\nz\r\na = 1\nb = 2\r\n"
+    # 逐字只命中LF的那一处：与规划器一样以它为准。
+    both_styles = b"a = 1\r\nb = 2\r\na = 1\nb = 2\n"
+    read = _reader({"crlf.py": crlf, "twice.py": twice, "both.py": both_styles})
+
+    def stale(path):
+        edit = {"old_text": "a = 1\nb = 2\n", "new_text": "a = 9\n"}
+        return {"operation": "edit", "path": path, "expected_sha256": "0" * 64, "edits": [edit]}
+
+    filled = await fill_patch_preconditions(
+        _patch(stale("crlf.py"), stale("twice.py"), stale("both.py")), DEFINITIONS, read
+    )
+
+    assert [entry["expected_sha256"] for entry in filled.arguments["files"]] == [
+        hashlib.sha256(crlf).hexdigest(),
+        "0" * 64,
+        hashlib.sha256(both_styles).hexdigest(),
+    ]
+
+
 async def test_only_the_workspace_patch_contract_is_filled():
     proposal = _patch({"operation": "edit", "path": "a.py", "edits": [EDIT]})
     read = _reader({"a.py": b"old\n"})
