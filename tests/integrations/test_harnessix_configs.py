@@ -101,6 +101,8 @@ def test_harnessix_arms_only_use_known_agent_options():
         "approval_mode",
         "bundle_root",
         "external_boundary",
+        # 让评测组别获得用户默认就有的Git读工具与会话基线（ADR 0131）。
+        "git_read_tools",
         "install_bundle",
         "max_steps",
         "max_tokens",

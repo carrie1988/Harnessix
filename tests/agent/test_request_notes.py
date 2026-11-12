@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -173,6 +174,37 @@ def test_uncapped_token_budgets_do_not_mention_tokens():
         "About half of the budget is used. Decide what is still needed to finish and verify "
         "the work, and leave out the rest."
     )
+
+
+def test_time_budget_crosses_the_same_levels_when_it_is_the_tighter_one():
+    """步数才用了四分之一、时间已过半的Turn（长命令）也要得到提醒；期限从Turn创建起算。"""
+    slow = turn(model_steps=25).model_copy(
+        update={"budget": Budget(max_steps=100, max_tokens=1_000_000_000, timeout_seconds=3600)}
+    )
+
+    def at(minutes: float):
+        return slow.created_at + timedelta(minutes=minutes)
+
+    assert budget_level(slow) is None  # 只看账本时不看时间
+    assert budget_level(slow, at(29.9)) is None
+    assert budget_level(slow, at(30)) is BudgetLevel.HALF
+    assert budget_level(slow, at(45)) is BudgetLevel.QUARTER
+    assert budget_level(slow, at(53.9)) is BudgetLevel.QUARTER
+    assert budget_level(slow, at(54)) is BudgetLevel.FINAL
+    assert budget_level(slow, at(90)) is BudgetLevel.FINAL
+    note = budget_note(slow, BudgetLevel.HALF, at(30))
+    assert "75 of 100 model calls are left; about 30 of 60 minutes are left." in note
+    assert "tokens" not in note
+    # 时间没用到一半时不写时间；短时间预算按秒写。
+    assert "minutes" not in budget_note(slow, BudgetLevel.HALF, at(10))
+    short = slow.model_copy(update={"budget": Budget(max_steps=100, timeout_seconds=90)})
+    late = short.created_at + timedelta(seconds=60)
+    assert "about 30 of 90 seconds are left" in budget_note(short, BudgetLevel.HALF, late)
+    events = request_note_events(slow, None, at(30))
+    assert [e.payload.item_id for e in events if e.payload.type == "item_finished"] == [
+        budget_note_item_id(slow.turn_id, BudgetLevel.HALF)
+    ]
+    assert request_note_events(with_events(slow, events), None, at(31)) == []
 
 
 def test_each_level_is_announced_once_and_only_tighter_levels_follow():

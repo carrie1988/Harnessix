@@ -3,13 +3,15 @@
 逐请求附加的说明每次都不同，下一请求又要把旧的去掉：服务端前缀缓存只能复用到旧说明之前，
 模型刚生成的回复也得重算。显式开启后（AgentRuntime的history_notes）：
 
-- 预算说明只在跨过关口时各发一次：剩一半、剩四分之一、最后十次调用；每个关口都同时按步数与
-  累计Token判断，“最后十次”的Token等价是“按上一请求的尺寸只够再发十次”；
+- 预算说明只在跨过关口时各发一次：剩一半、剩四分之一、最后十次调用；每个关口都同时按步数、
+  累计Token与Turn时间预算判断，“最后十次”的Token等价是“按上一请求的尺寸只够再发十次”，
+  时间等价是“剩余不足十分之一”；
 - 目录说明只在配置了工具视图时发：每个Turn的首个请求一条，此后本步可执行集合或选择约束与
   本Turn上一条目录说明不同时再发一条；没有工具视图时可执行集合整轮不变，不发；
 - 说明是已完成的用户消息Item，之后一直留在历史里，请求因而等于“上一请求＋新内容”。
 
-判定只读本Turn已持久化的事实；说明Item的身份由Turn与关口（或目录说明序号）派生，重放确定。
+判定只读本Turn已持久化的事实与当前时刻；说明Item的身份由Turn与关口（或目录说明序号）派生，
+说明一经写入即是持久事实，重放不再读时钟。
 非职责：不做预算准入（仍由Runtime与Reducer负责），不改变可执行集合。
 """
 
@@ -17,6 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from contextlib import AbstractAsyncContextManager
+from datetime import datetime, timedelta
 from enum import IntEnum
 from typing import Protocol
 from uuid import UUID, uuid5
@@ -25,12 +28,15 @@ from harnessix.agent.completion_guard import host_notice_events
 from harnessix.agent.models import EventDraft, TextContent, Turn, TurnStatus
 from harnessix.agent.ports import ModelToolSelection, ModelToolView
 from harnessix.agent.reducer import get_turn
+from harnessix.domain.models import utc_now
 from harnessix.models._history import tool_catalog_update
 from harnessix.session.ports import SessionStore
 
 REQUEST_NOTES_VERSION = "harnessix.request-notes/v1"
 # “最后十次调用”关口：留给收尾（落实改动、验证、可能的一次修复、最终答复）的调用数。
 FINAL_CALLS = 10
+# 时间上的“最后十次”：剩余时间不足时间预算的这一份之一。
+FINAL_TIME_DIVISOR = 10
 _HOST_NOTICE = "[Harnessix host notice] "
 
 
@@ -120,30 +126,46 @@ def affordable_calls(turn: Turn) -> int | None:
     return _tokens_left(turn) // size
 
 
-def budget_level(turn: Turn) -> BudgetLevel | None:
+def seconds_left(turn: Turn, now: datetime) -> float:
+    """Turn时间预算在now时刻还剩多少秒；期限与Reducer一致，从Turn创建时起算。"""
+    deadline = turn.created_at + timedelta(seconds=turn.budget.timeout_seconds)
+    return max(0.0, (deadline - now).total_seconds())
+
+
+def budget_level(turn: Turn, now: datetime | None = None) -> BudgetLevel | None:
     """当前所处的最紧关口；预算用掉不到一半时为None。
 
     “最后十次”只在剩余不足四分之一时成立：步数预算本来就小的任务，不在刚开始时就催促收尾。
+    now为None时只看账本（步数与Token），不看时间预算。
     """
     calls, tokens, budget = calls_left(turn), _tokens_left(turn), turn.budget
+    seconds = None if now is None else seconds_left(turn, now)
 
     def within(divisor: int) -> bool:
-        return calls * divisor <= budget.max_steps or tokens * divisor <= budget.max_tokens
+        return (
+            calls * divisor <= budget.max_steps
+            or tokens * divisor <= budget.max_tokens
+            or (seconds is not None and seconds * divisor <= budget.timeout_seconds)
+        )
 
     if not within(2):
         return None
     if not within(4):
         return BudgetLevel.HALF
     affordable = affordable_calls(turn)
-    if calls <= FINAL_CALLS or (affordable is not None and affordable <= FINAL_CALLS):
+    if (
+        calls <= FINAL_CALLS
+        or (affordable is not None and affordable <= FINAL_CALLS)
+        or (seconds is not None and seconds * FINAL_TIME_DIVISOR <= budget.timeout_seconds)
+    ):
         return BudgetLevel.FINAL
     return BudgetLevel.QUARTER
 
 
-def budget_note(turn: Turn, level: BudgetLevel) -> str:
+def budget_note(turn: Turn, level: BudgetLevel, now: datetime | None = None) -> str:
     """关口说明正文：先给宿主账本里的事实，再给一句下一步建议。
 
-    Token只在用掉一半以上时才写出：交互使用不设Token上限，写出来只是干扰。
+    Token与时间只在用掉一半以上时才写出：没有用紧的那一项写出来只是干扰。
     """
     budget, tokens = turn.budget, _tokens_left(turn)
     facts = f"{calls_left(turn)} of {budget.max_steps} model calls are left"
@@ -152,24 +174,34 @@ def budget_note(turn: Turn, level: BudgetLevel) -> str:
         affordable = affordable_calls(turn)
         if affordable is not None:
             facts += f", enough for about {affordable} more calls at the current request size"
+    if now is not None and (seconds := seconds_left(turn, now)) * 2 <= budget.timeout_seconds:
+        facts += f"; {_time_left(seconds, budget.timeout_seconds)}"
     return f"{_HOST_NOTICE}Budget checkpoint: {facts}. {_ADVICE[level]}"
 
 
-def request_note_events(turn: Turn, catalog: str | None) -> list[EventDraft]:
+def _time_left(seconds: float, timeout: float) -> str:
+    if timeout >= 120:
+        return f"about {round(seconds / 60)} of {round(timeout / 60)} minutes are left"
+    return f"about {round(seconds)} of {round(timeout)} seconds are left"
+
+
+def request_note_events(
+    turn: Turn, catalog: str | None, now: datetime | None = None
+) -> list[EventDraft]:
     """下一步模型请求之前到期的说明事件；没有到期的说明时为空。
 
     catalog是本步目录说明的完整正文（没有工具视图时为None）：与本Turn上一条不同才发。
-    更紧的预算关口已提醒过时，不再补发较松的关口。
+    更紧的预算关口已提醒过时，不再补发较松的关口。now为None时不看时间预算。
     """
     turn_id = turn.turn_id
     present = {item.item_id for item in turn.items}
     events: list[EventDraft] = []
-    level = budget_level(turn)
+    level = budget_level(turn, now)
     if level is not None and not any(
         budget_note_item_id(turn_id, seen) in present for seen in BudgetLevel if seen >= level
     ):
         events += host_notice_events(
-            turn_id, budget_note_item_id(turn_id, level), budget_note(turn, level)
+            turn_id, budget_note_item_id(turn_id, level), budget_note(turn, level, now)
         )
     if catalog is not None:
         sent = _catalog_notes(turn)
@@ -184,14 +216,15 @@ async def append_request_notes(host: RequestNotesHost, thread_id: UUID, turn: Tu
     先用调用方手里的Turn快照判断，绝大多数步骤没有到期的说明，不加锁也不读Session；
     有到期的说明时在线程CAS内重读并重判后追加。Turn已离开准备阶段（如正在取消）时不写。
     """
-    if not host._history_notes or not request_note_events(turn, _catalog_note(host, turn)):
+    now = utc_now()
+    if not host._history_notes or not request_note_events(turn, _catalog_note(host, turn), now):
         return
     async with host._lock(thread_id):
         thread = await host.store.get_thread(thread_id)
         current = get_turn(thread, turn.turn_id)
         if current.status != TurnStatus.PREPARING_CONTEXT:
             return
-        events = request_note_events(current, _catalog_note(host, current))
+        events = request_note_events(current, _catalog_note(host, current), now)
         if events:
             await host.store.append(thread_id, events, expected_sequence=thread.sequence)
 
