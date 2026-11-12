@@ -61,6 +61,15 @@ MESSAGE = (
     "call read_file on this file and resend with the content_sha256 it returns "
     "(digest_status=complete), never a guessed digest"
 )
+# 已定位的拒绝之后注明整批未应用；键是该批的文件项数。
+NOTHING_WRITTEN = {
+    1: "Nothing was written.",
+    2: "Nothing was written: the batch is atomic, so the other file entry was not applied either.",
+    3: (
+        "Nothing was written: the batch is atomic, so the other 2 file entries were not applied "
+        "either."
+    ),
+}
 
 
 def bad_proposal(operation="replace"):
@@ -166,7 +175,7 @@ async def test_proven_no_change_rejects_before_approval_or_execution(
         assert output.error.code == "delivery_no_change" and not output.error.retryable
         assert output.error.message == (
             "files[0]: the file already has exactly this content, so nothing would change; "
-            "remove this entry and resend the remaining files"
+            "remove this entry and resend the remaining files. " + NOTHING_WRITTEN[count]
         )
         assert "internal-no-change-canary" not in turn.model_dump_json()
         assert not any(
@@ -321,7 +330,8 @@ async def test_bad_sha_fails_without_executor_or_transaction_and_cannot_be_appro
         assert output.outcome == "failed" and output.trusted_action is None
         # 消息指出出错的是files中的哪一项，模型只需重读并改正该文件的SHA。
         index = [item.operation for item in proposal.files].index(operation)
-        assert output.error.code == CODE and output.error.message == f"files[{index}]: {MESSAGE}"
+        assert output.error.code == CODE
+        assert output.error.message == f"files[{index}]: {MESSAGE}. {NOTHING_WRITTEN[3]}"
         assert not output.error.retryable
         assert not any(
             isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
