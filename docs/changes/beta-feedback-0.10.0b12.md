@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 4
+version: 5
 code_revision: 7357576af93ad9089dd54642020bb6645f38f500
 owners:
   - core
@@ -44,6 +44,7 @@ supersedes: []
 | HX-12 | 配置目录权限不对时没有路径和修正办法 | 界面层原样转述通用错误 |
 | HX-07 | 自定义状态目录的会话在诊断里是0个 | `data`命令没有`--state-directory`，空结果也没有提示 |
 | HX-05 | 连不上模型服务时不知道怎样继续 | 提示文案只说检查网络 |
+| 复验后的决定 | 带思考的模型在小窗口下，摘要与正文的输出额度被思考占满；向导在32K窗口下把约45%的窗口留给输出 | 百炼`qwen3.8-max`、`qwen3.8-flash`没有默认思考预设；默认输出上限取窗口允许的最大值（0.10.0b19） |
 | 复验中发现 | 读过较多文件的会话退出后重新打开，显示“连接中断”和`public_output_limit`，无法继续 | 界面读整页历史事件被服务端以超限拒绝后不会缩小页长重读（0.10.0b17） |
 
 补丁工具与读取工具相关的条目（换行不一致的文件无法多行编辑、新建文件时父目录不存在、批次失败反馈、参数宽容度、
@@ -78,6 +79,7 @@ supersedes: []
 |---|---|---|
 | HX-01 | `artifacts` | 新增[`action_publication_snapshot`](../../src/harnessix/artifacts/action_publication_snapshot.py)，由Action Review与Action Output两处发布共用 |
 | HX-10 | `artifacts` | [`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)的调用归属核对改用已有的宿主核对作用域[`inspection_scope`](../../src/harnessix/agent/patching.py) |
+| 默认值 | `product_config`、`product_ui` | [`thinking_preset`](../../src/harnessix/product_config/wizard.py)新增百炼qwen3.8两个型号（取代HX-03的`explicit_thinking_switch`）；声明窗口时默认输出上限不超过窗口的四分之一，思考是否放得下按同一上限判断 |
 | 会话重开 | `sdk`、`product_ui` | 新增[`read_event_page`](../../src/harnessix/sdk/event_pages.py)，[`session.py`](../../src/harnessix/product_ui/session.py)的历史回放与实时轮询、`agent_cli`的分页共用它 |
 | RT-01、HX-08、HX-12、HX-07、HX-05 | `product_ui` | 审批窗口、运行指示、配置命令、数据命令与失败文案各自的局部修改，见[产品界面模块设计](../modules/product-ui.md) |
 | HX-03 | `product_config`、`product_ui` | 新增[`explicit_thinking_switch`](../../src/harnessix/product_config/wizard.py)；[`configure_cli`](../../src/harnessix/product_ui/configure_cli.py)在显式`--thinking`时使用它，无开关可用时拒绝 |
@@ -200,6 +202,15 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
     PgDn、PgUp可以来回翻看。
   - “已运行”秒数：未修复时三次运行都在批准后回到2秒；修复后单调递增。
   - 关闭思考的配置下，三次请求的输出为23～145 Token，没有思考内容。
+- 默认值（0.10.0b19，产品负责人2026-11-11决定）：[`test_thinking_config.py`](../../tests/product_config/test_thinking_config.py)里
+  百炼qwen3.8默认只在工具步骤思考、声明32K至131K窗口时的默认思考状态与输出上限、显式要求思考时保留窗口允许的
+  最大值；[`test_wizard.py`](../../tests/product_config/test_wizard.py)里小窗口的输出上限。依据是真实运行：32K窗口
+  的摘要请求1,228 Token输出额度中1,149个被思考占用；默认输出预留14,847时历史空间约4万字节。
+  真实模型复验（百炼`qwen3.8-flash`，真实终端界面，同一Beta任务；压缩相关的修复来自第二条开发线）：
+  - 64K窗口、新默认（只在工具步骤思考，输出上限16,384）：25次带工具的请求全部有思考，单步最多约1.1万Token；
+    发生的一次压缩里摘要请求输出964 Token、思考为0，没有被截断。
+  - 32K窗口、新默认（关闭思考，输出上限8,192）：7分钟内46次请求、4次压缩全部成功，没有失败。
+  - 真实配置命令核对：默认、32K、64K以及显式`--thinking`时生成的窗口、输出上限与思考设置与设计一致。
 - 会话重开：[`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py)里整页被拒后改读更小的页、
   实时轮询同样减半、单个事件仍被拒时照旧报错，修复前四条全部失败。三个真实会话（百炼`qwen3.8-flash`，
   410～1,602个事件，含较多搜索与读取结果）修复前重开显示“连接中断”与`public_output_limit`，修复后恢复出

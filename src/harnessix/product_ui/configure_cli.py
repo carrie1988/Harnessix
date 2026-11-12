@@ -31,7 +31,6 @@ from harnessix.product_config.wizard import (
     ConfigurationWriteRequest,
     auto_tool_choice_only,
     current_config_digest,
-    explicit_thinking_switch,
     known_context_window,
     thinking_preset,
     write_product_config,
@@ -371,10 +370,7 @@ def _thinking_options(
     if protocol == "auto":
         protocol = preset[0] if preset is not None else None
         if protocol is None and arguments.thinking is not None:
-            if openai_chat:
-                protocol = explicit_thinking_switch(endpoint.base_url, endpoint.model)
-            if protocol is None:
-                raise ProductUIError("product_configure_invalid", _THINKING_WITHOUT_SWITCH)
+            raise ProductUIError("product_configure_invalid", _THINKING_WITHOUT_SWITCH)
     elif protocol == "none":
         protocol = None
     endpoint_omits = (preset is not None and preset[1]) or auto_tool_choice_only(endpoint.base_url)

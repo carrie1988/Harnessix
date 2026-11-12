@@ -71,7 +71,8 @@ def test_known_context_windows_only_cover_verified_models(
     [
         (32_768, True, 4_096),
         (262_144, True, 32_768),
-        (8_192, False, 2_559),
+        # 默认输出上限不超过窗口的四分之一。
+        (8_192, False, 2_048),
         (None, True, 32_768),
     ],
 )

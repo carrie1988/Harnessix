@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 141
+version: 142
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -116,6 +116,13 @@ related_tests:
   - tests/product_config/test_command_rules.py
 supersedes: []
 ---
+
+## 当前增量：百炼qwen3.8的默认思考预设与声明窗口时的默认输出上限（0.10.0b19）
+
+- **默认思考预设。** [`thinking_preset`](../../src/harnessix/product_config/wizard.py)新增百炼`qwen3.8-max*`、`qwen3.8-flash*`：协议`dashscope_enable_thinking`，照常发送`tool_choice`。新配置默认只在工具步骤思考，摘要等无工具请求不思考。此前这两个型号不预设协议，每个请求都按服务端默认思考：真实运行里32K窗口的摘要请求有1,228 Token的输出额度，其中1,149个被思考占用，摘要因截断作废。0.10.0b16的`explicit_thinking_switch`（只在显式`--thinking`时启用同一协议）因此不再需要，已删除；显式`--thinking`的行为不变。已有配置不变，重新配置后生效。
+- **默认输出上限不超过窗口的四分之一。** 声明`context_window_tokens`时，`_output_limits`把默认输出上限收到`_default_output_cap`：窗口允许的最大值与窗口四分之一中较小的一个。此前思考型限额（32768）只按窗口允许的最大值收紧，32K窗口得到14,847（约45%），扣除工具定义与指令后历史只剩约4万字节；真实运行里单次输出最多用到约4千Token。
+- **思考是否放得下按同一上限判断。** 思考要求输出上限至少16384（`THINKING_MIN_OUTPUT_TOKENS`）；`_window_fits_thinking`改按默认输出上限判断，窗口小于65536且用户没有显式要求时自动关闭思考（原分界约35.8K）。用户显式写了`tool_steps`或`every_step`时，输出上限仍放到窗口允许的最大值。
+- **回归**：[`test_thinking_config.py`](../../tests/product_config/test_thinking_config.py)、[`test_wizard.py`](../../tests/product_config/test_wizard.py)。
 
 ## 当前增量：显式思考档位的开关协议（0.10.0b16）
 
@@ -2297,6 +2304,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 142 | `cf52cadc` 增量 | 2026-11-11 | 百炼qwen3.8-max/flash默认预设`dashscope_enable_thinking`（只在工具步骤思考），取代`explicit_thinking_switch`；声明窗口时默认输出上限不超过窗口的四分之一，思考是否放得下按同一上限判断（0.10.0b19） |
 | 141 | `80fb499a` 增量 | 2026-11-11 | `explicit_thinking_switch`：百炼qwen3.8-max/flash在用户显式指定思考档位时启用`enable_thinking`开关（0.10.0b16，Beta反馈HX-03） |
 | 140 | `7d847780` 增量 | 2026-11-11 | Git用户来源读取时限5秒放宽到30秒，仅此路径（0.10.0b14） |
 | 139 | `b3bf0da1` 增量 | 2026-11-11 | `command_rules`：只读命令识别与命令前缀规则（ADR 0128，0.10.0b14） |

@@ -113,20 +113,34 @@ def _allowed_output_tokens(window: int) -> int:
     return (window - 1) // 2 - CONTEXT_OVERHEAD_TOKENS
 
 
+def _default_output_cap(window: int) -> int:
+    """默认输出上限不超过窗口的四分之一：输出预留越大，留给历史的空间越小。
+
+    窗口允许的最大值约是窗口的45%。32K窗口用它时，扣除工具定义与指令后历史只剩约4万字节，
+    任务读几个文件就要压缩；真实运行里单次输出最多用到约4千Token。
+    """
+    return min(_allowed_output_tokens(window), window // 4)
+
+
 def _window_fits_thinking(window: int | None) -> bool:
-    return window is None or _allowed_output_tokens(window) >= THINKING_MIN_OUTPUT_TOKENS
+    return window is None or _default_output_cap(window) >= THINKING_MIN_OUTPUT_TOKENS
 
 
-def _output_limits(window: int | None, *, thinking: bool) -> dict[str, object]:
-    """小窗口模型放不下默认输出上限时按窗口收紧，避免生成无法启动的配置。"""
+def _output_limits(
+    window: int | None, *, thinking: bool, thinking_requested: bool = False
+) -> dict[str, object]:
+    """声明了窗口时按窗口收紧默认输出上限，避免生成无法启动或把窗口大半留给输出的配置。
+
+    用户显式要求思考（thinking_requested）时放到窗口允许的最大值：推理计入输出上限。
+    """
 
     limits: dict[str, object] = dict(_THINKING_LIMITS) if thinking else {}
     if window is None:
         return limits
-    allowed = _allowed_output_tokens(window)
+    cap = _allowed_output_tokens(window) if thinking_requested else _default_output_cap(window)
     current = cast(int, limits.get("max_output_tokens", _DEFAULT_MAX_OUTPUT_TOKENS))
-    if current > allowed:
-        limits["max_output_tokens"] = allowed
+    if current > cap:
+        limits["max_output_tokens"] = cap
     return limits
 
 
@@ -142,23 +156,13 @@ def thinking_preset(
     if host == "dashscope.aliyuncs.com" and model.startswith("deepseek-v4"):
         # 百炼DeepSeek的required/指定函数tool_choice经约束解码语法编译，间歇超时并返回400。
         return "dashscope_enable_thinking", True
+    if host == "dashscope.aliyuncs.com" and model.startswith(("qwen3.8-max", "qwen3.8-flash")):
+        # 百炼文档（2026-11-11核对）：这两个型号是混合思考、默认开启，可用enable_thinking关闭；
+        # 同系列另有只能思考的型号，因此只列已核对的型号前缀。不预设时每个请求都按服务端默认思考，
+        # 摘要这类输出额度小的无工具请求会被推理占满而没有正文。
+        return "dashscope_enable_thinking", False
     if host == "api.deepseek.com" and model.startswith(("deepseek-v4", "deepseek-flash")):
         return "deepseek_thinking_type", False
-    return None
-
-
-def explicit_thinking_switch(base_url: str, model: str) -> ThinkingProtocol | None:
-    """服务端默认思考、但已求证可用参数开关的模型族；只在用户显式指定思考档位时启用。
-
-    默认配置仍不发送思考参数（见reasoning_models）；用户写了--thinking却没有协议可用时，
-    设置不会到达模型，这里给出让它生效的协议。
-    """
-
-    host = urlsplit(base_url).hostname
-    # 百炼文档（2026-11-11核对）：qwen3.8-max与qwen3.8-flash是混合思考、默认开启，
-    # 可用enable_thinking关闭；同系列另有只能思考的型号，因此只列已核对的型号前缀。
-    if host == "dashscope.aliyuncs.com" and model.startswith(("qwen3.8-max", "qwen3.8-flash")):
-        return "dashscope_enable_thinking"
     return None
 
 
@@ -231,6 +235,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     **_output_limits(
                         checked.context_window_tokens,
                         thinking=thinking or reasons_by_default(checked.base_url, checked.model),
+                        thinking_requested=checked.thinking not in (None, "off"),
                     ),
                     **(_SELF_HOSTED_LIMITS if self_hosted else {}),
                 }

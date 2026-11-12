@@ -19,11 +19,7 @@ from harnessix.product_config.contracts import (
 )
 from harnessix.product_config.product_contracts import ConfigurationDraft
 from harnessix.product_config.runtime import default_provider_factory
-from harnessix.product_config.wizard import (
-    build_product_config,
-    explicit_thinking_switch,
-    thinking_preset,
-)
+from harnessix.product_config.wizard import build_product_config, thinking_preset
 from harnessix.product_ui.configure_cli import configure_main
 
 BAILIAN = "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -151,7 +147,12 @@ def test_thinking_requires_a_declared_protocol_and_max_tokens():
         (BAILIAN, "deepseek-v4-pro-0813", ("dashscope_enable_thinking", True)),
         (DEEPSEEK, "deepseek-v4-pro", ("deepseek_thinking_type", False)),
         (DEEPSEEK, "deepseek-flash", ("deepseek_thinking_type", False)),
-        (BAILIAN, "qwen3.8-max", None),
+        # 百炼文档（2026-11-11核对）：这两个型号是混合思考、默认开启，可用enable_thinking关闭。
+        (BAILIAN, "qwen3.8-max", ("dashscope_enable_thinking", False)),
+        (BAILIAN, "qwen3.8-flash", ("dashscope_enable_thinking", False)),
+        # 同系列里只能思考的型号没有可用的开关。
+        (BAILIAN, "qwen3.8-2.4t-a95b", None),
+        ("https://api.openai.test/v1", "qwen3.8-flash", None),
         (LOCAL_VLLM, "qwen3.8-flash-next", ("vllm_chat_template", False)),
         ("https://api.openai.test/v1", "gpt-test", None),
     ],
@@ -317,22 +318,6 @@ def test_compact_tool_results_is_explicit_and_maps_to_text_tool_results():
         ProviderDefinition.model_validate(anthropic)
 
 
-@pytest.mark.parametrize(
-    ("base_url", "model", "expected"),
-    [
-        (BAILIAN, "qwen3.8-flash", "dashscope_enable_thinking"),
-        (BAILIAN, "qwen3.8-max-0902", "dashscope_enable_thinking"),
-        # 同系列里只能思考的型号没有可用的开关。
-        (BAILIAN, "qwen3.8-2.4t-a95b", None),
-        # 默认就预设协议的模型族由thinking_preset负责。
-        (BAILIAN, "deepseek-v4-pro-0813", None),
-        ("https://api.openai.test/v1", "qwen3.8-flash", None),
-    ],
-)
-def test_explicit_switch_covers_only_verified_default_reasoning_models(base_url, model, expected):
-    assert explicit_thinking_switch(base_url, model) == expected
-
-
 def _configure(path: Path, *arguments: str) -> ProductConfigV2:
     configure_main(["--config", str(path), "--non-interactive", *arguments])
     return load_product_config(path).config
@@ -362,11 +347,62 @@ def test_an_explicit_thinking_mode_reaches_bailian_qwen(tmp_path, capsys, mode, 
     assert wire.enable_thinking is enabled and wire.output_token_parameter == "max_tokens"
 
 
-def test_bailian_qwen_without_a_thinking_flag_still_sends_no_thinking_parameter(tmp_path, capsys):
+def test_bailian_qwen_thinks_on_tool_steps_only_by_default(tmp_path, capsys):
+    """没有写--thinking时：带工具的请求照常思考，摘要等无工具请求不思考。
+
+    真实运行里，32K窗口的摘要请求有1,228 Token的输出额度，其中1,149个被思考占用，摘要因截断作废；
+    此前该型号默认不发送任何思考参数，每个请求都按服务端默认思考。
+    """
     config = _configure(tmp_path / "config.json", *_BAILIAN_QWEN)
     capsys.readouterr()
-    assert config.providers[0].thinking_protocol is None
-    assert _provider_config(config).enable_thinking is None
+    provider, profile = config.providers[0], config.profiles[0]
+    assert provider.thinking_protocol == "dashscope_enable_thinking"
+    assert not provider.omit_tool_choice
+    assert profile.thinking is None and effective_thinking(profile, provider) == "tool_steps"
+    assert profile.context_window_tokens == 1_000_000 and profile.max_output_tokens == 32_768
+    wire = _provider_config(config)
+    assert wire.enable_thinking is True and wire.thinking_tool_steps_only
+    assert wire.output_token_parameter == "max_tokens"
+
+
+@pytest.mark.parametrize(
+    ("window", "thinking", "max_output"),
+    [
+        # 四分之一窗口放不下思考所需的16384输出：默认不思考，输出上限是窗口的四分之一。
+        (32_768, "off", 8_192),
+        (60_000, "off", 15_000),
+        # 四分之一窗口刚好够思考。
+        (65_536, "tool_steps", 16_384),
+        (131_072, "tool_steps", 32_768),
+    ],
+)
+def test_a_declared_window_keeps_the_default_output_within_a_quarter(
+    tmp_path, capsys, window, thinking, max_output
+):
+    """默认输出预留曾是窗口允许的最大值（32K时14,847，约45%），历史只剩很小的空间。"""
+    config = _configure(
+        tmp_path / "config.json", *_BAILIAN_QWEN, "--context-window-tokens", str(window)
+    )
+    capsys.readouterr()
+    provider, profile = config.providers[0], config.profiles[0]
+    assert effective_thinking(profile, provider) == thinking
+    assert profile.max_output_tokens == max_output <= window // 4
+
+
+def test_thinking_the_user_asked_for_keeps_the_room_the_window_allows(tmp_path, capsys):
+    """显式要求思考时推理计入输出，不按四分之一收紧。"""
+    config = _configure(
+        tmp_path / "config.json",
+        *_BAILIAN_QWEN,
+        "--context-window-tokens",
+        "40000",
+        "--thinking",
+        "every_step",
+    )
+    capsys.readouterr()
+    profile = config.profiles[0]
+    assert effective_thinking(profile, config.providers[0]) == "every_step"
+    assert profile.max_output_tokens == (40_000 - 1) // 2 - 1536 == 18_463
 
 
 @pytest.mark.parametrize("mode", ["off", "tool_steps"])
@@ -392,3 +428,26 @@ def test_thinking_off_with_protocol_none_means_no_thinking_parameter(tmp_path, c
     capsys.readouterr()
     assert config.providers[0].thinking_protocol is None
     assert _provider_config(config).enable_thinking is None
+
+
+def test_configurations_written_before_the_new_defaults_behave_as_before(tmp_path, capsys):
+    """默认值只在生成配置时起作用：已有的配置文件不重新configure就不变。"""
+    # 旧向导为百炼qwen3.8写下的配置没有思考协议：仍然不发送任何思考参数。
+    old_qwen = build_product_config(
+        _draft(model="qwen3.8-flash", output_token_parameter="max_tokens")
+    )
+    assert old_qwen.providers[0].thinking_protocol is None
+    assert _provider_config(old_qwen).enable_thinking is None
+    # 旧向导在40K窗口下保留思考并给出窗口允许的最大输出上限：这样的配置照常加载、照常思考。
+    new_40k = _configure(
+        tmp_path / "config.json", *_BAILIAN_QWEN, "--context-window-tokens", "40000"
+    )
+    capsys.readouterr()
+    assert effective_thinking(new_40k.profiles[0], new_40k.providers[0]) == "off"
+    data = new_40k.model_dump(mode="json")
+    data["profiles"][0].pop("thinking")
+    data["profiles"][0]["max_output_tokens"] = 18_463
+    old_40k = ProductConfigV2.model_validate_json(json.dumps(data))
+    assert effective_thinking(old_40k.profiles[0], old_40k.providers[0]) == "tool_steps"
+    wire = _provider_config(old_40k)
+    assert wire.enable_thinking is True and wire.max_output_tokens == 18_463

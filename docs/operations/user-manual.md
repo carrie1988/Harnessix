@@ -337,6 +337,12 @@ harnessix code configure [新的完整参数] --replace \
 
 ### 4.7 configure 参数一览
 
+**思考模式怎么选**
+
+- **默认（不写 `--thinking`）**：DeepSeek 以及百炼的 `deepseek-v4`、`qwen3.8-max`、`qwen3.8-flash` 只在调用工具的步骤思考；整理上下文的摘要这类不带工具的请求不思考，输出额度全部用于正文。0.10.0b19 之前百炼的两个 qwen3.8 型号每个请求都思考，窗口较小时摘要常被思考占满而作废；已有的配置不会自动改变，重新运行 `harnessix code configure` 即可用上新默认值。
+- **小窗口默认不思考**：思考内容计入单次输出上限，至少需要 16384 Token 的输出额度。上下文窗口小于 64K 时，四分之一窗口放不下这个额度，向导默认关闭思考。确实需要时可以显式加 `--thinking tool_steps` 或 `--thinking every_step`，这时输出上限会放到窗口允许的最大值，留给对话历史的空间相应变小。
+- **关闭思考（`--thinking off`）有代价**：回复更快、输出更省，但模型更容易做出与任务无关的操作。实测百炼 `qwen3.8-flash` 关闭思考后，出现过自作主张新建无关文件、搜索无关内容的情况。窗口够用时建议保留默认的 `tool_steps`；关闭思考后请留意审批窗口里的每一处修改。
+
 | 参数 | 说明 |
 |---|---|
 | `--vendor` | 服务商：`deepseek`、`bailian`（阿里云百炼）、`zhipu`（智谱），自动填写地址和 Key 变量名 |
@@ -344,10 +350,10 @@ harnessix code configure [新的完整参数] --replace \
 | `--base-url` | 模型服务地址，云服务必须是 HTTPS |
 | `--model` | 模型名 |
 | `--api-key-env` | 读取 Key 的环境变量名，默认按服务商（见 4.2），手动填写时为 `MODEL_API_KEY` |
-| `--context-window-tokens` | 上下文窗口（Token）。已知云模型自动填写；自托管模型建议填写 |
+| `--context-window-tokens` | 上下文窗口（Token）。已知云模型自动填写；自托管模型建议填写。填写后，默认的单次输出上限不超过窗口的四分之一（32K 窗口为 8192），其余留给对话历史 |
 | `--self-hosted` | 声明为自己部署的内网端点 |
 | `--proxy-url` | 经本机 HTTP 代理访问 |
-| `--thinking` | 思考模式：`tool_steps`（只在工具步骤思考）、`every_step`、`off`。百炼的 `qwen3.8-max`、`qwen3.8-flash` 默认会思考，想关闭就加 `--thinking off`；没有已核对思考开关的服务会拒绝这个参数并提示怎么改 |
+| `--thinking` | 思考模式：`tool_steps`（只在工具步骤思考，已知服务的默认值）、`every_step`、`off`。没有已核对思考开关的服务会拒绝这个参数并提示怎么改。详见下方“思考模式怎么选” |
 | `--thinking-protocol` | 思考参数格式：`auto`（默认，按已知服务预设）、`none`、`dashscope_enable_thinking`、`deepseek_thinking_type` |
 | `--tool-choice` | 是否发送 `tool_choice`：`auto`、`send`、`omit` |
 | `--output-token-parameter` | 输出上限参数名：`max_completion_tokens` 或 `max_tokens` |
