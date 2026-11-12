@@ -7,6 +7,7 @@ owners: [core]
 modules: [agent, models, tools, delivery, patches, trusted_actions, context, session, product_config, product_ui, evals]
 related_adrs:
   - docs/adr/0109-recoverable-truncation-and-read-guidance.md
+  - docs/adr/0147-turn-stable-workspace-overview.md
   - docs/adr/0137-create-with-missing-parent-directories.md
   - docs/adr/0124-completion-guard-for-unattended-turns.md
   - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
@@ -31,6 +32,7 @@ related_tests:
   - tests/session/test_parsed_projection_cache.py
   - tests/tools/test_grep_include.py
   - tests/patches/test_planner_newlines.py
+  - tests/context/test_turn_stable_source.py
   - tests/delivery/test_create_missing_parents.py
   - tests/product_config/test_patch_missing_parents.py
   - tests/product_config/test_patch_newlines.py
@@ -100,6 +102,8 @@ supersedes: []
 6. 无工具调用的回复：**先复核会话基线里的改动是否还在**，再由**完成守卫按回复形态与状态判定**是否结束。
 
 所有宿主说明都是持久的用户消息Item，经`host_notice_events`发布，请求因此始终是“上一次请求加新内容”。
+系统指令在一个Turn内也保持不变：工作区一级目录概览每个Turn只在首个模型步骤观察一次（ADR 0147）；
+开发集60个试次里系统指令在Turn中途变化26次，全部来自这段概览，每次都让服务端重算整段历史。
 
 ## 5. 接口设计
 

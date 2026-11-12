@@ -17,6 +17,7 @@ from harnessix.context.sources import (
     SourcedContextEngine,
     WorkspaceContextSource,
 )
+from harnessix.context.turn_stable_source import TurnStableContextSource
 from harnessix.product_config.context_budget import product_context_budget
 from harnessix.product_config.contracts import ContextCompaction
 
@@ -584,7 +585,9 @@ def build_product_agent_context(
             engine,
             (
                 ProjectInstructionSource(workspace),
-                WorkspaceContextSource(workspace),
+                # 概览在Turn内固定：根目录条目变化不应改变系统指令、使整段历史的前缀缓存失效
+                # （ADR 0147）。
+                TurnStableContextSource(WorkspaceContextSource(workspace)),
                 # 不传入进程环境，不采集任何自定义环境变量或Secret引用。
                 EnvironmentContextSource(workspace),
             ),

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 16
-code_revision: 2d8f5c92c7d53aec563bd62017fafa10d688773d
+version: 17
+code_revision: a33e5ace26b50ccd6aa24fada64fefc07764dbc1
 owners:
   - core
 modules:
@@ -246,7 +246,7 @@ flowchart LR
 | `ContextEngine` | 固定/动态Fragment排序、预算、渲染、Inspection | 纯合同 | 文件、环境、Provider或Session I/O | 构造后值语义，可复用 |
 | `SourcedContextEngine` | 刷新1～16个Source、组合一致性、委托纯Engine | Source、CancelToken | 接受Runtime/User动态Kind；缓存旧观测跨Step | 每次prepare重新观测 |
 | `ProjectInstructionSource` | 根到工作目录发现首个`AGENTS.override.md`或`AGENTS.md` | 受控Workspace读 | 跟随不安全路径、跨Root、读取无限文件 | 每Step异步观测 |
-| `WorkspaceContextSource` | 根和工作目录一级有界布局 | List Tool | 全仓递归扫描 | 每Step双读目录Revision |
+| `WorkspaceContextSource` | 根和工作目录一级有界布局 | List Tool | 全仓递归扫描 | 每次观察双读目录Revision；产品装配经`TurnStableContextSource`每个Turn只观察一次（ADR 0147） |
 | `GitContextSource` | 固定Git只读Runtime的有界状态 | GitReadRuntime | 任意Git命令或泄漏Denied Path | 前后绑定校验 |
 | `EnvironmentContextSource` | 显式非Secret Allowlist、OS/Platform/工作目录 | 传入Mapping | 枚举`os.environ`、允许Secret名称 | 每Step读取Allowlist值 |
 | Tool Result View | 冻结Inline/Artifact Reference展示及Inspection | Session Item、Artifact合同 | 修改原结果、事后缩小旧历史、替换Patch/Process未知效果 | 每Step准备，决定持久复用 |
@@ -622,6 +622,7 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 17 | `a33e5ace` 增量 | 2026-11-12 | 新增`TurnStableContextSource`：产品装配里工作区概览每个Turn只观察一次，系统指令不在Turn中途变化（ADR 0147） |
 | 16 | `2d8f5c92` 增量 | 2026-11-12 | 主动压缩的摘要输出不成立且用量完整时跳过本次压缩，不终止Turn（ADR 0109第4版） |
 | 15 | `d5ad78a8` 增量 | 2026-11-11 | `ContextBuildInput.input_limit_tokens`只放宽本步输入上限；新增`CompactionTokenWindow`（ADR 0132） |
 | 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
