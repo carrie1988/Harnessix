@@ -5,6 +5,7 @@ import ctypes
 import os
 import subprocess
 import sys
+import time
 from ctypes import wintypes
 from pathlib import Path
 
@@ -114,12 +115,33 @@ def _is_running(pid: int) -> bool:
         kernel32.CloseHandle(handle)
 
 
+def _describe_process(pid: int) -> str:
+    """占用该PID的进程的映像路径与创建时间；PID会被复用，超时时据此分辨是不是原进程。"""
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return f"pid={pid} 无法打开"
+    try:
+        image = ctypes.create_unicode_buffer(1024)
+        size = wintypes.DWORD(len(image))
+        kernel32.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(size))
+        times = [wintypes.FILETIME() for _ in range(4)]
+        kernel32.GetProcessTimes(handle, *(ctypes.byref(item) for item in times))
+        created = (times[0].dwHighDateTime << 32 | times[0].dwLowDateTime) / 1e7 - 11_644_473_600
+        return f"pid={pid} image={image.value} created={created:.3f} now={time.time():.3f}"
+    finally:
+        kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+        kernel32.CloseHandle(handle)
+
+
 async def _wait_stopped(pid: int) -> None:
     for _ in range(250):
         if not _is_running(pid):
             return
         await asyncio.sleep(0.02)
-    raise TimeoutError("Windows测试进程仍在运行")
+    raise TimeoutError(f"Windows测试进程仍在运行：{_describe_process(pid)}")
 
 
 async def test_windows_job_owner_pipe_unicode_secret_and_exact_environment(tmp_path: Path) -> None:
