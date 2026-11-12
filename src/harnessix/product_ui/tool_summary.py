@@ -71,6 +71,9 @@ def tool_result_text(content: PublicToolResultContent) -> str:
     if content.error is None:
         return f"未完成（{content.outcome}）"
     code = content.error.code
+    if code == "process_cancelled":
+        # 用户取消了正在运行的命令：这是他要的结果，不是需要解释的失败。
+        return "已取消"
     if code in _ERRORS:
         return f"失败：{_ERRORS[code]}"
     first = content.error.message.split("。", 1)[0]

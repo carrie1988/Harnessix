@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: 7357576af93ad9089dd54642020bb6645f38f500
 owners:
   - core
@@ -21,6 +21,7 @@ related_tests:
   - tests/product_ui/test_activity_indicator.py
   - tests/product_ui/test_configure_vendors.py
   - tests/product_ui/test_data_cli.py
+  - tests/product_ui/test_tool_summary.py
   - tests/governance/test_readability_policy.py
 supersedes: []
 ---
@@ -171,8 +172,7 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
 - 限制：显式开关只列入已核对的型号前缀。百炼新增可关闭思考的型号时需要补充；`qwen3.8-max`依据官方文档，
   `qwen3.8-flash`另有Beta第二轮的实际运行佐证（关闭后思考Token为0）。
 - 限制：HX-05里“另有中断的请求可能已计费”的提示没有改。连接尚未建立的失败不会计费，但界面收到的终态错误码无法把它与流中途断开区分开，保守提示仍然保留。
-- 风险：真实终端界面下的端到端复验（命令执行期间补充、取消长时间运行的命令）尚未在三个平台执行，随下一次
-  发布前的正式测试完成。
+- 限制：真实终端界面下的端到端复验只在macOS上执行（见第13节）；Linux与Windows随发布前的三平台正式测试覆盖。
 
 ## 13. 验证
 
@@ -187,6 +187,16 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
   百炼qwen3.8-flash的`off`与`every_step`都换算为请求里的显式`enable_thinking`；未写`--thinking`时仍不发送；
   无开关可用时拒绝且不写文件；`--thinking-protocol none`加`off`照常接受。
 - 用测试者的原命令在真实命令行入口复验：生成的配置含`dashscope_enable_thinking`与`thinking: off`。
+- 真实终端界面复验（2026-11-11，macOS，tmux 160×45，百炼`qwen3.8-flash`，命令在沙箱外逐条审批）。同一套脚本先后
+  驱动未修复的发布分支（`b8aae1f0`）与本分支：
+  - 命令`sleep 30 && echo …`执行期间（补充窗口显示`executing_tools`）按Ctrl+S发送补充：未修复时本轮“未完成”
+    并显示`sequence_conflict`；修复后本轮“已完成”，最终回答包含补充要求的内容。
+  - 命令`sleep 120`执行期间按Ctrl+X：未修复时“已中断”并显示“操作结果无法确认”与
+    `trusted_action_output_failed`；修复后“已取消”，对话记录里该命令显示“已取消”。
+  - 三个文件各30行的新增修改：未修复时PgDn不能移动差异；修复后审批窗口打开时显示文件清单与第一个文件的开头，
+    PgDn、PgUp可以来回翻看。
+  - “已运行”秒数：未修复时三次运行都在批准后回到2秒；修复后单调递增。
+  - 关闭思考的配置下，三次请求的输出为23～145 Token，没有思考内容。
 - 界面类五项各有一条先失败后通过的测试：128×36终端下三个文件的长差异打开时位于开头并可翻页（[`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)）；同一轮跨越审批后继续计时（[`test_activity_indicator.py`](../../tests/product_ui/test_activity_indicator.py)）；755目录的报错含目录、权限与`chmod`命令（[`test_configure_vendors.py`](../../tests/product_ui/test_configure_vendors.py)）；诊断按指定状态目录读取并在空结果时提示（[`test_data_cli.py`](../../tests/product_ui/test_data_cli.py)）；连接失败一行含继续办法（[`test_rendering.py`](../../tests/product_ui/test_rendering.py)）。整个`tests/product_ui`通过。
 - 回归：`tests/artifacts`、`tests/trusted_actions`、`tests/agent`、`tests/delivery`与整个`tests/product_config`
   在基线`dad55d32`与修复后的失败集合逐项相同，没有新增失败。剩余失败均为本机环境问题（Apple Git 2.24不支持
@@ -206,6 +216,7 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
 | 运行指示 | [`activity_indicator.py`](../../src/harnessix/product_ui/activity_indicator.py) |
 | 数据命令 | [`data_cli.py`](../../src/harnessix/product_ui/data_cli.py) |
 | 失败文案 | [`rendering.py`](../../src/harnessix/product_ui/rendering.py) |
+| 工具结果文案 | [`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py) |
 | 用户介入回归 | [`test_action_user_interruptions.py`](../../tests/product_config/test_action_user_interruptions.py) |
 | 思考配置回归 | [`test_thinking_config.py`](../../tests/product_config/test_thinking_config.py) |
 | 模块设计 | [Artifact](../modules/artifacts.md)、[产品配置](../modules/product-config.md)、[产品界面](../modules/product-ui.md) |

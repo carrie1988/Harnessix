@@ -77,6 +77,20 @@ def test_results_hide_model_facing_hints() -> None:
     assert tool_result_text(passed) == "完成（退出码 0）"
 
 
+def test_a_command_the_user_cancelled_reads_as_cancelled_not_as_a_failure() -> None:
+    cancelled = PublicToolResultContent(
+        call_id=uuid4(),
+        outcome="failed",
+        error=PublicFailure(
+            code="process_cancelled",
+            message="Trusted Action未成功；详细事实请查询审计记录",
+            retryable=False,
+            category="tool",
+        ),
+    )
+    assert tool_result_text(cancelled) == "已取消"
+
+
 def _approval(actor: str | None, outcome: str = "approved", reason: str | None = None):
     decision = (
         None
