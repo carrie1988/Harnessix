@@ -71,12 +71,17 @@ async def collect(parts: list[bytes], **limits: Any) -> tuple[list[Any], WireStr
     "arguments",
     ["[]", "null", '"text"', '{"a":1,"a":2}', '{"a":NaN}', '{"a":1e999}', '{"a":Infinity}'],
 )
-async def test_invalid_arguments_never_release_calls(arguments: str) -> None:
+async def test_invalid_arguments_reject_only_that_call(arguments: str) -> None:
+    """参数不是JSON对象：这一次调用被拒绝（无名称、参数、执行能力），响应本身正常结束。
+
+    模型在原预算内重发，不再让一次畸形输出毁掉整轮（ADR 0109第5版，所有端点相同）。
+    """
     events, wire = await collect(tool_frames(arguments))
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(
-        isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
-    )
+    rejected = [e for e in events if isinstance(e, ToolCallRejected)]
+    assert [e.reason for e in rejected] == ["invalid_arguments_json"]
+    assert rejected[0].argument_chars == len(arguments)
+    assert not any(isinstance(e, ToolCallCompleted) for e in events)
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
     assert wire.closed
 
 
@@ -627,12 +632,10 @@ async def test_kernel_tool_loop_pairing_usage_and_replay(tmp_path: Path) -> None
     assert CANARY not in "".join(event.model_dump_json() for event in events)
 
 
-@pytest.mark.parametrize("finish", ["length", "content_filter"])
-async def test_failed_finish_records_known_usage_without_executing_tools(
-    tmp_path: Path, finish: str
-) -> None:
+async def test_failed_finish_records_known_usage_without_executing_tools(tmp_path: Path) -> None:
+    # 内容过滤仍是失败终态；输出上限截断工具调用的情况见下一个用例（只拒绝被截断的调用）。
     parts = tool_frames("{")
-    parts[1] = frame(chunk(finish=finish))
+    parts[1] = frame(chunk(finish="content_filter"))
     wire = WireStream(parts)
     tools = RecordingTools()
     async with OpenAIChatProvider(
@@ -646,15 +649,17 @@ async def test_failed_finish_records_known_usage_without_executing_tools(
     assert tools.calls == []
 
 
-async def test_truncated_tool_call_is_rejected_and_turn_continues_with_repair(
-    tmp_path: Path,
+@pytest.mark.parametrize("repair", [False, True])
+async def test_truncated_tool_call_is_rejected_and_turn_continues(
+    tmp_path: Path, repair: bool
 ) -> None:
+    """输出上限截断了工具调用：所有端点都只拒绝这一次调用，不取决于是否开启参数修复。"""
     truncated = tool_frames('{"path": "src/very_long')
     truncated[1] = frame(chunk(finish="length"))
     wires = [WireStream(truncated), WireStream(text_frames())]
     tools = RecordingTools()
     async with OpenAIChatProvider(
-        config(repair_tool_arguments=True),
+        config(repair_tool_arguments=repair),
         transport=httpx.MockTransport(lambda _: response(wires.pop(0))),
     ) as provider:
         async with AgentRuntime(SQLiteSessionStore(tmp_path / "s.db"), provider, tools) as runtime:

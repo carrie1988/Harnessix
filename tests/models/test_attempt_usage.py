@@ -89,30 +89,22 @@ async def test_missing_counters_remain_unknown(adapter, tmp_path: Path) -> None:
         assert observation.completeness == "partial" and turn.usage.output_tokens == 2
 
 
-@pytest.mark.parametrize(
-    "point", ["before_response", "after_start", "after_usage", "bad_arguments", "truncated"]
-)
+# 工具参数不是JSON对象不再是失败点：只拒绝那一次调用（ADR 0109第5版），见test_tool_rejection.py。
+@pytest.mark.parametrize("point", ["before_response", "after_start", "after_usage", "truncated"])
 async def test_failure_preserves_last_valid_observation(adapter, tmp_path: Path, point) -> None:
     parts = adapter.wire.text_frames()
-    failing = point not in {"bad_arguments", "truncated"}
+    failing = point != "truncated"
     if point == "before_response":
         parts = []
     elif point == "after_start":
         parts = parts[:1]
-    elif point == "bad_arguments":
-        parts = adapter.wire.tool_frames("{")
     elif point == "truncated" or adapter.kind == "openai":
         parts = parts[:-1]
     turn, _, tools = await execute(adapter, tmp_path, parts, fail=failing)
     attempt = turn.model_attempts[0]
     assert turn.status == attempt.status == "failed"
     diagnostic = (
-        {
-            "bad_arguments": "tool_arguments_invalid",
-            "truncated": "completion_incomplete",
-        }.get(point)
-        if adapter.kind == "openai"
-        else None
+        "completion_incomplete" if adapter.kind == "openai" and point == "truncated" else None
     )
     if adapter.kind == "openai" and failing:
         assert attempt.error.message == (

@@ -79,12 +79,13 @@ def repack(value: dict[str, Any]) -> bytes:
 @pytest.mark.parametrize(
     "arguments", ["{", "[]", "null", '{"a":1,"a":2}', '{"a":NaN}', '{"a":1e999}', '{"a":Infinity}']
 )
-async def test_bad_tool_json_never_releases_call(arguments: str) -> None:
+async def test_bad_tool_json_rejects_only_that_call(arguments: str) -> None:
+    """参数不是JSON对象：这一次调用被拒绝，响应正常结束，模型在原预算内重发（ADR 0109第5版）。"""
     events, wire = await collect(tool_frames(arguments))
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(
-        isinstance(e, ToolCallCompleted | ToolCallRejected | ResponseCompleted) for e in events
-    )
+    rejected = [e for e in events if isinstance(e, ToolCallRejected)]
+    assert [e.reason for e in rejected] == ["invalid_arguments_json"]
+    assert not any(isinstance(e, ToolCallCompleted) for e in events)
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
     assert wire.closed
 
 

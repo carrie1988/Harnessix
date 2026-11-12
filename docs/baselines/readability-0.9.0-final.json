@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 619,
-    "physical_lines": 130253,
-    "logical_lines": 113790,
+    "physical_lines": 130259,
+    "logical_lines": 113786,
     "documented_modules": 619,
     "classes": 1209,
     "documented_classes": 620,
-    "functions": 5121,
-    "documented_functions": 1698,
+    "functions": 5124,
+    "documented_functions": 1701,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1039,7 +1039,7 @@
       "qualname": "AnthropicStream",
       "kind": "class",
       "line": 67,
-      "lines": 219,
+      "lines": 214,
       "documented": false
     },
     {
@@ -1052,17 +1052,6 @@
       "lines": 89,
       "documented": false,
       "decision_complexity": 47
-    },
-    {
-      "id": "harnessix.models._anthropic_stream:AnthropicStream.finish",
-      "module": "harnessix.models._anthropic_stream",
-      "path": "src/harnessix/models/_anthropic_stream.py",
-      "qualname": "AnthropicStream.finish",
-      "kind": "function",
-      "line": 234,
-      "lines": 52,
-      "documented": false,
-      "decision_complexity": 22
     },
     {
       "id": "harnessix.models._bounded_http:BoundedStream._iterate",
@@ -1092,8 +1081,8 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream",
       "kind": "class",
-      "line": 168,
-      "lines": 163,
+      "line": 171,
+      "lines": 161,
       "documented": false
     },
     {
@@ -1102,7 +1091,7 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream.feed",
       "kind": "function",
-      "line": 197,
+      "line": 200,
       "lines": 75,
       "documented": false,
       "decision_complexity": 39

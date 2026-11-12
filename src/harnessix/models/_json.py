@@ -33,6 +33,18 @@ def strict_json(value: str | bytes, *, control_characters: bool = False) -> Json
     return result
 
 
+def json_object_or_none(value: str, *, repair: bool = False) -> dict[str, JsonValue] | None:
+    """工具参数须是JSON对象；不是时返回None，调用方只拒绝这一次调用（无效果）。
+
+    一次畸形输出不使整个响应失败，模型在原预算内重发；repair只决定是否先尝试保意图的修复。
+    """
+    try:
+        result = strict_json(value)
+    except ValueError:
+        return repaired_json_object(value) if repair else None
+    return result if isinstance(result, dict) else None
+
+
 _JSON_ESCAPES = frozenset('"\\/bfnrtu')
 
 

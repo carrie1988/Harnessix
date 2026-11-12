@@ -23,6 +23,7 @@ from harnessix.models.contracts import (
     TextCompleted,
     TextDelta,
     ToolCallCompleted,
+    ToolCallRejected,
 )
 from tests.agent.helpers import RecordingTools
 
@@ -128,7 +129,25 @@ class ProviderContract:
             assert events[-1].finish_reason == "tool_calls"
             assert probe.closed()
 
-    @pytest.mark.parametrize("scenario", ["bad_json", "truncated", "duplicate_finish"])
+    async def test_malformed_tool_arguments_reject_only_that_call(
+        self, provider_factory: ProviderFactory
+    ) -> None:
+        """参数不是JSON对象：只拒绝这一次调用（不带名称与参数），响应正常结束，不重试、不失败。"""
+        async with provider_factory("bad_json") as probe:
+            events = [
+                event
+                async for event in probe.provider.stream(
+                    model_request(with_tools=True), CancelToken()
+                )
+            ]
+            rejected = [e for e in events if isinstance(e, ToolCallRejected)]
+            assert [e.reason for e in rejected] == ["invalid_arguments_json"]
+            assert not any(isinstance(e, ToolCallCompleted) for e in events)
+            assert isinstance(events[-1], ResponseCompleted)
+            assert events[-1].finish_reason == "tool_calls"
+            assert probe.closed() and probe.attempts() == 1
+
+    @pytest.mark.parametrize("scenario", ["truncated", "duplicate_finish"])
     async def test_invalid_stream_never_releases_tools(
         self, provider_factory: ProviderFactory, scenario: str
     ) -> None:

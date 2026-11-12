@@ -79,11 +79,42 @@ async def test_batch_capability_does_not_choose_execution_concurrency(tmp_path, 
     )
 
 
-@pytest.mark.parametrize("failure", ["disabled", "invalid_last", "missing_done", "call_limit"])
+async def test_batch_with_one_malformed_member_runs_the_valid_call_only(tmp_path):
+    """一组两个调用，第二个的参数被截断：第一个照常执行，第二个只得到固定拒绝，模型重发后完成。
+
+    ADR 0109第5版：参数不是JSON对象只作废那一次调用，不再让整组和整轮失败。
+    """
+    wires = [WireStream(batch_frames(invalid_last=True)), WireStream(text_frames())]
+    sent = 0
+
+    def handle(request):
+        nonlocal sent
+        sent += 1
+        return response(wires[sent - 1])
+
+    tools = RecordingTools(parallel=True)
+    async with OpenAIChatProvider(
+        config(max_attempts=1, capabilities=ChatCapabilities(parallel_tool_calls=True)),
+        transport=httpx.MockTransport(handle),
+    ) as provider:
+        async with AgentRuntime(
+            SQLiteSessionStore(tmp_path / "session.sqlite"), provider, tools, max_parallel_tools=1
+        ) as runtime:
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(
+                thread.thread_id, "一个调用被截断", request_id="partial-batch"
+            )
+    assert turn.status == "completed" and sent == 2 and all(wire.closed for wire in wires)
+    assert [c.arguments for c in tools.calls] == [{"value": 1}]
+    results = [i.content for i in turn.items if isinstance(i.content, ToolResultContent)]
+    assert sorted(r.outcome for r in results) == ["failed", "succeeded"]
+    (rejected,) = [r for r in results if r.outcome == "failed"]
+    assert rejected.error.code == "tool_arguments_invalid_json"
+
+
+@pytest.mark.parametrize("failure", ["disabled", "missing_done", "call_limit"])
 async def test_batch_configuration_preserves_atomic_validation(tmp_path, failure):
-    wire = WireStream(
-        batch_frames(invalid_last=failure == "invalid_last", missing_done=failure == "missing_done")
-    )
+    wire = WireStream(batch_frames(missing_done=failure == "missing_done"))
     sent = 0
 
     def handle(request):

@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 3
-code_revision: 01e5e888e49e7a39fc1ac191b690f5d3b84e41c5
+version: 5
+code_revision: cf52cadc3ab672d0bef951d2734588d5ed42422d
 owners: [core]
 modules: [agent, models, context, tools, product_config]
 related_adrs:
@@ -18,6 +18,8 @@ related_tests:
   - tests/app_server/test_rejection_sdk_chain.py
   - tests/protocol/test_rejection_protocol_v2.py
   - tests/agent/test_truncation_recovery.py
+  - tests/models/test_tool_rejection.py
+  - tests/contracts/provider.py
 supersedes: []
 ---
 
@@ -107,3 +109,30 @@ week-1本地模型holdout中期分析（Verified A2x4前41次尝试）显示：7
 截断这一事实由补发Item本身留下审计记录。实现见`harnessix.agent.truncation_recovery`，
 测试见`tests/agent/test_truncation_recovery.py`。
 
+## 5. v5修订（2026-11-12）：畸形工具参数对所有端点都只拒绝该次调用
+
+第4版修订由round-2分支提出，随该分支合入；本修订与它相互独立。
+
+**背景。** 第2节第1条只对开启`repair_tool_arguments`的端点（回环自托管预设）生效。云端端点收到参数不是合法JSON
+对象的调用时，整个响应仍以`chat_protocol/v1:tool_arguments_invalid`失败，Turn结束且不可重试。
+0.10.0b15～b17三次正式发布测试中，DeepSeek两次偶发这种输出（Windows与Linux各一次），端到端任务整轮失败，
+重跑即通过：一次坏输出作废整个任务，与本ADR要解决的问题相同，只是发生在云端。
+
+**决策（用户2026-11-12批准，方案B）。**
+- 所有端点、两种协议（OpenAI兼容与Anthropic）统一：参数不是合法JSON对象的调用只形成`invalid_arguments_json`拒绝，
+  同一响应里的其他调用照常提交，模型在原预算内重发。
+- `repair_tool_arguments`只决定严格解析失败时是否先尝试保意图的修复，不再决定“失败整轮还是只拒绝一次”。
+- OpenAI兼容端点以`length`结束且已有流式工具调用时，所有端点都按同一规则形成调用组；截断处调用结构不完整时
+  仍以`max_output_tokens`终态结束（原先在未开启修复的端点上同样是这个终态）。
+- 结构性错误（调用ID缺失或重复、名称为空、类型不对、分片不连续、终态与调用不匹配）无法归到单个调用，
+  仍使整个响应失败。
+
+**没有选的方案。** A：保持现状，由用户重试——坏输出是偶发的，重试一般就过，但每次都作废已做的工作。
+C：只对DeepSeek等点名的服务开启——产品不绑定具体模型或厂商，同样的输出在任何服务上都可能出现。
+
+**后果。**
+- 不新增事件、事件版本、拒绝原因或执行路径：拒绝的调用从不执行，审计中保留参数字符数。
+- 原先钉住“非法参数使整个响应失败、不释放任何调用”的测试改写为新规则；`ChatProtocolReason`删除
+  `tool_arguments_invalid`与`tool_arguments_not_object`两个不再产生的原因。
+- 模型反复给出坏参数时不再立即失败，而是消耗步数预算直到步数上限；重复失败的熔断另行处理（Beta反馈第2批）。
+- 未覆盖：Anthropic端点以`max_tokens`结束且带半截工具调用时仍按原规则失败。

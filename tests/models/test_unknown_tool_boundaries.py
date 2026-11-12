@@ -54,9 +54,9 @@ PRIVATE_VALUE = "PRIVATE_UNKNOWN_ARGUMENT_NEVER_PUBLISHED"
     ],
 )
 def test_unknown_name_diagnostic_alone_does_not_prove_legal_structure(arguments, kind):
-    """完整结构产生独立拒绝；非法类型、JSON及非对象仍保留原固定诊断。"""
+    """未注册的调用只产生独立拒绝，参数是否为JSON对象不影响它；非法类型仍保留原固定诊断。"""
     parts = CallParts(call_id="original-call", name=PRIVATE_NAME, arguments=arguments, type=kind)
-    if arguments == '{"value":1}' and kind == "function":
+    if kind == "function":
         events = _complete_calls({0: parts}, {tool_alias("test.read"): "test.read"})
         assert events == [ToolCallRejected(call_id="original-call", argument_chars=len(arguments))]
         assert PRIVATE_NAME not in repr(events) and "arguments" not in events[0].model_dump()
@@ -64,14 +64,7 @@ def test_unknown_name_diagnostic_alone_does_not_prove_legal_structure(arguments,
         return
     with pytest.raises(ChatProtocolError) as caught:
         _complete_calls({0: parts}, {tool_alias("test.read"): "test.read"})
-    expected = (
-        ChatProtocolReason.TOOL_TYPE_INVALID
-        if kind != "function"
-        else ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT
-        if arguments in {"[]", "null"}
-        else ChatProtocolReason.TOOL_ARGUMENTS_INVALID
-    )
-    assert caught.value.reason is expected
+    assert caught.value.reason is ChatProtocolReason.TOOL_TYPE_INVALID
     assert str(caught.value) == "Chat终态不符合协议"
     assert PRIVATE_NAME not in str(caught.value)
 

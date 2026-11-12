@@ -14,7 +14,7 @@ from harnessix.agent.models import Usage
 from harnessix.agent.usage import ModelUsageObserved, UsageObservation
 from harnessix.models._billing import merge_billing
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
-from harnessix.models._json import repaired_json_object, strict_json
+from harnessix.models._json import json_object_or_none, strict_json
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -58,23 +58,9 @@ def _complete_calls(
         if call.type != "function":
             raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
         ids.add(call.call_id)
-        try:
-            arguments: JsonValue = strict_json(call.arguments)
-        except ValueError:
-            if not repair_arguments:
-                raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_INVALID) from None
-            # 修复后仍非JSON对象：只拒绝本次调用（无效果），模型在原预算内重发，不使整Turn失败。
-            arguments = repaired_json_object(call.arguments)
-        if not isinstance(arguments, dict) and not repair_arguments:
-            raise ChatProtocolError(ChatProtocolReason.TOOL_ARGUMENTS_NOT_OBJECT)
-        validated.append(
-            (
-                call.call_id,
-                call.name,
-                arguments if isinstance(arguments, dict) else None,
-                len(call.arguments),
-            )
-        )
+        # 参数不是JSON对象：只拒绝这一次调用（无效果），不使整Turn失败；所有端点相同。
+        arguments = json_object_or_none(call.arguments, repair=repair_arguments)
+        validated.append((call.call_id, call.name, arguments, len(call.arguments)))
     return [
         _proposal(call_id, name, arguments, chars, names)
         for call_id, name, arguments, chars in validated
@@ -163,6 +149,23 @@ def _complete_usage_observation(
         )
     except ValidationError:
         raise ChatProtocolError(ChatProtocolReason.USAGE_DETAILS_INVALID) from None
+
+
+def _at_output_limit(
+    finish: str, calls: dict[int, CallParts], names: dict[str, str], repair_arguments: bool
+) -> tuple[str, list[ToolCallCompleted | ToolCallRejected]]:
+    """输出在工具调用中途用满上限时，返回改记的终态与已形成的调用组；其余情况返回原终态与空组。
+
+    截断的调用按非法参数拒绝（不执行），完整调用照常形成，终态改记tool_calls：运行时以目录拒绝
+    反馈并在原预算内重入。截断处连调用的结构都不完整时，没有可逐个拒绝的调用，仍按输出上限结束。
+    没有工具调用的纯文本截断不在这里处理，交给运行时（truncation_recovery）。
+    """
+    if finish != "length" or not calls:
+        return finish, []
+    try:
+        return "tool_calls", _complete_calls(calls, names, repair_arguments=repair_arguments)
+    except ChatProtocolError:
+        return "length", []
 
 
 class ChatStream:
@@ -306,10 +309,8 @@ class ChatStream:
         if finish == "stop" and self._calls and self._request.tool_choice == "required":
             # 部分OpenAI兼容端点在遵守required并返回原生调用后仍发送stop。
             finish = "tool_calls"
-        if finish == "length" and self._calls and self._repair_arguments:
-            # 输出在工具调用中途用满上限：截断的调用按非法参数拒绝（不执行），完整调用照常形成，
-            # 运行时以目录拒绝反馈并在原预算内重入；纯文本截断交给运行时（truncation_recovery）。
-            finish = "tool_calls"
+        finish, cut = _at_output_limit(finish, self._calls, self._names, self._repair_arguments)
+        events.extend(cut)
         reasons: dict[str, ResponseCompleted] = {
             "stop": ResponseCompleted(usage=self._usage),
             "tool_calls": ResponseCompleted(finish_reason="tool_calls", usage=self._usage),
@@ -318,7 +319,7 @@ class ChatStream:
         }
         if finish not in reasons:
             raise ChatProtocolError(ChatProtocolReason.FINISH_REASON_UNSUPPORTED)
-        if finish in {"stop", "tool_calls"}:
+        if finish in {"stop", "tool_calls"} and not cut:
             if bool(self._calls) != (finish == "tool_calls"):
                 raise ChatProtocolError(ChatProtocolReason.FINISH_TOOL_MISMATCH)
             if not self._calls and not self._text:

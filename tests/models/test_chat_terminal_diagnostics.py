@@ -18,6 +18,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.tool_rejections import rejection_result
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason, diagnostic_failure
 from harnessix.models._provider_io import finish_attempt
@@ -36,6 +37,13 @@ from tests.models.test_openai_chat import credentials as credentials
 from tests.models.wire import WireStream, call, chunk, frame, response, text_frames, tool_frames
 
 IDENTITY_CANARY = "PRIVATE_TOOL_IDENTITY_NEVER_IN_DIAGNOSTIC"
+# 参数不是JSON对象：不再是协议失败，只拒绝那一次调用（ADR 0109第5版）。
+MALFORMED_ARGUMENTS = {
+    "bad_json": "{",
+    "duplicate_key": '{"a":1,"a":2}',
+    "non_finite": '{"a":NaN}',
+    "not_object": "[]",
+}
 
 
 def malformed_frames(scenario):
@@ -61,15 +69,8 @@ def malformed_frames(scenario):
         second["function"]["name"] = IDENTITY_CANARY
         parts[0] = frame(chunk({"tool_calls": [item, second]}))
         return parts
-    elif scenario in {"bad_json", "duplicate_key", "non_finite", "not_object"}:
-        return tool_frames(
-            {
-                "bad_json": "{",
-                "duplicate_key": '{"a":1,"a":2}',
-                "non_finite": '{"a":NaN}',
-                "not_object": "[]",
-            }[scenario]
-        )
+    elif scenario in MALFORMED_ARGUMENTS:
+        return tool_frames(MALFORMED_ARGUMENTS[scenario])
     elif scenario == "empty_response":
         return [frame(chunk()), frame(chunk(finish="stop")), frame(chunk(usage=True)), parts[-1]]
     elif scenario == "no_usage":
@@ -96,10 +97,10 @@ SCENARIOS = [
     ("missing_type", "tool_type_invalid"),
     ("index_gap", "tool_index_gap"),
     ("second_tool_invalid", "tool_name_unknown"),
-    ("bad_json", "tool_arguments_invalid"),
-    ("duplicate_key", "tool_arguments_invalid"),
-    ("non_finite", "tool_arguments_invalid"),
-    ("not_object", "tool_arguments_not_object"),
+    ("bad_json", None),
+    ("duplicate_key", None),
+    ("non_finite", None),
+    ("not_object", None),
     ("empty_response", "semantic_output_missing"),
     ("no_usage", "completion_incomplete"),
     ("no_done", "completion_incomplete"),
@@ -162,16 +163,25 @@ async def test_sdk_terminal_diagnostic_preserves_failure_and_releases_no_tools(s
     ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
     assert len(starts) == len(ends) == 1
     assert ends[0].attempt_id == starts[0].attempt_id
-    if scenario in {"unknown_tool", "second_tool_invalid"}:
+    if scenario in {"unknown_tool", "second_tool_invalid", *MALFORMED_ARGUMENTS}:
         expected = []
         if scenario == "second_tool_invalid":
             expected.append(ToolCallCompleted(call_id=call()["id"], tool="test.read", arguments={}))
-        expected.append(
-            ToolCallRejected(
-                call_id=call(index=1 if scenario == "second_tool_invalid" else 0)["id"],
-                argument_chars=2,
+        if scenario in MALFORMED_ARGUMENTS:
+            expected.append(
+                ToolCallRejected(
+                    call_id=call()["id"],
+                    reason="invalid_arguments_json",
+                    argument_chars=len(MALFORMED_ARGUMENTS[scenario]),
+                )
             )
-        )
+        else:
+            expected.append(
+                ToolCallRejected(
+                    call_id=call(index=1 if scenario == "second_tool_invalid" else 0)["id"],
+                    argument_chars=2,
+                )
+            )
         assert [
             e for e in events if isinstance(e, ToolCallCompleted | ToolCallRejected)
         ] == expected
@@ -220,7 +230,12 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
             async with AgentRuntime(store, provider, tools) as runtime:
                 thread = await runtime.create_thread(str(tmp_path))
                 turn = await runtime.run_turn(thread.thread_id, "协议失败诊断", request_id="r")
-    if scenario in {"unknown_tool", "second_tool_invalid"}:
+    if scenario in {"unknown_tool", "second_tool_invalid", "bad_json"}:
+        reason, failure = (
+            ("invalid_arguments_json", rejection_result(uuid4(), "invalid_arguments_json").error)
+            if scenario == "bad_json"
+            else ("unregistered_tool", rejection_result(uuid4()).error)
+        )
         assert turn.status == "completed" and turn.error is None and turn.model_steps == 2
         assert turn.usage == Usage(input_tokens=20, output_tokens=4)
         assert len(turn.model_attempts) == 2 and all(
@@ -232,7 +247,7 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
             for item in turn.items
             if isinstance(item.content, ToolCallRejectionContent)
         ]
-        assert len(rejected) == 1 and rejected[0].reason == "unregistered_tool"
+        assert len(rejected) == 1 and rejected[0].reason == reason
         assert rejected[0].model_step == 1
         rejected_results = [
             item.content
@@ -243,12 +258,7 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
         assert len(rejected_results) == 1
         result = rejected_results[0]
         assert result.outcome == "failed" and result.output is None
-        assert result.error.model_dump() == {
-            "code": "unknown_tool",
-            "message": "工具未注册",
-            "retryable": False,
-            "category": "tool",
-        }
+        assert result.error == failure and failure.category == "tool" and not failure.retryable
         assert all(
             getattr(result, field) is None
             for field in (
@@ -268,7 +278,6 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
         assert turn.usage == Usage(input_tokens=10, output_tokens=2)
         assert len(turn.model_attempts) == 1 and turn.model_attempts[0].status == "failed"
         expected_reason = {
-            "bad_json": "tool_arguments_invalid",
             "missing_name": "tool_name_unknown",
             "no_done": "completion_incomplete",
         }[scenario]

@@ -61,7 +61,6 @@ async def test_empty_name_is_no_update_not_a_guessed_tool(deferred, registered):
         "name_changed",
         "name_too_long",
         "invalid_type",
-        "invalid_arguments",
         "missing_done",
         "missing_usage",
         "second_call_missing_name",
@@ -85,8 +84,6 @@ async def test_empty_name_preserves_whole_group_validation_and_no_retry(violatio
         update = {"index": 0, "function": {"name": "", "arguments": "}"}}
         if violation == "invalid_type":
             update["type"] = ""
-        elif violation == "invalid_arguments":
-            update["function"]["arguments"] = "bad-json}"
         else:
             update["function"]["name"] = "changed" if violation == "name_changed" else "X" * 257
         parts[1] = frame(chunk({"tool_calls": [update]}))
@@ -123,3 +120,17 @@ async def test_empty_name_keeps_actual_runtime_execution_and_replay(tmp_path):
     restored = await reopened.get_thread(thread.thread_id)
     assert restored.turns[-1] == turn
     assert replay(await reopened.events(thread.thread_id)) == restored
+
+
+async def test_empty_name_with_malformed_arguments_rejects_only_that_call():
+    """后续分片名称为空是合法续传；参数最终不是JSON对象时只拒绝这一次调用（ADR 0109第5版）。"""
+    parts = empty_name_frames()
+    update = {"index": 0, "function": {"name": "", "arguments": "bad-json}"}}
+    parts[1] = frame(chunk({"tool_calls": [update]}))
+    events, wire = await collect(parts, max_attempts=3)
+    rejected = [event for event in events if isinstance(event, ToolCallRejected)]
+    assert [event.reason for event in rejected] == ["invalid_arguments_json"]
+    assert not any(isinstance(event, ToolCallCompleted) for event in events)
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
+    assert sum(isinstance(event, ModelAttemptStarted) for event in events) == 1
+    assert wire.closed

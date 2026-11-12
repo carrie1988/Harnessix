@@ -36,8 +36,6 @@ class ChatProtocolReason(StrEnum):
     TOOL_ID_DUPLICATE = "tool_id_duplicate"
     TOOL_NAME_UNKNOWN = "tool_name_unknown"
     TOOL_TYPE_INVALID = "tool_type_invalid"
-    TOOL_ARGUMENTS_INVALID = "tool_arguments_invalid"
-    TOOL_ARGUMENTS_NOT_OBJECT = "tool_arguments_not_object"
 
 
 class ChatProtocolError(InvalidWireData):

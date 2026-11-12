@@ -436,10 +436,17 @@ async def test_anthropic_unknown_empty_start_object_does_not_fabricate_argument_
     ]
 
 
-async def test_chat_unknown_missing_arguments_is_not_an_empty_object() -> None:
-    events = await _collect("chat", _frames("chat", _values("chat", [_call(0, UNKNOWN, "")])))
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(event, (*PROPOSALS, ResponseCompleted)) for event in events)
+@pytest.mark.parametrize(
+    ("name", "reason"),
+    [(UNKNOWN, "unregistered_tool"), (tool_alias("test.read"), "invalid_arguments_json")],
+)
+async def test_chat_missing_arguments_is_not_an_empty_object(name: str, reason: str) -> None:
+    """没有参数文本不等于空对象：调用不会带着{}形成，只得到固定拒绝。"""
+    events = await _collect("chat", _frames("chat", _values("chat", [_call(0, name, "")])))
+    assert [event for event in events if isinstance(event, PROPOSALS)] == [
+        ToolCallRejected(call_id="wire-call-0", reason=reason, argument_chars=0)
+    ]
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
 
 
 @pytest.mark.parametrize("fault", ["id_drift", "name_drift", "missing_type", "wrong_type"])
@@ -522,18 +529,36 @@ async def test_name_registered_under_history_marker_does_not_advertise_or_execut
 @pytest.mark.parametrize(
     "arguments", ["{", "[]", "null", "1", '{"x":NaN}', '{"x":Infinity}', '{"x":1,"x":2}']
 )
-async def test_malformed_json_in_either_member_releases_no_group(
+async def test_malformed_json_rejects_only_its_own_member(
     provider: Provider, unknown_first: bool, arguments: str
 ) -> None:
+    """参数不是JSON对象的调用只作废自己（无名称、参数、执行能力）；同组另一个调用照常按目录分类。
+
+    ADR 0109第5版：一次畸形输出不再让整个响应失败，所有端点相同。
+    """
     calls = [
         _call(0, UNKNOWN if unknown_first else tool_alias("test.read"), ARGUMENTS),
         _call(1, tool_alias("test.read") if unknown_first else UNKNOWN, arguments),
     ]
     events = await _collect(provider, _frames(provider, _values(provider, calls)))
-    assert events[-1] == ResponseFailed(code="invalid_provider_output")
-    assert not any(isinstance(event, (*PROPOSALS, ResponseCompleted)) for event in events)
-    assert UNKNOWN not in "".join(event.model_dump_json() for event in events)
-    assert "ARGUMENT-CANARY" not in "".join(event.model_dump_json() for event in events)
+    proposals = [event for event in events if isinstance(event, PROPOSALS)]
+    dumped = "".join(event.model_dump_json() for event in events)
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
+    assert UNKNOWN not in dumped
+    if unknown_first:
+        # 未注册的调用与参数畸形的已注册调用都只得到固定拒绝，原参数不外传。
+        assert [type(item) for item in proposals] == [ToolCallRejected, ToolCallRejected]
+        assert [item.reason for item in proposals] == [
+            "unregistered_tool",
+            "invalid_arguments_json",
+        ]
+        assert "ARGUMENT-CANARY" not in dumped
+    else:
+        # 合法的已注册调用照常形成；未注册且参数畸形的调用按未注册拒绝。
+        completed, rejected = proposals
+        assert isinstance(completed, ToolCallCompleted) and completed.tool == "test.read"
+        assert isinstance(rejected, ToolCallRejected) and rejected.reason == "unregistered_tool"
+        assert "arguments" not in rejected.model_dump()
 
 
 @pytest.mark.parametrize("provider", ["chat", "anthropic"])
@@ -551,15 +576,17 @@ def test_catalog_is_not_consulted_until_every_member_is_structurally_valid(
         if provider == "chat"
         else AnthropicStream(request, catalog, parallel=True, attempt_id=uuid4())
     )
-    calls = [_call(0, UNKNOWN, ARGUMENTS), _call(1, tool_alias("test.read"), "[]")]
-    for value in _values(provider, calls):
-        event = (
-            ChatCompletionChunk.model_validate(value, strict=True)
-            if provider == "chat"
-            else validate_event(value)
-        )
-        state.feed(event)
+    # 结构故障（调用ID重复）仍使整组失败，且在此之前不查询目录；参数是否为JSON对象不属于整组结构。
+    calls = [_call(0, UNKNOWN, ARGUMENTS), _call(1, tool_alias("test.read"), ARGUMENTS)]
+    calls[1]["id"] = calls[0]["id"]
     with pytest.raises(InvalidWireData):
+        for value in _values(provider, calls):
+            event = (
+                ChatCompletionChunk.model_validate(value, strict=True)
+                if provider == "chat"
+                else validate_event(value)
+            )
+            state.feed(event)
         if isinstance(state, ChatStream):
             state.finish(seen_done=True)
         else:
@@ -702,6 +729,16 @@ async def test_unsuccessful_terminal_never_releases_unknown_or_known_calls(
             "unknown": "pause_turn",
         }[finish]
     events = await _collect(provider, _frames(provider, values))
+    if provider == "chat" and finish == "limit":
+        # 输出上限截断了工具调用：被截断（此处同时未注册）的调用只得到拒绝，完整的调用照常形成，
+        # 响应按tool_calls结束，模型在原预算内重发（ADR 0109第5版；Anthropic的max_tokens不变）。
+        rejected, completed = [event for event in events if isinstance(event, PROPOSALS)]
+        assert isinstance(rejected, ToolCallRejected) and rejected.reason == "unregistered_tool"
+        assert isinstance(completed, ToolCallCompleted) and completed.tool == "test.read"
+        assert events[-1] == ResponseCompleted(
+            finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
+        )
+        return
     assert not any(isinstance(event, PROPOSALS) for event in events)
     if provider == "chat" and finish == "unknown":
         assert events[-1] == ResponseFailed(code="invalid_provider_output")

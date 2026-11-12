@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 26
-code_revision: af16bc871ed3f5809e992c587fde00479d42d870
+version: 30
+code_revision: cf52cadc3ab672d0bef951d2734588d5ed42422d
 owners:
   - core
 modules:
@@ -446,7 +446,7 @@ stateDiagram-v2
 
 原始SSE Frame先严格解析为`ChatCompletionChunk`，防止SDK把布尔或字符串宽松转换为计数。响应ID和实际
 模型首次确定后不可漂移；只接受Choice Index 0，Usage只能在Finish Reason后以无Choice Chunk到达，
-并要求输入加输出等于总量。Tool分片按连续Index聚合，非空ID/名称不可漂移，参数终值必须为JSON Object。
+并要求输入加输出等于总量。Tool分片按连续Index聚合，非空ID/名称不可漂移，参数终值不是JSON Object的调用只被拒绝、不执行（见文末“当前增量：畸形工具参数只拒绝该次调用”）。
 Chat名称的空字符串分片与缺省一样不更新已有名称；迟到的完整名称可补齐，最终仍缺名则整批拒绝。
 不猜名称或拼接不同非空名称；相关兼容边界及失败时点见[详细说明](../changes/m09-r3-chat-terminal-diagnostics.md#81-空名称增量兼容修正2026-10-10)。
 成功结束还要求`[DONE]`、Finish Reason和完整Usage同时存在。
@@ -760,7 +760,7 @@ estimate_cost(attempt, price, verified_context):
 | HTTP配置 | [`config.py`](../../src/harnessix/models/config.py) | `ModelHTTPConfig`、`ChatCapabilities` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_endpoint_constraints`、`test_https_endpoint_constraints` | HTTPS、能力和数值边界 |
 | Secret读取 | [`_provider_io.py`](../../src/harnessix/models/_provider_io.py) | `read_key`、`validate_key` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_configuration_fails_without_exposing_credentials` | Key格式和Header污染隔离 |
 | 有界传输 | [`_bounded_http.py`](../../src/harnessix/models/_bounded_http.py) | `BoundedStream`、`BoundedTransport` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_wire_budgets`、`test_compressed_response_rejected`、`test_error_response_body_is_bounded_and_closed` | 字节/Frame/Chunk和关闭 |
-| OpenAI流状态 | [`_chat_stream.py`](../../src/harnessix/models/_chat_stream.py) | `ChatStream.feed`、`finish` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_invalid_arguments_never_release_calls`、`test_malformed_wire`、`test_kernel_tool_loop_pairing_usage_and_replay` | 工具、终态和Replay |
+| OpenAI流状态 | [`_chat_stream.py`](../../src/harnessix/models/_chat_stream.py) | `ChatStream.feed`、`finish` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_invalid_arguments_reject_only_that_call`、`test_malformed_wire`、`test_kernel_tool_loop_pairing_usage_and_replay` | 工具、终态和Replay |
 | Anthropic流状态 | [`_anthropic_stream.py`](../../src/harnessix/models/_anthropic_stream.py) | `AnthropicStream.feed`、`finish` | [`test_anthropic.py`](../../tests/models/test_anthropic.py) | `test_bad_tool_json_never_releases_call`、`test_invalid_protocol`、`test_cumulative_usage_includes_caches_without_double_counting` | Block、Usage和工具门禁 |
 | Adapter重试与模型预检 | [`openai_chat.py`](../../src/harnessix/models/openai_chat.py)、[`anthropic.py`](../../src/harnessix/models/anthropic.py) | `probe_model_availability`、`stream`、`_failure` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`provider.py`](../../tests/contracts/provider.py) | `test_model_availability_probe_is_read_only_and_exact`、`test_model_availability_probe_honors_pre_cancel`、`test_model_availability_probe_obeys_io_timeout`、`test_error_codes_and_bounded_retry` | 无推理目录检查、取消/期限、零暴露重试和错误分类 |
 | 取消和资源关闭 | [`_provider_io.py`](../../src/harnessix/models/_provider_io.py) | `wait_for_io` | [`provider.py`](../../tests/contracts/provider.py) | `test_cancel_closes_blocked_stream`、`test_consumer_exit_closes_stream` | 全等待点取消和Owned Stream |
@@ -828,6 +828,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 30 | `cf52cadc` 增量 | 2026-11-12 | 畸形或截断的工具参数对所有端点都只拒绝该次调用，不再使整个Turn失败（ADR 0109第5版）；文档版本27～29由round-2分支使用 |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
 | 25 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 同步主线：工具结果文本支持命令输出预览v4，去除了终端转义序列时注明“terminal escape sequences removed”，内容为空且未截断的流不再显示；纯文本回复在输出上限处截断改由运行时的截断恢复处理（ADR 0109第3版） |
 | 22 | `feat/p0-beta-readiness` | 2026-11-09 | HTTP错误响应或连接未建立的尝试报告完整零用量；重试遵循`Retry-After`，上限60秒 |
@@ -903,7 +904,7 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   并遵守`NO_PROXY`（`*`或域名后缀）；本机与自托管端点直连；SOCKS不支持，由`doctor`提示。选定的代理只在内存中，经注入的Transport生效。
 - `OpenAIChatConfig.repair_tool_arguments`（默认关闭、不序列化）：工具参数严格解析失败时只尝试两类唯一、保意图的修复——
   字符串内原始控制字符（`json.loads(strict=False)`）与非法反斜杠转义（按字面量转义）；截断、括号不配、重复键、非有限数值不修复，
-  仍为`tool_arguments_invalid`。
+  该调用成为`invalid_arguments_json`拒绝（见文末“当前增量：畸形工具参数只拒绝该次调用”）。
 - `OpenAIChatConfig.tool_result_format`（默认`json`、不序列化）：`text`时工具结果的线上正文由
   [`tool_result_text.py`](../../src/harnessix/models/tool_result_text.py)渲染——Grep为`行号:内容`/`行号-上下文`（同文件
   命中合并去重、不连续处`--`，每文件一次`content_sha256`与`revision`）、Glob为路径列表、read_file为一行范围与摘要加原始源码
@@ -912,10 +913,10 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   Anthropic映射要求JSON结果正文，不提供该选项。holdout的4题实测线上字符约为原来的58%（Grep约26%，命令约35%）。
 - `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存
   （DeepSeek）；`explicit_tail`另在前缀末端打标记。
-- 开启`repair_tool_arguments`后，修复后仍不是JSON对象的调用不再使整个响应以协议失败结束，而是产生
+- 参数不是JSON对象的调用（开启`repair_tool_arguments`时指修复后仍不是）不使整个响应以协议失败结束，而是产生
   `ToolCallRejected(reason="invalid_arguments_json")`：与未注册工具相同的无名称、无参数、无执行能力拒绝，配对固定结果
   `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。
-- 开启`repair_tool_arguments`且以`length`结束时若已有流式工具调用，同样按上述规则形成调用组（截断的调用成为
+- 以`length`结束时若已有流式工具调用，同样按上述规则形成调用组（截断的调用成为
   `invalid_arguments_json`拒绝，完整调用照常提交），终态记为`tool_calls`，由目录拒绝重入；无工具调用的纯文本截断仍以
   `max_output_tokens`失败。本地vLLM在输出用满上限时常把半截调用以`tool_calls`/`stop`结束，两条路径结果一致（ADR-0109）。
 - `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
@@ -942,3 +943,26 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `OpenAIChatConfig.thinking_tool_steps_only`（默认关闭、不序列化，须显式开启思考）：只在提供工具的请求开启思考，无工具请求
   （压缩摘要、收尾回复）关闭——DashScope发送`enable_thinking=false`，`thinking_type`格式发送`disabled`且不附`reasoning_content`。摘要请求的输出上限仅2048 Token，开启思考时推理会用满而无正文
   （d39b两项因此失败）；`thinking_budget`同样只随开启思考的请求发送。
+
+## 当前增量：畸形工具参数只拒绝该次调用（ADR 0109第5版）
+
+- **规则。** 模型给出的工具参数不是合法JSON对象时（语法错误、重复键、非有限数值、截断，或合法JSON但不是对象），
+  只有这一次调用被拒绝：产生`ToolCallRejected(reason="invalid_arguments_json")`，不执行、不带名称和参数，
+  配对固定结果`tool_arguments_invalid_json`；同一响应里的其他调用照常提交，模型在原有步数与Token预算内重发。
+  OpenAI兼容端点与Anthropic端点相同，云端与自托管相同。
+- **此前。** 只有开启`repair_tool_arguments`的端点（回环自托管预设）这样处理；其余端点整个响应以
+  `chat_protocol/v1:tool_arguments_invalid`（Anthropic为“工具参数必须是 JSON object”）失败，Turn随之结束且不可重试。
+  三次正式发布测试中两次遇到DeepSeek偶发的非法参数，任务因此整轮失败。
+- **`repair_tool_arguments`只剩一个含义：** 严格解析失败时是否先尝试两类保意图的修复；修复不了的结果与未开启时相同。
+- **输出上限。** OpenAI兼容端点以`length`结束且已有流式工具调用时，对所有端点都按上述规则形成调用组、终态记为
+  `tool_calls`；截断处连调用结构都不完整（缺ID或名称等）时没有可逐个拒绝的调用，仍以`max_output_tokens`终态结束，
+  不报协议错误。Anthropic端点以`max_tokens`结束时的处理未变。
+- **仍然使整个响应失败的情况（结构性错误，无法归到单个调用）：** 调用ID缺失或重复、名称为空、类型不是`function`、
+  分片序号不连续、终态与调用不匹配。`ChatProtocolReason`相应删除`tool_arguments_invalid`与`tool_arguments_not_object`。
+- **实现。** 判定集中在[`_json.py`](../../src/harnessix/models/_json.py)的`json_object_or_none`，
+  [`_chat_stream.py`](../../src/harnessix/models/_chat_stream.py)与
+  [`_anthropic_stream.py`](../../src/harnessix/models/_anthropic_stream.py)共用。测试见
+  [`test_tool_rejection.py`](../../tests/models/test_tool_rejection.py)、
+  [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、
+  [`test_anthropic.py`](../../tests/models/test_anthropic.py)与Provider合同
+  [`provider.py`](../../tests/contracts/provider.py)的`test_malformed_tool_arguments_reject_only_that_call`。
