@@ -29,6 +29,8 @@ related_tests:
   - tests/product_config/test_command_ledger.py
   - tests/session/test_parsed_projection_cache.py
   - tests/tools/test_grep_include.py
+  - tests/patches/test_planner_newlines.py
+  - tests/product_config/test_patch_newlines.py
   - tests/models/test_tool_argument_repair.py
   - tests/agent/test_pressure_compaction_loop.py
 supersedes: []
@@ -127,12 +129,15 @@ supersedes: []
 - 宿主说明与工具结果一样进入事件日志与Thread投影，重放结果不变。
 - 被退回的回复只在发给模型的视图里换成占位符，持久Item、检查摘要与重放不变。
 - 会话存储在投影字节的SHA-256与投影版本都未变化时复用已解析的Thread；每次读取仍取出行、两侧求摘要、校验封条、事件数与尾部前缀。
-- 补丁事务、摘要前置条件、审批绑定与回滚路径不变（ADR 0129第3节）。
+- 补丁事务的原子性、摘要前置条件、审批绑定与回滚路径不变（ADR 0129第3节）。精确编辑的后像自ADR 0129第2版起
+  沿用被替换处的换行风格（CRLF处写CRLF，LF处写LF），匹配在逐字节失败后忽略CRLF/LF差异再试一次；
+  此前版本保存的补丁计划按保存时的语义复核，升级后仍可回滚与恢复。
 
 ## 9. 安全、权限与信任边界
 
 - 写成文本的工具调用永远不执行：调用只从服务商的调用通道形成，文本可能只是在引用工具输出或文件内容。
-- 被拒调用的名字与参数不进入历史；反馈不回显路径、取值或文件内容，只给出`files[i].edits[j]`这样的位置。
+- 被拒调用的名字与参数不进入历史；反馈不回显路径、取值或文件内容，只给出`files[i].edits[j]`这样的位置，
+  并写明整批都没有写入（批次是原子的，同批其他文件也没有应用）。
 - 出站请求的公开保护扫描、历史校验与审批绑定没有放宽。
 - 读取方共享已解析的Thread对象，任何代码不得就地修改其中的JSON容器；这一约束是ADR 0133的前提；产品负责人于2026-11-12批准保留这两项改动。
 

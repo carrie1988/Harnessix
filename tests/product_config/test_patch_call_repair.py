@@ -228,6 +228,10 @@ async def test_replace_of_a_file_the_model_never_read_names_the_missing_digest(t
 
 
 OTHER = b"a = 1\nb = 2\na = 1\n"
+# 已定位的拒绝之后注明整批未应用（ADR 0129第2版）；用到它的批次都是两个文件项。
+OTHER_ENTRY_NOT_APPLIED = (
+    "Nothing was written: the batch is atomic, so the other file entry was not applied either."
+)
 
 
 def two_file_patch(*other_edits):
@@ -278,7 +282,7 @@ async def test_a_rejected_edit_names_its_file_and_edit_and_what_the_file_has(
 
         output = result(turn)
         assert output.outcome == "failed" and output.error.code == code
-        assert output.error.message == message
+        assert output.error.message == f"{message}. {OTHER_ENTRY_NOT_APPLIED}"
         # 事务语义不变：一处被拒，整批都不应用，也不进入审批。
         assert not any(
             isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
@@ -376,3 +380,64 @@ async def test_an_edit_that_changes_nothing_is_reported_not_silently_dropped(tmp
         assert output.outcome == "failed" and output.error.code == "tool_invalid_arguments"
         assert "files[0].edits[1]: old_text and new_text are identical" in output.error.message
         assert (root / "src/modified.py").read_bytes() == b"old\n"
+
+
+async def test_a_rejected_batch_says_which_entry_failed_and_that_no_file_was_written(tmp_path):
+    # 回归（Beta HX-13，事件613–919）：批次里一个新建文件加一处早已生效的编辑，连续失败18次。
+    # 原说明既不指出是第几项，也不说明新建文件没有落盘；模型原样重发，随后的测试收集不到任何用例。
+    async with product(tmp_path) as (root, runtime, provider, *_):
+        current = b"def test_dates():\n    assert padded\n"
+        (root / "tests/test_dates.py").write_bytes(current)
+        create = {"operation": "create", "path": "tests/__init__.py", "content": "", "mode": 420}
+        applied = {
+            "operation": "edit",
+            "path": "tests/test_dates.py",
+            "expected_sha256": hashlib.sha256(current).hexdigest(),
+            "edits": [{"old_text": "    assert short\n", "new_text": "    assert padded\n"}],
+        }
+        _, turn, _ = await run_patch(runtime, provider, root, {"files": [create, applied]})
+
+        output = result(turn)
+        assert output.outcome == "failed" and output.error.code == "patch_context_not_found"
+        assert output.error.message == (
+            "files[1].edits[0]: old_text was not found in the file, but its new_text is already "
+            "there at line 2: this edit looks already applied, so remove it and resend the other "
+            f"edits. {OTHER_ENTRY_NOT_APPLIED}"
+        )
+        assert not (root / "tests/__init__.py").exists()
+        assert (root / "tests/test_dates.py").read_bytes() == current
+
+        # 按说明去掉已生效的那一项后重发，新建文件才写入。
+        thread, waiting, _ = await run_patch(runtime, provider, root, {"files": [create]})
+        completed = await approve(runtime, thread.thread_id, waiting)
+        assert result(completed).outcome == "succeeded"
+        assert (root / "tests/__init__.py").read_bytes() == b""
+
+
+@pytest.mark.parametrize(
+    ("entries", "notice"),
+    [
+        (1, "Nothing was written."),
+        (
+            3,
+            "Nothing was written: the batch is atomic, so the other 2 file entries were not "
+            "applied either.",
+        ),
+    ],
+)
+async def test_the_unapplied_notice_counts_the_other_entries_of_the_batch(
+    tmp_path, entries, notice
+):
+    async with product(tmp_path) as (root, runtime, provider, *_):
+        creates = [
+            {"operation": "create", "path": f"src/new{index}.py", "content": "x\n", "mode": 420}
+            for index in range(entries - 1)
+        ]
+        existing = {"operation": "create", "path": "src/modified.py", "content": "x\n", "mode": 420}
+        _, turn, _ = await run_patch(runtime, provider, root, {"files": [*creates, existing]})
+
+        output = result(turn)
+        assert output.error.code == "workspace_patch_target_exists"
+        assert output.error.message.startswith(f"files[{entries - 1}]: create targets a path that")
+        assert output.error.message.endswith(f"or pick a new path. {notice}")
+        assert not any((root / entry["path"]).exists() for entry in creates)

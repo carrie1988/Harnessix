@@ -12,7 +12,12 @@ from harnessix.agent.models import TrustedActionApprovalRequestContent, TurnStat
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.tools.runtime import CodingToolRuntime
 from tests.delivery.test_trusted_action_patch import _approval, _proposal
-from tests.product_config.test_patch_precondition_rejection import CODE, MESSAGE, patch_turn
+from tests.product_config.test_patch_precondition_rejection import (
+    CODE,
+    MESSAGE,
+    NOTHING_WRITTEN,
+    patch_turn,
+)
 from tests.product_config.test_product_patch_rollback import approve, product, result
 from tests.tools.test_files import execute
 
@@ -145,7 +150,9 @@ async def test_stale_or_revision_snapshot_is_rejected_without_approval_or_effect
         assert denied.status is TurnStatus.COMPLETED
         assert output.outcome == "failed" and output.trusted_action is None
         assert output.error is not None
-        assert output.error.code == CODE and output.error.message == f"files[0]: {MESSAGE}"
+        assert output.error.code == CODE
+        # 该提案有三个文件项：拒绝指出出错的一项，并注明另外两项也没有写入。
+        assert output.error.message == f"files[0]: {MESSAGE}. {NOTHING_WRITTEN[3]}"
         assert not output.error.retryable
         assert not any(
             isinstance(item.content, TrustedActionApprovalRequestContent) for item in denied.items

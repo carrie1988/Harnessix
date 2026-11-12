@@ -158,6 +158,20 @@ def _failed(code: str, message: str) -> PublicToolResultContent:
             "仅使用digest_status=complete时的content_sha256，禁止猜测摘要"
             "（workspace_patch_precondition_failed）",
         ),
+        # ADR 0129第2版在已定位的拒绝后追加整批未应用的说明：只写给模型，界面文案不变。
+        (
+            "patch_context_not_found",
+            "files[1].edits[0]: old_text was not found in the file, and neither was its first "
+            "non-blank line; read_file the part you want to change and copy old_text from the "
+            "current text. Nothing was written: the batch is atomic, so the other file entry was "
+            "not applied either.",
+            "失败：精确编辑锚点不存在（patch_context_not_found）",
+        ),
+        (
+            "workspace_path_denied",
+            "A path in files is not a workspace path. Nothing was written.",
+            "失败：Workspace路径不允许访问（workspace_path_denied）",
+        ),
     ],
 )
 def test_english_model_diagnostics_keep_the_reason_users_saw_before(

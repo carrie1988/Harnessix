@@ -39,6 +39,7 @@ from harnessix.delivery.workspace_patch_compact import (
     decode_compact_workspace_patch,
 )
 from harnessix.delivery.workspace_patch_errors import (
+    PLANNER_EDIT_REJECTIONS,
     _sha_mismatch_error,
     locating_patch_file,
     target_exists_error,
@@ -450,8 +451,9 @@ def _apply_workspace_exact_edits(
     before: bytes,
     edits: tuple[ExactEdit, ...],
     operation: ReadOperation,
+    recorded_sha256: str | None = None,
 ) -> bytes:
-    """把精确编辑错误收敛为尚未执行、可由模型修正的正式拒绝。"""
+    """把精确编辑错误收敛为尚未执行、可由模型修正的正式拒绝；复核已保存计划时传入其后像摘要。"""
 
     try:
         _decode(before)
@@ -460,6 +462,7 @@ def _apply_workspace_exact_edits(
             edits,
             operation,
             max_bytes=min(MAX_TRANSACTION_FILE_BYTES, MAX_SCAN_BYTES),
+            recorded_sha256=recorded_sha256,
         )
     except ReadToolError as error:
         raise workspace_patch_preparation_error(
@@ -468,13 +471,7 @@ def _apply_workspace_exact_edits(
             f"({error.code}); change it with the command tool instead",
         ) from None
     except KernelError as error:
-        if error.code not in {
-            "patch_context_not_found",
-            "patch_ambiguous_context",
-            "patch_overlapping_edits",
-            "patch_limit_exceeded",
-            "patch_no_change",
-        }:
+        if error.code not in PLANNER_EDIT_REJECTIONS:
             raise
         raise workspace_patch_preparation_error(error.code, error.message) from None
 
@@ -566,7 +563,9 @@ def _validate_mutation(
         if read_blob is None:
             raise KernelError("delivery_action_mismatch", "edit校验缺少受信前镜像读取端口")
         before = read_blob(mutation.before.sha256)
-        expected_body = _apply_workspace_exact_edits(before, item.edits, ReadOperation())
+        expected_body = _apply_workspace_exact_edits(
+            before, item.edits, ReadOperation(), mutation.after.sha256
+        )
         after_valid = (
             mutation.after.presence == "file"
             and mutation.after.sha256 == hashlib.sha256(expected_body).hexdigest()

@@ -12,6 +12,7 @@ from harnessix.delivery.workspace_patch_errors import (
     is_workspace_patch_preparation_error,
     is_workspace_patch_sha_mismatch,
     located_patch_message,
+    unapplied_batch_notice,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
@@ -57,13 +58,20 @@ def workspace_patch_planning_rejection(
         "product.workspace-patch",
     ) or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
         return None
+    # 码表不含出错的是哪一项（见上），但整批未应用是确定的事实，一并告诉模型。
+    message = _WORKSPACE_PATCH_PLANNING_FAILURES[rejection.code]
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",
         error=AgentFailure(
-            code=rejection.code, message=_WORKSPACE_PATCH_PLANNING_FAILURES[rejection.code]
+            code=rejection.code, message=f"{message}. {unapplied_batch_notice(_file_count(call))}"
         ),
     )
+
+
+def _file_count(call: ToolCallContent) -> int:
+    files = call.arguments.get("files")
+    return len(files) if isinstance(files, list) else 1
 
 
 def workspace_patch_preparation_rejection(
@@ -104,7 +112,8 @@ def workspace_patch_preparation_rejection(
         or router.approval(plan_id) is not None
     ):
         return None
-    # SHA不符与无变化重建固定正文，不沿用实例上的消息；三类拒绝都只附加已校验的files下标。
+    # SHA不符与无变化重建固定正文，不沿用实例上的消息；三类拒绝都只附加已校验的files下标
+    # 与整批未应用的说明。
     reported: KernelError = rejection
     if is_workspace_patch_sha_mismatch(rejection):
         reported = WorkspacePatchPreconditionError()
@@ -112,7 +121,7 @@ def workspace_patch_preparation_rejection(
         reported = WorkspacePatchNoChangeError()
     failure = AgentFailure(
         code=reported.code,
-        message=located_patch_message(reported.message, rejection.file_index),
+        message=located_patch_message(reported.message, rejection.file_index, _file_count(call)),
     )
     closed = router.decide(
         plan_id,

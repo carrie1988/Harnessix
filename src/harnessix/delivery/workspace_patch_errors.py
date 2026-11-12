@@ -1,7 +1,7 @@
 """未执行的原生Patch拒绝及进程内来源标记；不隔离宿主Python代码。
 
-拒绝正文写给模型（英文）：指出出错的files下标、宿主已核对到的事实和最小改法，不含文件内容。
-界面按错误码另行展示用户文案（product_ui.tool_summary）。
+拒绝正文写给模型（英文）：指出出错的files下标、宿主已核对到的事实和最小改法，不含文件内容；
+已定位的拒绝还注明整批未应用。界面按错误码另行展示用户文案（product_ui.tool_summary）。
 """
 
 from __future__ import annotations
@@ -16,6 +16,16 @@ from harnessix.execution.public_tool_contracts import MAX_WORKSPACE_PATCH_FILES
 _SHA_MISMATCH_ORIGIN = object()
 _NO_CHANGE_ORIGIN = object()
 _PREPARATION_ORIGIN = object()
+# 精确编辑规划器（patches.planner）的确定性提案错误：只读了前镜像，模型改正该处编辑即可重发。
+PLANNER_EDIT_REJECTIONS = frozenset(
+    {
+        "patch_context_not_found",
+        "patch_ambiguous_context",
+        "patch_overlapping_edits",
+        "patch_limit_exceeded",
+        "patch_no_change",
+    }
+)
 
 
 class _LocatedPatchRejection(KernelError):
@@ -156,9 +166,26 @@ def locating_patch_file(index: int) -> Iterator[None]:
         raise
 
 
-def located_patch_message(message: str, file_index: object) -> str:
-    """给拒绝正文加上files下标；下标必须是合同范围内的整数，否则原样返回。"""
+def unapplied_batch_notice(file_count: int) -> str:
+    """整批被拒后补给模型的事实：批次是原子的，一项被拒时没有任何文件写入，同批的其余文件项也没有。
+
+    只陈述事实，不给重发指令：各条拒绝已写明自己的改法，有的要求删掉出错项。没有这句时，
+    模型无从知道同批里无错的文件是否已经写入（Beta HX-13：同一批次连续失败18次，
+    其中的新建文件始终没有落盘）。
+    """
+    if file_count < 2:
+        return "Nothing was written."
+    others = "file entry was" if file_count == 2 else f"{file_count - 1} file entries were"
+    return f"Nothing was written: the batch is atomic, so the other {others} not applied either."
+
+
+def located_patch_message(message: str, file_index: object, file_count: int) -> str:
+    """给拒绝正文加上files下标并注明整批未应用；下标必须是合同范围内的整数，否则原样返回。
+
+    未定位的拒绝正文里已写明本次未执行，不再追加：准备超时是英文；规划期的确定性拒绝是中文，
+    且原样显示在界面上。
+    """
     if type(file_index) is not int or not 0 <= file_index < MAX_WORKSPACE_PATCH_FILES:
         return message
     separator = "." if message.startswith("edits[") else ": "
-    return f"files[{file_index}]{separator}{message}"
+    return f"files[{file_index}]{separator}{message}. {unapplied_batch_notice(file_count)}"

@@ -280,4 +280,4 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 
 - [ADR 0113：沙箱内命令免审批与沙箱外命令](0113-sandboxed-command-approval-and-host-escalation.md)：策略v2把`host_sandboxed`命令标记为由宿主以系统身份自动批准（Agent内核要求写调用先有批准记录）；联网等越界操作走必须逐条批准的`host_command`；零配置下沙箱不可用时只提供逐条批准且标注未隔离的沙箱外命令。
 
-- [ADR 0129：文件工具的宽容与可改正的拒绝](0129-file-tool-leniency-and-correctable-rejections.md)：Patch提案阶段修复可唯一确定的写法，replace/delete缺SHA时补模型最近一次读到的摘要；拒绝说明改为英文并指出`files[i].edits[j]`与宿主核对到的事实；Grep单文件起点不应用`include`、无文件匹配时失败；界面按错误码保留原中文原因。事务、SHA前置条件、审批绑定与公共Schema不变。
+- [ADR 0129：文件工具的宽容与可改正的拒绝](0129-file-tool-leniency-and-correctable-rejections.md)：Patch提案阶段修复可唯一确定的写法，replace/delete缺SHA时补模型最近一次读到的摘要；拒绝说明改为英文并指出`files[i].edits[j]`与宿主核对到的事实；Grep单文件起点不应用`include`、无文件匹配时失败；界面按错误码保留原中文原因。第2版：编辑在逐字节匹配失败后忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格；被拒批次写明整批未写入。事务、SHA前置条件、审批绑定与公共Schema不变。

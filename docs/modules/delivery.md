@@ -1814,6 +1814,18 @@ replace与delete缺`expected_sha256`时，宿主补上本线程历史中模型�
 精确编辑的拒绝再带`edits[j]`与宿主核对到的行号（[`patches/planner.py`](../../src/harnessix/patches/planner.py)），
 整文件替换过短给出两边字节数。事务原子性、来源标记、Route关闭顺序与恢复语义不变。
 
+**2026-11-12修订（ADR 0129第2版）。** edit的锚点先逐字节匹配，一处也没有时忽略CRLF/LF差异再匹配并映射回原始字节区间；
+`new_text`里的换行按被替换处的风格写入，CRLF处保持CRLF，LF处保持LF（规则见[Patch模块设计](patches.md)的当前增量）。
+`expected_sha256`、事务前后像与结果里的`content_sha256`仍按文件的真实字节计算；create与replace写入的字节不变
+（用LF正文整文件替换CRLF文件，结果是整个文件变为LF）。`_validate_mutation`复核已保存的事务时把记录的后像摘要交给
+`apply_exact_edits(recorded_sha256=...)`：按此前语义（只逐字节匹配、`new_text`原样写入）算出该摘要的事务照旧通过，
+升级前保存或发布的修改仍可执行、对账与回滚；两种语义都算不出的后像仍被拒绝。
+已定位的拒绝由`located_patch_message`在正文后追加`unapplied_batch_notice`：批次是原子的，没有任何文件写入，
+同批的其余文件项也没有；未定位的拒绝（准备超时、权限位无法保留、路径只差大小写）正文已写明未执行，不变。
+回归见[Delivery路径测试](../../tests/delivery/test_trusted_action_patch.py)、
+[产品路径换行测试](../../tests/product_config/test_patch_newlines.py)与
+[回滚测试](../../tests/product_config/test_product_patch_rollback.py)。
+
 [操作Schema详设](../changes/m09-r3-workspace-patch-operation-schema.md)说明原真实失败、
 字段矩阵和身份兼容。Schema/描述改变Tool Fingerprint及Binding，但不改变字段导出、Tool版本或数据表。
 旧Invocation/持久Route由原合同变化错误拒绝，不迁移旧批准或自动重放；重新提案必须使用当前Workspace并再次审批。

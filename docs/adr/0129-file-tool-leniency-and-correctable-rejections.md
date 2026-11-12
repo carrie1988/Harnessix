@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [tools, agent, delivery, patches, trusted-actions, product-ui]
@@ -18,6 +18,12 @@ related_tests:
   - tests/tools/test_grep_include.py
   - tests/tools/test_read_error_guidance.py
   - tests/product_ui/test_tool_summary.py
+  - tests/patches/test_planner.py
+  - tests/patches/test_planner_newlines.py
+  - tests/delivery/test_trusted_action_patch.py
+  - tests/product_config/test_patch_newlines.py
+  - tests/product_config/test_patch_precondition_rejection.py
+  - tests/product_config/test_product_patch_rollback.py
 supersedes: []
 ---
 
@@ -41,6 +47,8 @@ SWE-bench Multilingual（30题×2次，qwen3.8-flash-next，产品提交447fe024
   terraform-35611 GRMvyKf第4步在确实含有目标文本的文件里得到空结果；GQWePot第84步：“grep tool seems unreliable here”。
 
 ## 2. 决策
+
+第2.2节的锚定补SHA、第2.4节的规划期消息在第2版有增补（见第7节）；其余各节自第1版起未变。
 
 ### 2.1 Patch：提案阶段的结构修复（`agent/call_repair.py`）
 
@@ -151,3 +159,120 @@ SWE-bench Multilingual（30题×2次，qwen3.8-flash-next，产品提交447fe024
 - 产品路径：`tests/product_config/test_patch_call_repair.py`（读后替换补SHA与权限并经审批成功；读后文件被改则拒绝；
   各拒绝的下标与事实；整批不应用）、`tests/artifacts/test_runtime.py`（数字字符串分页通过存档核验）。
 - 评测中观察：工具结果失败数按错误码统计；`apply_patch_batch`被拒步数与其后一步是否仍是同一补丁。
+
+## 7. 第2版修订（2026-11-12）：CRLF与混合换行文件上的edit；整批未应用的说明
+
+### 7.1 背景
+
+真实用户Beta测试（PyPI 0.10.0b12，macOS TUI，百炼qwen3.8-flash，两轮共385个模型步骤）中，85次工具契约错误有68次来自
+`apply_patch_batch`，其中`patch_context_not_found` 32次。
+
+- **多行编辑在CRLF区永远匹配不上**（RT-06，`state-ocr`事件594–726）：目标文件是混合换行（804行CRLF、524行LF），被改的函数在CRLF区。
+  `read_file`把原始字节逐行解码后交给模型，正文带着`\r\n`（JSON结果里是转义，紧凑文本结果里是原字符）；模型发回的`old_text`
+  内容逐字正确，换行却是`\n`。规划器只做逐字节匹配，连续5次拒绝，期间没有人改过文件。
+- **诊断把换行差异说成内容不一致**：缺失诊断用`strip()`比较首行，`\r`被去掉，于是得出“首个非空行在第724行，但其后的行不一致
+  （可能被此前的Patch修改）”。模型据此反复重读、重发。
+- **单行锚点命中后写出混合换行**（事件726）：`new_text`里的`\n`被原样写进CRLF区。测试通过后，模型又花了约2分钟修这些换行，
+  其中一次编辑误删函数头后自行回滚（事件987–1086）。
+- **模型发回的换行风格并不可靠**：同一处编辑，事件594的`new_text`是`\r\n`，事件684是`\n`；事件987、1029的一条`new_text`里
+  两种换行混用；事件744把带`\r\n`的新行写进了LF区（单行锚点），事件1079再用一条只改换行的编辑把它们改回LF。
+- **整批失败的反馈不足**（HX-13，`state-expense-expanded`事件613–919）：批次含一个新建文件和一处早已生效的编辑，同一批次连续失败18次。
+  批次是原子的，新建文件始终没有落盘；拒绝说明既不指出是第几项（第1版已补上`files[i].edits[j]`），也不说明其余文件没有写入。
+
+### 7.2 匹配：先逐字节，其次忽略CRLF/LF差异
+
+1. 逐字节匹配仍是第一步，判定不变：恰好一处就用它，多处按锚点不唯一拒绝。逐字节恰好命中一处时不再做忽略换行的匹配
+   （见7.9）；区间除第4条的情形外与此前相同。
+2. 一处也没有时，把文件与`old_text`里的`\r\n`都折成`\n`再匹配一次，命中位置映射回原始字节区间；映射出的区间总是覆盖完整的
+   `\r\n`，不拆开换行。忽略换行后恰好一处才接受；多处同样按不唯一拒绝并列出各处行号，不按“哪一处的换行更像”从中挑选。
+3. 只折叠`\r\n`：孤立的`\r`不算换行，照旧逐字节比较。
+4. 以`\n`开头的`old_text`逐字节命中`\r\n`的后半时，区间向前多取一个字节把`\r`纳入。否则按7.3改写换行会写出`\r\r\n`，
+   删掉这个换行则留下孤立的`\r`。
+
+重叠检测、无变化判定与大小上限都在原始字节区间上进行，与此前相同。
+
+### 7.3 写入：换行风格由文件决定
+
+`new_text`里的换行（`\r\n`或`\n`）一律按被替换处的风格写入，CRLF处保持CRLF，LF处保持LF：
+
+| 被替换的区域 | 采用的风格 |
+|---|---|
+| 含有换行 | 区域内占多数的一种；两种一样多时取区域内第一个换行 |
+| 不含换行 | 所在行的行尾；所在行是没有行尾的末行时取上一行的行尾 |
+| 整个文件没有换行 | 不改写，按`new_text`原样写入 |
+
+- 逐字节命中的编辑同样适用：单行锚点换成多行文本，是Beta里写出混合换行的那条路径。
+- 例外只有一个：折叠换行后`old_text`与`new_text`相同的编辑，唯一可能的意图是转换换行，按原样写入（事件1079）。
+  这样的编辑若只在忽略换行时命中、而文件已是`new_text`的样子，结果是如实的`patch_no_change`。
+- 不按“模型是否写了`\r`”区分有意与无意：7.1的证据表明带`\r\n`抄下`old_text`的同一条编辑，`new_text`照样混用两种换行。
+
+### 7.4 诊断
+
+- “该编辑看起来已应用”的判定同样忽略换行：上一次写入已按文件风格改成`\r\n`，模型重发时带的是`\n`。
+- 首个非空行仍在文件中的分支不再断言“其后的行不一致”（该比较忽略首尾空白，单行锚点只差缩进时也会走到这里），改为陈述
+  宿主核对到的事实：`its first non-blank line (whitespace aside) is at line N, but old_text differs from the file there in more
+  than line endings`。走到诊断时已确认忽略换行也找不到，所以换行差异不会再被说成内容不一致。
+- 行号统一按`\n`计数，与`read_file`的分页一致（原先这一分支用`splitlines()`，孤立的`\r`会让行号偏移）。
+
+### 7.5 前置条件补全
+
+第2.2节“精确锚定的edit补SHA”用同一顺序判定唯一（`agent/call_repair.py`的`_anchors_once`）：先逐字匹配，一处也没有时忽略
+CRLF/LF差异再匹配。否则CRLF文件上的多行锚点得不到这项补全，模型沿用旧摘要时要多一次读取与重发。只补摘要，
+记录与审批的仍是模型发来的`old_text`与`new_text`；换行风格在规划时按当时的文件决定。
+
+### 7.6 整批未应用的说明
+
+- 已定位的拒绝（`files[i]`或`files[i].edits[j]`）之后追加一句固定英文：只有一个文件项时是`Nothing was written.`；多个文件项时是
+  `Nothing was written: the batch is atomic, so the other N file entries were not applied either.`。覆盖锚点缺失、不唯一、重叠、
+  超限、无变化、SHA不符、目标已存在或不存在、整文件替换过短、非UTF-8来源。
+- 只陈述事实，不追加重发指令：各条拒绝已有自己的改法，有的要求删掉出错的那一项。
+- 规划期的边界拒绝（`workspace_path_denied`、`delivery_path_denied`等固定码表）没有下标可用，同样追加这句。
+- 未定位的拒绝（准备超时、权限位无法保留、路径只差大小写）正文里已写明本次未执行，不变；后两者是中文，直接显示在界面上。
+- `workspace_parent_missing`来自`workspace/snapshot.py`的规划期观察，不在本ADR的消息表里；其处理方式由ADR 0137决定，本版未改。
+- 界面文案不变：这些错误码在`product_ui/tool_summary.py`的`_USER_REASONS`里都有用户文案，英文说明不进入对话记录。
+
+### 7.7 已保存的计划
+
+`delivery/trusted_action.py`的`_validate_mutation`与受管Patch的`validate_prepared`会用“前镜像加编辑”重算后像，核对已保存的计划；
+执行、对账和回滚都先经过这一步。7.2、7.3改变了部分编辑的重算结果（如事件726那样的事务），所以复核时传入计划记录的后像摘要
+（`apply_exact_edits(recorded_sha256=...)`）：按第2版之前的语义（只逐字节匹配、`new_text`原样写入）算出该摘要的计划照旧通过，
+否则按当前语义重算并照常比较。两种语义都算不出的后像仍被拒绝。没有这一步，升级前发布的这类修改在升级后无法回滚
+（回滚的Turn会中断）。受管Patch的结构化Diff用同一组区间。
+
+### 7.8 不变的部分
+
+- 批次仍是原子的；`expected_sha256`、事务前后像与结果里的`content_sha256`都按文件的真实字节计算。
+- 审批绑定的仍是模型发来的调用（`edits_sha256`），审批预览与Diff来自按上述规则算出的事务前后像。
+- 回滚、恢复、`old_text`与`new_text`相同的拒绝、编辑重叠检测、各项上限不变。
+- create与replace写入的字节不变；公共Schema、事件、`spec/`与产品配置不变。
+
+### 7.9 未做与已知边界
+
+- replace用`\n`正文整文件替换CRLF文件时，整个文件变为LF。它不产生混合换行，且`content`的摘要绑定在审批Route上，
+  改写写入的字节需要改审批绑定，本版未动。
+- 混合换行文件里同一段文字以两种换行各出现一次、`old_text`逐字节只命中其中一处时，按逐字节命中的那处应用，与此前相同；
+  模型若本想改另一处，要从结果里的Diff发现。改为“只要忽略换行后不唯一就拒绝”会改变逐字节路径的现有结果，留作后续决定。
+- 孤立的`\r`（旧Mac换行）与`\r\r\n`不做处理。
+- 受管批次（`ManagedPatchBatchBridge`）的拒绝仍只有`edits[j]`：它是另一种批次语义（顺序执行、不回滚），默认产品配置不开放。
+- `tool_invalid_arguments`的说明未追加“未写入”：参数不合法时调用尚未形成，原文已要求改正后重发。
+
+### 7.10 后果
+
+- CRLF处写入的字节比模型发来的`new_text`多（每个换行多一个`\r`）；Diff、结果摘要与后续`expected_sha256`都以真实字节为准。
+- 模型在LF处有意写入的`\r\n`会被写成`\n`，除非该编辑只改换行。
+- 逐字节路径上，以`\n`开头并命中`\r\n`后半的锚点，其区间起点比此前早一个字节。
+
+### 7.11 验证
+
+- 规划器不变量：`tests/patches/test_planner_newlines.py`（逐字节路径的区间与字节不变；忽略换行的命中映射回原始区间；
+  写入风格的各条规则；只改换行的编辑；忽略换行后的唯一性；重叠；诊断；真实字节摘要；升级前保存的计划）。
+- Delivery与产品路径：`tests/delivery/test_trusted_action_patch.py`（CRLF文件上的事务前后像与执行；升级前保存的事务仍可加载与执行）、
+  `tests/product_config/test_product_patch_rollback.py`（升级前发布的修改仍可回滚）、
+  `tests/product_config/test_patch_newlines.py`（由Beta现场缩减的回归：混合换行文件、多行LF锚点、后续单行编辑、原样抄回`\r\n`的编辑；
+  多行锚点补SHA）、`tests/agent/test_call_repair.py`。
+- 整批说明：`tests/product_config/test_patch_call_repair.py`（HX-13缩减的回归：指出出错项、新建文件未落盘、去掉该项后重发成功；
+  各类拒绝的完整文本）、`tests/product_config/test_patch_precondition_rejection.py`。
+- 现场重放（一次性核对，脚本不在仓库内）：取Beta项目中该文件的原始版本（SHA-256 `412af9c2…`，804行CRLF、524行LF）与
+  事件594、684、698、712、726里模型发出的原始编辑。改动前4条多行编辑全部`patch_context_not_found`，单行编辑多出1行LF；
+  改动后5条全部应用，CRLF区新增的行都是CRLF，LF区的行数只因落在LF区的那条编辑而变化。
+- 未在Windows上运行：改动只处理字节串，没有平台分支。

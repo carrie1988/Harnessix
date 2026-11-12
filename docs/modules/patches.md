@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 2
+version: 3
 code_revision: 5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1
 owners:
   - core
@@ -27,8 +27,10 @@ related_adrs:
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0069-unified-coding-action-risk-route.md
+  - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
 related_tests:
   - tests/patches/test_planner.py
+  - tests/patches/test_planner_newlines.py
   - tests/patches/test_managed.py
   - tests/patches/test_managed_crash.py
   - tests/patches/test_agent_bridge.py
@@ -53,6 +55,16 @@ supersedes: []
 
 - 精确编辑的三类拒绝都以`edits[j]`下标开头，并给出模型下一步能用的事实：锚点未找到时指出首个非空行所在行号，或说明`new_text`已在文件中（该编辑看起来已应用）；锚点不唯一时列出各处行号（至多5处）；编辑重叠时指出两条编辑的下标与重叠所在行。
 - 判定条件、计划算法与全部上限不变，只改变拒绝文本；文本为英文，不回显文件内容。见[`planner.py`](../../src/harnessix/patches/planner.py)。
+
+## 当前增量：CRLF与混合换行文件上的精确编辑（ADR 0129第2版）
+
+模型从`read_file`读到的正文带着原始的`\r\n`，发回的`old_text`与`new_text`却多是`\n`，有时两种混用。此前多行编辑在CRLF区永远匹配不上，单行编辑命中后把`\n`写进CRLF区。现在：
+
+- **匹配**（`_anchor_range`）：逐字节匹配仍是第一步，判定与区间不变。一处也没有时，把文件与`old_text`里的`\r\n`都折成`\n`再匹配一次，命中位置经`_FoldedNewlines.raw_offset`映射回原始字节区间，区间总是覆盖完整的`\r\n`。两步各自要求恰好一处，忽略换行后命中多处同样是`patch_ambiguous_context`。孤立的`\r`不算换行。以`\n`开头的`old_text`逐字节命中`\r\n`后半时，区间向前多取一个字节把`\r`纳入。
+- **写入**（`_written_text`、`_newline_style`）：`new_text`里的换行按被替换处的风格写入。区域内有换行时取占多数的一种，一样多取区域内第一个；区域内没有换行时取所在行的行尾，所在行是没有行尾的末行时取上一行的行尾；整个文件没有换行时原样写入。折叠换行后`old_text`与`new_text`相同的编辑是有意转换换行，原样写入。
+- **诊断**（`_missing_anchor_message`）：在折叠后的正文上比较。“已应用”的判定忽略换行；首个非空行仍在文件中时陈述“old_text在该处与文件的差异不只是换行”，不再断言“其后的行不一致”；行号按`\n`计数，与`read_file`一致。
+- **已保存的计划**（`_edit_ranges`的`recorded_sha256`）：`validate_prepared`与Diff传入计划记录的后像摘要。按此前语义（只逐字节匹配、`new_text`原样写入）算出该摘要的计划沿用当时的区间，其余按当前语义重算并照常比较；两种语义都算不出的后像仍是`patch_plan_corrupt`。Delivery的Workspace Patch事务经`apply_exact_edits(recorded_sha256=...)`用同一规则，升级前发布的修改仍可回滚。
+- 摘要、大小上限、重叠检测与无变化判定都在真实字节上进行；`ExactEdit`、`PatchManifest`等合同不变。回归见[换行测试](../../tests/patches/test_planner_newlines.py)。
 
 ## 1. 文档摘要
 
@@ -337,13 +349,13 @@ flowchart TD
     C --> D{revision and mode valid?}
     D -- No --> X[Fail without write]
     D -- Yes --> E[Read full UTF-8 image up to 1 MiB]
-    E --> F[Find each old_text in original before]
+    E --> F[Find each old_text in original before: byte-exact, else CRLF/LF-insensitive]
     F --> G{each occurs exactly once?}
     G -- No --> X
     G -- Yes --> H[Sort original byte ranges]
     H --> I{ranges non-overlapping and final size bounded?}
     I -- No --> X
-    I -- Yes --> J[Build after from untouched slices and replacements]
+    I -- Yes --> J[Build after from untouched slices and replacements in the newline style of each place]
     J --> K{before differs from after?}
     K -- No --> X
     K -- Yes --> L[Hash proposal, images and manifest]
@@ -353,15 +365,18 @@ flowchart TD
 ### 8.1 关键语义
 
 1. `_read_image`使用Workspace逐段安全打开，拒绝超大文件、特殊权限、非法UTF-8和revision漂移；
-2. `_edit_ranges`始终在**同一原始before字节串**中查找全部`old_text`；
-3. 每个锚点必须只出现一次，缺失为`patch_context_not_found`，重复为
-   `patch_ambiguous_context`；缺失消息附带可行动的定位事实（不含文件内容）：`new_text`已原样存在
-   （编辑可能已应用）、`old_text`首个非空行所在行号（其后内容不一致），或首行不在文件中；
+2. `_edit_ranges`始终在**同一原始before字节串**中查找全部`old_text`：先逐字节，一处也没有时忽略CRLF/LF差异
+   再找一次并映射回原始字节区间（见“当前增量”）；
+3. 每个锚点必须只出现一次（两步各自判定），缺失为`patch_context_not_found`，重复为
+   `patch_ambiguous_context`；缺失消息附带可行动的定位事实（不含文件内容）：`new_text`已在文件中
+   （编辑可能已应用）、`old_text`首个非空行所在行号（该处与文件的差异不只是换行），或首行不在文件中；
    `ExactEdit`的无变化编辑与单编辑超限以固定措辞的`harnessix_exact_edit_*`错误报告，可经参数反馈原样告知模型（不含输入值）；
 4. 编辑按原始字节起点排序，任意交叠为`patch_overlapping_edits`；
 5. `_target`拼接未编辑切片和replacement，不做链式查找，因此前一个`new_text`不会成为后一个锚点；
+   replacement是按被替换处换行风格改写后的`new_text`；
 6. 完整after超过1 MiB或最终字节未变化均失败；
-7. `validate_prepared`重算全部内容，不读取当前文件；`verify_prepared`在前者之后重新读取当前文件；
+7. `validate_prepared`重算全部内容，不读取当前文件，并认得按此前编辑语义保存的计划；
+   `verify_prepared`在前者之后重新读取当前文件；
 8. 最后一次verify与未来`os.replace`之间仍有时间窗口，因此执行器还要在持有父目录FD时再次复核。
 
 ### 8.2 核心伪代码
@@ -376,7 +391,8 @@ prepare_patch(workspace, proposal, operation):
     ranges = []
     for edit in proposal.edits:
         require count(before, edit.old_text) == 1
-        ranges += original_utf8_byte_range(edit)
+            or count(before, edit.old_text) == 0 and count_ignoring_crlf(before, edit.old_text) == 1
+        ranges += original_utf8_byte_range(edit), new_text_in_newline_style_of_that_range(edit)
     require sorted(ranges) do not overlap
     after = concatenate(original gaps and replacements)
     require after != before and len(after) <= 1 MiB
@@ -387,7 +403,8 @@ prepare_patch(workspace, proposal, operation):
 验证入口：[test_planner.py](../../tests/patches/test_planner.py)中的
 `test_multiple_edits_use_original_coordinates_not_chained_replacement`、
 `test_invalid_matches_fail_without_modification`、`test_corrupt_plan_rejected_before_source_read`和
-`test_full_image_validation_includes_unpreviewed_tail`。
+`test_full_image_validation_includes_unpreviewed_tail`；换行相关的不变量见
+[test_planner_newlines.py](../../tests/patches/test_planner_newlines.py)。
 
 ## 9. Managed Copy目录与创建流程
 
@@ -1215,4 +1232,5 @@ ADR说明历史决策及当时分片状态；本文维护当前代码事实。�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 3 | ADR 0129第2版增量 | 2026-11-12 | 精确编辑在逐字节匹配失败后忽略CRLF/LF差异再匹配；写入沿用被替换处的换行风格；此前保存的计划按保存时的语义复核 |
 | 1 | `5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1` | 2026-09-12 | 建立Managed Patch Runtime现行事实源，覆盖精确计划、受管副本、单文件/批次状态机、审批、落盘、崩溃恢复、Diff Artifact、持久化、安全和源码测试映射 |

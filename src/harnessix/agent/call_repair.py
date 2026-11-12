@@ -12,8 +12,8 @@
   默认mode；同一路径的多个edit项并成一项。带值的未知字段、edit同时给出content、
   old_text与new_text相同的编辑等意图不明的写法不改；
 - 前置条件补全只用宿主已掌握的事实，规划与执行前仍按补上的值核对：
-  edit的expected_sha256缺失或过期、而每段old_text都在当前文件中唯一出现时，补当前文件的
-  SHA-256（精确锚定已证明模型看到的是要改的当前内容）；replace与delete缺expected_sha256时，
+  edit的expected_sha256缺失或过期、而每段old_text都在当前文件中唯一出现（逐字，或只差CRLF/LF
+  换行）时，补当前文件的SHA-256（唯一锚定已证明模型看到的是要改的当前内容）；replace与delete缺expected_sha256时，
   补本线程历史中模型最近一次得到的该文件完整摘要（文件此后变化则照常因SHA不符被拒）；
   缺path而expected_sha256恰好是历史中唯一一个文件的最近摘要时补该路径；
   replace缺mode时沿用现有文件的可执行位。模型给出的replace/delete SHA不改写。
@@ -349,9 +349,20 @@ async def _anchored_sha256(entry: Mapping[str, JsonValue], workspace: WorkspaceF
         text = body.decode("utf-8")
     except UnicodeDecodeError:
         return None
-    if any(text.count(anchor) != 1 for anchor in texts):
+    if not all(_anchors_once(text, anchor) for anchor in texts):
         return None
     return hashlib.sha256(body).hexdigest()
+
+
+def _anchors_once(text: str, anchor: str) -> bool:
+    """与编辑规划同一顺序：先逐字匹配；一处也没有时忽略CRLF/LF差异再匹配，都要求恰好一处。
+
+    CRLF文件上模型发回的多行old_text常是LF换行（ADR 0129第2版）；规划器仍是最终裁决。
+    """
+    exact = text.count(anchor)
+    if exact:
+        return exact == 1
+    return text.replace("\r\n", "\n").count(anchor.replace("\r\n", "\n")) == 1
 
 
 def _is_workspace_patch(tool: str, definitions: Mapping[str, ToolDescriptor]) -> bool:

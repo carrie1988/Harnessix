@@ -12,10 +12,12 @@ from harnessix.agent.models import ToolResultContent, TurnStatus
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+from harnessix.delivery.trusted_action_contracts import WorkspacePatchFile, WorkspacePatchInput
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolCallCompleted
 from harnessix.models.scripted import ScriptedProvider
+from harnessix.patches.contracts import ExactEdit
 from harnessix.product_config.action_composition import (
     build_fixed_product_action_environment,
     build_product_action_composition,
@@ -27,7 +29,12 @@ from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from tests.agent.helpers import answer
-from tests.delivery.test_trusted_action_patch import _action_step, _approval, _proposal
+from tests.delivery.test_trusted_action_patch import (
+    _action_step,
+    _approval,
+    _edit_before_newline_handling,
+    _proposal,
+)
 
 
 @asynccontextmanager
@@ -177,6 +184,38 @@ async def test_crlf_preimage_does_not_receive_lf_patch_approval(tmp_path):
         assert (root / "src/modified.py").read_bytes() == b"old\r\n"
         assert (root / "tests/deleted.txt").read_bytes() == b"remove\r\n"
         assert not (root / "src/新增.py").exists()
+
+
+async def test_rollback_of_a_patch_published_before_newline_handling(tmp_path, monkeypatch):
+    # ADR 0129第2版之前发布的事务：单行锚点命中CRLF区，LF的new_text原样写入（Beta事件726）。
+    # 回滚先按原调用重新核对该事务；升级后仍须认得它，否则用户撤销不了升级前的修改。
+    async with product(tmp_path) as (root, runtime, provider, *_):
+        target = root / "src/modified.py"
+        target.write_bytes(b"a = 1\r\nb = 2\r\n")
+        edit = WorkspacePatchFile(
+            operation="edit",
+            path="src/modified.py",
+            expected_sha256=hashlib.sha256(b"a = 1\r\nb = 2\r\n").hexdigest(),
+            edits=(ExactEdit(old_text="a = 1", new_text="a = 1\nz = 0"),),
+        )
+        with monkeypatch.context() as earlier_release:
+            earlier_release.setattr(
+                "harnessix.delivery.trusted_action.apply_exact_edits", _edit_before_newline_handling
+            )
+            provider.steps = (_action_step(WorkspacePatchInput(files=(edit,))), answer("修改完成"))
+            thread = await runtime.create_thread(str(root))
+            waiting = await runtime.run_turn(thread.thread_id, "加一行", request_id="patch")
+            original_id = _approval(waiting).plan_id
+            completed = await approve(runtime, thread.thread_id, waiting)
+            assert result(completed).outcome == "succeeded"
+        assert target.read_bytes() == b"a = 1\nz = 0\r\nb = 2\r\n"
+
+        provider.steps = (rollback_step(original_id), answer("回滚完成"))
+        waiting = await runtime.run_turn(thread.thread_id, "撤销上次修改", request_id="rollback")
+        assert waiting.status is TurnStatus.WAITING_APPROVAL
+        completed = await approve(runtime, thread.thread_id, waiting)
+        assert result(completed).outcome == "succeeded"
+        assert target.read_bytes() == b"a = 1\r\nb = 2\r\n"
 
 
 async def test_rollback_three_operations_has_new_diff_approval_and_original_unchanged(tmp_path):
