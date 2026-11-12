@@ -220,6 +220,7 @@ def simulated_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Simple
     observation = SimpleNamespace(
         kind="directory",
         identity=("simulated-volume", "simulated-file"),
+        binding=("simulated-volume", "simulated-file"),
         content=b"[]",
         size=0,
         entries=(),

@@ -41,6 +41,7 @@ def _simulated_read_plan(
     observation = SimpleNamespace(
         kind="directory",
         identity=("simulated-volume", "simulated-file"),
+        binding=("simulated-volume", "simulated-file"),
         content=b"[]",
         size=0,
         entries=(),

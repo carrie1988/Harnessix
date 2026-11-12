@@ -56,7 +56,29 @@ def test_net_zero_is_observed_and_history_is_durable_in_original_cas(tmp_path):
             _verify_final_snapshot(snapshot, root, lambda: None, None)
 
 
-@pytest.mark.parametrize("drift", ["parent_member", "parent_mode", "leaf", "identity"])
+def test_an_unselected_parent_member_appearing_before_final_verify_is_not_drift(
+    tmp_path, monkeypatch
+):
+    """读取期间父目录里多出未被选中的文件：不属于本次观察的事实，最终复核照常通过（ADR 0143）。"""
+    root = tmp_path / "workspace"
+    path, base, versions = fixture(root)
+    original = source_module._read_existing
+
+    def changed(*args, **kwargs):
+        body = original(*args, **kwargs)
+        (root / "a/b/new.txt").write_bytes(b"foreign\n")
+        return body
+
+    monkeypatch.setattr(source_module, "_read_existing", changed)
+    with SQLiteWorkspaceTransactionStore(tmp_path / "state") as store:
+        snapshot = _observe_final_versions(
+            root, base, versions, lambda: None, WorkspaceSnapshotPorts(store.put_blob, store.blob)
+        )
+        assert {item.path for item in snapshot.resources} == {".", path}
+        assert (root / "a/b/new.txt").read_bytes() == b"foreign\n"
+
+
+@pytest.mark.parametrize("drift", ["parent_mode", "leaf", "identity"])
 def test_parent_or_leaf_drift_between_capture_and_final_verify_is_rejected(
     tmp_path, monkeypatch, drift
 ):
@@ -66,9 +88,7 @@ def test_parent_or_leaf_drift_between_capture_and_final_verify_is_rejected(
 
     def changed(*args, **kwargs):
         body = original(*args, **kwargs)
-        if drift == "parent_member":
-            (root / "a/b/new.txt").write_bytes(b"foreign\n")
-        elif drift == "parent_mode":
+        if drift == "parent_mode":
             (root / "a/b").chmod(0o700)
         elif drift == "leaf":
             (root / path).write_bytes(b"other\n")
