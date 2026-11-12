@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from uuid import UUID, uuid5
 
 from harnessix.agent.errors import KernelError
@@ -14,7 +15,7 @@ from harnessix.agent.models import (
     Turn,
     TurnStatus,
 )
-from harnessix.agent.provider_stop import unknown_usage_stop
+from harnessix.agent.provider_stop import service_failures_within, unknown_usage_stop
 from harnessix.agent.usage import ModelAttemptStarted
 from harnessix.context.compaction import PreparedCompaction
 from harnessix.context.compaction_contracts import CompactionPolicy, CompactionSummary
@@ -25,6 +26,31 @@ from harnessix.context.compaction_projection import (
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_view import history_document
+
+
+@dataclass(frozen=True, slots=True)
+class UnknownUsagePolicy:
+    """已有尝试未完整报回用量时，是否还允许发起下一次付费请求（ADR 0123、0144）。
+
+    always：一律按预留额继续，用于无人值守运行和不计费的本地端点。
+    service_failure_retries：用量未知只因服务方故障（5xx、429、连接与超时）时，最近连续不超过这么多次
+    失败仍按预留额继续；0表示一次也不允许。两者都不满足时停止，交给用户决定。
+    """
+
+    always: bool = False
+    service_failure_retries: int = 0
+
+    def __post_init__(self) -> None:
+        retries = self.service_failure_retries
+        if type(self.always) is not bool or type(retries) is not int or not 0 <= retries <= 32:
+            raise KernelError("invalid_runtime_configuration", "未知用量策略无效")
+
+    def continues(self, turn: Turn) -> bool:
+        return self.always or service_failures_within(turn, self.service_failure_retries)
+
+
+# 默认策略：用量未知即停止。
+STOP_ON_UNKNOWN_USAGE = UnknownUsagePolicy()
 
 
 def unknown_usage_reservation(turn: Turn) -> int:

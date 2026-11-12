@@ -1,21 +1,28 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
   - trusted_actions
+  - agent
+  - product_config
+  - models
 related_adrs:
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
   - docs/adr/0069-unified-coding-action-risk-route.md
+  - docs/adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md
+  - docs/adr/0123-provider-service-failure-attribution.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
   - tests/product_config/test_server_and_cli.py
+  - tests/agent/test_model_attempts.py
+  - tests/context/test_pressure_window_candidates.py
 supersedes: []
 ---
 
@@ -23,11 +30,14 @@ supersedes: []
 
 ## 1. 文档摘要
 
-本文记录0.10.0b20真实仓库复测（2026-11-12）确认的问题中由Beta改进会话负责的部分。本版包含第一项：
-批准后、执行前工作区发生变化时，操作不再被报告为“结果未知”并中断整轮，而是以确定的失败结束，本轮继续
-（Beta编号B20-02，[ADR 0142](../adr/0142-stale-approved-plan-fails-without-effect.md)）。
+本文记录0.10.0b20真实仓库复测（2026-11-12）确认的问题中由Beta改进会话负责的部分：
 
-后续批次（收窄目录绑定、交互模式下服务方故障后的自动重试、大仓全仓搜索）落地时在本文追加。
+| 项 | 用户看到的现象 | 处理 | 决策记录 |
+|---|---|---|---|
+| 一 | 批准后整轮中断，显示“存在未知效果”，获批操作没有执行（B20-02） | 过期计划以确定的失败结束，本轮继续 | [ADR 0142](../adr/0142-stale-approved-plan-fails-without-effect.md) |
+| 二 | 一次流式中断结束了进行到第57次请求的任务，要手动“继续” | 付费交互模式下服务方故障连续至多自动重试5次 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md) |
+
+第1～14节描述第一项；第二项的设计集中在第15节。后续批次（收窄目录绑定、大仓全仓搜索）落地时在本文追加。
 
 ## 2. 需求背景
 
@@ -157,3 +167,52 @@ Agent Runtime、Session事件类型、Workspace Snapshot和各Executor都没有�
 | 执行前过期的确定失败 | `src/harnessix/trusted_actions/operation_router.py` | `tests/trusted_actions/test_router.py`、`tests/delivery/test_trusted_action_patch.py` |
 | 失败码登记与说明 | `src/harnessix/trusted_actions/public_outcomes.py`、`agent_gateway_output.py` | `tests/product_config/test_stale_approved_plan.py` |
 | 产品端到端 | — | `tests/product_config/test_stale_approved_plan.py`、`test_parent_closure_product_sdk.py`、`test_server_and_cli.py` |
+
+## 15. 第二项：交互模式下服务方故障后的自动重试
+
+### 15.1 背景与决定
+
+复测的OCR任务第57次模型请求时流式响应中途断开，该次用量没有报回。按[ADR 0123](../adr/0123-provider-service-failure-attribution.md)
+第6节，付费端点的交互模式在“计费未知”时停止，整轮以`provider_transport`结束，用户输入“继续”后才接着做。
+同一轮里另外两次连接失败因为确定未计费而自动重试成功。产品负责人2026-11-12决定：网络中断允许自动重试，
+重试次数为5次（[ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)）。
+
+### 15.2 设计
+
+```mermaid
+flowchart TD
+    Fail[模型尝试失败 用量未知] --> Kind{服务方故障?}
+    Kind -- 否 --> Stop[停止 交给用户]
+    Kind -- 是 --> Count{最近连续此类失败不超过5次?}
+    Count -- 否 --> Stop
+    Count -- 是 --> Reserve[按预留额记账]
+    Reserve --> Budget{预留后仍在Token预算内?}
+    Budget -- 否 --> Stop
+    Budget -- 是 --> Next[发起下一次请求]
+```
+
+- `agent/provider_stop.py::service_failures_within(turn, limit)`：本Turn用量未知的尝试（含摘要请求）必须全部是
+  服务方故障（`provider_transport`、`provider_rate_limit`、`provider_provider_internal`），且主模型尝试末尾连续的
+  此类失败不超过`limit`。
+- `agent/turn_budget_compaction.py::UnknownUsagePolicy(always, service_failure_retries)`：`continues(turn)`为真时
+  按预留额继续（`require_reserved_unknown_usage`），否则沿用原停止规则。
+- `AgentRuntime`的参数`continue_after_unknown_usage: bool`改为`unknown_usage: UnknownUsagePolicy`，四个读取点
+  （请求额度、摘要额度、每步发起前、预算压力压缩规划）改为调用`continues(turn)`。默认策略仍是停止。
+- `product_config/server.py`：`SERVICE_FAILURE_RETRIES = 5`；无人值守和不计费端点`always=True`（行为不变），付费
+  交互模式`always=False`、`service_failure_retries=5`。
+- 向导生成配置的`max_attempts`由4改为6；`ModelProfile.max_attempts`与`ModelHTTPConfig.max_attempts`的上界由5
+  放宽到6，7个公开Schema的`maximum`随之更新。
+
+### 15.3 边界
+
+- 响应已经开始输出之后才断开的请求，适配器不重试（ADR 0123未改变的部分），该轮仍以原故障结束。
+- 非服务方故障造成的用量未知（输出无效等）照旧停止。
+- 连续6次失败后停止，错误码与说明和原来相同；中间有一次成功则重新计数。
+- 重试的请求可能已被计费，最坏多付5次请求的费用；预留额仍计入Token预算。
+
+### 15.4 验证
+
+- `tests/agent/test_model_attempts.py`：三类服务方故障各自重试后本轮完成；连续5次失败后第6次成功照常完成，
+  连续6次失败后停止且第7次请求没有发出；其他原因的用量未知仍停止；策略参数校验；原有“默认停止”
+  “无人值守继续”用例保持通过。
+- `tests/context/test_pressure_window_candidates.py`：预算压力压缩规划读取同一策略。

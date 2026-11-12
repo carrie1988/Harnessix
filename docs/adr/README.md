@@ -271,6 +271,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0137：新建文件时由事务补建缺失的父目录](0137-create-with-missing-parent-directories.md)：`apply_patch_batch`的create在父目录不存在时于同一次审批、同一笔事务内补建目录；失败只清理自己建的空目录，回滚删除原Patch补建且为空的目录，审批Diff以`new directory`行列出；不跟随符号链接，合同与Schema不变，Windows暂不补建。
 - [ADR 0141：CRLF与混合换行文件上的精确编辑](0141-newline-aware-exact-edits.md)：edit的锚点先逐字节匹配，找不到时忽略CRLF/LF差异再匹配并映射回原始字节区间；`new_text`的换行按被替换处的风格写入；升级前保存的计划按当时的语义复核，仍可执行与回滚。
 - [ADR 0142：批准后过期的计划以确定失败结束](0142-stale-approved-plan-fails-without-effect.md)：修订ADR 0069的Route状态机；执行前复核发现批准时绑定的工作区事实已变化时，Route由ready直接进入failed，操作不执行并如实反馈，本轮继续，不再报告为未知效果。
+- [ADR 0144：交互模式下服务方故障后的自动重试](0144-automatic-retry-after-service-failures-in-interactive-mode.md)：修订ADR 0123第6节；付费端点的交互模式下，网络中断、限流、服务端错误造成的用量未知不再立即停止，连续至多自动重试5次，其他原因的用量未知照旧停止。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

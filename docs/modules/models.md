@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 31
+version: 32
 code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
@@ -829,6 +829,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 32 | `151ab594` 增量 | 2026-11-12 | `ModelHTTPConfig.max_attempts`上界由5放宽到6，配合向导的“首次请求加至多5次重试”（ADR 0144）；重试逻辑不变 |
 | 31 | `e5141ec7` 增量 | 2026-11-12 | 正常结束的空响应不再由适配器判为协议错误，改由Runtime一处判定并可补发提示继续；删除`semantic_output_missing`（ADR 0109第6版） |
 | 30 | `cf52cadc` 增量 | 2026-11-12 | 畸形或截断的工具参数对所有端点都只拒绝该次调用，不再使整个Turn失败（ADR 0109第5版）；文档版本27～29由round-2分支使用 |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |

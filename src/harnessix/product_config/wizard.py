@@ -229,8 +229,8 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                     "model": checked.model,
                     "thinking": "off" if thinking_auto_off else checked.thinking,
                     "context_window_tokens": checked.context_window_tokens,
-                    # 云端限流和网络抖动很常见，只有确定未计费的失败才会重试到这个次数。
-                    "max_attempts": 4,
+                    # 云端限流和网络抖动很常见：首次请求之外最多自动重试5次（ADR 0144）。
+                    "max_attempts": 6,
                     "retry_delay_seconds": 1.0,
                     **_output_limits(
                         checked.context_window_tokens,

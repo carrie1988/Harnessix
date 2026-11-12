@@ -28,6 +28,7 @@ from harnessix.agent.planning import planning_history_anchors
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import get_turn
 from harnessix.agent.turn_budget_compaction import (
+    STOP_ON_UNKNOWN_USAGE,
     closing_reserve,
     pressure_history_allocation,
     pressure_policies,
@@ -161,7 +162,7 @@ async def _budget_plan(
         (), selection.tools, context.instructions if context else None
     )
     # 默认策略下费用未知即停止；无人值守宿主按预留额继续，由摘要槽位检查兜底。
-    if not getattr(host, "_continue_after_unknown_usage", False):
+    if not getattr(host, "_unknown_usage", STOP_ON_UNKNOWN_USAGE).continues(turn):
         require_request_slots(turn)
     policies = pressure_policies(
         turn, host._compaction, fixed, estimate_model_input_tokens(prepared.history, (), None)

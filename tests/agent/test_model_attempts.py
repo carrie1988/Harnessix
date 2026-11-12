@@ -14,6 +14,7 @@ from harnessix.agent.models import Budget, EventDraft, Usage
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.turn_budget_compaction import (
+    UnknownUsagePolicy,
     require_reserved_unknown_usage,
     unknown_usage_reservation,
 )
@@ -228,11 +229,107 @@ async def test_unknown_usage_continues_only_when_allowed(tmp_path: Path) -> None
         tmp_path,
         [*_service_failure(first), *_tool_answer(second)],
         budget=Budget(max_tokens=6_000_000, max_output_chars=1_024),
-        continue_after_unknown_usage=True,
+        unknown_usage=UnknownUsagePolicy(always=True),
         later_steps=(answer("完成"),),
     )
     assert tools.calls and turn.status == "completed"
     assert turn.model_attempts[0].usage.completeness == "unknown"
+
+
+RETRY_FIVE = UnknownUsagePolicy(service_failure_retries=5)
+
+
+def _interrupted(start, code="provider_transport"):
+    """流式响应中途断开：该次请求的用量没有报回。"""
+    return [
+        start,
+        ModelAttemptFinished(
+            attempt_id=start.attempt_id,
+            outcome="failed",
+            error=AgentFailure(code=code, message="连接中断", retryable=True),
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "code", ["provider_transport", "provider_rate_limit", "provider_provider_internal"]
+)
+async def test_network_interruption_is_retried_and_the_turn_goes_on(tmp_path: Path, code) -> None:
+    """Beta现场：第57次请求的流式响应中途断开，整轮以“不再发起付费请求”结束，用户只能手动继续。"""
+    first, second = attempt_start(), attempt_start(index=2)
+    turn, tools = await execute(
+        tmp_path,
+        [*_interrupted(first, code), *_tool_answer(second)],
+        budget=Budget(max_tokens=6_000_000, max_output_chars=1_024),
+        unknown_usage=RETRY_FIVE,
+        compaction=compaction_config(),
+        summary_provider=ScriptedProvider([]),
+        later_steps=(answer("完成"),),
+    )
+    assert tools.calls and turn.status == "completed"
+    assert [attempt.status for attempt in turn.model_attempts][:2] == ["failed", "completed"]
+    assert turn.model_attempts[0].usage.completeness == "unknown"
+
+
+async def test_five_interruptions_in_a_row_are_retried_and_the_sixth_stops(tmp_path: Path) -> None:
+    starts = [attempt_start(index=index) for index in range(1, 8)]
+    failures = [event for start in starts[:5] for event in _interrupted(start)]
+    turn, tools = await execute(
+        tmp_path,
+        [*failures, *_tool_answer(starts[5])],
+        budget=Budget(max_tokens=6_000_000, max_output_chars=1_024, max_steps=40),
+        unknown_usage=RETRY_FIVE,
+        compaction=compaction_config(),
+        summary_provider=ScriptedProvider([]),
+        later_steps=(answer("完成"),),
+    )
+    assert tools.calls and turn.status == "completed"
+    assert [attempt.status for attempt in turn.model_attempts][:6] == [*["failed"] * 5, "completed"]
+
+    store = SQLiteSessionStore(tmp_path / "six.db")
+    six = [event for start in starts[:6] for event in _interrupted(start)]
+    provider = ScriptedProvider([[*six, *_tool_answer(starts[6])]])
+    async with AgentRuntime(
+        store,
+        provider,
+        RecordingTools(),
+        unknown_usage=RETRY_FIVE,
+        compaction=compaction_config(),
+        summary_provider=ScriptedProvider([]),
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        stopped = await runtime.run_turn(
+            thread.thread_id,
+            "连续中断",
+            request_id="r",
+            budget=Budget(max_tokens=6_000_000, max_output_chars=1_024, max_steps=40),
+        )
+    # 第7次请求没有发出：连续6次用量未知的服务方故障超过了允许的5次。
+    assert [attempt.status for attempt in stopped.model_attempts] == ["failed"] * 6
+    assert stopped.status == "failed" and stopped.error.code == "provider_transport"
+    assert "不再发起付费请求" in stopped.error.message
+
+
+async def test_unknown_usage_from_other_causes_still_stops(tmp_path: Path) -> None:
+    """只有服务方故障才自动重试；例如输出无效造成的用量未知仍按计费安全规则停止。"""
+    first, second = attempt_start(), attempt_start(index=2)
+    turn, _ = await execute(
+        tmp_path,
+        [*_interrupted(first, "provider_invalid_provider_output"), *_tool_answer(second)],
+        budget=Budget(max_tokens=6_000_000, max_output_chars=1_024),
+        unknown_usage=RETRY_FIVE,
+        compaction=compaction_config(),
+        summary_provider=ScriptedProvider([]),
+    )
+    assert [attempt.status for attempt in turn.model_attempts] == ["failed"]
+    assert turn.status == "failed" and turn.error.code == "budget_exceeded"
+
+
+def test_unknown_usage_policy_rejects_invalid_settings() -> None:
+    for options in ({"service_failure_retries": -1}, {"service_failure_retries": True}):
+        with pytest.raises(KernelError) as invalid:
+            UnknownUsagePolicy(**options)
+        assert invalid.value.code == "invalid_runtime_configuration"
 
 
 def test_unknown_usage_is_reserved_at_the_largest_known_request() -> None:

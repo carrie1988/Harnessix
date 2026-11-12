@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 142
+version: 143
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -2304,6 +2304,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 143 | `151ab594` 增量 | 2026-11-12 | 交互模式下服务方故障后连续至多自动重试5次（`SERVICE_FAILURE_RETRIES`）；向导生成配置的`max_attempts`由4改为6，合同上界由5放宽到6（ADR 0144） |
 | 142 | `cf52cadc` 增量 | 2026-11-11 | 百炼qwen3.8-max/flash默认预设`dashscope_enable_thinking`（只在工具步骤思考），取代`explicit_thinking_switch`；声明窗口时默认输出上限不超过窗口的四分之一，思考是否放得下按同一上限判断（0.10.0b19） |
 | 141 | `80fb499a` 增量 | 2026-11-11 | `explicit_thinking_switch`：百炼qwen3.8-max/flash在用户显式指定思考档位时启用`enable_thinking`开关（0.10.0b16，Beta反馈HX-03） |
 | 140 | `7d847780` 增量 | 2026-11-11 | Git用户来源读取时限5秒放宽到30秒，仅此路径（0.10.0b14） |

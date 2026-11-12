@@ -74,7 +74,7 @@ supersedes: []
 - **确定未计费：** 收到HTTP错误响应（状态码≥400），或TCP/TLS连接未建立。适配器为该尝试报告完整零用量，不再触发“用量未知”停止，并按`Retry-After`（上限60秒）与指数退避取较大值等待。向导生成的配置重试4次。
 - **计费未知：** 请求已发出但没有完整响应，例如读超时或流式中断。
   - `harnessix exec`（无人值守）和本地免费端点：按本Turn已知的单次最大消耗预留后继续，预留耗尽Token预算时停止。
-  - 付费端点的交互模式：维持停止，错误信息如实说明，用户发送新消息即可继续。
+  - 付费端点的交互模式：维持停止，错误信息如实说明，用户发送新消息即可继续。（[ADR 0144](0144-automatic-retry-after-service-failures-in-interactive-mode.md)修订：服务方故障造成的用量未知连续至多自动重试5次。）
 - **未改变：** 响应开始输出后不重试；已完成用量的记账不变；未传入开关的程序化调用维持原停止规则。
 
 新代码：`models/_provider_io.py`（`unbilled_usage`、`retry_after_seconds`）、`agent/turn_budget_compaction.py`（`unknown_usage_reservation`）、`AgentRuntime(continue_after_unknown_usage=...)`、`agent-server --unattended`。

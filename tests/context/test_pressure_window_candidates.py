@@ -16,6 +16,7 @@ from harnessix.agent.model_input_budget import estimate_model_input_tokens
 from harnessix.agent.models import Usage
 from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS
 from harnessix.agent.turn_budget_compaction import (
+    UnknownUsagePolicy,
     closing_reserve,
     pressure_history_allocation,
     pressure_policies,
@@ -405,7 +406,7 @@ async def test_unknown_cost_may_plan_when_the_host_continues_on_reservation(
         offline_pressure.source,
         model_attempts=(settled_attempt(completeness="unknown", outcome="failed"),),
     )
-    offline_pressure.env.host._continue_after_unknown_usage = True
+    offline_pressure.env.host._unknown_usage = UnknownUsagePolicy(always=True)
     await run_pressure(offline_pressure, source=source)
     candidate_trace.prepaid.assert_awaited()
 

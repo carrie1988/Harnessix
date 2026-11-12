@@ -290,7 +290,7 @@
         },
         "max_attempts": {
           "default": 2,
-          "maximum": 5,
+          "maximum": 6,
           "minimum": 1,
           "title": "Max Attempts",
           "type": "integer"

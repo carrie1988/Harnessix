@@ -157,6 +157,8 @@ from harnessix.agent.trusted_action_runtime import (
     synchronize_waiting_action,
 )
 from harnessix.agent.turn_budget_compaction import (
+    STOP_ON_UNKNOWN_USAGE,
+    UnknownUsagePolicy,
     covered_through_step,
     pressure_summary_instructions,
     remaining_request_slots,
@@ -323,7 +325,7 @@ class AgentRuntime:
         stable_tool_catalog: bool = False,
         reject_forced_choice_violations: bool = False,
         completion_guard: bool = False,
-        continue_after_unknown_usage: bool = False,
+        unknown_usage: UnknownUsagePolicy = STOP_ON_UNKNOWN_USAGE,
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
     ) -> None:
@@ -377,8 +379,8 @@ class AgentRuntime:
         # 显式开启时，不像完成的纯文本回复改为补发继续提示（completion_guard模块）；默认照常完成。
         self._completion_guard = completion_guard
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
-        # 用量未知的失败尝试按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
-        self._continue_after_unknown_usage = continue_after_unknown_usage is True
+        # 用量未知的失败尝试是否按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
+        self._unknown_usage = unknown_usage
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
             raise KernelError(
                 "artifact_store_mismatch", "Artifact 发布器必须绑定同一 Session 和 Scoped 入口"
@@ -612,7 +614,7 @@ class AgentRuntime:
     def _require_request_slots(self, turn: Turn) -> int:
         """按本Runtime的未知用量策略检查下一请求额度。"""
 
-        if not self._continue_after_unknown_usage:
+        if not self._unknown_usage.continues(turn):
             return require_request_slots(turn)
         require_reserved_unknown_usage(turn)
         return remaining_request_slots(turn)
@@ -2000,7 +2002,7 @@ class AgentRuntime:
         """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。"""
         assert self._compaction is not None and self._summary_provider is not None
         budget_planned = planned is not None
-        require_summary_slot(turn, allow_unknown_usage=self._continue_after_unknown_usage)
+        require_summary_slot(turn, allow_unknown_usage=self._unknown_usage.continues(turn))
         if planned is not None:
             planned = replay_compaction_plan(thread, planned.plan)
         model_step = turn.model_steps + 1
@@ -2393,7 +2395,7 @@ class AgentRuntime:
                             prepared.inspection.limits.reserved_output_tokens,
                         )
                         turn = get_turn(thread, turn_id)
-                if self._continue_after_unknown_usage:
+                if self._unknown_usage.continues(turn):
                     require_reserved_unknown_usage(turn)
                 elif any(
                     attempt.status != "running" and attempt.usage.completeness != "complete"

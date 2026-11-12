@@ -11,6 +11,7 @@ from typing import BinaryIO, Literal
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.agent.turn_budget_compaction import UnknownUsagePolicy
 from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
@@ -60,6 +61,10 @@ from harnessix.session.maintenance_io import MaintenanceIOControl, run_maintenan
 from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.tools.contracts import READ_TIMEOUT_SECONDS
 from harnessix.tools.runtime import CodingToolRuntime
+
+# 付费交互模式下，网络中断、限流、服务端错误之后最多连续自动重试的次数；
+# 超过后停止并交给用户决定是否继续（产品负责人2026-11-12决定，ADR 0144）。
+SERVICE_FAILURE_RETRIES = 5
 
 
 @dataclass(frozen=True, slots=True)
@@ -374,7 +379,10 @@ async def _serve_product_stdio(
                                 for provider in _active_providers(startup)
                             ),
                             completion_guard=startup.completion_guard,
-                            continue_after_unknown_usage=startup.continue_after_unknown_usage,
+                            unknown_usage=UnknownUsagePolicy(
+                                always=startup.continue_after_unknown_usage,
+                                service_failure_retries=SERVICE_FAILURE_RETRIES,
+                            ),
                             recover_truncated_replies=True,
                         ) as runtime:
                             # 全部组件就绪后才原子发布Product与Action活动指针并开放stdio。
@@ -509,7 +517,7 @@ async def run_product_stdio(
             secrets=secrets,
             root_owner=owner,
             completion_guard=unattended or loaded.config.completion_guard,
-            # 本地端点没有费用风险；付费交互模式下停止并交给用户决定是否继续。
+            # 本地端点没有费用风险；付费交互模式下只对服务方故障自动重试有限次，其余停止并交给用户。
             continue_after_unknown_usage=(
                 unattended or loaded.config.chain_pricing(selection.selected_profile) == "free"
             ),

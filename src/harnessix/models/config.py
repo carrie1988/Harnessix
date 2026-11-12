@@ -104,7 +104,7 @@ class ModelHTTPConfig(ContractModel):
     max_output_tokens: int = Field(default=1024, ge=1, le=1_000_000)
     timeout_seconds: float = Field(default=60, gt=0, le=3600, allow_inf_nan=False)
     io_timeout_seconds: float = Field(default=30, gt=0, le=300, allow_inf_nan=False)
-    max_attempts: int = Field(default=2, ge=1, le=5)
+    max_attempts: int = Field(default=2, ge=1, le=6)
     retry_delay_seconds: float = Field(default=0.5, ge=0, le=10, allow_inf_nan=False)
     max_request_bytes: int = Field(default=2_097_152, ge=1024, le=16_777_216)
     max_response_bytes: int = Field(default=2_097_152, ge=1024, le=16_777_216)
