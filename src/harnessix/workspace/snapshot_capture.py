@@ -33,6 +33,7 @@ from harnessix.workspace.snapshot import (
     _open_native,
     _root_path_key,
     _snapshot_resource_requests,
+    bound_size,
     observe_creatable_resource,
 )
 
@@ -145,8 +146,8 @@ class _Observations:
             path=request.path,
             access=request.access,
             kind=native.kind,
-            identity=_digest(native.identity),
-            size=native.size,
+            identity=_digest(native.binding),
+            size=bound_size(native),
             content_sha256=(
                 hashlib.sha256(native.content).hexdigest()
                 if native.kind == "file" and native.content is not None

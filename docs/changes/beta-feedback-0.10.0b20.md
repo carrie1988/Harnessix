@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 6
+version: 7
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -14,6 +14,7 @@ modules:
   - product_ui
 related_adrs:
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
+  - docs/adr/0143-plans-bind-directories-without-their-members.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md
   - docs/adr/0123-provider-service-failure-attribution.md
@@ -41,6 +42,7 @@ related_tests:
   - tests/product_config/test_zero_config.py
   - tests/product_ui/test_wrap_up.py
   - tests/product_ui/test_time_checkpoint.py
+  - tests/workspace/test_plan_binding_ignores_directory_members.py
 supersedes: []
 ---
 
@@ -59,9 +61,10 @@ supersedes: []
 | 五 | 模型只说了接下来要做什么就显示“已完成” | 交互模式提示它继续；宿主说明显示为“提示” | [ADR 0147](../adr/0147-interactive-prompt-for-announced-steps.md) |
 | 六 | 任务在第60分钟被判为“未完成”，等待审批的时间也算在内；任务做完了模型还在追加工作，只能取消 | 实际运行每满60分钟询问一次，等待审批不计；`Ctrl+F`一键收尾 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md) |
 | 七 | 任务早已做完，模型又自己验证、修改了一个多小时 | 本机模式的模型指令加入完成规则：做完就结束，已有检查只验证一次，无法验证的写进最终回答 | [ADR 0149](../adr/0149-completion-rule-in-native-instructions.md) |
+| 八 | 审批期间工作区里多出无关文件，批准后操作没有执行，要重新发起、再批准一次 | 计划对目录只绑定对象与权限，不绑定有哪些成员 | [ADR 0143](../adr/0143-plans-bind-directories-without-their-members.md) |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节。后续批次（收窄目录绑定、生成进度与实时用量）落地时在本文追加。
+第六、七项在第20、21节，第八项在第22节。后续批次（生成进度与实时用量）落地时在本文追加。
 
 ## 2. 需求背景
 
@@ -90,7 +93,7 @@ supersedes: []
 
 非目标：
 
-- 不在本版收窄Snapshot的绑定范围（无关文件仍会使计划过期，另见ADR 0143的后续批次）；
+- 不在本版收窄Snapshot的绑定范围（无关文件仍会使计划过期；已由第22节的后续批次解决，ADR 0143）；
 - 不改变进入Executor之后的未知效果处理；
 - 不提供“自动按当前内容重做并沿用旧批准”。
 
@@ -170,7 +173,7 @@ Agent Runtime、Session事件类型、Workspace Snapshot和各Executor都没有�
 ## 12. 限制、风险与取舍
 
 - 无关文件仍会使计划过期（绑定范围未变），用户会多批准一次；有程序持续向工作目录写文件时可能反复出现。
-  这是本批次有意留下的，由收窄绑定的后续批次解决。
+  这是本批次有意留下的，由收窄绑定的后续批次解决（第22节）。
 - 模型可能不重新发起而是先做别的检查，这由模型决定；真实运行中两个场景都在同一轮内重新发起并完成。
 - 进入Executor之后才发现的变化（复核与发布之间的极短窗口）仍按写类操作的保守规则记为未知，再由对账确认未执行。
 
@@ -469,3 +472,46 @@ flowchart LR
 - 样本量小，“关闭思考、加规则前”只有一次。
 - 第六项验证的五次中档运行（都带完成规则）里有两次用时较长（12.8与15.2分钟）：时间花在补丁参数被拒绝后的
   重试和对自己页面的反复修改上（各只运行1条命令），不是另造验证手段。补丁参数的问题由第二轮开发的修复覆盖。
+
+## 22. 第八项：计划不再绑定目录里有哪些成员
+
+### 22.1 背景与决定
+
+第一项让“批准后计划过期”不再中断整轮任务，但无关文件仍会使计划过期，用户要多批准一次。负责人的决定是两步都做。
+快照里的目录此前绑定对象与权限、链接数和全部成员；在macOS（APFS）上链接数随成员数变化，连“待新建文件”的身份
+也跟着变（[ADR 0143](../adr/0143-plans-bind-directories-without-their-members.md)）。
+
+### 22.2 设计
+
+- `workspace/snapshot.py`：观察对象`_Observed`新增`binding`（计划绑定身份），默认等于观察身份。
+  目录的`binding`是`_directory_binding`（设备号、inode、模式、属主、属组）；缺失资源是父目录的`binding`加名称；
+  父目录也缺失时是最近的已有目录的`binding`加其下路径。`bound_size`把目录的大小记为0。
+- `workspace/windows.py`：Windows观察对象同样新增`binding`；目录取原有的稳定身份（不含成员摘要）。
+- 第1代快照（`capture_workspace_snapshot`）与第2代（`snapshot_capture._Observations.observe`）的资源观察
+  改用`binding`和`bound_size`。原生观察、读取工具、安全目录读取使用的`identity`不变。
+
+### 22.3 兼容与边界
+
+- 合同、Schema与事件格式不变；变的是`identity`摘要与目录`size`的取值。
+- 升级前捕获、升级后才执行的计划会被判为过期，按第一项以“未执行”结束，Agent重新发起即可。
+  已完成修改的回滚不受影响：回滚按文件镜像重新捕获快照。
+- 观察目录时仍然读取成员列表（读取工具依赖同一观察），单个目录超过10,000个成员时快照失败的限制仍在。
+- Windows的改动只是取用原有的稳定身份，本机无法运行Windows观察，依赖发布前的三平台测试核对。
+
+### 22.4 验证
+
+- `tests/workspace/test_plan_binding_ignores_directory_members.py`（两代快照逐项）：根、中间目录、目标所在目录、
+  工作目录里出现或消失无关的文件与子目录，快照不过期；目标文件被改、待新建的路径上出现文件（含大小写不敏感
+  文件系统上的同名不同大小写）、父目录被替换、父目录权限变化，仍然过期；缺失目录之下的目标遵循同一规则。
+  这些“仍然过期”的用例在修改前后都通过，“不过期”的用例在修改前失败。
+- 原有13个断言“成员变化即过期”的用例按本决定更新：成员变化改为断言不过期，或把触发条件换成父目录对象、
+  权限的真实变化（`test_snapshot.py`、`test_snapshot_parent_closure.py`、`test_snapshot_v2_native_progress.py`、
+  `test_root_binding.py`、`test_snapshot_request_refactor.py`、`test_agent_preplanning.py`、
+  `test_parent_closure_runtime.py`、`test_parent_closure_product_sdk.py`、`test_stale_approved_plan.py`）。
+  `test_snapshot_request_refactor.py`与重构前源码的逐字段比对保留，只排除目录与缺失资源的身份、目录大小和自摘要。
+- 真实终端界面（百炼qwen3.8-flash，第一项的两个复现场景，审批打开时往工作区根写入无关文件）：
+
+| 场景 | 0.10.0b22 | 本项之后 |
+|---|---|---|
+| 新建文件 | 批准2次（第一次过期后重新发起），约34秒 | 批准1次，约13秒，文件写入 |
+| 运行需要审批的命令 | 批准3次，约34秒 | 批准1次，约17秒 |

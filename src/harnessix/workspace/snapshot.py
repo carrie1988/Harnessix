@@ -48,6 +48,7 @@ def _digest(value: object) -> str:
 class _NativeObservation(Protocol):
     kind: Literal["file", "directory", "missing"]
     identity: tuple[object, ...]
+    binding: tuple[object, ...]
     content: bytes | None
     size: int
     entries: tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...] | None
@@ -77,9 +78,13 @@ class _Observed:
         size: int,
         entries: tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...]
         | None = None,
+        *,
+        binding: tuple[object, ...] | None = None,
     ) -> None:
         self.kind = kind
         self.identity = identity
+        # 计划快照绑定的身份（ADR 0143）：目录只认是哪个目录及其权限，不含成员；其余与观察身份相同。
+        self.binding = identity if binding is None else binding
         self.content = content
         self.size = size
         self.entries = entries
@@ -136,12 +141,7 @@ class _PosixRoot:
                 try:
                     before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
                 except FileNotFoundError:
-                    return _Observed(
-                        "missing",
-                        (*self._stable_directory_identity(parent_info), name),
-                        None,
-                        0,
-                    )
+                    return _missing_below(parent_info, name)
                 if stat.S_ISLNK(before.st_mode):
                     raise KernelError("workspace_path_denied", "Workspace资源不能是符号链接")
                 directory = stat.S_ISDIR(before.st_mode)
@@ -185,6 +185,7 @@ class _PosixRoot:
                     body,
                     count,
                     exposed,
+                    binding=_directory_binding(info),
                 )
             if info.st_size > MAX_SNAPSHOT_FILE_BYTES:
                 raise KernelError("workspace_snapshot_limit", "Workspace文件超过快照上限")
@@ -214,6 +215,27 @@ class _PosixRoot:
 
     def close(self) -> None:
         self._workspace.close()
+
+
+def _directory_binding(info: os.stat_result) -> tuple[int, ...]:
+    """计划对目录的绑定：对象与权限。成员数（APFS把它计入链接数）和成员列表不在其中（ADR 0143）。"""
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid)
+
+
+def _missing_below(parent: os.stat_result, name: str) -> _Observed:
+    """父目录存在而名称不存在：观察身份与计划绑定都由父目录的身份加名称构成。"""
+    return _Observed(
+        "missing",
+        (*_PosixRoot._stable_directory_identity(parent), name),
+        None,
+        0,
+        binding=(*_directory_binding(parent), name),
+    )
+
+
+def bound_size(observed: _NativeObservation) -> int:
+    """计划快照记录的大小：目录的大小是成员数，不绑定（ADR 0143）。"""
+    return 0 if observed.kind == "directory" else observed.size
 
 
 def _native_platform() -> PlatformKind:
@@ -292,7 +314,10 @@ def _observe_below_missing_parent(
                 raise
             continue
         if ancestor.kind == "missing":
-            return _Observed("missing", (*ancestor.identity, *parts[depth:]), None, 0)
+            rest = parts[depth:]
+            return _Observed(
+                "missing", (*ancestor.identity, *rest), None, 0, binding=(*ancestor.binding, *rest)
+            )
         break
     # 刚才还缺失的祖先此刻已经存在：观察期间有并发创建，不猜测其结果。
     raise KernelError("workspace_changed", "Workspace资源在观察期间变化")
@@ -468,13 +493,13 @@ def capture_workspace_snapshot(
                     path=path,
                     access=request.access,
                     kind=observed.kind,
-                    identity=_digest(observed.identity),
+                    identity=_digest(observed.binding),
                     content_sha256=(
                         hashlib.sha256(observed.content).hexdigest()
                         if observed.kind == "file" and observed.content is not None
                         else None
                     ),
-                    size=observed.size,
+                    size=bound_size(observed),
                 )
             )
         observations.sort(

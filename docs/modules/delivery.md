@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 60
+version: 61
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -481,8 +481,8 @@ Transaction Fingerprint同时绑定Snapshot、Request ID、Mutation、时间和I
 2. 根`.`和每一级父目录的`read` Observation；
 3. Workspace Snapshot自动要求的cwd `read` Observation。
 
-父目录选择可以发现规划到执行之间的目录成员或对象变化，但也意味着深路径会快速消耗Snapshot 256资源
-上限。Mutation上限为256，不代表任意256个深路径都能成功规划。
+父目录选择可以发现规划到执行之间父目录被替换或权限变化（目录里无关成员的增减不算，ADR 0143），
+但也意味着深路径会快速消耗Snapshot 256资源上限。Mutation上限为256，不代表任意256个深路径都能成功规划。
 
 ### 11.3 Before/After与最终复核
 
@@ -1904,6 +1904,7 @@ v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 61 | `ce5b7386` 增量 | 2026-11-12 | 审批期间工作区里出现或消失无关的文件、目录，不再使已批准的补丁过期：快照对父目录只绑定对象与权限（ADR 0143） |
 | 60 | `d387a5cd` 增量 | 2026-11-12 | 新建文件时由事务补建缺失的父目录，失败只清理自己建的空目录，回滚清理原补丁补建的空目录；Windows不补建（0.10.0b21，ADR 0137） |
 | 59 | `d387a5cd` 增量 | 2026-11-12 | edit的锚点忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格；复核已保存事务时认得此前语义算出的后像（ADR 0141） |
 | 58 | `2574a498` 增量 | 2026-11-12 | 目标是目录时同样判为可修正的拒绝，所有平台（0.10.0b16） |

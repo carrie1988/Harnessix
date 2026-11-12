@@ -1,7 +1,9 @@
-"""批准后、执行前工作区发生变化：操作不执行并如实反馈，本轮继续（Beta B20-02，ADR 0142）。
+"""批准后、执行前工作区发生变化（Beta B20-02）。
 
 真实现场：审批窗口打开约两分钟，期间同一工作区根目录多了一个无关的日志文件；批准后整轮以
-uncertain_effect中断，获批的新文件没有写入，用户要手工核对工作区才能继续。
+uncertain_effect中断，获批的新文件没有写入，用户要手工核对工作区才能继续。两步修复：
+计划依赖的事实确实变了时，操作不执行并如实反馈，本轮继续（ADR 0142）；
+无关文件的出现不再使计划过期（ADR 0143）。
 """
 
 from __future__ import annotations
@@ -78,8 +80,8 @@ async def test_model_resubmits_after_a_stale_plan_and_the_second_approval_publis
         waiting = await runtime.run_turn(thread.thread_id, "修改三个文件", request_id="patch")
         first = _approvals(waiting)[0]
 
-        # 根目录出现一个与本次修改无关的文件（编辑器临时文件、测试缓存、另一个终端写的日志）。
-        (root / "unrelated.log").write_bytes(b"noise\n")
+        # 审批期间父目录的权限被改了：计划绑定的事实已不成立，但同一份修改重新发起仍然适用。
+        (root / "src").chmod(0o700)
         again = await approve(runtime, thread.thread_id, waiting)
 
         # 同一轮里模型收到“未执行”的反馈并重新提交，产品为新计划重新请求审批。
@@ -109,4 +111,26 @@ async def test_model_resubmits_after_a_stale_plan_and_the_second_approval_publis
         assert [item.outcome for item in _results(completed)] == ["failed", "succeeded"]
         assert (root / "src/modified.py").read_bytes() == b"new\n"
         assert (root / "src/新增.py").exists() and not (root / "tests/deleted.txt").exists()
+
+
+async def test_unrelated_files_appearing_while_approval_is_open_do_not_stale_the_plan(tmp_path):
+    """真实现场的原样：审批期间工作区里多了无关文件。批准一次即执行，不需要重新发起（ADR 0143）。"""
+    async with product(tmp_path) as (root, runtime, provider, router, _, _, _):
+        provider.steps = (_patch_step("first"), answer("修改完成"))
+        thread = await runtime.create_thread(str(root))
+        waiting = await runtime.run_turn(thread.thread_id, "修改三个文件", request_id="patch")
+        first = _approvals(waiting)[0]
+
+        # 编辑器临时文件、测试缓存、另一个终端写的日志：根目录与目标所在目录里都有。
+        (root / "unrelated.log").write_bytes(b"noise\n")
+        (root / ".pytest_cache").mkdir()
+        (root / "src/editor-swap.tmp").write_bytes(b"swap\n")
+        completed = await approve(runtime, thread.thread_id, waiting)
+
+        assert completed.status is TurnStatus.COMPLETED and completed.error is None
+        assert [item.outcome for item in _results(completed)] == ["succeeded"]
+        assert router.status(first.plan_id).state == "succeeded"
+        assert (root / "src/modified.py").read_bytes() == b"new\n"
+        assert (root / "src/新增.py").exists() and not (root / "tests/deleted.txt").exists()
         assert (root / "unrelated.log").read_bytes() == b"noise\n"
+        assert (root / "src/editor-swap.tmp").read_bytes() == b"swap\n"

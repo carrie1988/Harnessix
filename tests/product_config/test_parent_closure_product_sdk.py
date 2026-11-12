@@ -6,6 +6,8 @@ import hashlib
 import io
 from uuid import UUID, uuid4
 
+import pytest
+
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action_contracts import WorkspacePatchFile, WorkspacePatchInput
 from harnessix.delivery.workspace_v2_contracts import WorkspaceTransactionRecordV2
@@ -230,9 +232,12 @@ async def test_default_sdk_waiting_cancel_preserves_complete_prepared_history(
     )
 
 
-async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
-    tmp_path, config, monkeypatch
+@pytest.mark.parametrize("drift", ["unrelated_member", "replaced_parent"])
+async def test_default_sdk_workspace_drift_while_approval_is_open(
+    tmp_path, config, monkeypatch, drift
 ):
+    """审批期间父目录里多出无关文件：计划照常执行（ADR 0143）；
+    父目录被换成另一个目录：计划过期、不执行（ADR 0142）。"""
     _credentials(monkeypatch)
     root, state = tmp_path / "workspace", tmp_path / "state"
     proposal = _proposal(root)
@@ -246,14 +251,19 @@ async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
         await client.initialize()
         try:
             thread = await client.create_thread(str(root), request_id="drift-thread")
-            bundle.steps = (_action_step(proposal), answer("工作区已变化，本次没有修改"))
+            bundle.steps = (_action_step(proposal), answer("已按结果答复"))
             await client.start_turn(thread.thread_id, "修改文件", request_id="drift-patch")
             waiting = await wait_turn(client, thread.thread_id, "waiting_approval")
             approvals = await contents(
                 client, thread.thread_id, waiting.turn_id, PublicApprovalRequestContent
             )
             approval = approvals[-1]
-            (root / "d00/user.txt").write_bytes(b"user-owned\n")
+            if drift == "unrelated_member":
+                (root / "d00/user.txt").write_bytes(b"user-owned\n")
+            else:
+                (root / "d00").rename(root / "d00-moved")
+                (root / "d00").mkdir()
+                (root / "d00-moved/n00").rename(root / "d00/n00")
             await client.respond_approval(
                 ApprovalRespondParams(
                     request_id="approve-stale",
@@ -264,16 +274,21 @@ async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
                     decision=PublicApprovalDecision(outcome="approved", actor="reviewer"),
                 )
             )
-            # 过期计划以确定的失败结束（未执行、无改动），模型收到反馈后本轮照常结束。
             stopped = await wait_turn(client, thread.thread_id, "completed")
             results = await contents(
                 client, thread.thread_id, stopped.turn_id, PublicToolResultContent
             )
+            assert len(bundle.requests) == 2
+            if drift == "unrelated_member":
+                assert results[-1].outcome == "succeeded" and results[-1].error is None
+                assert all((root / item.path).read_bytes() == b"after\n" for item in proposal.files)
+                assert (root / "d00/user.txt").read_bytes() == b"user-owned\n"
+                return
+            # 过期计划以确定的失败结束（未执行、无改动），模型收到反馈后本轮照常结束。
             assert results[-1].outcome == "failed"
             assert results[-1].error is not None
             assert results[-1].error.code == "execution_plan_stale"
             assert all((root / item.path).read_bytes() == b"before\n" for item in proposal.files)
-            assert (root / "d00/user.txt").read_bytes() == b"user-owned\n"
             with SQLiteWorkspaceTransactionStore(
                 state / "workspace-transactions", read_only=True
             ) as store:
@@ -281,7 +296,6 @@ async def test_default_sdk_parent_membership_change_cannot_use_approved_plan(
                     "SELECT transaction_id FROM workspace_transactions"
                 ).fetchone()
             assert _versions(state, UUID(target))[0].state == "prepared"
-            assert len(bundle.requests) == 2
         finally:
             await client.close()
 

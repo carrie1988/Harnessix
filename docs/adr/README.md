@@ -271,6 +271,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0137：新建文件时由事务补建缺失的父目录](0137-create-with-missing-parent-directories.md)：`apply_patch_batch`的create在父目录不存在时于同一次审批、同一笔事务内补建目录；失败只清理自己建的空目录，回滚删除原Patch补建且为空的目录，审批Diff以`new directory`行列出；不跟随符号链接，合同与Schema不变，Windows暂不补建。
 - [ADR 0141：CRLF与混合换行文件上的精确编辑](0141-newline-aware-exact-edits.md)：edit的锚点先逐字节匹配，找不到时忽略CRLF/LF差异再匹配并映射回原始字节区间；`new_text`的换行按被替换处的风格写入；升级前保存的计划按当时的语义复核，仍可执行与回滚。
 - [ADR 0142：批准后过期的计划以确定失败结束](0142-stale-approved-plan-fails-without-effect.md)：修订ADR 0069的Route状态机；执行前复核发现批准时绑定的工作区事实已变化时，Route由ready直接进入failed，操作不执行并如实反馈，本轮继续，不再报告为未知效果。
+- [ADR 0143：计划对目录只绑定对象与权限，不绑定成员](0143-plans-bind-directories-without-their-members.md)：Workspace快照里的目录（补丁的各级父目录、命令的工作目录与工作区根）只绑定是哪个目录及其权限，链接数、成员列表与成员数不再参与；审批期间出现或消失无关文件不使计划过期，目标文件、待新建路径、父目录对象与权限变化仍然过期。
 - [ADR 0144：交互模式下服务方故障后的自动重试](0144-automatic-retry-after-service-failures-in-interactive-mode.md)：修订ADR 0123第6节；付费端点的交互模式下，网络中断、限流、服务端错误造成的用量未知不再立即停止，连续至多自动重试5次，其他原因的用量未知照旧停止。
 - [ADR 0145：大仓库的整仓搜索](0145-whole-repository-search-on-large-repositories.md)：二进制判断改用一次正则扫描，整份文本不命中的文件不逐行扫描，快照与正则搜索的整仓上限放宽到四倍；百MB级仓库的全仓搜索由超时无结果变为两秒左右返回，原字面量合同不变。
 - [ADR 0146：思考强度档位](0146-thinking-intensity-tiers.md)：给用户的是低、中、高三档思考强度而不是Token数；核实过档位的模型（百炼qwen3.8-max、qwen3.8-flash）默认中档，思考Token上限作为显式的高级选项，已有配置只提示不改。

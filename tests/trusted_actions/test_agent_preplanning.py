@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import os
 import traceback
 from dataclasses import fields, replace
 from pathlib import Path
@@ -393,7 +394,15 @@ async def test_expected_workspace_must_equal_complete_actual_snapshot(
             with target.open("rb"):
                 replacement.replace(target)
         elif damage == "parent_history":
-            (target.parent / "new-sibling.txt").write_text("unselected", encoding="utf-8")
+            # 只改变父目录本身、不碰文件；父目录里多出成员不算变化（ADR 0143）。
+            if os.name == "posix":
+                target.parent.chmod(0o700)
+            else:
+                # Windows目录没有权限位：换成同名的另一个目录，文件原样移回（文件身份不含时间）。
+                moved = tmp_path / "moved-parent"
+                target.parent.rename(moved)
+                target.parent.mkdir()
+                (moved / "file.txt").rename(target)
         current = h.snapshot(result.workspace_resources)
         observations["current"] = current
         assert context.workspace_root == h.root

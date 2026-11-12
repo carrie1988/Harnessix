@@ -132,7 +132,7 @@ def test_exact_control_retains_full_entry_exit_and_local_cancel(tmp_path):
     assert trace[0] == trace[-1] == "full" and "local" in trace
 
 
-@pytest.mark.parametrize("changed", ["file", "parent-member"])
+@pytest.mark.parametrize("changed", ["file", "parent-object"])
 def test_binding_does_not_replace_full_resource_verification(tmp_path, changed):
     (tmp_path / "src").mkdir()
     target = tmp_path / "src/file.py"
@@ -150,7 +150,10 @@ def test_binding_does_not_replace_full_resource_verification(tmp_path, changed):
     if changed == "file":
         target.write_bytes(b"after")
     else:
-        (tmp_path / "src/new.py").write_bytes(b"new")
+        # 父目录换成同名的另一个目录，文件原样移回；只多出成员不算变化（ADR 0143）。
+        (tmp_path / "src").rename(tmp_path / "moved")
+        (tmp_path / "src").mkdir()
+        (tmp_path / "moved/file.py").rename(target)
     assert _root_binding_matches(source, tmp_path, _control())
     with pytest.raises(KernelError) as caught:
         verify_workspace_snapshot_v2(

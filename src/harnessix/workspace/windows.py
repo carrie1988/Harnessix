@@ -70,9 +70,13 @@ class _Observed:
         size: int,
         entries: tuple[tuple[str, Literal["file", "directory", "symlink", "special"]], ...]
         | None = None,
+        *,
+        binding: tuple[object, ...] | None = None,
     ) -> None:
         self.kind = kind
         self.identity = identity
+        # 计划快照绑定的身份（ADR 0143）：目录不含成员列表；其余与观察身份相同。
+        self.binding = identity if binding is None else binding
         self.content = content
         self.size = size
         self.entries = entries
@@ -236,12 +240,14 @@ def _observe_opened(
     after = root._information(handle)
     if root._revision_identity(before) != root._revision_identity(after):
         raise KernelError("workspace_changed", "Windows目录在观察期间变化")
+    stable = root._stable_identity(before, directory=True)
     return _Observed(
         "directory",
-        (*root._stable_identity(before, directory=True), hashlib.sha256(body).hexdigest()),
+        (*stable, hashlib.sha256(body).hexdigest()),
         body,
         count,
         entries,
+        binding=stable,
     )
 
 

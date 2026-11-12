@@ -107,7 +107,6 @@ def test_request_order_and_explicit_cwd_have_identical_wire(tmp_path: Path) -> N
             "parent-mode", marks=pytest.mark.skipif(os.name != "posix", reason="POSIX目录权限位")
         ),
         "parent-object",
-        "parent-members",
         "leaf-body",
         "root",
     ],
@@ -130,8 +129,6 @@ def test_changed_facts_are_stale_not_resigned(tmp_path: Path, change: str) -> No
             (root / "d001").rename(tmp_path / "old-parent")
             (root / "d001").mkdir()
             (root / "d001/file.txt").write_bytes(b"before\n")
-        elif change == "parent-members":
-            (root / "d001/other.txt").write_bytes(b"not-selected\n")
         elif change == "leaf-body":
             (root / "d001/file.txt").write_bytes(b"changed\n")
         else:
@@ -145,6 +142,31 @@ def test_changed_facts_are_stale_not_resigned(tmp_path: Path, change: str) -> No
                 read_blob=store._read_blob,
             )
         assert error.value.code == "execution_plan_stale"
+        assert {item.name: item.read_bytes() for item in store._blobs.iterdir()} == before
+
+
+def test_unselected_parent_members_are_not_facts_of_the_snapshot(tmp_path: Path) -> None:
+    """父目录里出现计划没有选中的成员：快照不过期，也不写入新的历史块（ADR 0143）。"""
+    root = tmp_path / "workspace"
+    requests = _spread(root, 3)
+    with SQLiteWorkspaceTransactionStore(tmp_path / "state") as store:
+        snapshot = capture_workspace_snapshot_v2(
+            root,
+            resources=requests,
+            checkpoint=lambda: None,
+            write_blob=store.put_blob,
+            read_blob=store._read_blob,
+        )
+        before = {item.name: item.read_bytes() for item in store._blobs.iterdir()}
+        (root / "d001/other.txt").write_bytes(b"not-selected\n")
+        (root / "d001/other-dir").mkdir()
+        (root / "top-level.log").write_bytes(b"noise\n")
+
+        verified = verify_workspace_snapshot_v2(
+            snapshot, root, checkpoint=lambda: None, read_blob=store._read_blob
+        )
+
+        assert verified == snapshot
         assert {item.name: item.read_bytes() for item in store._blobs.iterdir()} == before
 
 

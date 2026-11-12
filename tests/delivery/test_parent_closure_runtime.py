@@ -119,7 +119,30 @@ def test_original_v1_capacity_failure_is_not_redefined(tmp_path):
     assert failed.value.code == "workspace_snapshot_limit"
 
 
-@pytest.mark.parametrize("change", ["membership", "mode", "identity", "leaf"])
+def test_unrelated_parent_member_does_not_block_publication(tmp_path):
+    """规划之后父目录里多出无关文件：计划仍然有效，照常发布，无关文件原样保留（ADR 0143）。"""
+    root, state = tmp_path / "workspace", tmp_path / "state"
+    desired = _files(root, 1)
+    with (
+        SQLiteWorkspaceTransactionStore(state / "transactions") as store,
+        WorkspaceLeaseStore(state / "leases.db") as leases,
+    ):
+        record = store.save(_prepare(root, desired, store))
+        (root / "d000/user.txt").write_bytes(b"user")
+        (root / "d000/cache").mkdir()
+        lease = leases.acquire(record.plan.source.workspace_id, "test", ttl_seconds=60)
+        published = WorkspaceTransactionRuntime(store, leases).publish(
+            record.transaction_id,
+            root,
+            approval_fingerprint=record.plan.fingerprint,
+            lease=lease,
+        )
+        assert published.state == "published"
+        assert (root / next(iter(desired))).read_bytes() == b"after\n"
+        assert (root / "d000/user.txt").read_bytes() == b"user"
+
+
+@pytest.mark.parametrize("change", ["mode", "identity", "leaf"])
 def test_any_historical_parent_change_rejected_before_effect(tmp_path, change):
     root, state = tmp_path / "workspace", tmp_path / "state"
     desired = _files(root, 1)
@@ -129,9 +152,7 @@ def test_any_historical_parent_change_rejected_before_effect(tmp_path, change):
     ):
         record = store.save(_prepare(root, desired, store))
         parent = root / "d000"
-        if change == "membership":
-            (parent / "user.txt").write_bytes(b"user")
-        elif change == "mode":
+        if change == "mode":
             parent.chmod(0o700)
         elif change == "identity":
             parent.rename(root / "old-parent")

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 20
+version: 21
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -124,7 +124,7 @@ Snapshot检测外部编辑，Lease协调内部写者；二者都不能单独替�
 6. 普通文件拒绝多硬链接，防止Workspace外别名；
 7. Snapshot必含Workspace根身份、根路径摘要、cwd目录和全部选择资源；
 8. 文件绑定对象身份、执行相关元数据、大小和内容SHA-256；
-9. 目录只绑定自身稳定身份及直接成员名称、类型和对象身份，不递归Hash未选择正文；
+9. 目录只绑定自身的对象与权限，不绑定有哪些成员（ADR 0143）；成员列表仍在观察时读取，供读取工具使用；
 10. 缺失目标绑定现存父目录身份和目标名，支持安全计划新增文件；
 11. 外部根只能由宿主以不透明`location`和明确访问集合注册；
 12. Snapshot限制单文件、总正文、目录条目、资源和外部根数量；
@@ -407,10 +407,11 @@ Policy必须在上层完成。
 | `kind` | file/directory/missing | 原生端口 | 观察时对象类型 |
 | `identity` | 64位Hash | 原生稳定身份 | 对象与执行相关元数据摘要 |
 | `content_sha256` | 文件必填，其余为空 | 读取内容 | 文件正文Hash |
-| `size` | 非负整数 | 原生观察 | 文件字节、目录直接条目数、missing为0 |
+| `size` | 非负整数 | 原生观察 | 文件字节；目录与missing为0（目录成员数不绑定，ADR 0143） |
 
-合同强制“只有file携带内容摘要”和“missing大小为0”。目录成员摘要包含在`identity`内，不单独暴露成员
-列表；Snapshot因此不泄露目录清单正文，但路径本身仍以逻辑路径持久化。
+合同强制“只有file携带内容摘要”和“missing大小为0”。目录的`identity`只含对象与权限（POSIX：设备号、inode、
+模式、属主、属组；Windows：卷序列号、File Index、只读属性），不含链接数与成员（ADR 0143）；
+Snapshot不保存目录清单，路径本身仍以逻辑路径持久化。
 
 ### 11.2 WorkspaceSnapshot
 
@@ -683,7 +684,7 @@ flowchart LR
 Snapshot仍包含逻辑路径、Location、Access、类型和大小，可能泄露仓库结构。SHA-256对常见Root路径、短
 文件内容或低熵对象不是匿名化；具有候选集合的主体可离线枚举。Plan Store必须保持私有权限和合理留存。
 
-目录成员列表只在内存中构成序列化正文并Hash，不进入Snapshot。文件正文在捕获内存中读取后只持久Hash；
+目录成员列表只在观察时读入内存（计入总正文上限），不进入Snapshot，也不参与`identity`。文件正文在捕获内存中读取后只持久Hash；
 Python bytes不会主动清零，因此Snapshot模块不适合读取Secret控制面。POSIX底层Workspace默认禁止常见
 Secret路径，Skill还有独立敏感路径规则。
 
@@ -815,7 +816,7 @@ Snapshot证明捕获后未漂移，但实际隔离、挂载读写模式和进程
 ### 22.4 Delivery
 
 Delivery Planner为每个目标文件和所有父目录生成Request，Snapshot同时绑定已存在文件正文、缺失目标和
-目录成员身份。Runtime获取Lease并按before/after CAS发布，Git Runtime还绑定Repository/Worktree对象。
+各级父目录的对象与权限；目录里无关成员的增减不使计划过期（ADR 0143）。Runtime获取Lease并按before/after CAS发布，Git Runtime还绑定Repository/Worktree对象。
 Workspace模块不保存Blob或Transaction Cursor。
 
 ### 22.5 Skill与Product Config
@@ -1266,6 +1267,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 21 | `ce5b7386` 增量 | 2026-11-12 | 计划快照对目录只绑定对象与权限：链接数、成员列表与成员数不再进入`identity`和`size`；缺失目标绑定父目录的同一身份加名称。观察对象新增`binding`（计划绑定身份），原生观察与读取工具不变（ADR 0143） |
 | 20 | `d387a5cd` 增量 | 2026-11-12 | 写目标及其祖先可以位于不存在的目录之下，快照记为`missing`；POSIX上新建文件时由事务补建（0.10.0b21，ADR 0137） |
 | 13 | `7d847780` 增量 | 2026-11-11 | 读取操作的局部时限可由调用方指定，默认5秒不变（0.10.0b14） |
 | 12 | `65301a12` 增量 | 2026-11-11 | Windows目录句柄共享读写、不共享删除：固定根期间目录内改名不再WinError 32（0.10.0b12） |
@@ -1383,7 +1385,7 @@ verify_workspace_snapshot_v2(
 `store._read_blob`为原宿主内部完整CAS元数据端口；模型或外部应用不获得该私有入口。
 外部write-only授权不足以读取派生父历史，必须明确具有read；不自动提权。
 未知版本、损坏／缺失／非规范块、错作用域、漏父项／额外项、字典回边或全集摘要错误为`workspace_closure_corrupt`。
-实际父对象、权限或成员变化为`execution_plan_stale`；原敏感路径／平台拒绝不降级。
+实际父对象或权限变化为`execution_plan_stale`，成员增减不算（ADR 0143）；原敏感路径／平台拒绝不降级。
 取消、超时及原存储错误保持各自语义；检查不能抢占单个系统调用。中断可能遗留无业务引用Blob，
 但不会返回Snapshot或插入业务事务。只读重开不迁移、不补签、不删证据，也不提交恢复效果。
 

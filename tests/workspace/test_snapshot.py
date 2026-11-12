@@ -222,7 +222,8 @@ def test_directory_snapshot_ignores_unselected_member_content_change(tmp_path: P
     verify_workspace_snapshot(expected, root)
 
 
-def test_directory_snapshot_detects_same_name_member_replacement(tmp_path: Path) -> None:
+def test_directory_snapshot_ignores_replacement_of_an_unselected_member(tmp_path: Path) -> None:
+    """计划没有选中的成员被换成同名的另一个文件：不在计划之内，快照不过期（ADR 0143）。"""
     root = tmp_path / "repo"
     root.mkdir()
     member = root / "member.txt"
@@ -235,6 +236,9 @@ def test_directory_snapshot_detects_same_name_member_replacement(tmp_path: Path)
     member.rename(tmp_path / "original.txt")
     member.write_bytes(b"same")
 
+    assert verify_workspace_snapshot(expected, root) == expected
+    # 计划选中的路径上出现了文件，仍然过期。
+    (root / "new.txt").write_bytes(b"appeared")
     with pytest.raises(KernelError) as error:
         verify_workspace_snapshot(expected, root)
     assert error.value.code == "execution_plan_stale"

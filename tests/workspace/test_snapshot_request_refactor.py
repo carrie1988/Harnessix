@@ -51,8 +51,19 @@ def test_real_snapshot_models_match_original(original_snapshot, tmp_path, count,
         (tmp_path / f"leaf-{index}").write_text("固定正文\n", encoding="utf-8")
     before = original_snapshot(tmp_path, resources=tuple(requests))
     after = capture_workspace_snapshot(tmp_path, resources=tuple(requests))
-    assert after == before
-    assert after.model_dump(mode="json") == before.model_dump(mode="json")
+    assert _without_directory_binding(after) == _without_directory_binding(before)
+
+
+def _without_directory_binding(snapshot) -> dict:
+    """目录的身份与大小自ADR 0143起不含成员（缺失资源的身份取自父目录），自摘要随之不同；
+    其余字段仍与重构前逐项相同。"""
+    payload = snapshot.model_dump(mode="json")
+    payload.pop("revision")
+    for resource in payload["resources"]:
+        if resource["kind"] != "file":
+            resource.pop("identity")
+            resource.pop("size")
+    return payload
 
 
 @pytest.mark.parametrize("mode", ["implicit-cwd-limit", "input-limit", "duplicate"])

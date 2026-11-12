@@ -338,7 +338,12 @@ def test_original_native_protection_and_stale_comparison_remain(case, failure):
         leaf.unlink()
         leaf.symlink_to(root / "d000/p0/file.txt")
     elif failure == "changed-parent":
-        (leaf.parent / "extra").write_bytes(b"new member")
+        # 父目录换成同名的另一个目录，成员原样移回；只多出成员不算变化（ADR 0143）。
+        moved = root.parent / "moved-parent"
+        leaf.parent.rename(moved)
+        leaf.parent.mkdir()
+        for child in moved.iterdir():
+            child.rename(leaf.parent / child.name)
     else:
         leaf.write_bytes(b"later facts")
 
