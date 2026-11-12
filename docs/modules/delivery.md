@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 59
+version: 60
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -13,8 +13,11 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0137-create-with-missing-parent-directories.md
   - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
+  - tests/delivery/test_create_missing_parents.py
+  - tests/product_config/test_patch_missing_parents.py
   - tests/delivery/test_preserved_file_modes.py
   - tests/delivery/test_path_case_aliases.py
   - tests/product_config/test_git_source_native_progress.py
@@ -465,8 +468,10 @@ Transaction Fingerprint同时绑定Snapshot、Request ID、Mutation、时间和I
 - `content=None, mode=None`表示删除；
 - 精确`bytes`与普通权限位表示目标文件：模型新建或替换仍只给0644/0755，`edit`与回滚使用现有文件的真实权限。
 
-路径经过Workspace逻辑路径规范化、平台比较去重和控制面拒绝。Planner不创建父目录，因此目标的所有父
-目录都必须已经存在且可安全观察。
+路径经过Workspace逻辑路径规范化、平台比较去重和控制面拒绝。Planner不创建父目录。POSIX上新建文件的目标
+可以位于尚不存在的目录之下：这些目录以`missing`进入来源快照，发布该成员时补建
+（[ADR 0137](../adr/0137-create-with-missing-parent-directories.md)，见本文“新建文件时补建缺失的父目录”）；
+修改与删除的目标、以及Windows上的全部目标，父目录都必须已经存在且可安全观察。
 
 ### 11.2 Snapshot资源集合
 
@@ -647,7 +652,9 @@ sequenceDiagram
 ### 14.1 安全父目录定位
 
 `_parent`复用`tools.workspace.Workspace`：从保留Root FD逐段`lstat/openat`，拒绝链接、跨设备、非目录和
-身份变化，并在作用域结束时复核Root与父目录链。目标只允许普通单链接文件或缺失。
+身份变化，并在作用域结束时复核Root与父目录链。目标只允许普通单链接文件或缺失。新建文件的成员以
+`create_missing=True`进入：缺失段先`mkdir`（不跟随链接）再走同一套检查；其余成员遇到缺失段时，
+观察结果是“文件不存在”。
 
 ### 14.2 创建与替换
 
@@ -677,6 +684,9 @@ sequenceDiagram
 | before/after顺序交错 | 任意非终态 | `diverged/delivery_order_diverged` |
 | 任一路径为第三版本 | 任意非终态 | `diverged/delivery_source_changed` |
 | 观察本身失败 | 任意 | 抛稳定错误；当前并不总是落盘为unknown |
+
+父目录不存在的成员观察为`absent`，不属于观察失败（ADR 0137）：尚未补建目录的新建成员算before，
+目录在中途消失的已有文件成员算第三事实。
 
 ```mermaid
 flowchart TD
@@ -816,6 +826,7 @@ Thread/Turn/Call确定性ID、配对成功效果、Router成功终态以及原Pa
 等待未批准取消仅在pending_approval下证明零执行，使用无虚构效果的普通cancelled结果；
 已批准或开始执行仍沿原保守UNKNOWN恢复，不以取消意图证明文件未改。
 部分硬退出保持人工处置；全after但Cursor未完成时只更新对账事实，不重写文件。
+逆向事务发布后、仍持有租约时，Executor的`after_publish`收尾删除原Patch补建且此刻为空的父目录（ADR 0137）。
 
 完整接口、字段、时序、伪代码、失败与兼容见[专项详细设计](../changes/m09-r4-product-patch-rollback.md)，
 [产品与默认SDK测试](../../tests/product_config/test_product_patch_rollback.py)、
@@ -831,6 +842,7 @@ Thread/Turn/Call确定性ID、配对成功效果、Router成功终态以及原Pa
 - NUL或非法UTF-8任一出现即视为二进制；
 - 文本使用`difflib.unified_diff`生成完整Patch；
 - 模式变化单独写`new/deleted/old/new file mode`；
+- 事务要补建的父目录在全部文件段之前各占一行`new directory <路径>`（ADR 0137）；没有新目录时正文不变；
 - 二进制文本段只写before/after摘要，结构化Entry仍含完整大小与模式；
 - Entry按原路径/目标路径排序；正文记录UTF-8字节数和SHA-256；
 - 文档正文上限64 MiB，不做分页或模型视图裁剪。
@@ -1892,6 +1904,7 @@ v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 60 | `d387a5cd` 增量 | 2026-11-12 | 新建文件时由事务补建缺失的父目录，失败只清理自己建的空目录，回滚清理原补丁补建的空目录；Windows不补建（0.10.0b21，ADR 0137） |
 | 59 | `d387a5cd` 增量 | 2026-11-12 | edit的锚点忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格；复核已保存事务时认得此前语义算出的后像（ADR 0141） |
 | 58 | `2574a498` 增量 | 2026-11-12 | 目标是目录时同样判为可修正的拒绝，所有平台（0.10.0b16） |
 | 57 | `152c9c28` 增量 | 2026-11-11 | 补丁规划前的目标存在性确认补上Windows宿主，不符时是可修正的拒绝而不再中断整轮（0.10.0b15） |
@@ -2443,6 +2456,24 @@ Transaction Store／Record Codec 的[可选归属读进度](../changes/m09-r4-gi
 ### 当前增量：原Mutation无变化拒绝的来源证明
 
 原`_prepare_mutations`仍在第一个无变化条目立即拒绝；只有普通文件全文和mode都相同时产生专用来源标记，不继续读后续条目、不删项执行其余文件。类型仍继承KernelError并保持`delivery_no_change`；缺失／删除等未经证明情形保持原错误。完整调用链、字段／失败顺序和负控见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。
+
+### 当前增量：新建文件时补建缺失的父目录（ADR 0137）
+
+- 缺陷：`apply_patch_batch`在不存在的目录里新建文件时整批以`workspace_parent_missing`失败（两轮Beta 7次）；
+  父路径上已有的段是普通文件时Turn被中断。
+- 规划：写目标及其祖先可以位于不存在的目录之下，快照记为`missing`
+  （[workspace模块](workspace.md)）。同批里“一个路径既是新建文件又是另一项要补建的目录”，以及不区分大小写的
+  文件系统上新目录里的别名，由[`path_case.reject_case_aliases`](../../src/harnessix/delivery/path_case.py)
+  在规划期整批拒绝：遇到不存在的目录时，余下的整段路径按最近已有目录的语义比较。
+- 发布：[`filesystem._parent`](../../src/harnessix/delivery/filesystem.py)只为新建文件的成员补建目录
+  （`mkdir`带`dir_fd`、权限0755并受umask收窄、`fsync`父目录）；成员在换入文件前失败时由深到浅`rmdir`本次
+  补建的目录，原有目录与非空目录不受影响。恢复仍只观察。
+- 清单：目录不是事务成员。[`parent_directories.planned_new_directories`](../../src/harnessix/delivery/parent_directories.py)
+  从计划来源快照推导（第1代读显式`read`资源，第2代读父目录历史），供审批Diff的`new directory`行与回滚清理共用。
+- 回滚：`rollback_workspace_patch`发布后清理原Patch补建且为空的目录（`remove_empty_directories`）；
+  底层`build_rollback`生成的逆向事务不清理。
+- 残留：进程在补建目录后、换入文件前硬退出时留下空目录和事务自己的临时文件，恢复不写入、不清理。
+- Windows事务端口不补建父目录，行为不变。合同、Schema、账本与指纹算法均未修改。
 
 ### 当前增量：保留现有文件的真实权限（ADR 0068第2版）
 

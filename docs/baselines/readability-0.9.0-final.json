@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 619,
-    "physical_lines": 130299,
-    "logical_lines": 113808,
-    "documented_modules": 619,
-    "classes": 1209,
-    "documented_classes": 620,
-    "functions": 5125,
-    "documented_functions": 1702,
+    "source_files": 620,
+    "physical_lines": 130729,
+    "logical_lines": 114117,
+    "documented_modules": 620,
+    "classes": 1211,
+    "documented_classes": 622,
+    "functions": 5145,
+    "documented_functions": 1720,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/harnessix/delivery/trusted_action.py",
-      "lines": 621
+      "lines": 620
     },
     {
       "path": "src/harnessix/evals/delivery.py",
@@ -1932,7 +1932,7 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 315,
+      "line": 392,
       "lines": 124,
       "documented": true,
       "decision_complexity": 27

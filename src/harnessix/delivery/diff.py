@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from harnessix.delivery.contracts import WorkspaceDiffDocument, WorkspaceTransactionPlan
 from harnessix.delivery.diff_content import build_diff_content
+from harnessix.delivery.parent_directories import planned_new_directories
 from harnessix.delivery.preserved_mode_contracts import (
     WorkspaceDiffDocumentV2,
     preserves_file_modes,
@@ -27,6 +28,7 @@ def build_workspace_diff(
         max_utf8_bytes=None,
         checkpoint=_checkpoint,
         missing_newline_markers=False,
+        new_directories=planned_new_directories(plan, store.blob),
     )
     document_type: type[WorkspaceDiffDocument] = (
         WorkspaceDiffDocumentV2 if preserves_file_modes(plan) else WorkspaceDiffDocument

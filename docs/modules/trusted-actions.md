@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 47
-code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
+version: 48
+code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
@@ -52,6 +52,20 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：Patch父路径拒绝的可改正说明（ADR 0137）
+
+- [`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)的内置Patch规划期
+  可修正拒绝增加两个错误码（`_PARENT_PATH_REJECTIONS`），都发生在只读观察、尚无Route的阶段：
+  `workspace_wrong_file_type`（父路径上已有的段不是目录；原来不在可回传清单里，Turn以未知效果中断）与
+  `workspace_parent_missing`（POSIX上create会补建父目录，只剩不补建的平台即Windows会出现；原来经Agent的
+  `_PREPARE_FAILURES`以内部说明回传）。
+- 这两个码由规划时的快照观察抛出，不经过解析阶段，实例上只有内部说明（“Workspace资源观察失败”）。投影时
+  按[`public_errors._RESOLVER_ERRORS`](../../src/harnessix/trusted_actions/public_errors.py)登记的固定说明重建：
+  首句是原因（界面显示这一句），其后是下一步——前者“请改用已有父级都是目录的路径，缺失的父目录会自动创建”，
+  后者“请先用命令工具创建该目录（例如mkdir），再原样重发本次调用”。两张表的一致性测试照旧约束登记。
+- 其余错误码的说明、其余工具、码表归一与Route关闭顺序不变；`workspace_path_denied`（父路径上是符号链接）
+  仍沿用原说明。
 
 ## 当前增量：解析阶段保留“文件权限不支持”的原码（0.10.0b15）
 
@@ -1638,6 +1652,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 48 | `d387a5cd` 增量 | 2026-11-12 | Patch父路径拒绝（父目录不存在、父级不是目录）登记进解析阶段码表，作为可修正的失败回传，不再中断整轮（0.10.0b21，ADR 0137） |
 | 46 | `f8c3ceab4599779fd2a350c3e2ae395e3cbf6608` | 2026-11-10 | 同步主线：公开结果支持命令输出摘要v4；进程类调用的`profile`参数可以省略，传入时须与工具绑定的Profile一致，Eval仍要求显式给出 |
 | 45 | `b35c46217aec51c154158e802bd35c8ccb122ff7` | 2026-11-09 | 仅格式化，行为不变 |
 | 22 | `78ab30069ab4f63d58d9bafad903a7bfd660c257` | 2026-09-27 | 计划回调按阶段有限码表重建固定错误，显式Decoder异常收口；补真实五公开面、取消/超时和固定码全量回归，专项等待提交后验收 |

@@ -61,6 +61,13 @@ supersedes: []
 - **已保存的计划**（`_edit_ranges`的`recorded_sha256`）：`validate_prepared`与Diff传入计划记录的后像摘要。按此前语义（只逐字节匹配、`new_text`原样写入，即`_located_ranges(newline_aware=False)`）算出该摘要的计划沿用当时的区间，其余按当前语义重算并照常比较；两种语义都算不出的后像仍是`patch_plan_corrupt`。Delivery的Workspace Patch事务经`apply_exact_edits(recorded_sha256=...)`用同一规则，升级前发布的修改仍可回滚。
 - 摘要、大小上限、重叠检测与无变化判定都在真实字节上进行；`ExactEdit`、`PatchManifest`等合同与各拒绝的错误码不变。回归见[换行测试](../../tests/patches/test_planner_newlines.py)。
 
+## 当前增量：产品补丁工具在新目录里新建文件（ADR 0137）
+
+- 本文描述的Managed Patch Runtime仍不创建文件或目录（第3.2节）。产品工具`apply_patch_batch`由
+  [Delivery事务](delivery.md)实现，只复用本模块的精确编辑算法（`planner.apply_exact_edits`）。
+- 自[ADR 0137](../adr/0137-create-with-missing-parent-directories.md)起，`apply_patch_batch`的`create`在父目录
+  不存在时由同一笔事务补建目录；本模块的源码与行为没有变化，设计与边界见Delivery与Workspace模块文档。
+
 ## 1. 文档摘要
 
 | 项目 | 当前实现 |

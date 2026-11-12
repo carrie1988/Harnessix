@@ -247,8 +247,19 @@ def _build_rollback(
     return runtime._store.save(prepared)
 
 
+class _MissingParent(FileNotFoundError):
+    """成员的父目录链上有缺失段；只在本模块内表示“该成员文件必然不存在”。"""
+
+
 @contextmanager
-def _parent(workspace: Workspace, path: str) -> Iterator[tuple[int, str]]:
+def _parent(
+    workspace: Workspace, path: str, *, create_missing: bool = False
+) -> Iterator[tuple[int, str]]:
+    """逐段no-follow固定成员的父目录链。
+
+    create_missing只用于新建文件成员（ADR 0137）：缺失段用mkdir补建，mkdir不跟随符号链接，
+    补建后的段仍经同一类型与身份检查。块内失败时只删除本次补建且仍为空的目录，不触碰原有目录。
+    """
     parts = workspace.parts(path)
     if not parts:
         raise KernelError("delivery_path_denied", "Workspace事务不能写根目录")
@@ -257,23 +268,57 @@ def _parent(workspace: Workspace, path: str) -> Iterator[tuple[int, str]]:
         stack.callback(os.close, descriptor)
         root_device = os.fstat(descriptor).st_dev
         links: list[tuple[int, str, int]] = []
-        for component in parts[:-1]:
-            parent = descriptor
-            before = os.stat(component, dir_fd=parent, follow_symlinks=False)
-            Workspace._check_type(before, directory=True)
-            descriptor = os.open(component, _DIRECTORY_FLAGS, dir_fd=parent)
-            stack.callback(os.close, descriptor)
-            after = os.fstat(descriptor)
-            Workspace._check_type(after, directory=True)
-            if after.st_dev != root_device or identity(before) != identity(after):
-                raise KernelError("delivery_source_changed", "Workspace事务父目录已经变化")
-            links.append((parent, component, descriptor))
-        yield descriptor, parts[-1]
-        os.close(workspace._current_root())
-        for parent, component, child in links:
-            current = os.stat(component, dir_fd=parent, follow_symlinks=False)
-            if identity(current) != identity(os.fstat(child)):
-                raise KernelError("delivery_source_changed", "Workspace事务父目录已经变化")
+        created: list[tuple[int, str]] = []
+        try:
+            for component in parts[:-1]:
+                parent = descriptor
+                try:
+                    before = os.stat(component, dir_fd=parent, follow_symlinks=False)
+                except FileNotFoundError:
+                    if not create_missing:
+                        raise _MissingParent from None
+                    _make_directory(parent, component, created)
+                    before = os.stat(component, dir_fd=parent, follow_symlinks=False)
+                Workspace._check_type(before, directory=True)
+                descriptor = os.open(component, _DIRECTORY_FLAGS, dir_fd=parent)
+                stack.callback(os.close, descriptor)
+                after = os.fstat(descriptor)
+                Workspace._check_type(after, directory=True)
+                if after.st_dev != root_device or identity(before) != identity(after):
+                    raise KernelError("delivery_source_changed", "Workspace事务父目录已经变化")
+                links.append((parent, component, descriptor))
+            yield descriptor, parts[-1]
+            os.close(workspace._current_root())
+            for parent, component, child in links:
+                current = os.stat(component, dir_fd=parent, follow_symlinks=False)
+                if identity(current) != identity(os.fstat(child)):
+                    raise KernelError("delivery_source_changed", "Workspace事务父目录已经变化")
+        except BaseException:
+            _remove_empty_directories(created)
+            raise
+
+
+def _make_directory(parent: int, name: str, created: list[tuple[int, str]]) -> None:
+    """补建一个父目录并落盘目录项；权限不超过0755，仍受进程umask收窄。
+
+    mkdir一成功就登记，落盘失败时调用方的清理也能删除这个目录。
+    """
+    try:
+        os.mkdir(name, 0o755, dir_fd=parent)
+        created.append((parent, name))
+        os.fsync(parent)
+    except OSError:
+        raise KernelError("delivery_storage_unavailable", "Workspace事务父目录创建失败") from None
+
+
+def _remove_empty_directories(directories: list[tuple[int, str]]) -> None:
+    """由深到浅删除仍为空的目录；rmdir对非空目录和符号链接都会失败，失败即保留。"""
+    for parent, name in reversed(directories):
+        try:
+            os.rmdir(name, dir_fd=parent)
+            os.fsync(parent)
+        except OSError:
+            return
 
 
 def _observe(
@@ -289,6 +334,8 @@ def _observe(
                 return _observe_at(parent, name)
     except KernelError:
         raise
+    except _MissingParent:
+        return WorkspaceFileVersionV2(presence="absent", size=0)
     except (OSError, ValueError):
         raise KernelError("delivery_observation_failed", "Workspace事务文件观察失败") from None
 
@@ -368,7 +415,9 @@ def _apply(
         )
         return
     with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
-        with _parent(workspace, mutation.path) as (parent, name):
+        # 只有新建文件的成员补建父目录；修改与删除的目标必然已有父目录。
+        creates_file = mutation.before.presence == "absent"
+        with _parent(workspace, mutation.path, create_missing=creates_file) as (parent, name):
             if not same_file_version(_observe_at(parent, name), mutation.before):
                 raise KernelError("delivery_source_changed", "Workspace事务成员提交前已经漂移")
             if mutation.after.presence == "absent":

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 43
-code_revision: 7357576af93ad9089dd54642020bb6645f38f500
+version: 44
+code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
 modules:
@@ -41,6 +41,14 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：审批清单列出将新建的目录（ADR 0137）
+
+补丁在不存在的目录里新建文件时，差异正文以`new directory <路径>`行开头。[`diff_view.py`](../../src/harnessix/product_ui/diff_view.py)
+把这些行并入文件清单，显示为“新建目录  路径”，“共 N 个文件”仍只计文件。对话记录里的失败原因沿用
+[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)的既有规则（说明的首句加错误码），本模块没有新增文案表：
+`workspace_wrong_file_type`显示“路径中已有的父级不是目录，无法在其下创建文件”，`workspace_parent_missing`显示
+“缺失资源的父目录不存在”，首句之后写给模型的下一步不显示。回归见`test_diff_view.py`、`test_tool_summary.py`。
 
 ## 当前增量：百炼qwen3.8的思考设置随默认预设生效（0.10.0b19）
 
@@ -1135,6 +1143,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 44 | `d387a5cd` 增量 | 2026-11-12 | 审批清单列出补丁将新建的目录；父路径拒绝在对话里只显示原因（0.10.0b21，ADR 0137） |
 | 43 | `cf52cadc` 增量 | 2026-11-11 | `configure`对百炼qwen3.8-max/flash改用默认思考预设，不再单独查显式开关；用户手册新增思考模式的选择说明（0.10.0b19） |
 | 42 | `95421ad6` 增量 | 2026-11-11 | 重新打开会话时，整页历史事件被服务端以超限拒绝后改读更小的页，不再报连接中断（0.10.0b17） |
 | 41 | `d3f2f201` 增量 | 2026-11-11 | 对话记录里被用户取消的命令显示“已取消”，不再显示为带内部说明的失败（0.10.0b16，Beta反馈HX-10） |

@@ -234,6 +234,83 @@ def _open_native(path: Path, platform: PlatformKind) -> _NativeRoot:
     raise KernelError("workspace_platform_unsupported", "请求平台与当前宿主不一致")
 
 
+def creatable_resource_keys(
+    requests: Sequence[WorkspaceResourceRequest], platform: PlatformKind
+) -> frozenset[tuple[str, str]]:
+    """写目标及其全部祖先的比较键：只有它们可以位于尚不存在的父目录之下（ADR 0137）。
+
+    读取与执行请求仍要求父目录存在；祖先需要一并放行，否则缺失目录下的写目标无法绑定父目录历史。
+    """
+    keys: set[tuple[str, str]] = set()
+    for request in requests:
+        if request.access != "write":
+            continue
+        parts = normalize_workspace_path(request.path, platform).split("/")
+        keys.update(
+            (request.location, path_comparison_key("/".join(parts[:end]), platform))
+            for end in range(1, len(parts) + 1)
+        )
+    return frozenset(keys)
+
+
+def observe_creatable_resource(
+    native: _NativeRoot,
+    request: WorkspaceResourceRequest,
+    rejection: KernelError,
+    requests: Sequence[WorkspaceResourceRequest],
+    platform: PlatformKind,
+    *,
+    checkpoint: Callable[[], None] | None = None,
+) -> _NativeObservation:
+    """“父目录不存在”的拒绝只对本次快照可新建的资源改为缺失观察，其余原样抛出。
+
+    只有POSIX事务端口会在发布时补建父目录；Windows端口保持“父目录必须存在”。
+    """
+    key = (request.location, path_comparison_key(request.path, platform))
+    if (
+        rejection.code != "workspace_parent_missing"
+        or not isinstance(native, _PosixRoot)
+        or key not in creatable_resource_keys(requests, platform)
+    ):
+        raise rejection
+    return _observe_below_missing_parent(native, request.path, checkpoint)
+
+
+def _observe_below_missing_parent(
+    native: _PosixRoot, path: str, checkpoint: Callable[[], None] | None
+) -> _Observed:
+    """把父目录缺失的资源观察为缺失；身份绑定最近的已有目录及其下自首个缺失段起的路径。
+
+    每个祖先仍经observe的同一条no-follow链，已有路径段是符号链接或非目录时照旧拒绝，不会被当作缺失。
+    """
+    parts = native._workspace.parts(path)
+    for depth in range(len(parts) - 1, 0, -1):
+        try:
+            ancestor = native.observe("/".join(parts[:depth]), access="read", checkpoint=checkpoint)
+        except KernelError as error:
+            if error.code != "workspace_parent_missing":
+                raise
+            continue
+        if ancestor.kind == "missing":
+            return _Observed("missing", (*ancestor.identity, *parts[depth:]), None, 0)
+        break
+    # 刚才还缺失的祖先此刻已经存在：观察期间有并发创建，不猜测其结果。
+    raise KernelError("workspace_changed", "Workspace资源在观察期间变化")
+
+
+def _observe_request(
+    native: _NativeRoot,
+    request: WorkspaceResourceRequest,
+    requests: Sequence[WorkspaceResourceRequest],
+    platform: PlatformKind,
+) -> _NativeObservation:
+    """第1代快照的逐项观察：原调用形状不变，只在父目录缺失时转入可新建资源的判定。"""
+    try:
+        return native.observe(request.path, access=request.access)
+    except KernelError as error:
+        return observe_creatable_resource(native, request, error, requests, platform)
+
+
 @dataclass(frozen=True, slots=True)
 class SecureDirectoryEntry:
     name: str
@@ -381,7 +458,7 @@ def capture_workspace_snapshot(
             )
             if request.access not in allowed:
                 raise KernelError("workspace_access_denied", "外部根未授予所需访问模式")
-            observed = native.observe(path, access=request.access)
+            observed = _observe_request(native, request, requested, selected_platform)
             total_bytes += len(observed.content or b"")
             if total_bytes > MAX_SNAPSHOT_TOTAL_BYTES:
                 raise KernelError("workspace_snapshot_limit", "Workspace快照总量超过上限")

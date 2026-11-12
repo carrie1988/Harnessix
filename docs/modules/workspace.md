@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: 7d8477801d57a43ce91a1b95e1484df75a0875c9
+version: 20
+code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
@@ -13,7 +13,9 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0074-skill-snapshot-and-hook-action-boundary.md
   - docs/adr/0079-preflight-and-native-read-port.md
+  - docs/adr/0137-create-with-missing-parent-directories.md
 related_tests:
+  - tests/workspace/test_snapshot_missing_parents.py
   - tests/workspace/test_snapshot_v2_capture_progress.py
   - tests/workspace/test_snapshot_v2_native_progress.py
   - tests/delivery/test_terminal_read_control.py
@@ -45,6 +47,19 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：写目标可以位于尚不存在的父目录之下（ADR 0137）
+
+- 原约束：缺失资源必须有一个已存在的父目录，否则`workspace_parent_missing`。这使Patch无法在新目录里新建文件。
+- POSIX上，快照中的**写目标及其全部祖先**在父目录缺失时观察为`missing`
+  （[`snapshot.observe_creatable_resource`](../../src/harnessix/workspace/snapshot.py)）；可新建的范围由本次
+  快照的请求集合推导（`creatable_resource_keys`），捕获与复核用同一规则，两代快照都适用。读取与执行请求、
+  `SecureWorkspaceReader`以及直接调用原生端口的调用方不变。
+- 身份绑定最近的已有目录的稳定身份，加上其下自首个缺失段起的路径；父目录存在时走原观察路径，身份不变。
+- 已有路径段的校验先于“缺失”的判定：符号链接仍是`workspace_path_denied`，非目录仍是
+  `workspace_wrong_file_type`；规范化与敏感名称策略对每个缺失段同样生效。
+- 批准后目录出现，复核得到`execution_plan_stale`（或上述拒绝）。目录由Delivery在发布新建文件成员时补建，
+  本模块不写工作区。Windows端口不变，父目录缺失仍拒绝。回归见`tests/workspace/test_snapshot_missing_parents.py`。
 
 ## 当前增量：读取操作的局部时限可由调用方指定（0.10.0b14）
 
@@ -847,7 +862,7 @@ POSIX `ReadOperation`的`TurnCancelled`不是`KernelError`，Snapshot部分调�
 | `workspace_platform_unsupported` | 未知平台或请求平台与宿主不符 | 选择匹配平台端口，不降级 |
 | `workspace_path_denied` | 非法路径、链接、硬链接、特殊文件、Reparse或控制路径 | 修正声明/仓库后重新规划 |
 | `workspace_binding_invalid` | Root不可打开、非目录或身份异常 | 修复宿主Root/权限 |
-| `workspace_parent_missing` | 缺失目标的父目录不存在 | 显式规划创建父目录或调整目标 |
+| `workspace_parent_missing` | 缺失目标的父目录不存在（POSIX上的写目标及其祖先除外，见ADR 0137） | 调整目标；Windows上先创建父目录 |
 | `workspace_observation_failed` | 原生读取/属性失败 | 诊断文件系统，不盲重试写 |
 | `workspace_changed` | 观察窗口内对象/Root/目录变化 | 重新捕获；旧Plan无效 |
 | `workspace_wrong_file_type` | POSIX底层对象类型不符的映射码 | 修正资源类型 |
@@ -1251,6 +1266,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 20 | `d387a5cd` 增量 | 2026-11-12 | 写目标及其祖先可以位于不存在的目录之下，快照记为`missing`；POSIX上新建文件时由事务补建（0.10.0b21，ADR 0137） |
 | 13 | `7d847780` 增量 | 2026-11-11 | 读取操作的局部时限可由调用方指定，默认5秒不变（0.10.0b14） |
 | 12 | `65301a12` 增量 | 2026-11-11 | Windows目录句柄共享读写、不共享删除：固定根期间目录内改名不再WinError 32（0.10.0b12） |
 | 11 | `9eff41b`基线及专项输入清单 | 2026-10-05 | 独立Snapshot v2完整父字典、原CAS全量Reader与只读再验证；原v1资源事实共享校验及原生父checkpoint；默认消费者新代际仍待联合接入 |

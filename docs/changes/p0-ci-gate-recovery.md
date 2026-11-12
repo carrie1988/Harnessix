@@ -21,6 +21,7 @@ related_tests:
   - tests/agent/test_resume_cancel_before_start.py
   - tests/agent/test_truncation_recovery.py
   - tests/patches/test_planner_newlines.py
+  - tests/delivery/test_create_missing_parents.py
   - tests/product_config/test_git_user_source_files.py
 supersedes: []
 ---
@@ -90,6 +91,7 @@ CI的墙钟时间取决于最慢的单个任务。恢复后的首轮完整运行
 
 CI门禁恢复本身不改变运行时的失败、取消、超时或恢复语义。门禁恢复后暴露的两处误报在0.10.0b11修正，只改分类、不改停止与观察的流程：
 
+- **在不存在的目录里新建文件（0.10.0b21，ADR 0137）**：`apply_patch_batch`的create在父目录不存在时整批以`workspace_parent_missing`失败，父路径上已有的段是普通文件时整轮被中断；现在macOS与Linux上由同一笔事务补建目录（审批里列出将新建的目录，失败只清理自己建的空目录，回滚时清理原补丁补建的空目录），父级不是目录时作为可修正的失败回传。Windows仍不补建，报错给出先建目录再重发的下一步。来自Beta真实仓复测（0.10.0b20上3次），实现由round-2分支移植。见[Delivery模块设计](../modules/delivery.md)。
 - **CRLF与混合换行文件上的edit（0.10.0b21，ADR 0141）**：模型发回的多行`old_text`是LF换行，在CRLF区逐字节永远匹配不上（`patch_context_not_found`），单行锚点命中后又把LF写进CRLF区；现在逐字节匹配失败后忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格，提案阶段补SHA用同一判定。升级前保存或发布的补丁计划按当时的语义复核，仍可执行与回滚。来自Beta真实仓复测（0.10.0b20上OCR任务两轮共25次拒绝），实现由round-2分支移植。见[Patch模块设计](../modules/patches.md)。
 - **模型只思考、不作答（0.10.0b20，ADR 0109第6版，用户决定方案A）**：没有工具调用的步骤里，正常结束却没有正文的回复、以及思考用满输出上限而没有正文的回复，此前让整轮失败（`provider_invalid_provider_output`、`provider_max_output_tokens`）；现在由宿主补发提示继续，连续最多两次，之后仍按原错误失败。压缩摘要没有正文时跳过本次压缩。“没有语义内容”的判定由三处（两个适配器加运行时）收为运行时一处。0.10.0b18的Linux正式测试中出现一次，发布前用假模型端点从安装包端到端验证。见[Agent模块设计](../modules/agent.md)。
 - **云端模型给出格式不对的工具参数（0.10.0b18，ADR 0109第5版，用户决定方案B）**：参数不是合法JSON对象或在输出上限处被截断时，此前只有自托管端点只拒绝该次调用，云端端点整轮失败（`chat_protocol/v1:tool_arguments_invalid`）；现在所有端点都只拒绝该次调用，Turn继续。三次正式发布测试中出现两次。见[Models模块设计](../modules/models.md)。

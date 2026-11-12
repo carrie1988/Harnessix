@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from contextlib import asynccontextmanager
 from typing import get_args
 
@@ -218,14 +219,35 @@ async def test_invalid_combination_fails_without_approval_or_effect(tmp_path):
         assert (root / "src/modified.py").read_text(encoding="utf-8") == OLD
 
 
-async def test_create_under_a_missing_parent_is_a_correctable_failure(tmp_path):
+MISSING_PARENT = {
+    "files": [{"operation": "create", "path": "src/new_dir/a.py", "content": "x\n", "mode": 420}]
+}
+
+
+@pytest.mark.skipif(os.name != "posix", reason="只有POSIX事务端口补建父目录")
+async def test_create_under_a_missing_parent_creates_the_directory(tmp_path):
+    """create在不存在的目录里新建文件：同一次审批、同一笔事务里补建父目录（ADR 0137）。"""
     async with compact_product(tmp_path) as (root, runtime, provider, _):
-        missing = {
-            "files": [
-                {"operation": "create", "path": "src/new_dir/a.py", "content": "x\n", "mode": 420}
-            ]
-        }
-        _, turn = await run_patch(runtime, provider, root, missing)
+        thread, waiting = await run_patch(runtime, provider, root, MISSING_PARENT)
+        assert waiting.status is TurnStatus.WAITING_APPROVAL
+        assert not (root / "src/new_dir").exists()
+        approval = _approval(waiting)
+        await runtime.reply_approval(
+            thread.thread_id,
+            waiting.turn_id,
+            approval.approval_id,
+            fingerprint=approval.request_fingerprint,
+            decision=ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="user"),
+        )
+        completed = await runtime.resume_turn(thread.thread_id, waiting.turn_id)
+        assert completed.status is TurnStatus.COMPLETED
+        assert (root / "src/new_dir/a.py").read_text() == "x\n"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows事务端口不补建父目录")
+async def test_windows_create_under_a_missing_parent_is_a_correctable_failure(tmp_path):
+    async with compact_product(tmp_path) as (root, runtime, provider, _):
+        _, turn = await run_patch(runtime, provider, root, MISSING_PARENT)
         results = [i.content for i in turn.items if isinstance(i.content, ToolResultContent)]
         assert turn.status is TurnStatus.COMPLETED
         assert results[0].outcome == "failed"

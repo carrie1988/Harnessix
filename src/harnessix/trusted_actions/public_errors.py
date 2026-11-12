@@ -58,6 +58,15 @@ _RESOLVER_ERRORS = {
     "delivery_path_denied": "Workspace Patch路径不允许写入",
     # Windows没有可执行权限位；保留原码，这次拒绝才能作为可修正的失败返回而不是中断整轮。
     "delivery_metadata_unsupported": "本平台不支持请求的文件权限；Windows上请省略mode或用420",
+    # 内置Patch的父路径拒绝（ADR 0137）：首句是界面显示的原因，其后是模型的下一步。
+    "workspace_parent_missing": (
+        "缺失资源的父目录不存在。本平台不会自动创建目录；"
+        "请先用命令工具创建该目录（例如mkdir），再原样重发本次调用"
+    ),
+    "workspace_wrong_file_type": (
+        "路径中已有的父级不是目录，无法在其下创建文件。例如a.txt/b.py中a.txt是已有文件；"
+        "请改用已有父级都是目录的路径，缺失的父目录会自动创建"
+    ),
     "git_workspace_mismatch": "Git Push与规划Workspace不一致",
     "git_repository_changed": "Git仓库绑定已经变化",
     "git_push_input_invalid": "Git Push输入无效",

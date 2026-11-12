@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import pytest
 
+from harnessix.agent.errors import KernelError
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.protocol.contracts import (
     PublicApprovalDecision,
@@ -14,6 +15,7 @@ from harnessix.protocol.contracts import (
     PublicToolCallContent,
     PublicToolResultContent,
 )
+from harnessix.trusted_actions.public_errors import sanitize_plan_exception
 
 
 def _call(tool: str, **arguments: object) -> PublicToolCallContent:
@@ -113,3 +115,26 @@ def test_sandbox_auto_approvals_are_hidden_and_user_decisions_are_explained() ->
     assert approval_text(_approval("harnessix-code-local-user")) == "已批准"
     rejected = _approval("harnessix-code-local-user", "rejected", "不要借用别人的身份")
     assert approval_text(rejected) == "已拒绝：不要借用别人的身份"
+
+
+@pytest.mark.parametrize(
+    ("code", "shown"),
+    [
+        (
+            "workspace_wrong_file_type",
+            "失败：路径中已有的父级不是目录，无法在其下创建文件（workspace_wrong_file_type）",
+        ),
+        ("workspace_parent_missing", "失败：缺失资源的父目录不存在（workspace_parent_missing）"),
+    ],
+)
+def test_parent_path_rejections_show_the_reason_and_not_the_next_step_for_the_model(
+    code: str, shown: str
+) -> None:
+    """父路径拒绝的固定说明（ADR 0137）首句是原因，其后写给模型的下一步不进入对话记录。"""
+    message = sanitize_plan_exception(KernelError(code, "内部说明"), stage="resolve").message
+    failed = PublicToolResultContent(
+        call_id=uuid4(),
+        outcome="failed",
+        error=PublicFailure(code=code, message=message, retryable=False, category="tool"),
+    )
+    assert tool_result_text(failed) == shown

@@ -55,3 +55,28 @@ def test_renames_show_both_paths_and_removed_dash_lines_stay() -> None:
     assert lines is not None
     plain = [line.plain for line in lines]
     assert plain[3:] == ["── old.md → new.md ──", "@@ -1,2 +1,1 @@", "----", " title"]
+
+
+def test_directories_the_patch_will_create_are_listed_with_the_files() -> None:
+    """父目录由事务补建时（ADR 0137）diff正文以new directory行开头；界面把它们列在文件清单里。"""
+    body = (
+        "new directory tests\nnew directory tests/unit\n"
+        "diff --harnessix a/tests/unit/test_x.py b/tests/unit/test_x.py\nnew file mode 644\n"
+        "--- /dev/null\n+++ b/tests/unit/test_x.py\n@@ -0,0 +1 @@\n+x = 1\n"
+    )
+    records = (
+        {"record_type": "entry", "entry": {"kind": "added", "path": "tests/unit/test_x.py"}},
+        {"record_type": "text", "sequence": 0, "text": body},
+    )
+    lines = readable_diff("\n".join(json.dumps(record) for record in records))
+    assert lines is not None
+    assert [line.plain for line in lines] == [
+        "共 1 个文件：",
+        "  新增  tests/unit/test_x.py",
+        "  新建目录  tests",
+        "  新建目录  tests/unit",
+        "",
+        "── tests/unit/test_x.py ──",
+        "@@ -0,0 +1 @@",
+        "+x = 1",
+    ]

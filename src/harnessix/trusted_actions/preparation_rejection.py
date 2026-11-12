@@ -14,17 +14,20 @@ from harnessix.delivery.workspace_patch_errors import (
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
+from harnessix.trusted_actions.public_errors import sanitize_plan_exception
 from harnessix.trusted_actions.router import TrustedActionRouter
 
-_WORKSPACE_PATCH_PLANNING_FAILURES = frozenset(
-    {
-        "delivery_metadata_unsupported",
-        "delivery_path_denied",
-        "workspace_patch_cwd_unsupported",
-        "workspace_path_denied",
-        "workspace_platform_unsupported",
-    }
-)
+# 父路径拒绝由规划时的快照观察抛出，不经过解析阶段的固定码表，实例上只有内部说明
+# （“Workspace资源观察失败”）；投影时按同一码表换成说明原因和下一步的固定说明（ADR 0137）。
+# POSIX上create会补建缺失的父目录，workspace_parent_missing只剩不补建的平台（Windows）会出现。
+_PARENT_PATH_REJECTIONS = frozenset({"workspace_parent_missing", "workspace_wrong_file_type"})
+_WORKSPACE_PATCH_PLANNING_FAILURES = _PARENT_PATH_REJECTIONS | {
+    "delivery_metadata_unsupported",
+    "delivery_path_denied",
+    "workspace_patch_cwd_unsupported",
+    "workspace_path_denied",
+    "workspace_platform_unsupported",
+}
 
 
 class OfficialWorkspacePatchReview:
@@ -45,6 +48,8 @@ def workspace_patch_planning_rejection(
         "product.workspace-patch",
     ) or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
         return None
+    if rejection.code in _PARENT_PATH_REJECTIONS:
+        rejection = sanitize_plan_exception(rejection, stage="resolve")
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",

@@ -77,7 +77,21 @@ def test_external_root_access_is_explicit_and_revision_bound(tmp_path: Path) -> 
     assert error.value.code == "workspace_access_denied"
 
 
-def test_missing_resource_requires_an_existing_bound_parent(tmp_path: Path) -> None:
+@pytest.mark.parametrize("access", ["read", "execute"])
+def test_missing_resource_that_is_not_written_requires_an_existing_parent(
+    tmp_path: Path, access: str
+) -> None:
+    """读取与执行不会创建任何东西：父目录不存在仍是确定的拒绝（写目标见ADR 0137）。"""
+    with pytest.raises(KernelError) as error:
+        capture_workspace_snapshot(
+            tmp_path,
+            resources=(WorkspaceResourceRequest(path="missing/new.py", access=access),),
+        )
+    assert error.value.code == "workspace_parent_missing"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows事务端口不补建父目录")
+def test_windows_write_target_still_requires_an_existing_parent(tmp_path: Path) -> None:
     with pytest.raises(KernelError) as error:
         capture_workspace_snapshot(
             tmp_path,

@@ -33,6 +33,7 @@ from harnessix.workspace.snapshot import (
     _open_native,
     _root_path_key,
     _snapshot_resource_requests,
+    observe_creatable_resource,
 )
 
 
@@ -105,6 +106,7 @@ class _Observations:
         platform: PlatformKind,
         grants: Mapping[str, tuple[ResourceAccess, ...]],
         checkpoint: Callable[[], None],
+        requests: Sequence[WorkspaceResourceRequest],
     ) -> None:
         self.roots, self.platform, self.grants, self.checkpoint = (
             roots,
@@ -112,6 +114,8 @@ class _Observations:
             grants,
             checkpoint,
         )
+        # 父目录缺失时据此判定该资源是否可新建（写目标及其祖先）。
+        self.requests = requests
         self.cache: dict[tuple[str, str, ResourceAccess], WorkspaceResourceObservation] = {}
         self.total_bytes = 0
 
@@ -126,7 +130,12 @@ class _Observations:
             raise KernelError("workspace_external_root_invalid", "资源引用未知外部根")
         if request.location != "workspace" and request.access not in self.grants[request.location]:
             raise KernelError("workspace_access_denied", "外部根未授予所需访问模式")
-        native = root.observe(request.path, access=request.access, checkpoint=self.checkpoint)
+        try:
+            native = root.observe(request.path, access=request.access, checkpoint=self.checkpoint)
+        except KernelError as error:
+            native = observe_creatable_resource(
+                root, request, error, self.requests, self.platform, checkpoint=self.checkpoint
+            )
         self.checkpoint()
         self.total_bytes += len(native.content or b"")
         if self.total_bytes > MAX_SNAPSHOT_TOTAL_BYTES:
@@ -168,7 +177,11 @@ def capture_snapshot_facts(
             Path(root), external_roots or {}, selected, stack, checkpoint
         )
         observer = _Observations(
-            roots, selected, {item.location: item.access for item in contracts}, checkpoint
+            roots,
+            selected,
+            {item.location: item.access for item in contracts},
+            checkpoint,
+            requested,
         )
         cwd_fact = observer.observe(WorkspaceResourceRequest(path=cwd, access="read"))
         if cwd_fact.kind != "directory":
