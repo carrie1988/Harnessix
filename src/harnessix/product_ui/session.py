@@ -19,9 +19,10 @@ from harnessix.product_ui.projection import (
     refresh_thread_snapshot,
 )
 from harnessix.product_ui.state_store import ClientStateStore
-from harnessix.protocol.contracts import ThreadListResult, ThreadView
+from harnessix.protocol.contracts import EventsReplayResult, ThreadListResult, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError
 from harnessix.sdk.agent_client import AgentTransport
+from harnessix.sdk.event_pages import read_event_page
 
 
 class ConnectionPhase(StrEnum):
@@ -77,6 +78,28 @@ def _connection_after_error(
     return ProductConnection(connection.generation, ConnectionPhase.BROKEN, error.code)
 
 
+async def _read_page[PageT](
+    session: RecoverableAgentSession,
+    client: AgentClient,
+    fetch: Callable[[int], Awaitable[PageT]],
+) -> PageT:
+    """读一页事件；整页被服务端以超限拒绝时缩小页长重读（读过大文件的会话常见）。
+
+    页长不超过协商上限；缩小后的页长记在Session上，后续各页与重连后沿用，不再从协商值重新试探。
+    """
+    assert client.initialized is not None
+    negotiated = min(256, client.initialized.limits.max_replay_events)
+    limit = negotiated if session._page_limit is None else min(negotiated, session._page_limit)
+    page, session._page_limit = await read_event_page(fetch, limit)
+    return page
+
+
+def _replay(
+    client: AgentClient, thread_id: UUID, after_cursor: int
+) -> Callable[[int], Awaitable[EventsReplayResult]]:
+    return lambda limit: client.replay_events(thread_id, after_cursor=after_cursor, limit=limit)
+
+
 class RecoverableAgentSession:
     """管理一个可重连Agent SDK以及同进程可续传的Thread投影。"""
 
@@ -89,6 +112,8 @@ class RecoverableAgentSession:
         self._transport_factory = transport_factory
         self._client: AgentClient | None = None
         self._views: dict[UUID, ProductViewState] = {}
+        # 服务端以超限拒绝过整页事件后缩小的页长；重连后沿用，不再从协商值重新试探。
+        self._page_limit: int | None = None
         self._operation_lock = asyncio.Lock()
         self.connection = ProductConnection()
 
@@ -211,15 +236,9 @@ class RecoverableAgentSession:
                     if existing is None
                     else refresh_thread_snapshot(existing, snapshot)
                 )
-                assert client.initialized is not None
-                limit = min(256, client.initialized.limits.max_replay_events)
                 while True:
                     before = view.durable_cursor
-                    page = await client.replay_events(
-                        thread_id,
-                        after_cursor=before,
-                        limit=limit,
-                    )
+                    page = await _read_page(self, client, _replay(client, thread_id, before))
                     candidate = apply_replay_page(view, page)
                     if page.has_more and candidate.durable_cursor <= before:
                         raise ProductUIError(
@@ -291,14 +310,14 @@ class RecoverableAgentSession:
             view = self._views.get(thread_id)
             if view is None:
                 raise ProductUIError("projection_not_hydrated", "Thread尚未完成投影恢复")
-            assert client.initialized is not None
-            limit = min(256, client.initialized.limits.max_replay_events)
+            after = view.durable_cursor
             try:
-                page = await client.next_events(
-                    thread_id,
-                    after_cursor=view.durable_cursor,
-                    wait_ms=wait_ms,
-                    limit=limit,
+                page = await _read_page(
+                    self,
+                    client,
+                    lambda limit: client.next_events(
+                        thread_id, after_cursor=after, wait_ms=wait_ms, limit=limit
+                    ),
                 )
                 candidate = apply_events_next(view, page)
                 self._state_store.advance_cursor(thread_id, candidate.durable_cursor)

@@ -31,6 +31,7 @@ from harnessix.protocol.contracts import (
     TurnStatePublicEvent,
 )
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, SubprocessAgentTransport
+from harnessix.sdk.event_pages import read_event_page
 
 _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
 
@@ -39,9 +40,6 @@ ApprovalOutcome = Literal["approved", "rejected"]
 ApprovalPolicy = Callable[[PublicApprovalRequestContent, str | None], ApprovalOutcome | None]
 
 
-# 事件页超过协商的消息字节上限（response_too_large）或公开数据保护扫描的资源上限
-# （public_output_limit）时，服务端拒绝整页；页长更小即可读出。
-_OVERSIZED_PAGE_CODES = frozenset({"response_too_large", "public_output_limit"})
 # 宿主系统策略（如本机沙箱内命令）在审批发布后随即自动决定；先等这段时间再交给人，避免抢答。
 SYSTEM_DECISION_GRACE_SECONDS = 3.0
 
@@ -184,14 +182,13 @@ class ThinAgentCLI:
     ) -> PageT:
         """服务端拒绝超限的事件页时减半页长重读；页长随后保持缩小。"""
 
-        while True:
-            limit = self._page_limit or _event_page_limit(self.client)
-            try:
-                return await fetch(*args, **kwargs, limit=limit)
-            except AgentSDKError as error:
-                if error.code not in _OVERSIZED_PAGE_CODES or limit == 1:
-                    raise
-                self._page_limit = limit // 2
+        negotiated = self._page_limit or _event_page_limit(self.client)
+        page, used = await read_event_page(
+            lambda limit: fetch(*args, **kwargs, limit=limit), negotiated
+        )
+        if used != negotiated:
+            self._page_limit = used
+        return page
 
     async def _load_replay(self, thread_id: UUID, *, display_after: int) -> int:
         cursor = 0

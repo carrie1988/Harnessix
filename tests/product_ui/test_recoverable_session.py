@@ -258,3 +258,105 @@ async def test_poll_projection_failure_marks_connection_broken(tmp_path: Path) -
 
         assert error.value.code == "projection_thread_mismatch"
         assert session.connection.phase is ConnectionPhase.BROKEN
+
+
+class _OversizedPageTransport(_SessionTransport):
+    """页长超过accepted的事件页被服务端整页拒绝，更小的页照常返回。"""
+
+    def __init__(self, thread: ThreadView, event: PublicEvent, *, accepted: int, code: str) -> None:
+        super().__init__(thread, event, warm_cursor=5)
+        self.accepted = accepted
+        self.code = code
+
+    def limits(self, method: str) -> list[int]:
+        return [
+            request["params"]["limit"]  # type: ignore[index]
+            for request in self.requests
+            if request["method"] == method
+        ]
+
+    async def exchange(self, frame: bytes) -> tuple[bytes, ...]:
+        request = json.loads(frame)
+        paged = request["method"] in ("events/replay", "events/next")
+        if paged and request["params"]["limit"] > self.accepted:
+            self.requests.append(request)
+            error = {"code": -32000, "message": "事件页超限", "data": {"code": self.code}}
+            response = {"jsonrpc": "2.0", "id": request["id"], "error": error}
+            return (json.dumps(response, separators=(",", ":")).encode() + b"\n",)
+        if request["method"] == "events/next":
+            self.requests.append(request)
+            replay = EventsReplayResult(
+                thread_id=self.thread.thread_id, events=(), scanned_through=5, has_more=False
+            )
+            result = EventsNextResult(replay=replay, deltas=(), live_gap=False)
+            response = {
+                "jsonrpc": "2.0",
+                "id": request["id"],
+                "result": result.model_dump(mode="json", by_alias=True),
+            }
+            return (json.dumps(response, separators=(",", ":")).encode() + b"\n",)
+        return await super().exchange(frame)
+
+
+@pytest.mark.parametrize("code", ["public_output_limit", "response_too_large"])
+async def test_reopening_a_thread_reads_smaller_pages_when_a_full_page_is_rejected(
+    tmp_path: Path, code: str
+) -> None:
+    """读过大文件的会话，一整页历史事件会超过服务端的单页上限；重开时改读更小的页，而不是连接中断。"""
+    thread_id = uuid4()
+    item_id = uuid4()
+    thread = _thread(thread_id).model_copy(update={"cursor": 5})
+    transport = _OversizedPageTransport(thread, _event(thread_id, item_id), accepted=4, code=code)
+    with ClientStateStore(tmp_path / "state", workspace_identity="/workspace") as store:
+        session = RecoverableAgentSession(store, lambda: transport)
+        await session.connect()
+
+        view = await session.hydrate_thread(thread_id)
+
+        assert view.item_for(item_id) is not None
+        assert session.connection.phase is ConnectionPhase.READY
+        # 协商的页长是16：16、8被拒，4读出。
+        assert transport.limits("events/replay") == [16, 8, 4]
+        # 之后的实时轮询沿用缩小后的页长，不再从头试探。
+        await session.poll_thread(thread_id, wait_ms=0)
+        assert transport.limits("events/next") == [4]
+        await session.close()
+
+
+async def test_live_polling_also_halves_a_rejected_page(tmp_path: Path) -> None:
+    thread_id = uuid4()
+    thread = _thread(thread_id).model_copy(update={"cursor": 5})
+    transport = _OversizedPageTransport(
+        thread, _event(thread_id, uuid4()), accepted=16, code="public_output_limit"
+    )
+    with ClientStateStore(tmp_path / "state", workspace_identity="/workspace") as store:
+        session = RecoverableAgentSession(store, lambda: transport)
+        await session.connect()
+        await session.hydrate_thread(thread_id)
+        transport.accepted = 2
+
+        await session.poll_thread(thread_id, wait_ms=0)
+
+        assert transport.limits("events/next") == [16, 8, 4, 2]
+        assert session.connection.phase is ConnectionPhase.READY
+        await session.close()
+
+
+async def test_a_single_event_that_is_still_rejected_is_reported_as_before(
+    tmp_path: Path,
+) -> None:
+    thread_id = uuid4()
+    thread = _thread(thread_id).model_copy(update={"cursor": 5})
+    transport = _OversizedPageTransport(
+        thread, _event(thread_id, uuid4()), accepted=0, code="public_output_limit"
+    )
+    with ClientStateStore(tmp_path / "state", workspace_identity="/workspace") as store:
+        session = RecoverableAgentSession(store, lambda: transport)
+        await session.connect()
+
+        with pytest.raises(AgentSDKError) as error:
+            await session.hydrate_thread(thread_id)
+
+        assert error.value.code == "public_output_limit"
+        assert transport.limits("events/replay") == [16, 8, 4, 2, 1]
+        assert session.connection.phase is not ConnectionPhase.READY

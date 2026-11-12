@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: 7357576af93ad9089dd54642020bb6645f38f500
 owners:
   - core
@@ -22,6 +22,7 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
   - tests/product_ui/test_data_cli.py
   - tests/product_ui/test_tool_summary.py
+  - tests/product_ui/test_recoverable_session.py
   - tests/governance/test_readability_policy.py
 supersedes: []
 ---
@@ -43,6 +44,7 @@ supersedes: []
 | HX-12 | 配置目录权限不对时没有路径和修正办法 | 界面层原样转述通用错误 |
 | HX-07 | 自定义状态目录的会话在诊断里是0个 | `data`命令没有`--state-directory`，空结果也没有提示 |
 | HX-05 | 连不上模型服务时不知道怎样继续 | 提示文案只说检查网络 |
+| 复验中发现 | 读过较多文件的会话退出后重新打开，显示“连接中断”和`public_output_limit`，无法继续 | 界面读整页历史事件被服务端以超限拒绝后不会缩小页长重读（0.10.0b17） |
 
 补丁工具与读取工具相关的条目（换行不一致的文件无法多行编辑、新建文件时父目录不存在、批次失败反馈、参数宽容度、
 读取分页）按用户决定由另一条开发线承接，不在本文范围内。
@@ -76,6 +78,7 @@ supersedes: []
 |---|---|---|
 | HX-01 | `artifacts` | 新增[`action_publication_snapshot`](../../src/harnessix/artifacts/action_publication_snapshot.py)，由Action Review与Action Output两处发布共用 |
 | HX-10 | `artifacts` | [`publish_action_output`](../../src/harnessix/artifacts/action_output_store.py)的调用归属核对改用已有的宿主核对作用域[`inspection_scope`](../../src/harnessix/agent/patching.py) |
+| 会话重开 | `sdk`、`product_ui` | 新增[`read_event_page`](../../src/harnessix/sdk/event_pages.py)，[`session.py`](../../src/harnessix/product_ui/session.py)的历史回放与实时轮询、`agent_cli`的分页共用它 |
 | RT-01、HX-08、HX-12、HX-07、HX-05 | `product_ui` | 审批窗口、运行指示、配置命令、数据命令与失败文案各自的局部修改，见[产品界面模块设计](../modules/product-ui.md) |
 | HX-03 | `product_config`、`product_ui` | 新增[`explicit_thinking_switch`](../../src/harnessix/product_config/wizard.py)；[`configure_cli`](../../src/harnessix/product_ui/configure_cli.py)在显式`--thinking`时使用它，无开关可用时拒绝 |
 
@@ -197,6 +200,10 @@ HX-03的配置流程：`--thinking-protocol auto`时先取默认预设；没有�
     PgDn、PgUp可以来回翻看。
   - “已运行”秒数：未修复时三次运行都在批准后回到2秒；修复后单调递增。
   - 关闭思考的配置下，三次请求的输出为23～145 Token，没有思考内容。
+- 会话重开：[`test_recoverable_session.py`](../../tests/product_ui/test_recoverable_session.py)里整页被拒后改读更小的页、
+  实时轮询同样减半、单个事件仍被拒时照旧报错，修复前四条全部失败。三个真实会话（百炼`qwen3.8-flash`，
+  410～1,602个事件，含较多搜索与读取结果）修复前重开显示“连接中断”与`public_output_limit`，修复后恢复出
+  对话记录与上一轮的结束状态。
 - 界面类五项各有一条先失败后通过的测试：128×36终端下三个文件的长差异打开时位于开头并可翻页（[`test_interaction_screens.py`](../../tests/product_ui/test_interaction_screens.py)）；同一轮跨越审批后继续计时（[`test_activity_indicator.py`](../../tests/product_ui/test_activity_indicator.py)）；755目录的报错含目录、权限与`chmod`命令（[`test_configure_vendors.py`](../../tests/product_ui/test_configure_vendors.py)）；诊断按指定状态目录读取并在空结果时提示（[`test_data_cli.py`](../../tests/product_ui/test_data_cli.py)）；连接失败一行含继续办法（[`test_rendering.py`](../../tests/product_ui/test_rendering.py)）。整个`tests/product_ui`通过。
 - 回归：`tests/artifacts`、`tests/trusted_actions`、`tests/agent`、`tests/delivery`与整个`tests/product_config`
   在基线`dad55d32`与修复后的失败集合逐项相同，没有新增失败。剩余失败均为本机环境问题（Apple Git 2.24不支持
