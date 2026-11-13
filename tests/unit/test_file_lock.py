@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from harnessix.file_lock import acquire_exclusive_file_lock
+from harnessix.file_lock import acquire_exclusive_file_lock, release_exclusive_file_lock
 
 
 def test_exclusive_file_lock_is_non_blocking_and_released_on_close(tmp_path: Path) -> None:
@@ -23,4 +23,19 @@ def test_exclusive_file_lock_is_non_blocking_and_released_on_close(tmp_path: Pat
     finally:
         if first >= 0:
             os.close(first)
+        os.close(second)
+
+
+def test_explicit_release_frees_the_lock_before_close(tmp_path: Path) -> None:
+    path = tmp_path / "update.lock"
+    first = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    second = os.open(path, os.O_RDWR)
+    try:
+        acquire_exclusive_file_lock(first)
+        release_exclusive_file_lock(first)
+        acquire_exclusive_file_lock(second)
+        with pytest.raises(BlockingIOError):
+            acquire_exclusive_file_lock(first)
+    finally:
+        os.close(first)
         os.close(second)

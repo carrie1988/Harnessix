@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 8
+version: 9
 code_revision: 3e108d7eddbdff01b952ad8a9c9e403ed58e57be
 owners:
   - core
@@ -215,7 +215,7 @@ Domain本身不连接数据库。值类型通过上层Event、Plan或Config合�
 此外，`mypy --strict`验证跨模块类型，生成Schema门禁验证仍受支持的合同，文档门禁验证源码与设计链接。
 
 文件锁原语只把已打开文件描述符非阻塞加独占锁：Windows使用`msvcrt.locking`并把占用归一化为
-`BlockingIOError`，POSIX使用`fcntl.flock`。路径类型、权限、符号链接、锁文件生命周期和领域Error Code均由调用模块负责；
+`BlockingIOError`，POSIX使用`fcntl.flock`。`release_exclusive_file_lock`立即放开同一把锁：关闭描述符也会放开，但Windows说明关闭后的放开时间取决于系统回收，频繁争用的短锁（`product_config/private_json.serialized_update`）先显式放开再关闭。路径类型、权限、符号链接、锁文件生命周期和领域Error Code均由调用模块负责；
 `domain.file_lock`不打开路径、不等待、不持久化Owner，也不提供跨主机Lease或Fencing。根级
 [`harnessix.file_lock`](../../src/harnessix/file_lock.py)保留既有导入路径并委托该唯一实现。
 
@@ -240,6 +240,7 @@ Domain本身不连接数据库。值类型通过上层Event、Plan或Config合�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 9 | `458dda3e` 增量 | 2026-11-13 | 新增`release_exclusive_file_lock`（Windows `LK_UNLCK`、POSIX `LOCK_UN`），供私有记录的读改写串行使用（Beta Issue #15） |
 | 6 | `17e20691cf38c5dd1e2130de5f31c002dd6ac261` | 2026-09-20 | 将既有跨平台文件描述符锁下沉为Domain原语，根级导入保持兼容，供Campaign与Suite复用 |
 | 5 | `3f37fe8ae0646d3327254ce9677110b94f7c5e80` | 2026-09-19 | 按单一Coding Agent边界移除退役Action Service领域合同并保留历史事件兼容 |
 

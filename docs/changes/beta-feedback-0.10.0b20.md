@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 24
+version: 25
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -29,6 +29,7 @@ related_adrs:
   - docs/adr/0158-history-artifact-bodies-verified-once-per-store.md
 related_tests:
   - tests/trusted_actions/test_router.py
+  - tests/product_config/test_private_json_concurrency.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -100,9 +101,10 @@ supersedes: []
 | 二十四 | 旧配置一直按最强档思考，第一步想了11分钟（负责人本机，0.10.0b28） | 运行时按中档，不用重新配置 | [ADR 0146](../adr/0146-thinking-intensity-tiers.md)第2版、本文第38节 |
 | 二十五 | 思考到一半连接断开，整轮结束要用户发送“继续”（0.10.0b30正式测试，16次） | 还没有正文和工具调用时自动重试 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第3版、本文第39节 |
 | 二十六 | 对话区选中的字看不见，只剩一整块蓝色（负责人本机，0.10.0b31） | 选择背景按透明度叠加，字色不变 | 本文第40节 |
+| 二十七 | 同时在几个新仓库确认信任，有进程崩溃、确认记录丢失（0.10.0b32，Issue #15） | 读改写跨进程串行，Windows替换被拒绝时重试 | 本文第41节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十六项在第26～40节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十七项在第26～41节。
 
 ## 2. 需求背景
 
@@ -1216,3 +1218,33 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
   拖选后，每个选中的字字色都不等于背景色，字色与选中前相同、背景改变；在0.10.0b31的代码上失败（`#094472 on #094472`）。
 - 真实终端界面（tmux，模型换成固定的Markdown回复，用SGR鼠标序列拖过三行）：b31选中部分为`38;2;9;68;114`字色叠
   `48;2;9;68;114`背景；修复后字色仍是`224;224;224`，背景`20;79;125`，选中范围从“白热火球”到“全部”。
+
+## 41. 第二十七项：同时确认几个工作区的信任（Issue #15）
+
+### 41.1 背景
+
+0.10.0b32 Windows Beta复测（Issue #15）：同时在3个新仓库运行`harnessix code`并输入y，1个进程在进入终端界面前以
+`PermissionError [WinError 5]`崩溃（`remember_trust → write_private_json → os.replace`）；4个进程同时写同一份临时信任文件，
+连续3组都有进程崩溃，最后只保留1～2条。
+
+### 41.2 原因与三个平台
+
+- 记录的保存是“读出→合并→写临时文件→原子替换”，进程之间没有串行，后写的覆盖先写的。这与平台无关：
+  在macOS上用同样的4个进程（读出后停0.3秒）复现，0.10.0b32只剩1条。同一个写入函数还保存命令免询问规则与MCP信任记录，两处同样丢失。
+- 替换被拒绝只在Windows上发生：目标文件正被其他进程读取时（Python在Windows上打开文件不带共享删除），`os.replace`返回拒绝访问。
+  POSIX的rename不受打开的读者影响。
+
+### 41.3 设计
+
+- `private_json.serialized_update(path)`：在同目录的`<文件名>.lock`上取得跨平台独占锁（复用`domain/file_lock`），
+  每20毫秒重试、最多10秒；用完先显式放开再关闭描述符。四处读改写（工作区信任、规则保存、`approvals --remove`、MCP信任/撤销）都放进去。
+- `write_private_json`在Windows上替换被拒绝时每20毫秒重试、最多2秒；POSIX照旧立即报出。
+- 信任记录仍然写不进去时，本次照常进入（用户已明确确认），提示下次还会询问。
+
+### 41.4 验证
+
+- `test_concurrent_confirmations_are_all_kept`：工作区信任、规则、MCP信任三种记录各4个进程（spawn）同时写，读出后停0.3秒；
+  修复后各4条、退出码全为0；0.10.0b32的代码三种都只剩1条。
+- Windows替换被拒绝两次后成功、POSIX不重试、锁被占用时报`PrivateJsonBusy`、记录写不进去时本次照常进入且没有Traceback，各有用例。
+- 真实进程（macOS，tmux）：4个`harnessix code`共用一个HOME，同时在4个新目录输入y，4个都进入终端界面，信任文件4条。
+- Windows上的替换重试需要发布会话在Windows电脑上按Issue的步骤复测（3个原生终端同时确认；4进程同写一份临时文件）。

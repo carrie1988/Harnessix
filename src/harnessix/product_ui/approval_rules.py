@@ -21,7 +21,7 @@ from harnessix.product_config.command_rules import (
     rule_prefix,
     simple_command,
 )
-from harnessix.product_config.private_json import write_private_json
+from harnessix.product_config.private_json import serialized_update, write_private_json
 from harnessix.product_ui.interactions import PendingApproval
 
 _SPEC_VERSION: Final = "harnessix.approval-rules/v1"
@@ -110,9 +110,11 @@ class CommandRules:
         return None if words is None else rule_prefix(words, self.shell)
 
     def remember(self, prefix: tuple[str, ...]) -> None:
-        rules = load_rules(self.store, self.shell)
-        if prefix not in rules:
-            save_rules(self.store, self.shell, (*rules, prefix))
+        # 同一工作区开着几个会话时，各自保存的规则逐个合并，不互相覆盖。
+        with serialized_update(self.store):
+            rules = load_rules(self.store, self.shell)
+            if prefix not in rules:
+                save_rules(self.store, self.shell, (*rules, prefix))
 
     def _stays_inside(self, path: str) -> bool:
         """路径解析符号链接后仍在工作区内，且不落到敏感文件上；文本判断看不到符号链接。"""

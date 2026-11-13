@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 59
+version: 60
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,11 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：同时确认几个工作区的信任不丢记录、不崩溃（Beta Issue #15）
+
+- [`workspace_trust.remember_trust`](../../src/harnessix/product_ui/workspace_trust.py)、[`approval_rules.CommandRules.remember`](../../src/harnessix/product_ui/approval_rules.py)与`approvals_cli`的撤销在`private_json.serialized_update`里读改写，几个进程同时保存时逐个合并。
+- `confirm_workspace_trust`在记录仍然写不进去时（`OSError`，含`PrivateJsonBusy`）照常放行本次（用户已明确输入y），提示“下次打开这个目录时还会询问”，不再出现Traceback。
 
 ## 当前增量：去掉“没有设置思考强度”的启动提示
 
@@ -1238,6 +1243,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 60 | `458dda3e` 增量 | 2026-11-13 | 工作区信任与命令免询问规则的保存跨进程串行；记录写不进去时本次照常进入并提示，不出现Traceback（Beta Issue #15） |
 | 59 | `8b07c214` 增量 | 2026-11-13 | 选中的字保持原来的字色，选择背景按透明度叠加（`selection_painter`）；此前选中部分字色等于背景色，看不见 |
 | 58 | `9409d884` 增量 | 2026-11-13 | 删除“没有设置思考强度”的启动提示及其显示通道（运行时已按中档处理） |
 | 57 | `da4b117c` 增量 | 2026-11-13 | 对话历史区支持鼠标拖选与`Ctrl+C`复制（`selectable_log.py`） |

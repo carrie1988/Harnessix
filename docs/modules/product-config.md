@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 150
+version: 151
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -120,6 +120,12 @@ related_tests:
   - tests/product_config/test_default_thinking_effort.py
 supersedes: []
 ---
+
+## 当前增量：私有记录的“读出→修改→写回”跨进程串行（Beta Issue #15）
+
+- [`private_json.serialized_update`](../../src/harnessix/product_config/private_json.py)在同目录的`<文件名>.lock`上取得跨平台独占锁（复用`domain/file_lock`，Windows `msvcrt.locking`、POSIX `flock`；最多等10秒，取不到时抛`PrivateJsonBusy`），用完显式放开再关闭（新增`release_exclusive_file_lock`：Windows说明关闭描述符后的放开时间不定）。工作区信任、命令免询问规则（保存与`approvals --remove`）、MCP信任的读改写都放进去。此前几个进程同时写，后写的覆盖先写的：0.10.0b32上4个进程同时写只剩1条，三个平台相同。
+- `write_private_json`在Windows上替换被拒绝（`PermissionError`，目标正被其他进程读取）时重试至多2秒；POSIX的rename不受读者影响，那里的`PermissionError`照旧立即报出。
+- 回归见`tests/product_config/test_private_json_concurrency.py`。
 
 ## 当前增量：旧配置在核实过档位的模型上运行时按中档思考（ADR 0146第2版）
 
@@ -2344,6 +2350,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
+| 151 | `458dda3e` 增量 | 2026-11-13 | 私有JSON记录的读改写跨进程串行（`private_json.serialized_update`），Windows替换被拒绝时短暂重试（Beta Issue #15） |
 | 150 | `9409d884` 增量 | 2026-11-13 | 旧配置在核实过档位的模型上运行时按中档思考（`default_thinking.py`，ADR 0146第2版） |
 | 149 | `636f7c9f` 增量 | 2026-11-13 | PowerShell命令带出原生程序的真实退出码（`native_shells.shell_command_text`，Beta Issue #12） |
 | 148 | `f24afce5` 增量 | 2026-11-13 | 百炼北京的业务空间专属域名按共享域名核对牌价、窗口、思考预设与等待时间（`vendors.endpoint_host`，Beta Issue #6） |

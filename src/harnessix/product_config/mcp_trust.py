@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Literal
 
-from harnessix.product_config.private_json import write_private_json
+from harnessix.product_config.private_json import serialized_update, write_private_json
 
 _SPEC_VERSION = "harnessix.mcp-trust/v1"
 _FINGERPRINT = re.compile(r"[0-9a-f]{64}")
@@ -48,13 +48,15 @@ def mcp_trust_state(server_id: str, fingerprint: str, records: dict[str, str]) -
 
 
 def trust_mcp_server(store: Path, server_id: str, fingerprint: str) -> None:
-    records = load_mcp_trust(store) | {server_id: fingerprint}
-    write_private_json(store, {"spec_version": _SPEC_VERSION, "servers": records})
+    with serialized_update(store):
+        records = load_mcp_trust(store) | {server_id: fingerprint}
+        write_private_json(store, {"spec_version": _SPEC_VERSION, "servers": records})
 
 
 def untrust_mcp_server(store: Path, server_id: str) -> bool:
-    records = load_mcp_trust(store)
-    if records.pop(server_id, None) is None:
-        return False
-    write_private_json(store, {"spec_version": _SPEC_VERSION, "servers": records})
+    with serialized_update(store):
+        records = load_mcp_trust(store)
+        if records.pop(server_id, None) is None:
+            return False
+        write_private_json(store, {"spec_version": _SPEC_VERSION, "servers": records})
     return True

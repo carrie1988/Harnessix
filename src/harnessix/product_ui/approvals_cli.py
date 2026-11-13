@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from harnessix.product_config.command_rules import rule_label
+from harnessix.product_config.private_json import serialized_update
 from harnessix.product_ui.approval_rules import load_rules, native_shell, rules_path, save_rules
 from harnessix.product_ui.cli import _default_state_directory, _workspace
 from harnessix.product_ui.errors import ProductUIError
@@ -37,16 +38,17 @@ def approvals_main(argv: Sequence[str]) -> None:
         else _default_state_directory(workspace)
     )
     store, shell = rules_path(state_root), native_shell()
-    rules = load_rules(store, shell)
-    if arguments.remove is not None:
+    if arguments.remove is None:
+        print(rules_text(load_rules(store, shell)))
+        return
+    with serialized_update(store):
+        rules = load_rules(store, shell)
         if not 1 <= arguments.remove <= len(rules):
             print(f"没有第 {arguments.remove} 条规则；当前共 {len(rules)} 条。", file=sys.stderr)
             raise SystemExit(2)
         removed = rules[arguments.remove - 1]
         save_rules(store, shell, rules[: arguments.remove - 1] + rules[arguments.remove :])
-        print(f"已撤销：{rule_label(removed)}。以后这类命令会重新询问。")
-        return
-    print(rules_text(rules))
+    print(f"已撤销：{rule_label(removed)}。以后这类命令会重新询问。")
 
 
 def rules_text(rules: tuple[tuple[str, ...], ...]) -> str:

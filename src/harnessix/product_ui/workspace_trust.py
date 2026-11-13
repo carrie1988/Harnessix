@@ -11,7 +11,7 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from harnessix.product_config.private_json import write_private_json
+from harnessix.product_config.private_json import serialized_update, write_private_json
 
 TRUST_ENVIRONMENT = "HARNESSIX_TRUST_WORKSPACE"
 _SPEC_VERSION = "harnessix.trusted-workspaces/v1"
@@ -44,10 +44,11 @@ def is_trusted(workspace: Path, store: Path) -> bool:
 
 
 def remember_trust(workspace: Path, store: Path) -> None:
-    """用临时文件加原子替换写入，文件只允许当前用户读写。"""
+    """用临时文件加原子替换写入，文件只允许当前用户读写；几个进程同时确认时逐个合并，不丢记录。"""
 
-    entries = {str(item) for item in _load(store)} | {str(workspace.resolve())}
-    write_private_json(store, {"spec_version": _SPEC_VERSION, "workspaces": sorted(entries)})
+    with serialized_update(store):
+        entries = {str(item) for item in _load(store)} | {str(workspace.resolve())}
+        write_private_json(store, {"spec_version": _SPEC_VERSION, "workspaces": sorted(entries)})
 
 
 def _notice(workspace: Path) -> str:
@@ -91,5 +92,9 @@ def confirm_workspace_trust(
         return False
     if answer.strip().lower() not in {"y", "yes"}:
         return False
-    remember_trust(workspace, target)
+    try:
+        remember_trust(workspace, target)
+    except OSError:
+        # 用户已经明确确认，本次照常继续；只是记录没写下来，下次还会询问。
+        print("信任记录没有保存成功，下次打开这个目录时还会询问。", file=sys.stderr)
     return True
