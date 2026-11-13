@@ -7,8 +7,10 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Final
+from urllib.parse import urlsplit
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,3 +79,25 @@ VENDOR_IDS: Final = tuple(item.vendor_id for item in VENDORS)
 
 def vendor_by_id(vendor_id: str) -> Vendor:
     return next(item for item in VENDORS if item.vendor_id == vendor_id)
+
+
+BAILIAN_HOST: Final = "dashscope.aliyuncs.com"
+# 阿里云百炼北京地域的业务空间专属域名{WorkspaceId}.cn-beijing.maas.aliyuncs.com（2026-11-13核对
+# 官方文档）：与共享域名同一地域、同一套型号与按量牌价，阿里云推荐生产环境使用。
+# 其他地域另有牌价与型号，不归并。
+_BAILIAN_BEIJING_WORKSPACE: Final = re.compile(
+    r"[a-z0-9][a-z0-9-]{0,62}\.cn-beijing\.maas\.aliyuncs\.com"
+)
+
+
+def endpoint_host(base_url: str) -> str | None:
+    """按端点核对的各表（牌价、上下文窗口、思考预设）用的主机名。
+
+    百炼北京的专属域名归到共享域名，其余原样。
+
+    Beta Issue #6：专属域名此前一律按未知端点处理，底栏显示“费用未知”。
+    """
+    host = urlsplit(base_url).hostname
+    if host is not None and _BAILIAN_BEIJING_WORKSPACE.fullmatch(host):
+        return BAILIAN_HOST
+    return host

@@ -12,11 +12,11 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 from typing import Final, Literal
-from urllib.parse import urlsplit
 
 from harnessix.agent.errors import KernelError
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
+from harnessix.product_config.vendors import endpoint_host
 
 _MILLION: Final = Decimal(1_000_000)
 # 产品面向中国用户，金额一律以人民币显示；只登记以人民币计费的已核对牌价。
@@ -70,7 +70,7 @@ _LIST_PRICES: Final[dict[tuple[str, str], ListPrice]] = {
 def list_price_for(base_url: str, model: str) -> ListPrice | None:
     """只返回确切型号的已核对牌价。"""
 
-    return _LIST_PRICES.get((urlsplit(base_url).hostname or "", model))
+    return _LIST_PRICES.get((endpoint_host(base_url) or "", model))
 
 
 def chain_list_price(config: Path, profile: str | None) -> ListPrice | None:

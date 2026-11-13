@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 16
+version: 17
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -57,6 +57,7 @@ related_tests:
   - tests/product_ui/test_activity_indicator.py
   - tests/agent/test_retry_progress.py
   - tests/artifacts/test_verified_history_bodies.py
+  - tests/product_config/test_bailian_workspace_endpoint.py
 supersedes: []
 ---
 
@@ -86,9 +87,10 @@ supersedes: []
 | 十六 | 新会话续做约10分钟后以`context_artifact_timeout`中断，没有恢复办法（0.10.0b24，Issue #8） | 补恢复说明；正文只完整核对一次 | 本文第30节、[ADR 0158](../adr/0158-history-artifact-bodies-verified-once-per-store.md) |
 | 十七 | 退出终端界面时偶尔打印一段`IndexError`报错堆栈（0.10.0b23起） | 界面全部关闭后，运行时间检查点的定时器直接跳过 | 本文第31节 |
 | 十八 | 重试期间看不出第几次尝试、为什么还在等（0.10.0b25，Issue #11） | 运行提示说明尝试序号与上次失败原因 | 本文第32节 |
+| 十九 | 百炼北京的业务空间专属域名显示“费用未知”（0.10.0b25，Issue #6） | 与共享域名按同一套表核对 | 本文第33节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至十八项在第26～32节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至十九项在第26～33节。
 
 ## 2. 需求背景
 
@@ -962,3 +964,37 @@ Issue #11除了等待时长（第29节），还希望重试时“显示失败原
   真实OpenAI Chat适配器第一次503、第二次正常回复，运行时发出`0 0 0 - 2 server`；界面文案与不估算用量。
 - 真实终端界面（tmux驱动，网络层换成“第一次503、重试10秒后回复”的数据源）：第2秒起显示
   “等待模型服务响应 · 第 2 次尝试，上次服务端出错 · 已等待 0～9 秒”，回复到达后恢复。0.10.0b25在同样情形下一直显示“思考中”。
+
+## 33. 第十九项：百炼北京的业务空间专属域名
+
+### 33.1 背景
+
+Issue #6（0.10.0b25，Windows）：`configure --vendor bailian --model qwen3.8-flash --base-url
+https://<WorkspaceId>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`之后，底栏一直是“费用未知”，向导的模型行也不显示单价。
+阿里云文档（2026-11-13核对）推荐生产环境使用业务空间专属域名，格式为`{WorkspaceId}.{地域}.maas.aliyuncs.com`；
+文档没有直接写两类域名的计费关系，北京地域的按量牌价表按型号列出。
+
+### 33.2 根因与影响
+
+牌价、上下文窗口、思考预设、思考强度档位与等待时间五张核对表都按确切主机名`dashscope.aliyuncs.com`匹配。
+用真实的`configure`对比，专属域名生成的配置除了没有单价，还没有上下文窗口、没有思考协议与强度
+（模型按服务端默认的最强档思考，正是第15～16节处理过的问题）、读取超时30秒（共享域名为180秒）。
+所以影响不止费用显示。
+
+### 33.3 设计
+
+`product_config/vendors.py::endpoint_host`把只含一段业务空间标识的`*.cn-beijing.maas.aliyuncs.com`归到共享域名，
+五处查表改用它。其他地域（新加坡、东京等）另有牌价与型号，不归并，仍按未知端点处理。
+
+### 33.4 验证
+
+- `tests/product_config/test_bailian_workspace_endpoint.py`：域名归并的正反例（大小写、其他地域、多一段或少一段、
+  路径里出现同样字样的伪造地址），专属域名得到与共享域名相同的牌价、窗口、思考预设、强度档位与等待时间，其他地域保持未知。
+- 真实`configure`（专属域名、qwen3.8-flash）：
+
+| 版本 | 模型行 | 上下文窗口 | 思考协议 / 强度 | 读取超时 |
+|---|---|---|---|---|
+| 0.10.0b25 | 无单价 | 未设置 | 未设置 / 未设置 | 30秒 |
+| 本修改 | 每百万Token输入¥0.8 / 输出¥2.7 | 1,000,000 | dashscope_enable_thinking / medium | 180秒 |
+
+已经用专属域名生成的配置要重新运行一次`configure`才能得到窗口与思考设置；费用显示在升级后即生效。

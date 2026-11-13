@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 53
+version: 54
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -1211,6 +1211,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 54 | `f24afce5` 增量 | 2026-11-13 | `cost_estimate.list_price_for`经`product_config.vendors.endpoint_host`查牌价，百炼北京的业务空间专属域名显示牌价与费用（Beta Issue #6） |
 | 53 | `f24afce5` 增量 | 2026-11-13 | 重试时运行提示说明第几次尝试与上次失败原因（`request_retry`，Beta Issue #11） |
 | 52 | `f24afce5` 增量 | 2026-11-13 | 等待首帧或重试期间显示“等待模型服务响应 · 已等待 N 秒”；`context_artifact_timeout`的恢复说明（Beta Issue #7、#11、#8） |
 | 51 | `f24afce5` 增量 | 2026-11-13 | 上下文耗尽的恢复说明改为首选“调大窗口后重新打开、原会话继续”；`configure --service-failure-retries`的帮助文字说明它决定一次请求最多尝试N+1次（Beta Issue #3、#2） |

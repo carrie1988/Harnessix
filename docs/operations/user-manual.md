@@ -278,7 +278,7 @@ harnessix code configure --provider-kind openai_chat \
 | 智谱 | `glm-5.3-flashx` | 100 万 | ¥2 / ¥7 |
 | 智谱 | `glm-5.3` | 100 万 | ¥8 / ¥28 |
 
-牌价核对于 2026-11-10，以服务商官网为准；金额一律以人民币显示。只有表中的确切型号会显示费用，带其他日期或后缀的型号可能另有价格，显示为“费用未知”。其他 OpenAI 兼容服务和 Anthropic 接口（`--provider-kind anthropic`）也可以使用，但费用显示为“未知”。没有内置窗口的模型，建议用 `--context-window-tokens` 写明上下文窗口。
+牌价核对于 2026-11-10，以服务商官网为准；金额一律以人民币显示。百炼北京地域的业务空间专属域名（`https://<业务空间ID>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，用 `--base-url` 指定）与共享域名按同一张表显示牌价、上下文窗口与思考设置；其他地域的专属域名另有价格，显示为“费用未知”。只有表中的确切型号会显示费用，带其他日期或后缀的型号可能另有价格，显示为“费用未知”。其他 OpenAI 兼容服务和 Anthropic 接口（`--provider-kind anthropic`）也可以使用，但费用显示为“未知”。没有内置窗口的模型，建议用 `--context-window-tokens` 写明上下文窗口。
 
 ### 4.4 自己部署的模型
 

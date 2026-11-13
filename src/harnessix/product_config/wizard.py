@@ -39,6 +39,7 @@ from harnessix.product_config.product_contracts import (
     configuration_write_receipt_digest,
 )
 from harnessix.product_config.reasoning_models import reasons_by_default
+from harnessix.product_config.vendors import endpoint_host
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,7 +103,7 @@ _MAX_TOKENS_HOSTS = frozenset({"open.bigmodel.cn"})
 def known_context_window(base_url: str, model: str) -> int | None:
     """已核对端点与模型族的上下文窗口；其余返回None，沿用产品固定压缩上限。"""
 
-    host = urlsplit(base_url).hostname
+    host = endpoint_host(base_url)
     for known_host, prefixes, window in _KNOWN_CONTEXT_WINDOWS:
         if host == known_host and model.startswith(prefixes):
             return window
@@ -149,7 +150,7 @@ def thinking_preset(
 ) -> tuple[ThinkingProtocol, bool] | None:
     """已求证端点与模型族的思考预设：（思考协议，是否不发送tool_choice）；其余端点不预设。"""
 
-    host = urlsplit(base_url).hostname
+    host = endpoint_host(base_url)
     if host in LOOPBACK_HOSTS or self_hosted:
         # 自托管vLLM：思考开关经chat_template_kwargs交给模型对话模板。
         return "vllm_chat_template", False
@@ -173,7 +174,7 @@ def effort_tiers_verified(base_url: str, model: str) -> bool:
     同一个简单任务思考17,378 Token、耗时5分钟；设为low或medium后降到一两百Token。
     同协议的百炼DeepSeek没有核实，不在此列。
     """
-    host = urlsplit(base_url).hostname
+    host = endpoint_host(base_url)
     return host == "dashscope.aliyuncs.com" and model.startswith(("qwen3.8-max", "qwen3.8-flash"))
 
 

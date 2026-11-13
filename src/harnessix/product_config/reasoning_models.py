@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from urllib.parse import urlsplit
+from harnessix.product_config.vendors import endpoint_host
 
 LEGACY_DEFAULT_TIMEOUTS = (30.0, 120.0)
 REASONING_TIMEOUTS = (180.0, 900.0)
@@ -21,7 +21,7 @@ def reasons_by_default(base_url: str, model: str) -> bool:
     仍没有协议，继续按这里的名单放宽等待时间与输出限额。
     """
 
-    host = urlsplit(base_url).hostname
+    host = endpoint_host(base_url)
     # 智谱GLM-5.3系列强制思考、不能关闭（智谱文档，2026-11-10）。
     return (host == "dashscope.aliyuncs.com" and model.startswith("qwen3.8")) or (
         host == "open.bigmodel.cn" and model.startswith("glm-5.3")

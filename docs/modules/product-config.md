@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 147
+version: 148
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -116,8 +116,15 @@ related_tests:
   - tests/product_config/test_command_rules.py
   - tests/product_config/test_private_directory.py
   - tests/product_config/test_retry_limit.py
+  - tests/product_config/test_bailian_workspace_endpoint.py
 supersedes: []
 ---
+
+## 当前增量：百炼北京的业务空间专属域名按共享域名核对
+
+- [`vendors.endpoint_host`](../../src/harnessix/product_config/vendors.py)：按端点核对的各表用的主机名。`{WorkspaceId}.cn-beijing.maas.aliyuncs.com`（阿里云文档2026-11-13核对，只认一段业务空间标识）归到`dashscope.aliyuncs.com`，其余原样。
+- 使用它的地方：`wizard.known_context_window`、`wizard.thinking_preset`、`wizard.effort_tiers_verified`、`reasoning_models.reasons_by_default`（等待时间）与界面的`cost_estimate.list_price_for`。此前专属域名一律按未知端点处理：没有单价、没有窗口、不预设思考（服务端默认最强档）、读取超时30秒（Beta Issue #6）。其他地域不归并。
+- 回归见`tests/product_config/test_bailian_workspace_endpoint.py`。
 
 ## 当前增量：配置的重试次数决定一次请求的尝试次数（ADR 0144第2版）
 
@@ -2323,6 +2330,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
+| 148 | `f24afce5` 增量 | 2026-11-13 | 百炼北京的业务空间专属域名按共享域名核对牌价、窗口、思考预设与等待时间（`vendors.endpoint_host`，Beta Issue #6） |
 | 147 | `f24afce5` 增量 | 2026-11-13 | 配置了`service_failure_retries`时，一次模型请求最多尝试N+1次（最多6次），服务端明确拒绝与连接失败也受它限制（`runtime_options.request_attempts`，ADR 0144第2版，Beta Issue #2） |
 | 146 | `6d0c6152` 增量 | 2026-11-13 | 状态目录缺失的各级父目录都按0700创建（`private_directory.make_private_directories`）：先用`exec`的用户不再得到755的`~/.harnessix`而被`configure`拒绝 |
 | 145 | `ce5b7386` 增量 | 2026-11-12 | 本机命令的系统指令升为v5，加入完成规则（做完就结束、已有检查只验证一次、无法验证的写进最终回答）；容器与外部边界指令不变（ADR 0149） |
