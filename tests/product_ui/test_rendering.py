@@ -292,8 +292,10 @@ def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
         view("context_budget_exceeded", "Runtime 或用户必选指令超过可用 Context 输入预算")
     )
     assert exhausted[0].role == "错误" and "context_budget_exceeded" not in exhausted[0].text
-    assert "Ctrl+N 新建会话" in exhausted[0].text
+    # Windows实测（Issue #3评论）：调大窗口后重新打开，原会话可以继续，这是首选的办法。
+    assert "调大窗口" in exhausted[0].text and "在这个会话里继续" in exhausted[0].text
     assert "--context-window-tokens" in exhausted[0].text
+    assert "Ctrl+N 新建会话" in exhausted[0].text
     # Beta Issue #1：模型输出不合规时同样要说明怎样接着做。
     malformed = transcript_lines(
         view("provider_invalid_provider_output", "Provider 返回结构化失败")

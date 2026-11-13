@@ -104,7 +104,7 @@ harnessix code /path/to/repo
 | Linux 上 `doctor` 提示沙箱不可用 | 安装 bubblewrap 并开启非特权用户命名空间；Ubuntu 24.04 起还要为 bwrap 配置 AppArmor 例外。沙箱不可用时，命令不会自动执行 |
 | `harnessix exec` 提示工作区未被信任 | 确认仓库可信后加 `--trust-workspace` |
 | 任务因费用未知而停止 | 发送新消息即可继续 |
-| 任务以“会话内容已经放不进配置的上下文窗口”结束 | 按 `Ctrl+N` 新建会话后继续；窗口小于 64K 时先用 `harnessix code configure --context-window-tokens` 配置更大的窗口 |
+| 任务以“会话内容已经放不进配置的上下文窗口”结束 | 退出后用 `harnessix code configure --context-window-tokens` 调大窗口（如 131072），重新打开即可在原会话继续；不能调大时按 `Ctrl+N` 新建会话 |
 | 自己写的 Skill 没有生效 | 运行 `harnessix skills list`，会列出未被采用的文件和原因，见[使用 Skills](skills.md) |
 
 ## 7. 回退

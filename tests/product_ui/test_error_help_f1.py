@@ -27,7 +27,8 @@ def test_context_exhaustion_says_how_to_go_on() -> None:
     """Beta Issue #3：上下文耗尽后只有一行原始报错，没有说该新建会话、窗口太小该怎么改。"""
     item = current_error_help(None, "failed", "context_budget_exceeded")
     assert item is not None and item.title == "会话内容放不进上下文窗口"
-    assert "Ctrl+N" in item.action and "--context-window-tokens" in item.action
+    assert "--context-window-tokens" in item.action and "选中这个会话" in item.action
+    assert "Ctrl+N" in item.action
     assert "保留" in item.impact
 
 

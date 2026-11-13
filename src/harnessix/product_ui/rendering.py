@@ -56,8 +56,9 @@ _FAILURE_TEXT: Final = {
     ),
     "context_budget_exceeded": (
         "会话内容已经放不进配置的上下文窗口，本轮已停止，已完成的修改都保留着。"
-        "请按 Ctrl+N 新建会话，简要说明进展后继续；配置的窗口小于 64K 时，先重新运行 "
-        "harnessix code configure，把 --context-window-tokens 设为 65536 或模型支持的更大值"
+        "模型支持更大的窗口时，退出后重新运行 harnessix code configure 调大窗口"
+        "（--context-window-tokens，如 131072），再打开即可在这个会话里继续；"
+        "否则按 Ctrl+N 新建会话，简要说明进展后继续"
     ),
     "provider_max_output_tokens": "模型单次输出达到长度上限，可以让它分步完成",
     "budget_exceeded": "已达到本轮的 Token 上限，可以继续发送任务开始新一轮",

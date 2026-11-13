@@ -42,6 +42,7 @@ from harnessix.product_config.contracts import (
 )
 from harnessix.product_config.profile_options import effort_wire_value
 from harnessix.product_config.reasoning_models import effective_timeouts
+from harnessix.product_config.runtime_options import request_attempts
 from harnessix.product_config.store import SQLiteProductConfigStore
 from harnessix.secrets.provider import (
     EnvironmentSecretProvider,
@@ -440,16 +441,19 @@ async def build_provider_bundle(
     _verify_selection(snapshot, selection)
     providers = {item.provider_id: item for item in snapshot.config.providers}
     profiles = {item.profile_id: item for item in snapshot.config.profiles}
+    retries = snapshot.config.service_failure_retries
     candidates: list[ProviderCandidate] = []
     try:
         for profile_id in selection.profile_chain:
             profile = profiles[profile_id]
             definition = providers[profile.provider_id]
+            attempts = request_attempts(retries, profile.max_attempts)
+            limited = profile.model_copy(update={"max_attempts": attempts})
             candidates.append(
                 ProviderCandidate(
                     profile=profile,
                     definition=definition,
-                    provider=_resolve_provider(definition, profile, secrets, factory),
+                    provider=_resolve_provider(definition, limited, secrets, factory),
                 )
             )
     except BaseException:

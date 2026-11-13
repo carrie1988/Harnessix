@@ -177,11 +177,11 @@ _TURN_HELP: Final = {
             "context_budget_exceeded",
             "会话内容放不进上下文窗口",
             "会话累积的历史、工具说明和必要指令，超过了配置的上下文窗口留给输入的部分；"
-            "配置的窗口小于 64K、或读入了很大的文件时更容易遇到。",
+            "窗口较小、任务较长或读入了很大的文件时更容易遇到。",
             _KEPT,
-            "按 Ctrl+N 新建会话，简要说明之前的进展后继续。窗口小于 64K 时，先重新运行 "
-            "harnessix code configure，把 --context-window-tokens 设为 65536 或模型支持的更大值，"
-            "然后重新打开 Harnessix。",
+            "模型支持更大的窗口时：按 Ctrl+Q 退出，重新运行 harnessix code configure 把 "
+            "--context-window-tokens 调大（如 131072），再打开 Harnessix，选中这个会话发送“继续”。"
+            "不能调大时，按 Ctrl+N 新建会话，简要说明之前的进展后继续。",
             _DIAGNOSTICS,
         ),
         ProductErrorHelp(

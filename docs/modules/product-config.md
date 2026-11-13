@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 146
+version: 147
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -115,8 +115,17 @@ related_tests:
   - tests/product_ui/test_configure_vendors.py
   - tests/product_config/test_command_rules.py
   - tests/product_config/test_private_directory.py
+  - tests/product_config/test_retry_limit.py
 supersedes: []
 ---
+
+## 当前增量：配置的重试次数决定一次请求的尝试次数（ADR 0144第2版）
+
+- **现象（Beta Issue #2）。** `configure --service-failure-retries 2`之后，端点连续返回HTTP 503时仍发出6次请求。
+- **原因。** 两层机制：适配器在一次请求内按Profile的`max_attempts`重试（向导写6）；`service_failure_retries`只限制“用量未知”的失败连续多少次后停止。503、429这类明确拒绝和没建立的连接确定没有计费，记为完整的零用量，不属于“用量未知”，所以这个设置对它们不起作用。
+- **修改。** [`runtime_options.request_attempts`](../../src/harnessix/product_config/runtime_options.py)：配置了`service_failure_retries`时，一次请求最多尝试N+1次（上限`MAX_REQUEST_ATTEMPTS = 6`）；没有配置时沿用Profile的`max_attempts`。[`build_provider_bundle`](../../src/harnessix/product_config/runtime.py)把这个次数交给每个候选（含回退Profile）的适配器；候选记录的Profile仍是配置里的原样。
+- **边界。** 交互与无人值守模式相同；评测与冒烟直接使用模型配置的`max_attempts=1`，不经过这里。配置的回退模型是另一个Profile，主模型用完次数后仍会按同样的次数尝试回退模型。
+- 回归见`tests/product_config/test_retry_limit.py`（含真实OpenAI Chat适配器面对一直503的服务）。
 
 ## 当前增量：状态目录缺失的各级父目录都按0700创建
 
@@ -2314,6 +2323,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
+| 147 | `f24afce5` 增量 | 2026-11-13 | 配置了`service_failure_retries`时，一次模型请求最多尝试N+1次（最多6次），服务端明确拒绝与连接失败也受它限制（`runtime_options.request_attempts`，ADR 0144第2版，Beta Issue #2） |
 | 146 | `6d0c6152` 增量 | 2026-11-13 | 状态目录缺失的各级父目录都按0700创建（`private_directory.make_private_directories`）：先用`exec`的用户不再得到755的`~/.harnessix`而被`configure`拒绝 |
 | 145 | `ce5b7386` 增量 | 2026-11-12 | 本机命令的系统指令升为v5，加入完成规则（做完就结束、已有检查只验证一次、无法验证的写进最终回答）；容器与外部边界指令不变（ADR 0149） |
 | 144 | `74b08375` 增量 | 2026-11-12 | `ModelProfile.thinking_effort`（低、中、高）与`thinking_budget_tokens`：字段类型、端点映射与校验在`profile_options.py`；向导对百炼qwen3.8-max/flash默认中档（`effort_tiers_verified`）；终端界面的完成守卫用交互模式（ADR 0146、0147） |

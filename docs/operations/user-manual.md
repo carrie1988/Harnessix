@@ -359,7 +359,7 @@ harnessix code configure [新的完整参数] --replace \
 | `--thinking-effort` | 思考强度：`low`、`medium`（核实过的模型的默认值）、`high`。只对核实过强度档位的服务和模型有效，其他服务会拒绝这个参数。详见“思考模式怎么选” |
 | `--thinking-budget` | 思考 Token 上限（高级选项，256 起）：到达后模型停止思考直接作答。设置后不再发送思考强度；与 `--thinking-effort` 只能选一个 |
 | `--tool-choice` | 是否发送 `tool_choice`：`auto`、`send`、`omit` |
-| `--service-failure-retries` | 终端界面使用付费模型时，网络中断、限流、模型服务内部错误之后最多连续自动重试的次数，0～20，默认 5；填 0 表示不自动重试，出错即停下。见 [10.3](#103-费用未知时) |
+| `--service-failure-retries` | 模型请求因网络中断、限流、模型服务内部错误失败后最多自动重试的次数：一次请求最多尝试 N+1 次，最多 6 次（填 5 以上都按 5 次重试）；填 0 表示不自动重试，出错即停下。不填时沿用配置里每次请求的尝试次数（新生成的配置是 6 次）。见 [10.3](#103-费用未知时) |
 | `--output-token-parameter` | 输出上限参数名：`max_completion_tokens` 或 `max_tokens` |
 | `--provider-id`、`--profile-id` | 自定义配置中的标识，一般不需要 |
 | `--config` | 配置文件路径，默认 `~/.harnessix/config.json` |
@@ -684,7 +684,7 @@ Hooks、IDE 插件、Web 搜索、子代理、图片输入、自动更新。
 网络中断等情况下，可能无法确认某次模型请求是否计费：
 
 - 终端界面使用付费模型时：
-  - 网络中断、限流或模型服务内部错误造成的，会自动重试，连续 5 次仍失败才停下。重试的那几次请求有可能被服务商计费。次数可以用 `harnessix code configure --service-failure-retries N` 修改，0 表示不自动重试。
+  - 网络中断、限流或模型服务内部错误造成的，会自动重试，连续 5 次仍失败才停下。重试的那几次请求有可能被服务商计费。次数可以用 `harnessix code configure --service-failure-retries N` 修改，0 表示不自动重试；设置后，模型服务明确拒绝（如 HTTP 503）或连不上的请求同样最多重试 N 次。
   - 模型已经开始输出之后才断开的，以及其他原因造成的费用未知，任务会停下，交给你决定。发送新消息（例如“继续”）即可接着做。
 - `harnessix exec` 和本地模型会按该次请求可能的最大用量预留后继续。
 
@@ -845,7 +845,7 @@ uv tool uninstall harnessix
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key |
 | 自托管模型很快报错或回答被截断 | 检查模型上下文窗口；Ollama 默认只有 4096 |
-| 任务以“会话内容已经放不进配置的上下文窗口”结束 | 已完成的修改都保留着。按 `Ctrl+N` 新建会话，简要说明进展后继续；配置的窗口小于 64K 时，先重新运行 `harnessix code configure`，把 `--context-window-tokens` 设为 65536 或模型支持的更大值 |
+| 任务以“会话内容已经放不进配置的上下文窗口”结束 | 已完成的修改都保留着。模型支持更大的窗口时，按 `Ctrl+Q` 退出，重新运行 `harnessix code configure` 把 `--context-window-tokens` 调大（如 131072），再打开 Harnessix，选中原会话发送“继续”；不能调大时按 `Ctrl+N` 新建会话，简要说明进展后继续 |
 | 任务以“模型服务返回的内容不完整或格式不对”结束 | 多为模型服务偶发的问题，已完成的修改都保留着；直接发送“继续”接着做，反复出现时换用其他模型 |
 | Linux 上沙箱不可用 | 按 [3.4](#34-linux准备沙箱) 安装 bubblewrap 并允许用户命名空间 |
 | macOS 上沙箱不可用 | 在系统自带的“终端”里运行，不要在其他工具的沙箱终端里运行 |

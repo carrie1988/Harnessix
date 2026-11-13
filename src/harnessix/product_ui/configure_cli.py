@@ -142,7 +142,10 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--service-failure-retries",
         type=int,
-        help="终端界面使用付费模型时，网络中断、限流、服务端错误后最多连续自动重试的次数；默认5，0为不重试",
+        help=(
+            "模型请求因网络中断、限流、服务端错误失败后最多自动重试的次数，一次请求最多尝试N+1次"
+            "（最多6次）；不设置时沿用配置里的尝试次数，0为不重试"
+        ),
     )
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--expected-source-sha256")

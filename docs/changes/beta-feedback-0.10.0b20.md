@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 12
+version: 13
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -52,6 +52,7 @@ related_tests:
   - tests/models/test_chat_empty_name.py
   - tests/product_ui/test_error_help_f1.py
   - tests/product_ui/test_rendering.py
+  - tests/product_config/test_retry_limit.py
 supersedes: []
 ---
 
@@ -76,9 +77,10 @@ supersedes: []
 | 十一 | 先用`harnessix exec`、后运行`harnessix code configure`，被以“配置目录的权限是 755”拒绝 | 产品自己创建的状态目录每一级都按0700创建 | 本文第25节 |
 | 十二 | 百炼返回没有名称的工具调用，整轮任务中断，要手动“继续”（0.10.0b24，Issue #1） | 只拒绝这一次调用，模型改正后任务继续 | [ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md) |
 | 十三 | 上下文耗尽后任务中断，界面只有一行内部报错，没有恢复办法（0.10.0b24，Issue #3） | 对话与F1说明怎样接着做；耗尽本身的根因归上下文预算的工作 | 本文第27节 |
+| 十四 | `--service-failure-retries 2`之后，连续HTTP 503仍发出6次请求（0.10.0b24，Issue #2） | 配置了它时，一次请求最多尝试N+1次 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第2版 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二、十三项在第26、27节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至十四项在第26～28节。
 
 ## 2. 需求背景
 
@@ -801,14 +803,16 @@ IndexError: list index out of range
 
 | 错误码 | 对话里的一行 | F1 |
 |---|---|---|
-| `context_budget_exceeded` | 会话内容已经放不进配置的上下文窗口，已完成的修改都保留着；按Ctrl+N新建会话后继续；窗口小于64K时重新运行configure换更大的窗口 | 同样的原因与处理办法 |
+| `context_budget_exceeded` | 会话内容已经放不进配置的上下文窗口，已完成的修改都保留着；模型支持更大的窗口时，退出后用configure调大窗口、重新打开即可在原会话继续；否则按Ctrl+N新建会话 | 同样的原因与处理办法 |
 | `provider_invalid_provider_output` | 模型服务返回的内容不完整或格式不对，已完成的修改都保留着；直接发送“继续” | 同上，另提示反复出现时换模型或用`doctor --probe-model`核对 |
 
 用户手册与Beta快速上手的故障排查表各补一行。
 
 ### 27.3 边界
 
-- 文案是静态的，不知道当前配置的窗口大小，所以两种处理办法都写出来。
+- 文案是静态的，不知道当前配置的窗口大小，所以两种处理办法都写出来。首选“调大窗口后重新打开”来自Issue #3的
+  Windows补充实测：0.10.0b25、64K窗口下耗尽后，退出、把Profile的`context_window_tokens`改为131072、重新打开，
+  同一会话继续并完成了下一项功能。最初的文案写的是“窗口小于64K时换更大的窗口”，对这位64K的用户不适用，已改写。
 - 32K窗口下新建会话后读同一个大文件仍会耗尽，根本的办法是换更大的窗口；这一点写在文案里。
 - 没有验证“在原会话里重发任务是否必然再次失败”，文案只写确定有效的做法（新建会话）。
 
@@ -816,3 +820,36 @@ IndexError: list index out of range
 
 - `tests/product_ui/test_rendering.py`：两个错误码在对话里显示白话说明与处理办法，不再带错误码原文。
 - `tests/product_ui/test_error_help_f1.py`：F1给出各自的条目而不是通用的“上一轮任务未完成”。修改前这些断言失败。
+
+## 28. 第十四项：配置的重试次数决定一次请求的尝试次数
+
+### 28.1 背景
+
+0.10.0b24的Beta复测（GitHub Issue #2）：两份配置只差`--service-failure-retries 2`，端点换成本机夹具、对每个请求返回
+HTTP 503（`Retry-After: 0`），两份都发出6次请求后“未完成”。测试者无法用这个设置缩短临时故障时的等待，
+也无法据此预估实际请求数。负责人要求修复。
+
+### 28.2 根因
+
+这是第15节（ADR 0144）的设计缺口。一次请求内的重试由适配器按Profile的`max_attempts`完成（向导写6）；
+`service_failure_retries`只限制“用量未知”的失败连续多少次后停止。服务端明确拒绝（503、429）和没建立的连接确定没有计费，
+记为零用量，不受它限制。而帮助文字写的是“网络中断、限流、服务端错误后最多连续自动重试的次数”。
+
+### 28.3 设计
+
+- `product_config/runtime_options.py::request_attempts`：配置了N时，一次请求最多尝试N+1次（上限6，与`max_attempts`的合同上限相同）；
+  未配置时沿用Profile的`max_attempts`。
+- `build_provider_bundle`把这个次数交给每个候选（含回退Profile）的适配器；候选记录的Profile保持配置原样。
+- 帮助文字、用户手册与ADR 0144（第2版）同步：设置后所有失败类型一样；大于5按5次重试；不设置时行为不变。
+
+### 28.4 边界
+
+- 取值范围仍是0～20，不收紧，已写入的配置照常可用。
+- 回退模型另有自己的N+1次尝试；只配置一个模型时，总请求数就是N+1。
+- 评测与冒烟配置不经过这里，`max_attempts=1`不变。
+
+### 28.5 验证
+
+- `tests/product_config/test_retry_limit.py`：六种组合（未配置的新旧配置、2、0、旧配置显式5、20）下工厂收到的尝试次数；
+  真实OpenAI Chat适配器经产品装配面对一直返回503的服务，配置2时发出3次请求、0时1次、未配置时6次。修改前前者与issue一致是6次。
+- 原有`tests/product_config/test_service_failure_retries.py`（流式中断后按配置重试）不变并通过。

@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [agent, product_config, models]
@@ -11,6 +11,7 @@ related_tests:
   - tests/agent/test_model_attempts.py
   - tests/context/test_pressure_window_candidates.py
   - tests/product_config/test_service_failure_retries.py
+  - tests/product_config/test_retry_limit.py
   - tests/product_ui/test_configure_vendors.py
 supersedes: []
 ---
@@ -53,7 +54,7 @@ supersedes: []
 
 - 响应已经开始输出之后才断开的请求，适配器不重试（ADR 0123），该轮仍以原故障结束，界面提示直接发送“继续”。
   要在这种情况下自动重试，需要作废已经显示的半截内容并重新采样这一步，涉及事件合同，另行设计。
-- 确定未计费的失败（HTTP错误响应、连接未建立）本来就会重试，不受本ADR影响。
+- 确定未计费的失败（HTTP错误响应、连接未建立）本来就会重试，不受本ADR影响。（第2版起，配置了`service_failure_retries`时它们的次数也受这个设置限制，见下文“修订”。）
 - 评测与冒烟配置仍要求`max_attempts=1`。
 
 ## 后果
@@ -61,3 +62,20 @@ supersedes: []
 - 重试的那几次请求有可能已被服务商计费；最坏情况是一次故障多付5次请求的费用。这是决定里接受的代价。
 - 单次请求最多等待的退避时间变长（向导配置的基数是1秒：1、2、4、8、16秒），仍受该请求总时限约束。
 - 7个公开Schema里`max_attempts`的`maximum`由5变为6，是向后兼容的放宽。
+
+## 修订（第2版，2026-11-13）
+
+0.10.0b24的Beta复测（GitHub Issue #2）：用`--service-failure-retries 2`生成配置，让端点对每个请求都返回HTTP 503，
+仍然发出6次请求，与不设置时相同。用户看到的是“重试次数配置不生效”。
+
+原因在第1版的分工：一次请求内的重试次数由Profile的`max_attempts`决定（向导写6）；本ADR的设置只限制
+“用量未知”的失败。503、429和没建立的连接确定没有计费，记为零用量，不在“用量未知”之列，于是这个设置管不到它们。
+帮助文字和用户手册却把它写成“网络中断、限流、服务端错误后的重试次数”。
+
+决定：配置了`service_failure_retries`时，它同时决定一次模型请求最多尝试几次——N+1次，不超过`max_attempts`的
+合同上限6次，所有失败类型一样；没有配置时沿用Profile的`max_attempts`，行为不变。用户只需要认一个数。
+
+- 设置值大于5时按5次重试（一次请求最多6次尝试）；不收紧取值范围，已经写入20以内取值的配置照常可用。
+- 设置了它的旧配置（`max_attempts`为4）会按设置的次数尝试，比原来多；这正是设置的意思。
+- 交互与无人值守模式相同。评测与冒烟直接使用`max_attempts=1`的模型配置，不经过产品配置的这条路径。
+- 配置的回退模型是另一个Profile，主模型用完次数后，回退模型按同样的次数尝试。
