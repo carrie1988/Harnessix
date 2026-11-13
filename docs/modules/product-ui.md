@@ -46,7 +46,7 @@ supersedes: []
 
 ## 当前增量：对话历史区支持鼠标拖选与复制
 
-- [`selectable_log.SelectableLog`](../../src/harnessix/product_ui/selectable_log.py)替代对话历史区的`RichLog`：绘制每行时附上Textual文字选择所需的位置信息（`Strip.apply_offsets`），`get_selection`返回各行的纯文字，选中范围按`screen--selection`样式高亮（`highlight_characters`）。复制沿用Textual的`Ctrl+C`（屏幕绑定`screen.copy_text`；输入框没有选中内容时会让出该键），经OSC 52转发到终端剪贴板，macOS自带“终端”不支持。
+- [`selectable_log.SelectableLog`](../../src/harnessix/product_ui/selectable_log.py)替代对话历史区的`RichLog`：绘制每行时附上Textual文字选择所需的位置信息（`Strip.apply_offsets`），`get_selection`返回各行的纯文字（去掉行尾空格：Markdown等按整行宽度补空格绘制），选中范围按`screen--selection`样式高亮（`highlight_characters`）。复制沿用Textual的`Ctrl+C`（屏幕绑定`screen.copy_text`；输入框没有选中内容时会让出该键），经OSC 52转发到终端剪贴板，macOS自带“终端”不支持。
 - 此前RichLog不附位置信息、不实现`get_selection`，在对话区拖动没有任何反应（负责人2026-11-13反馈）。
 - 实时区（尚未定稿的行）仍不可选。回归见`tests/product_ui/test_selectable_transcript.py`。
 
