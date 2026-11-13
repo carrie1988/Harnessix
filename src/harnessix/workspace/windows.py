@@ -369,7 +369,7 @@ class WindowsWorkspaceRoot:
                         "workspace_path_denied", "Windows路径包含Reparse Point或Junction"
                     )
                 if index < len(paths) - 1 and info.attributes & _FILE_ATTRIBUTE_DIRECTORY == 0:
-                    raise KernelError("workspace_path_denied", "Windows路径父段不是目录")
+                    raise KernelError("workspace_wrong_file_type", "Windows路径父段不是目录")
                 if self._root_handle is not None and index == root_index:
                     if (
                         self._object_identity(info) != self.root_identity

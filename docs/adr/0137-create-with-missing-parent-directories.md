@@ -219,7 +219,8 @@ supersedes: []
 - **快照：** `observe_creatable_resource`按端口的`creates_missing_parents`放行（POSIX与Windows两个根都为真），
   缺失父目录之下的写目标同样绑定最近的已有目录及其下的路径；路径段按`normalize_workspace_path(…, "windows")`切分。
   Windows的缺失观察在已有父级是普通文件时以`workspace_wrong_file_type`拒绝（与POSIX相同；此前当作目录处理，
-  批准后执行才失败）。
+  批准后执行才失败）。句柄链遇到路径中间的段是普通文件时同样报`workspace_wrong_file_type`（原为`workspace_path_denied`），
+  所以`plain.txt/new.py`与`plain.txt/deeper/new.py`都在规划期得到可改正的说明（发布会话Windows真机复测发现）。
 - **发布：** `windows_filesystem._parent(create_missing=True)`只用于新建文件成员。自最深的已有目录起，在已固定的
   父句柄链下逐段`CreateDirectoryW`（名字上已有任何对象都失败，不跟随也不覆盖），每段建好后重新打开，核对是目录、
   不是Reparse Point、最终路径仍在根下，并记下对象身份；先核对本地NTFS再补建。块内失败时先关闭自己的句柄

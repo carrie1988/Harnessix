@@ -90,14 +90,17 @@ def test_missing_resource_that_is_not_written_requires_an_existing_parent(
     assert error.value.code == "workspace_parent_missing"
 
 
-@pytest.mark.skipif(os.name != "nt", reason="Windows事务端口不补建父目录")
-def test_windows_write_target_still_requires_an_existing_parent(tmp_path: Path) -> None:
-    with pytest.raises(KernelError) as error:
-        capture_workspace_snapshot(
-            tmp_path,
-            resources=(WorkspaceResourceRequest(path="missing/new.py", access="write"),),
-        )
-    assert error.value.code == "workspace_parent_missing"
+@pytest.mark.skipif(os.name != "nt", reason="Windows事务端口")
+def test_windows_write_target_below_a_missing_parent_is_observed_as_missing(
+    tmp_path: Path,
+) -> None:
+    """Windows事务端口自ADR 0137第2版起与POSIX一样补建父目录（Beta Issue #16）。"""
+    snapshot = capture_workspace_snapshot(
+        tmp_path,
+        resources=(WorkspaceResourceRequest(path="missing/new.py", access="write"),),
+    )
+    observed = {item.path: item.kind for item in snapshot.resources}
+    assert observed["missing/new.py"] == "missing"
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX链接语义")
