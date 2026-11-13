@@ -22,6 +22,7 @@ from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.delivery.trusted_action import workspace_patch_binding
 from harnessix.delivery.trusted_action_contracts import parse_workspace_action_review
+from harnessix.delivery.windows_io import windows_transaction_supported
 from harnessix.domain.models import ApprovalOutcome
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.models.scripted import ScriptedProvider
@@ -44,7 +45,12 @@ from tests.delivery.test_trusted_action_patch import _approval
 from tests.product_config.test_patch_call_repair import raw_patch_step
 from tests.product_config.test_product_patch_rollback import approve, result, rollback_step
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="只有POSIX事务端口补建父目录")
+# POSIX与Windows 11的事务端口都补建父目录（Windows自ADR 0137第2版，Beta Issue #16）。
+pytestmark = pytest.mark.skipif(
+    not (os.name == "posix" or windows_transaction_supported()),
+    reason="当前平台没有补建父目录的事务端口",
+)
+POSIX_ONLY = pytest.mark.skipif(os.name != "posix", reason="建符号链接在Windows上需要额外权限")
 GENERATIONS = pytest.mark.parametrize("closure", [False, True], ids=["snapshot-v1", "snapshot-v2"])
 
 OLD = "def value():\n    return 1\n"
@@ -294,12 +300,16 @@ async def test_rollback_of_a_delete_recreates_a_directory_removed_since(tmp_path
 
 
 async def rejected_create(tmp_path, closure, path):
-    """在含普通文件plain.txt与指向工作区外的符号链接link的工作区里新建path，返回未执行的失败。"""
+    """在含普通文件plain.txt与指向工作区外的符号链接link的工作区里新建path，返回未执行的失败。
+
+    Windows上不建符号链接（需要额外权限），只验证普通文件父级。
+    """
     async with product(tmp_path, closure=closure) as (root, runtime, provider, _):
         outside = tmp_path / "outside"
         outside.mkdir()
         (root / "plain.txt").write_bytes(b"plain\n")
-        (root / "link").symlink_to(outside)
+        if os.name == "posix":
+            (root / "link").symlink_to(outside)
         before = tree(root)
 
         _, turn = await run_patch(runtime, provider, root, [create(path)])
@@ -324,6 +334,7 @@ async def test_existing_parent_that_is_a_regular_file_is_a_correctable_failure(
     assert "缺失的父目录会自动创建" in error.message
 
 
+@POSIX_ONLY
 @GENERATIONS
 @pytest.mark.parametrize("path", ["link/new.py", "link/deeper/new.py"])
 async def test_existing_parent_that_is_a_symlink_is_never_followed_or_created_through(
@@ -350,7 +361,7 @@ async def test_one_path_used_as_file_and_as_new_directory_is_rejected_whole(tmp_
 
 
 def test_platform_that_cannot_create_parents_says_what_to_do_next():
-    """Windows事务端口仍不补建父目录：同一错误码，说明换成原因加可行的下一步。"""
+    """没有补建能力的端口（例如自定义根）仍以workspace_parent_missing结束：说明是原因加可行的下一步。"""
     # 该投影只用到调用身份；其余调用字段与本断言无关。
     call = SimpleNamespace(call_id=uuid4())
     rejected = workspace_patch_planning_rejection(

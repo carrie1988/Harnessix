@@ -57,6 +57,12 @@ def remove_empty_directories(root: Path, directories: Sequence[str]) -> None:
     """
     if not directories:
         return
+    if os.name == "nt":
+        # Windows事务端口自ADR 0137第2版同样补建父目录，回滚时按句柄清理（Beta Issue #16）。
+        from harnessix.delivery.windows_filesystem import remove_empty_windows_directories
+
+        remove_empty_windows_directories(root, directories)
+        return
     with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
         for directory in sorted(directories, reverse=True):
             try:

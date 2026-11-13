@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 26
+version: 27
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -31,6 +31,8 @@ related_tests:
   - tests/trusted_actions/test_router.py
   - tests/product_config/test_private_json_concurrency.py
   - tests/product_config/test_model_identity.py
+  - tests/delivery/test_windows_create_missing_parents.py
+  - tests/delivery/test_parent_file_conflicts.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -104,9 +106,10 @@ supersedes: []
 | 二十六 | 对话区选中的字看不见，只剩一整块蓝色（负责人本机，0.10.0b31） | 选择背景按透明度叠加，字色不变 | 本文第40节 |
 | 二十七 | 同时在几个新仓库确认信任，有进程崩溃、确认记录丢失（0.10.0b32，Issue #15） | 读改写跨进程串行，Windows替换被拒绝时重试 | 本文第41节 |
 | 二十八 | 百炼qwen3.8-flash自称Claude并否认是千问（0.10.0b32，Issue #17） | 运行时指令按配置写出模型身份 | 本文第42节 |
+| 二十九 | Windows上首个补丁因父目录不存在失败，本轮仍显示“已完成”、仓库为空（0.10.0b32，Issue #16） | Windows事务端口同样补建父目录 | [ADR 0137](../adr/0137-create-with-missing-parent-directories.md)第2版、本文第43节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十八项在第26～42节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十九项在第26～43节。
 
 ## 2. 需求背景
 
@@ -1279,3 +1282,26 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
   `test_server_and_cli.py`的产品装配用例核对实际发出的请求里有这段说明且写出配置的模型名。
 - 真实请求（本机，百炼qwen3.8-flash，`harnessix exec`，经本地代理）：修复后2/2答“qwen3.8-flash，由阿里云百炼提供服务，
   运行在Harnessix Code中”；0.10.0b32两次分别答Kimi与通义千问。
+
+## 43. 第二十九项：Windows新建文件时补建父目录（Issue #16）
+
+### 43.1 背景与决定
+
+0.10.0b32 Windows（Issue #16）：空仓库里从零开发，首个补丁新建`replenish/__init__.py`等文件，以`workspace_parent_missing`
+失败；Agent随后只用文字请求批准`mkdir`，没有发起命令审批，约97秒后本轮显示“已完成”，仓库为空。macOS与Linux自0.10.0b21
+（ADR 0137）起补建父目录，Windows的观察与写入经原生句柄实现，当时无法验证而未改——三个平台行为不一致。
+负责人决定从源头修复。
+
+### 43.2 设计
+
+见[ADR 0137](../adr/0137-create-with-missing-parent-directories.md)第8节：快照放行（`creates_missing_parents`）、发布时在固定的
+父句柄链下逐段`CreateDirectoryW`并重新打开核对、失败与回滚时按句柄清理本次补建的空目录、缺失父目录下的成员观察为`absent`、
+Windows批次的“既是文件又是父目录”在规划期拒绝、已有父级是普通文件时以`workspace_wrong_file_type`拒绝。
+
+### 43.3 验证
+
+- 所有平台：`tests/delivery/test_parent_file_conflicts.py`（Windows比较键的批次冲突；与Windows端口同语义的缺失观察绑定最近的已有目录；
+  没有补建能力的端口保留原拒绝）。macOS上`tests/delivery`、`tests/workspace`、`tests/trusted_actions`、`tests/product_config/test_patch_missing_parents.py`全部通过。
+- Windows 11（发布会话的Windows电脑）：`tests/delivery/test_windows_create_missing_parents.py`（两代计划补建、失败只删自己建的、
+  缺失成员观察为absent、文件父级与批次冲突在规划期拒绝、回滚清理）与`tests/product_config/test_patch_missing_parents.py`
+  （Beta批次、整批原子、用户拒绝、回滚、普通文件父级、同批冲突；符号链接一项只在POSIX运行），以及按Issue步骤的终端界面复测。

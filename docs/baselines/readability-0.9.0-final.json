@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 635,
-    "physical_lines": 132683,
-    "logical_lines": 115512,
+    "physical_lines": 132875,
+    "logical_lines": 115658,
     "documented_modules": 635,
-    "classes": 1227,
-    "documented_classes": 637,
-    "functions": 5249,
-    "documented_functions": 1780,
+    "classes": 1228,
+    "documented_classes": 638,
+    "functions": 5257,
+    "documented_functions": 1788,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/harnessix/delivery/trusted_action.py",
-      "lines": 620
+      "lines": 619
     },
     {
       "path": "src/harnessix/evals/delivery.py",
@@ -1928,7 +1928,7 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 417,
+      "line": 438,
       "lines": 124,
       "documented": true,
       "decision_complexity": 27
@@ -1939,7 +1939,7 @@
       "path": "src/harnessix/workspace/windows.py",
       "qualname": "WindowsWorkspaceRoot",
       "kind": "class",
-      "line": 254,
+      "line": 257,
       "lines": 232,
       "documented": true
     }

@@ -23,7 +23,7 @@ from harnessix.delivery.contracts import (
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
 )
-from harnessix.delivery.path_case import CASE_CONFLICT, reject_case_aliases
+from harnessix.delivery.path_case import CASE_CONFLICT, reject_path_conflicts
 from harnessix.delivery.planner import (
     DesiredWorkspaceFile,
     _read_existing_file,
@@ -382,9 +382,8 @@ def _desired_files(
             checkpoint()
 
     files = _normalized_files(proposal, platform)
-    if platform == "posix":
-        # 先于存在性判定：A.txt指向已有a.txt时应提示改用磁盘名称，而不是报“目标已存在”。
-        reject_case_aliases(root, [path for path, _ in files])
+    # 先于存在性判定：A.txt指向已有a.txt时应提示改用磁盘名称，而不是报“目标已存在”。
+    reject_path_conflicts(root, [path for path, _ in files], platform)
     for path, item in files:
         check()
         _require_target_presence_before_planning(root, path, platform, item.operation)

@@ -19,6 +19,8 @@ from pathlib import Path
 from harnessix.agent.errors import KernelError
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.workspace import Workspace, identity
+from harnessix.workspace.contracts import PlatformKind
+from harnessix.workspace.paths import path_comparison_key
 
 CASE_CONFLICT = "delivery_path_case_conflict"
 _DIRECTORY_FLAGS = (
@@ -60,6 +62,31 @@ def reject_case_aliases(root: str | Path, paths: Iterable[str]) -> None:
                         "请改用不同的路径",
                     )
             claimed[key] = path
+
+
+def reject_path_conflicts(root: str | Path, paths: Iterable[str], platform: PlatformKind) -> None:
+    """规划前整批拒绝同一批里互相冲突的路径：POSIX按磁盘的大小写语义，Windows按比较键。"""
+    if platform == "posix":
+        reject_case_aliases(root, paths)
+    else:
+        reject_parent_file_conflicts(paths, platform)
+
+
+def reject_parent_file_conflicts(paths: Iterable[str], platform: PlatformKind) -> None:
+    """同批里一个路径不能既是新文件又是另一项的父目录（ADR 0137第2.6节）。
+
+    POSIX由reject_case_aliases按磁盘的大小写语义判定；Windows不读磁盘，按不区分大小写的比较键判定。
+    事务会补建父目录之后，这样的批次走到发布阶段才失败并留下部分效果，所以在规划前整批拒绝。
+    """
+    claimed = {path_comparison_key(path, platform): path for path in paths}
+    for key, path in claimed.items():
+        for other_key, other in claimed.items():
+            if other_key.startswith(f"{key}/"):
+                raise KernelError(
+                    CASE_CONFLICT,
+                    f"同一批修改中{path}与{other}冲突：一个路径不能既是文件又是另一项的父目录；"
+                    "请改用不同的路径",
+                )
 
 
 class _Resolver:

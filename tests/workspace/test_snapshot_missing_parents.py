@@ -105,7 +105,7 @@ def test_missing_identity_binds_the_nearest_existing_directory(tmp_path: Path) -
     (tmp_path / "src").mkdir()
     native = _PosixRoot(tmp_path)
     try:
-        observed = _observe_below_missing_parent(native, "src/a/b/new.py", None)
+        observed = _observe_below_missing_parent(native, "src/a/b/new.py", "posix", None)
         first_missing = native.observe("src/a", access="read")
     finally:
         native.close()

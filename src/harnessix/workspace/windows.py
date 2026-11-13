@@ -174,6 +174,9 @@ def _observe_missing(
     try:
         root._assert_under_root(final_path)
         parent_info = root._information(handles[-1])
+        if parent_info.attributes & _FILE_ATTRIBUTE_DIRECTORY == 0:
+            # 与POSIX相同：已有的父级是文件时如实拒绝，不当作可以在其下新建（ADR 0137第2.7节）。
+            raise KernelError("workspace_wrong_file_type", "Windows路径中已有的父级不是目录")
         return _Observed(
             "missing",
             (*root._stable_identity(parent_info, directory=True), name or normalized),

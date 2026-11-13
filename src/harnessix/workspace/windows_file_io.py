@@ -102,6 +102,7 @@ def _configure(kernel: Any) -> None:
     pointer, unsigned, boolean = ctypes.c_void_p, ctypes.c_uint32, ctypes.c_int
     signatures = {
         "WriteFile": ([pointer, pointer, unsigned, ctypes.POINTER(unsigned), pointer], boolean),
+        "CreateDirectoryW": ([ctypes.c_wchar_p, pointer], boolean),
         "FlushFileBuffers": ([pointer], boolean),
         "SetFilePointerEx": ([pointer, ctypes.c_int64, pointer, unsigned], boolean),
         "SetFileInformationByHandle": ([pointer, boolean, pointer, unsigned], boolean),
@@ -185,6 +186,12 @@ class WindowsFileOperations:
         if handle == _INVALID_HANDLE or handle is None:
             _raise_io_error()
         return int(handle)
+
+    def create_directory(self, path: Path) -> None:
+        """在调用方固定的父目录下新建一个目录；名称上已有任何对象（含Junction）都失败，不覆盖也不跟随。"""
+
+        if not self.kernel.CreateDirectoryW(_api_path(path), None):
+            _raise_io_error()
 
     def write_and_flush(self, handle: int, body: bytes) -> None:
         """处理部分写入并Flush内容；不声称文件Flush等价于硬件掉电原子性。"""

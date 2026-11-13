@@ -275,6 +275,20 @@ def creatable_resource_keys(
     return frozenset(keys)
 
 
+def creates_missing_parents(native: object) -> bool:
+    """该根的事务端口发布时是否补建新建文件缺失的父目录。
+
+    POSIX自ADR 0137，Windows自其第2版（Beta Issue #16）。
+    """
+    if isinstance(native, _PosixRoot):
+        return True
+    if os.name != "nt":
+        return False
+    from harnessix.workspace.windows import WindowsWorkspaceRoot
+
+    return isinstance(native, WindowsWorkspaceRoot)
+
+
 def observe_creatable_resource(
     native: _NativeRoot,
     request: WorkspaceResourceRequest,
@@ -286,26 +300,33 @@ def observe_creatable_resource(
 ) -> _NativeObservation:
     """“父目录不存在”的拒绝只对本次快照可新建的资源改为缺失观察，其余原样抛出。
 
-    只有POSIX事务端口会在发布时补建父目录；Windows端口保持“父目录必须存在”。
+    POSIX与Windows的事务端口都会在发布时补建父目录（Windows自ADR 0137第2版，Beta Issue #16）。
     """
     key = (request.location, path_comparison_key(request.path, platform))
     if (
         rejection.code != "workspace_parent_missing"
-        or not isinstance(native, _PosixRoot)
+        or not creates_missing_parents(native)
         or key not in creatable_resource_keys(requests, platform)
     ):
         raise rejection
-    return _observe_below_missing_parent(native, request.path, checkpoint)
+    return _observe_below_missing_parent(native, request.path, platform, checkpoint)
 
 
 def _observe_below_missing_parent(
-    native: _PosixRoot, path: str, checkpoint: Callable[[], None] | None
+    native: _NativeRoot,
+    path: str,
+    platform: PlatformKind,
+    checkpoint: Callable[[], None] | None,
 ) -> _Observed:
     """把父目录缺失的资源观察为缺失；身份绑定最近的已有目录及其下自首个缺失段起的路径。
 
     每个祖先仍经observe的同一条no-follow链，已有路径段是符号链接或非目录时照旧拒绝，不会被当作缺失。
     """
-    parts = native._workspace.parts(path)
+    parts = (
+        native._workspace.parts(path)
+        if isinstance(native, _PosixRoot)
+        else normalize_workspace_path(path, platform).split("/")
+    )
     for depth in range(len(parts) - 1, 0, -1):
         try:
             ancestor = native.observe("/".join(parts[:depth]), access="read", checkpoint=checkpoint)

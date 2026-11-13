@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 21
+version: 22
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -47,6 +47,11 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：Windows快照同样允许写目标位于缺失的父目录之下（ADR 0137第2版）
+
+- [`snapshot.observe_creatable_resource`](../../src/harnessix/workspace/snapshot.py)按端口的`creates_missing_parents`放行，POSIX与[`WindowsWorkspaceRoot`](../../src/harnessix/workspace/windows.py)都为真；身份规则不变（最近的已有目录加其下自首个缺失段起的路径）。
+- Windows的缺失观察在已有父级是普通文件时以`workspace_wrong_file_type`拒绝，与POSIX相同。Beta Issue #16。
 
 ## 当前增量：写目标可以位于尚不存在的父目录之下（ADR 0137）
 
@@ -1267,6 +1272,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 22 | `33f91ad7` 增量 | 2026-11-13 | Windows快照允许写目标位于缺失的父目录之下（`creates_missing_parents`），已有父级是文件时以`workspace_wrong_file_type`拒绝（ADR 0137第2版） |
 | 21 | `ce5b7386` 增量 | 2026-11-12 | 计划快照对目录只绑定对象与权限：链接数、成员列表与成员数不再进入`identity`和`size`；缺失目标绑定父目录的同一身份加名称。观察对象新增`binding`（计划绑定身份），原生观察与读取工具不变（ADR 0143） |
 | 20 | `d387a5cd` 增量 | 2026-11-12 | 写目标及其祖先可以位于不存在的目录之下，快照记为`missing`；POSIX上新建文件时由事务补建（0.10.0b21，ADR 0137） |
 | 13 | `7d847780` 增量 | 2026-11-11 | 读取操作的局部时限可由调用方指定，默认5秒不变（0.10.0b14） |

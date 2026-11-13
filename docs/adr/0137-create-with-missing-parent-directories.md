@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [delivery, workspace, trusted-actions, product-ui]
@@ -9,6 +9,8 @@ related_adrs:
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0093-kernel-owned-public-failure-contract.md
 related_tests:
+  - tests/delivery/test_windows_create_missing_parents.py
+  - tests/delivery/test_parent_file_conflicts.py
   - tests/workspace/test_snapshot_missing_parents.py
   - tests/workspace/test_snapshot.py
   - tests/delivery/test_create_missing_parents.py
@@ -128,7 +130,7 @@ supersedes: []
 | 父目录不存在（POSIX） | 成功 |
 | 父路径上已有的段是普通文件等非目录 | `workspace_wrong_file_type`，未执行的失败：“路径中已有的父级不是目录，无法在其下创建文件。例如a.txt/b.py中a.txt是已有文件；请改用已有父级都是目录的路径，缺失的父目录会自动创建”；原来中断Turn |
 | 父路径上已有的段是符号链接 | `workspace_path_denied`，未执行的失败，说明与本ADR之前相同 |
-| 父目录不存在（不补建的平台，即Windows） | `workspace_parent_missing`，未执行的失败：“缺失资源的父目录不存在。本平台不会自动创建目录；请先用命令工具创建该目录（例如mkdir），再原样重发本次调用” |
+| 父目录不存在（没有补建能力的端口；第2版起Windows同样补建，见第8节） | `workspace_parent_missing`，未执行的失败：“缺失资源的父目录不存在。本平台不会自动创建目录；请先用命令工具创建该目录（例如mkdir），再原样重发本次调用” |
 
 两条新说明是固定文本，登记在解析阶段的公开码表（`public_errors._RESOLVER_ERRORS`）；这两个码由规划时的快照观察
 抛出、实例上只有内部说明，Patch的规划期投影（`preparation_rejection.workspace_patch_planning_rejection`）按码表
@@ -146,7 +148,7 @@ supersedes: []
 - **审批绑定：** 计划指纹、快照Revision与Review摘要的算法不变；新目录通过快照里的`missing`事实
   进入被批准的内容。
 - **只观察恢复：** `reconcile`仍不写工作区。
-- **Windows：** 事务端口不补建父目录，行为与之前相同（只有上表的说明文字变化）。Windows的观察与写入
+- **Windows（第1版）：** 事务端口不补建父目录，行为与之前相同（只有上表的说明文字变化）。第2版起补建，见第8节。Windows的观察与写入
   经原生句柄实现，本次无法在可运行的环境里验证，未改。
 
 ## 4. 未做与残留
@@ -206,3 +208,29 @@ supersedes: []
   Linux与Windows上的结果、以及真实运行的结果见发布记录（`docs/changes/p0-ci-gate-recovery.md`）。
 - **Windows：** 仍不补建父目录（第3节）。Windows上模型收到的是带下一步的`workspace_parent_missing`
   （先用命令工具创建目录再重发）。在Windows事务端口里补建目录是后续工作，需要单独设计与真机验证。
+
+## 8. 修订（第2版，2026-11-13）：Windows事务端口同样补建父目录
+
+0.10.0b32 Windows Beta复测（GitHub Issue #16）：在空仓库里从零开发，首个补丁新建`replenish/__init__.py`等文件，
+以`workspace_parent_missing`失败；Agent随后只在回复里用文字请求批准`mkdir`，没有发起命令，本轮显示“已完成”，
+仓库里没有任何文件。另一个任务同样触发，Agent改用平铺文件后继续。macOS与Linux自0.10.0b21起不会出现这种情况。
+负责人决定从源头修复：Windows与POSIX行为一致。
+
+- **快照：** `observe_creatable_resource`按端口的`creates_missing_parents`放行（POSIX与Windows两个根都为真），
+  缺失父目录之下的写目标同样绑定最近的已有目录及其下的路径；路径段按`normalize_workspace_path(…, "windows")`切分。
+  Windows的缺失观察在已有父级是普通文件时以`workspace_wrong_file_type`拒绝（与POSIX相同；此前当作目录处理，
+  批准后执行才失败）。
+- **发布：** `windows_filesystem._parent(create_missing=True)`只用于新建文件成员。自最深的已有目录起，在已固定的
+  父句柄链下逐段`CreateDirectoryW`（名字上已有任何对象都失败，不跟随也不覆盖），每段建好后重新打开，核对是目录、
+  不是Reparse Point、最终路径仍在根下，并记下对象身份；先核对本地NTFS再补建。块内失败时先关闭自己的句柄
+  （它们不共享删除），再由深到浅按句柄删除本次补建、身份未变且仍为空的目录。
+- **只观察：** 父目录链上有缺失段的成员观察为`absent`（`_MissingParent`），恢复与发布前复核照常判定。
+- **回滚：** `parent_directories.remove_empty_directories`在Windows上改走`remove_empty_windows_directories`，
+  按句柄删除清单里仍为空的目录；非空、已不存在或已不是目录的保留。
+- **同批冲突：** Windows不读磁盘大小写语义，按不区分大小写的比较键拒绝“一个路径既是文件又是另一项的父目录”
+  （`path_case.reject_parent_file_conflicts`，`delivery_path_case_conflict`），三个规划入口与POSIX的
+  `reject_case_aliases`并列调用。
+
+验证：`tests/delivery/test_parent_file_conflicts.py`在所有平台运行（Windows比较键的批次冲突；与Windows端口同语义的
+缺失观察）；`tests/delivery/test_windows_create_missing_parents.py`与`tests/product_config/test_patch_missing_parents.py`
+（符号链接一项仍只在POSIX运行）在Windows 11上运行，由发布会话在Windows电脑上执行。

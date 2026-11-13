@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 49
+version: 50
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -1655,6 +1655,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 50 | `33f91ad7` 增量 | 2026-11-13 | `workspace_parent_missing`的规划期说明只剩没有补建能力的端口会出现：Windows事务端口自ADR 0137第2版起同样补建父目录（Beta Issue #16），码表与说明文字不变 |
 | 49 | `d387a5cd` 增量 | 2026-11-12 | 批准后、执行前工作区变化的计划以确定失败结束（`execution_plan_stale`，ready→failed），不再中断整轮（0.10.0b21，ADR 0142） |
 | 48 | `d387a5cd` 增量 | 2026-11-12 | Patch父路径拒绝（父目录不存在、父级不是目录）登记进解析阶段码表，作为可修正的失败回传，不再中断整轮（0.10.0b21，ADR 0137） |
 | 46 | `f8c3ceab4599779fd2a350c3e2ae395e3cbf6608` | 2026-11-10 | 同步主线：公开结果支持命令输出摘要v4；进程类调用的`profile`参数可以省略，传入时须与工具绑定的Profile一致，Eval仍要求显式给出 |

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 61
+version: 62
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -75,6 +75,12 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Delivery模块设计
+
+## 当前增量：Windows事务端口新建文件时补建父目录（ADR 0137第2版，Beta Issue #16）
+
+- [`windows_filesystem._parent`](../../src/harnessix/delivery/windows_filesystem.py)新增`create_missing`：自最深的已有目录起在固定的父句柄链下逐段`CreateDirectoryW`（[`WindowsFileOperations.create_directory`](../../src/harnessix/workspace/windows_file_io.py)），重新打开核对目录、非Reparse Point、仍在根下并记下身份；失败时先关闭句柄，再按句柄删除本次补建、身份未变且仍为空的目录。父目录链缺失的成员观察为`absent`。
+- 回滚清理在Windows上走`remove_empty_windows_directories`；三个规划入口在Windows上调用[`path_case.reject_parent_file_conflicts`](../../src/harnessix/delivery/path_case.py)，拒绝同批里既是文件又是父目录的路径。
+- 回归见`tests/delivery/test_windows_create_missing_parents.py`（Windows 11）、`tests/delivery/test_parent_file_conflicts.py`（所有平台）。
 
 ## 当前增量：CRLF与混合换行文件上的edit（ADR 0141）
 
@@ -1904,6 +1910,7 @@ v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 62 | `33f91ad7` 增量 | 2026-11-13 | Windows事务端口新建文件时补建缺失的父目录，失败与回滚时按句柄清理本次补建的空目录；Windows批次的文件与父目录冲突在规划期拒绝（ADR 0137第2版，Beta Issue #16） |
 | 61 | `ce5b7386` 增量 | 2026-11-12 | 审批期间工作区里出现或消失无关的文件、目录，不再使已批准的补丁过期：快照对父目录只绑定对象与权限（ADR 0143） |
 | 60 | `d387a5cd` 增量 | 2026-11-12 | 新建文件时由事务补建缺失的父目录，失败只清理自己建的空目录，回滚清理原补丁补建的空目录；Windows不补建（0.10.0b21，ADR 0137） |
 | 59 | `d387a5cd` 增量 | 2026-11-12 | edit的锚点忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格；复核已保存事务时认得此前语义算出的后像（ADR 0141） |
