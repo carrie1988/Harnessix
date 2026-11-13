@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 14
+version: 15
 code_revision: 7b35b73536861a2991e39984268b2a83dca10b41
 owners:
   - core
@@ -1457,6 +1457,7 @@ Sandbox构造逻辑，但只接收平台Owner能力证明，不创建Process Lea
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 15 | `31428e52` 增量 | 2026-11-13 | 沙箱外命令另继承常见开发工具的非机密设置（`native_policy._HOST_TOOL_SETTINGS`，只认完整名字），沙箱内不继承（Beta Issue #20） |
 | 8 | `7b35b735` 增量 | 2026-11-11 | Windows沙箱外命令不继承带括号的`PROGRAMFILES(X86)`（0.10.0b13） |
 | 7 | `e5b7a8a4072dcb0ed4992ea94e2e0a8420f24a58` | 2026-09-19 | 记录无状态Doctor Attestation与正式Supervisor重复证明由CI 35439332019验收关闭 |
 | 6 | `27e0b5918c6497dfe9df10e3f5a9d4c0ed08d8f7` | 2026-09-19 | 同步e5无状态Doctor Attestation与正式Supervisor重复证明边界；等待关闭CI |

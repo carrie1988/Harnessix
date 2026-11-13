@@ -554,6 +554,8 @@ harnessix code            # 不写目录时使用当前目录
 
 需要联网（如安装依赖）或写 `.git` 时，Agent 会改为申请在沙箱外运行，由你逐条批准。
 
+沙箱外运行的命令除了上面的基本变量，还会带上代理变量（`HTTPS_PROXY` 等）和常见开发工具的设置：`CI`、`NODE_EXTRA_CA_CERTS`、`COREPACK_HOME`、`PLAYWRIGHT_BROWSERS_PATH`、`PUPPETEER_CACHE_DIR`、`YARN_CACHE_FOLDER`，以及 npm/pnpm 的缓存目录、包仓库目录和“运行前是否检查依赖”设置（`NPM_CONFIG_CACHE`、`NPM_CONFIG_STORE_DIR`、`PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN` 等）。这样你在终端里配好的 pnpm 仓库和 Playwright 浏览器，命令里也能直接用，不会在测试前重新安装或下载。npm 的登录令牌等其他变量不会传入。还需要别的变量时，用 `--action-config` 提供 Action 配置文件，在命令 Profile 的 `environment` 里写明（见[配置参考](configuration.md)）。
+
 ### 8.6 沙箱不可用时
 
 Harnessix 不会静默降级：所有命令都改为沙箱外执行，并逐条要求批准。状态栏显示“沙箱：不可用，命令逐条审批”，运行 `harnessix code doctor` 可查看原因和修复方法。

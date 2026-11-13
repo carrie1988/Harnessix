@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 30
+version: 31
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -36,6 +36,7 @@ related_tests:
   - tests/product_config/test_wrap_up_stops_work.py
   - tests/product_ui/test_paste_input.py
   - tests/test_exec_cli.py
+  - tests/sandbox/test_native_policy.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -114,9 +115,10 @@ supersedes: []
 | 三十一 | `harnessix exec`在审批提示处读到输入结尾时崩溃，退出码1、没有摘要（0.10.0b32，Issue #18） | 按“需要人工处理”以退出码2结束并写出摘要 | 本文第45节 |
 | 三十二 | 终端界面粘贴多行任务只剩第一行（0.10.0b32，Issue #19） | 多行粘贴以标记显示，发送时还原原文 | 本文第46节 |
 | 三十三 | `harnessix exec`里手工批准与拒绝都被记成`harnessix-exec:auto`（0.10.0b32，Issue #23） | 提示处由人输入的决定另记`:interactive` | 本文第47节 |
+| 三十四 | 沙箱外命令没带上pnpm、Playwright等工具设置，测试前重装依赖、重新下载浏览器而超时（0.10.0b33，Issue #20） | 沙箱外命令继承这些工具的非机密设置 | 本文第48节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十三项在第26～47节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十四项在第26～48节。
 
 ## 2. 需求背景
 
@@ -1355,3 +1357,19 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 验证：`tests/test_exec_cli.py::test_decisions_typed_at_the_prompt_are_recorded_apart_from_policy_ones`；真实进程（macOS，tmux，
 `--approval-mode auto`，脚本模型请求一条需要人批准的沙箱外命令，提示处输入y）：修复前摘要记`harnessix-exec:auto`，
 修复后`harnessix-exec:auto:interactive`。
+
+## 48. 第三十四项：沙箱外命令带上开发工具的非机密设置（Issue #20）
+
+0.10.0b33 Windows（Issue #20）：用户在启动Harnessix的终端里设置了`PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`、`NPM_CONFIG_STORE_DIR`、
+`PLAYWRIGHT_BROWSERS_PATH`，获批的定向测试命令却在测试前重装依赖（3分36秒）、重新下载约123 MiB的浏览器，两个任务的首条命令以
+`process_timeout`结束。原因：沙箱外命令只继承固定白名单（`sandbox/native_policy.host_environment`），这些设置都不在其中；零配置
+没有为命令设置环境的途径。代码与平台无关，三个平台相同。
+
+修改：`_HOST_TOOL_SETTINGS`——沙箱外命令另继承常见开发工具的非机密设置（`CI`、`NODE_EXTRA_CA_CERTS`、`COREPACK_HOME`、
+`PLAYWRIGHT_BROWSERS_PATH`、`PUPPETEER_CACHE_DIR`、`YARN_CACHE_FOLDER`，npm/pnpm的缓存、仓库目录与“运行前检查依赖”设置，大小写两种写法）。
+只认完整名字，不按前缀放行：npm的配置变量里可能有登录令牌。沙箱内命令的缓存由私有目录承担，不继承。用户手册8.5节写明继承了什么，
+以及其他变量用Action配置的`environment`设置。“零配置时提示哪些变量没有传入”是新需求，只记录。
+
+验证：`tests/sandbox/test_native_policy.py::test_host_commands_get_common_tool_settings_but_never_tokens`（修复前失败）；
+真实进程（macOS，tmux，`harnessix exec`，获批的沙箱外命令把收到的变量写入文件）：修复前四个设置都没有，修复后四个都在，
+同时设置的`NPM_CONFIG__AUTH`仍未传入。

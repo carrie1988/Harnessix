@@ -170,6 +170,34 @@ def test_loopback_proxy_ports_from_environment_and_system_settings() -> None:
     assert loopback_proxy_ports(urls) == (7890, 7891, 7892)
 
 
+def test_host_commands_get_common_tool_settings_but_never_tokens() -> None:
+    """沙箱外命令带上pnpm、Playwright等工具的非机密设置（Beta Issue #20）；
+    登录令牌一类的npm变量不带。
+
+    0.10.0b33 Windows：没有这些设置时，获批的测试命令先重装依赖、重新下载浏览器，
+    以process_timeout结束。
+    """
+    settings = {
+        "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN": "false",
+        "NPM_CONFIG_STORE_DIR": "D:/pnpm-store",
+        "PLAYWRIGHT_BROWSERS_PATH": "D:/ms-playwright",
+        "CI": "1",
+    }
+    tokens = {
+        "NPM_CONFIG__AUTH": "secret",
+        "npm_config_//registry.npmjs.org/:_authToken": "secret",
+        "NPM_TOKEN": "secret",
+    }
+    host = host_environment({**settings, **tokens})
+    assert {name: host.get(name) for name in settings} == settings
+    assert not set(tokens) & set(host)
+    # 沙箱内命令的缓存由私有目录承担，不继承这些设置。
+    sandboxed = sandbox_environment(
+        {**settings, **tokens}, private_tmp=CACHE / "tmp/o", private_cache=CACHE / "cache"
+    )
+    assert not (set(settings) | set(tokens)) & set(sandboxed)
+
+
 def test_sandbox_environment_inherits_allowlist_without_proxies_or_secrets() -> None:
     environ = {
         "PATH": "/opt/homebrew/bin:/usr/bin",

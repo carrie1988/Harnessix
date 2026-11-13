@@ -132,6 +132,27 @@ _INHERITED_NAMES = frozenset(
     }
 )
 _INHERITED_PREFIXES = ("LC_",)
+# 常见开发工具的非机密设置，只交给沙箱外命令（Beta Issue #20：没有它们时pnpm在测试前重装依赖、
+# Playwright重新下载浏览器，命令超时）。只认完整的名字、不按前缀放行：npm的配置变量里可能有登录令牌
+# （如NPM_CONFIG__AUTH、…:_authToken）。沙箱内命令的缓存由私有目录承担，不继承这些。
+_HOST_TOOL_SETTINGS = frozenset(
+    {
+        "CI",
+        "NODE_EXTRA_CA_CERTS",
+        "COREPACK_HOME",
+        "PLAYWRIGHT_BROWSERS_PATH",
+        "PUPPETEER_CACHE_DIR",
+        "YARN_CACHE_FOLDER",
+        "NPM_CONFIG_CACHE",
+        "npm_config_cache",
+        "NPM_CONFIG_STORE_DIR",
+        "npm_config_store_dir",
+        "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN",
+        "pnpm_config_verify_deps_before_run",
+        "NPM_CONFIG_VERIFY_DEPS_BEFORE_RUN",
+        "npm_config_verify_deps_before_run",
+    }
+)
 # 只交给沙箱外命令（ADR 0113）；沙箱内不能借本机代理联网。
 PROXY_ENVIRONMENT_NAMES = frozenset(
     {
@@ -370,7 +391,7 @@ def host_environment(
     presets: Iterable[tuple[str, str]] = (),
     secret_names: Iterable[str] = (),
 ) -> Mapping[str, str]:
-    """沙箱外命令的环境：继承白名单并额外继承代理变量（ADR 0113第2.2节）。"""
+    """沙箱外命令的环境：继承白名单，另继承代理变量（ADR 0113第2.2节）与开发工具的非机密设置。"""
 
     environment = _inherited(environ, secret_names, include_proxies=True)
     environment.update(dict(presets))
@@ -390,7 +411,7 @@ def _inherited(
         and (
             name in _INHERITED_NAMES
             or name.startswith(_INHERITED_PREFIXES)
-            or (include_proxies and name in PROXY_ENVIRONMENT_NAMES)
+            or (include_proxies and name in PROXY_ENVIRONMENT_NAMES | _HOST_TOOL_SETTINGS)
         )
     }
 
