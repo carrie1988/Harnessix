@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 55
+version: 56
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,11 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：命令失败行写出退出码
+
+- [`tool_summary.tool_result_text`](../../src/harnessix/product_ui/tool_summary.py)：`process_nonzero_exit`且结果里有整数`returncode`时显示“失败（退出码 N）”，与成功时的“完成（退出码 0）”一致；此前一律是“失败：命令以非零状态退出”（Beta Issue #13）。
+- 回归见`tests/product_ui/test_tool_summary.py`。
 
 ## 当前增量：已完成但修改之后没有检查时如实提示
 
@@ -1217,6 +1222,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 56 | `636f7c9f` 增量 | 2026-11-13 | 命令失败行写出退出码（Beta Issue #13） |
 | 55 | `f24afce5` 增量 | 2026-11-13 | 已完成但最后一次修改之后没有检查（或检查失败）时，对话末尾如实提示；完成证据判断移到`verification.py`与`exec`共用（Beta Issue #9） |
 | 54 | `f24afce5` 增量 | 2026-11-13 | `cost_estimate.list_price_for`经`product_config.vendors.endpoint_host`查牌价，百炼北京的业务空间专属域名显示牌价与费用（Beta Issue #6） |
 | 53 | `f24afce5` 增量 | 2026-11-13 | 重试时运行提示说明第几次尝试与上次失败原因（`request_retry`，Beta Issue #11） |

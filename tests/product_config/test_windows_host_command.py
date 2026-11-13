@@ -6,6 +6,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -17,7 +20,9 @@ from harnessix.product_config.action_contracts import build_product_native_proce
 from harnessix.product_config.native_process import attest_native_process_profile
 from harnessix.product_config.native_shells import (
     POWERSHELL_ARGUMENTS,
+    POWERSHELL_EXIT_TRAILER,
     fixed_shell,
+    shell_command_text,
     windows_powershell,
 )
 
@@ -163,6 +168,8 @@ async def test_powershell_nonzero_exit_is_a_failure(tmp_path: Path) -> None:
         result = _result(await case.approve_and_resume())
         assert result.outcome == "failed"
         assert result.error is not None and result.error.code == "process_nonzero_exit"
+        # Beta Issue #12：此前PowerShell -Command把原生程序的退出码都报成1。
+        assert isinstance(result.output, dict) and result.output["returncode"] == 3
 
 
 def test_profiles_written_before_the_program_files_prefix_are_still_accepted() -> None:
@@ -188,3 +195,61 @@ async def test_powershell_commands_can_read_program_files_x86(tmp_path: Path) ->
         assert result.outcome == "succeeded", result
         written = (case.workspace / "out.txt").read_text(encoding="utf-8")
         assert written == os.environ["ProgramFiles(x86)"]
+
+
+@pytest.mark.parametrize(
+    "program", [PWSH, r"C:\Windows\System32\WindowsPowerShell\v1.0\POWERSHELL.EXE"]
+)
+def test_powershell_commands_carry_the_native_exit_code_trailer(program: str) -> None:
+    """Beta Issue #12：命令之后另起一行补上带出原生退出码的一段；其他Shell原样。"""
+    profile = _powershell_profile(program)
+    assert (
+        shell_command_text(profile, "python -m tool") == "python -m tool" + POWERSHELL_EXIT_TRAILER
+    )
+    assert POWERSHELL_EXIT_TRAILER.startswith("\n")
+    sandboxed = build_product_native_process_profile(
+        profile_id="shell",
+        version="1",
+        description="sh",
+        backend="bubblewrap",
+        program="/bin/bash",
+        arguments=("-c",),
+    )
+    assert shell_command_text(sandboxed, "python -m tool") == "python -m tool"
+
+
+def _real_powershell() -> str | None:
+    """真实PowerShell：Windows上的系统PowerShell，或任意平台PATH上的pwsh；也可用环境变量指定。"""
+    return (
+        os.environ.get("HARNESSIX_TEST_PWSH")
+        or (windows_powershell(os.environ) if os.name == "nt" else None)
+        or shutil.which("pwsh")
+    )
+
+
+@pytest.mark.skipif(_real_powershell() is None, reason="本机没有PowerShell")
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ("{python} -c 'raise SystemExit(0)'", 0),
+        ("{python} -c 'raise SystemExit(1)'", 1),
+        ("{python} -c 'raise SystemExit(2)'", 2),
+        ("{python} -c 'raise SystemExit(42)'", 42),
+        ("{python} -c 'raise SystemExit(2)' # 末尾的注释", 2),
+        ("Write-Output a\n{python} -c 'raise SystemExit(7)'", 7),
+        ("{python} -c 'raise SystemExit(3)'; Write-Output ok", 0),
+        ("Get-Item definitely-missing-item", 1),
+        ("definitely-not-a-command-xyz", 1),
+        ("exit 5", 5),
+        ("{python} -c 'raise SystemExit(2)'; exit $LASTEXITCODE", 2),
+    ],
+)
+def test_a_real_powershell_reports_the_native_exit_code(command: str, expected: int) -> None:
+    program = _real_powershell()
+    assert program is not None
+    profile = _powershell_profile(program if os.name == "nt" else PWSH)
+    text = shell_command_text(profile, command.format(python=f"& '{sys.executable}'"))
+    completed = subprocess.run(
+        [program, *POWERSHELL_ARGUMENTS, text], capture_output=True, timeout=120, check=False
+    )
+    assert completed.returncode == expected, completed.stderr.decode("utf-8", "replace")

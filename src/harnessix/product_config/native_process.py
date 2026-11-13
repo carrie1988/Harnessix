@@ -54,7 +54,7 @@ from .native_sandbox import (
     attest_native_sandbox,
     prepare_sandboxed_argv,
 )
-from .native_shells import native_owner_problem
+from .native_shells import native_owner_problem, shell_command_text
 from .process_command import (
     HostCommandInput,
     RunCommandInput,
@@ -536,7 +536,7 @@ def _process_spec(
     owner: VerifiedNativeProcessProfile, route: ActionRoutePlan, arguments: RunCommandInput
 ) -> ProcessSpec:
     profile = owner.profile
-    command = (profile.program, *profile.arguments, arguments.cmd)
+    command = (profile.program, *profile.arguments, shell_command_text(profile, arguments.cmd))
     if owner.native_sandbox is not None:
         command = prepare_sandboxed_argv(owner.native_sandbox, command)
     return build_process_spec(

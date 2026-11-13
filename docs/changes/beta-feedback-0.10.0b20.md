@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 18
+version: 20
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -59,6 +59,8 @@ related_tests:
   - tests/artifacts/test_verified_history_bodies.py
   - tests/product_config/test_bailian_workspace_endpoint.py
   - tests/product_ui/test_unverified_completion.py
+  - tests/product_config/test_windows_host_command.py
+  - tests/product_ui/test_tool_summary.py
 supersedes: []
 ---
 
@@ -90,9 +92,11 @@ supersedes: []
 | 十八 | 重试期间看不出第几次尝试、为什么还在等（0.10.0b25，Issue #11） | 运行提示说明尝试序号与上次失败原因 | 本文第32节 |
 | 十九 | 百炼北京的业务空间专属域名显示“费用未知”（0.10.0b25，Issue #6） | 与共享域名按同一套表核对 | 本文第33节 |
 | 二十 | “已完成”，但总结声称的测试并没有在修复之后运行（0.10.0b25，Issue #9） | 对话末尾如实提示修改之后没有检查 | 本文第34节 |
+| 二十一 | Windows上命令的真实退出码2被记成1（0.10.0b25，Issue #12） | PowerShell命令后补一段带出原生退出码 | 本文第35节 |
+| 二十二 | 命令失败行不显示已记录的退出码（0.10.0b25，Issue #13） | 写成“失败（退出码 N）” | 本文第36节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十项在第26～34节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十二项在第26～36节。
 
 ## 2. 需求背景
 
@@ -1045,3 +1049,44 @@ Issue #9（0.10.0b25，Windows，逐条审批）：要求“先加回归测试�
 
 修订：`host_command.*`与另外两类一样算作检查，命令取同一个`cmd`参数。
 `tests/product_ui/test_unverified_completion.py::test_a_check_run_outside_the_sandbox_counts_as_a_check`在0.10.0b27上失败，修订后通过。
+
+## 35. 第二十一项：Windows上命令的真实退出码
+
+### 35.1 背景
+
+Issue #12（0.10.0b25，Windows 11，PowerShell 7.6.9，另以5.1对照）：`python -B -c "raise SystemExit(2)"`经沙箱外的
+`host_command.host-shell`执行，结果记为退出码1、`process_nonzero_exit`。真实开发里1表示“发现差异”、2表示“输入不可用”，
+Agent看到1后去排查本来正确的代码，要人工说明再复测。测试者在独立PowerShell里对照：子进程0→0、1→1、2→1、42→1；
+命令后加`; exit $LASTEXITCODE`得到2。负责人要求修复。
+
+### 35.2 根因
+
+沙箱外命令以`<PowerShell> -NoLogo -NoProfile -NonInteractive -Command <前缀> <命令>`执行（`native_shells.POWERSHELL_ARGUMENTS`）。
+`-Command`的退出码只看最后一条语句成功与否：成功0、失败1，原生程序的退出码丢失。
+
+### 35.3 设计
+
+- `native_shells.shell_command_text`：程序是`pwsh.exe`或`powershell.exe`时，在用户命令之后另起一行补上固定的
+  `if (-not $?) { if ($LASTEXITCODE) { exit $LASTEXITCODE } exit 1 }`；其他Shell原样。
+- `native_process._process_spec`拼参数时调用它；该文件在可读性预算上限，只改原有的一行。
+- 审批显示与执行计划绑定的仍是用户命令本身。另起一行是为了不被命令末尾的注释吞掉；命令自己`exit`时这一段不执行。
+
+### 35.4 边界
+
+- 先有原生程序非零退出、最后一条cmdlet又出错时，报那个原生退出码而不是1（仍为非零）。
+- 最后一条语句成功时与原来相同，为0，即使之前有原生程序失败。
+
+### 35.5 验证
+
+- 在macOS上下载PowerShell 7.7.0官方免安装版，用与产品相同的参数前缀实测（`tests/product_config/test_windows_host_command.py`
+  的真实PowerShell矩阵，`HARNESSIX_TEST_PWSH`指向它）：退出0/1/2/42、末尾带注释、多行、先失败后成功、cmdlet出错、命令不存在、
+  显式`exit 5`、已手动`exit $LASTEXITCODE`，11种全部符合预期；同样的命令按0.10.0b26的参数执行，退出2与42都得到1。
+- Windows上该矩阵用系统PowerShell运行；Windows PowerShell 5.1需在Windows真机上核对（交发布会话的正式测试）。
+- 原有Windows用例`test_powershell_nonzero_exit_is_a_failure`另断言`cmd /c exit 3`记为3。
+
+## 36. 第二十二项：命令失败行写出退出码
+
+Issue #13（0.10.0b25，Windows）：成功显示“完成（退出码 0）”，失败一律“失败：命令以非零状态退出”，退出1与退出2看不出区别，
+而结果里已记录了确切的退出码。`product_ui/tool_summary.tool_result_text`对`process_nonzero_exit`且有整数`returncode`的结果改为
+“失败（退出码 N）”；启动失败、超时、取消等其他失败原样。回归见`tests/product_ui/test_tool_summary.py`（1、2、42三种）。
+与第35节合起来，Windows上用户在对话里就能看到程序的真实退出码。

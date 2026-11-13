@@ -65,15 +65,18 @@ def describe_tool(tool: str, arguments: Mapping[str, JsonValue]) -> str | None:
 def tool_result_text(content: PublicToolResultContent) -> str:
     """成功只说完成（命令附退出码）；失败给出简短原因，不转述写给模型的提示。"""
 
+    returncode = content.output.get("returncode") if isinstance(content.output, dict) else None
     if content.outcome == "succeeded":
-        code = content.output.get("returncode") if isinstance(content.output, dict) else None
-        return "完成" if code is None else f"完成（退出码 {code}）"
+        return "完成" if returncode is None else f"完成（退出码 {returncode}）"
     if content.error is None:
         return f"未完成（{content.outcome}）"
     code = content.error.code
     if code == "process_cancelled":
         # 用户取消了正在运行的命令：这是他要的结果，不是需要解释的失败。
         return "已取消"
+    if code == "process_nonzero_exit" and type(returncode) is int:
+        # 退出1（测试失败、发现差异）与退出2（参数或输入无效）要不同处理（Beta Issue #13）。
+        return f"失败（退出码 {returncode}）"
     if code in _ERRORS:
         return f"失败：{_ERRORS[code]}"
     first = content.error.message.split("。", 1)[0]

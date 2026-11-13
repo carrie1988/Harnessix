@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 148
+version: 149
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -119,6 +119,13 @@ related_tests:
   - tests/product_config/test_bailian_workspace_endpoint.py
 supersedes: []
 ---
+
+## 当前增量：PowerShell命令带出原生程序的真实退出码
+
+- PowerShell以`-Command`运行时，退出码只看最后一条语句成功与否，原生程序退出2、42都报成1（Beta Issue #12，PowerShell 7.6.9与5.1实测）。[`native_shells.shell_command_text`](../../src/harnessix/product_config/native_shells.py)在命令之后另起一行补上`POWERSHELL_EXIT_TRAILER`：`if (-not $?) { if ($LASTEXITCODE) { exit $LASTEXITCODE } exit 1 }`；`native_process._process_spec`拼参数时调用它（只改这一行，文件行数不变），其他Shell原样。
+- 审批显示与执行计划绑定的仍是用户命令本身；补上的一段只出现在交给PowerShell的参数里。
+- 边界：先有原生程序非零退出、最后一条cmdlet又出错时，报那个原生退出码而不是1；用户命令自己`exit`时这一段不执行。
+- 回归见`tests/product_config/test_windows_host_command.py`：真实PowerShell上的退出码矩阵（Windows上用系统PowerShell，其他平台有`pwsh`或设置`HARNESSIX_TEST_PWSH`时运行）。
 
 ## 当前增量：百炼北京的业务空间专属域名按共享域名核对
 
@@ -2330,6 +2337,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
+| 149 | `636f7c9f` 增量 | 2026-11-13 | PowerShell命令带出原生程序的真实退出码（`native_shells.shell_command_text`，Beta Issue #12） |
 | 148 | `f24afce5` 增量 | 2026-11-13 | 百炼北京的业务空间专属域名按共享域名核对牌价、窗口、思考预设与等待时间（`vendors.endpoint_host`，Beta Issue #6） |
 | 147 | `f24afce5` 增量 | 2026-11-13 | 配置了`service_failure_retries`时，一次模型请求最多尝试N+1次（最多6次），服务端明确拒绝与连接失败也受它限制（`runtime_options.request_attempts`，ADR 0144第2版，Beta Issue #2） |
 | 146 | `6d0c6152` 增量 | 2026-11-13 | 状态目录缺失的各级父目录都按0700创建（`private_directory.make_private_directories`）：先用`exec`的用户不再得到755的`~/.harnessix`而被`configure`拒绝 |

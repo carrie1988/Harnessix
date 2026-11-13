@@ -10,6 +10,7 @@ from __future__ import annotations
 import shutil
 from collections.abc import Mapping
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Protocol
 
 from harnessix.processes.supervision_contracts import ProcessCapabilityProbe
 
@@ -31,6 +32,26 @@ POWERSHELL_ARGUMENTS = (
 )
 # 0.10.0b13及更早版本写入显式配置的参数，仍然接受。
 _LEGACY_POWERSHELL_ARGUMENTS = (*_POWERSHELL_OPTIONS, _UTF8_OUTPUT)
+
+
+# PowerShell以-Command运行时，退出码只看最后一条语句成功与否：原生程序退出2、42都报成1
+# （Beta Issue #12）。用户命令之后另起一行补一段固定代码：最后一条语句失败时带出原生程序的真实
+# 退出码，没有原生退出码（cmdlet出错、命令不存在）时仍为1。另起一行，用户命令末尾的注释吞不掉它；
+# 用户命令自己exit时它不会执行。审批时显示的仍是用户命令本身。
+POWERSHELL_EXIT_TRAILER = "\nif (-not $?) { if ($LASTEXITCODE) { exit $LASTEXITCODE } exit 1 }"
+
+
+class _ShellProgram(Protocol):
+    @property
+    def program(self) -> str: ...
+
+
+def shell_command_text(profile: _ShellProgram, command: str) -> str:
+    """交给Shell的命令正文：PowerShell在命令后补上带出原生退出码的一段，其他Shell原样。"""
+
+    if PureWindowsPath(profile.program).name.lower() in _POWERSHELLS:
+        return command + POWERSHELL_EXIT_TRAILER
+    return command
 
 
 def fixed_shell(program: str, arguments: tuple[str, ...], backend: str) -> bool:

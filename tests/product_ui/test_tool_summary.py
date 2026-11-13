@@ -79,6 +79,20 @@ def test_results_hide_model_facing_hints() -> None:
     assert tool_result_text(passed) == "完成（退出码 0）"
 
 
+@pytest.mark.parametrize("code", [1, 2, 42])
+def test_a_failed_command_shows_its_exit_code(code: int) -> None:
+    """Beta Issue #13：退出1（测试失败、发现差异）与退出2（输入无效）此前都只显示同一句。"""
+    failed = PublicToolResultContent(
+        call_id=uuid4(),
+        outcome="failed",
+        output={"returncode": code, "state": "exited"},
+        error=PublicFailure(
+            code="process_nonzero_exit", message="非零退出", retryable=False, category="tool"
+        ),
+    )
+    assert tool_result_text(failed) == f"失败（退出码 {code}）"
+
+
 def test_a_command_the_user_cancelled_reads_as_cancelled_not_as_a_failure() -> None:
     cancelled = PublicToolResultContent(
         call_id=uuid4(),
