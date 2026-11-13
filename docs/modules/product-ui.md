@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 58
+version: 59
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -47,6 +47,12 @@ supersedes: []
 ## 当前增量：去掉“没有设置思考强度”的启动提示
 
 - 旧配置在核实过档位的模型上已由运行时按中档思考（Product Config模块设计，ADR 0146第2版），提示内容不再成立：删除`config_hints.py`、`doctor`里的那一行，以及只为它服务的`StartRequest.config_hint`→`ProductMainView`→`TranscriptPane`显示通道；空会话只显示原来的输入提示。
+
+## 当前增量：选中的字保持原来的字色
+
+- 选中部分改由[`selectable_log.selection_painter`](../../src/harnessix/product_ui/selectable_log.py)计算样式，与Textual自带组件一致：半透明的选择背景（`$screen-selection-background`，默认主色50%）叠在该格原背景上，透明的选择前景保留原来的字色；主题给出不透明前景时才换字色。
+- 0.10.0b30～b31直接用`get_component_rich_style("screen--selection")`：Textual换算Rich样式时字色取“背景+前景”，前景透明即等于背景，默认主题下是`#094472 on #094472`，选中的几行变成一整块蓝色、字全部看不见（负责人2026-11-13截图）。
+- 回归见`tests/product_ui/test_selectable_transcript.py::test_selected_text_stays_readable`（角色行、弱化行、Markdown回复）。
 
 ## 当前增量：对话历史区支持鼠标拖选与复制
 
@@ -1232,6 +1238,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 59 | `8b07c214` 增量 | 2026-11-13 | 选中的字保持原来的字色，选择背景按透明度叠加（`selection_painter`）；此前选中部分字色等于背景色，看不见 |
 | 58 | `9409d884` 增量 | 2026-11-13 | 删除“没有设置思考强度”的启动提示及其显示通道（运行时已按中档处理） |
 | 57 | `da4b117c` 增量 | 2026-11-13 | 对话历史区支持鼠标拖选与`Ctrl+C`复制（`selectable_log.py`） |
 | 56 | `636f7c9f` 增量 | 2026-11-13 | 命令失败行写出退出码（Beta Issue #13） |

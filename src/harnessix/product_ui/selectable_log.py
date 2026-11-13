@@ -8,11 +8,17 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；文字选�
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from rich.segment import Segment
 from rich.style import Style
+from textual.color import Color
 from textual.selection import Selection
 from textual.strip import Strip
+from textual.style import Style as VisualStyle
 from textual.widgets import RichLog
+
+Paint = Callable[[Style | None], Style]
 
 
 class SelectableLog(RichLog):
@@ -34,14 +40,36 @@ class SelectableLog(RichLog):
         if selection is not None and index < len(self.lines):
             span = selection.get_span(index)
             if span is not None:
-                style = self.screen.get_component_rich_style("screen--selection")
-                strip = highlight_characters(strip, span[0] - scroll_x, span[1], style)
+                selected = self.screen.get_component_styles("screen--selection")
+                paint = selection_painter(
+                    VisualStyle.from_styles(selected), self.background_colors[1]
+                )
+                strip = highlight_characters(strip, span[0] - scroll_x, span[1], paint)
         # 位置信息让Textual把鼠标落点换算成第几行第几个字。
         return strip.apply_offsets(scroll_x, index)
 
 
-def highlight_characters(strip: Strip, start: int, end: int, style: Style) -> Strip:
-    """把一行里第start到end个字（end为-1表示到行尾）叠加上选择样式，其余原样。"""
+def selection_painter(selection: VisualStyle, background: Color) -> Paint:
+    """选中部分的样式，与Textual自带组件一致：半透明的选择背景叠在原背景上，透明的选择前景保留原来的字色。
+
+    不能直接用选择样式的Rich形式：默认主题的选择前景是透明的，换算后字色等于背景色，
+    选中的字全部看不见（0.10.0b30～b31，负责人2026-11-13截图）。
+    """
+
+    keeps_color = selection.foreground is None or selection.foreground.a == 0
+
+    def paint(original: Style | None) -> Style:
+        original = original or Style()
+        under = VisualStyle(background=background) + VisualStyle.from_rich_style(original)
+        colors = (under + selection).rich_style
+        color = None if keeps_color else colors.color
+        return original + Style(color=color, bgcolor=colors.bgcolor)
+
+    return paint
+
+
+def highlight_characters(strip: Strip, start: int, end: int, paint: Paint) -> Strip:
+    """把一行里第start到end个字（end为-1表示到行尾）换成选中的样式，其余原样。"""
 
     segments: list[Segment] = []
     position = 0
@@ -52,7 +80,7 @@ def highlight_characters(strip: Strip, start: int, end: int, style: Style) -> St
         if control or first >= last:
             segments.append(Segment(text, segment_style, control))
         else:
-            combined = (segment_style or Style()) + style
+            combined = paint(segment_style)
             pieces = (
                 (text[:first], segment_style),
                 (text[first:last], combined),

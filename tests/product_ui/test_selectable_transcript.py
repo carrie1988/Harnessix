@@ -12,7 +12,9 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.strip import Strip
 
+from harnessix.product_ui.rendering import TranscriptLine
 from harnessix.product_ui.selectable_log import SelectableLog, highlight_characters
+from harnessix.product_ui.transcript_pane import line_renderable
 
 
 class _Host(App[None]):
@@ -85,7 +87,9 @@ async def test_copied_lines_do_not_carry_the_padding_of_the_rendered_line() -> N
 
 
 def test_only_the_selected_characters_are_highlighted() -> None:
-    selected = Style(reverse=True)
+    def selected(style: Style | None) -> Style:
+        return (style or Style()) + Style(reverse=True)
+
     strip = Strip(list(Text("ab中文cd", style="green").render(Console())))
     highlighted = highlight_characters(strip, 1, 4, selected)
     pieces = [(segment.text, segment.style) for segment in highlighted if segment.text]
@@ -95,3 +99,40 @@ def test_only_the_selected_characters_are_highlighted() -> None:
     # 到行尾。
     to_end = highlight_characters(strip, 4, -1, selected)
     assert [s.text for s in to_end if s.style and s.style.reverse] == ["cd"]
+
+
+async def test_selected_text_stays_readable() -> None:
+    """选中的字仍看得见：背景换成选择色，字色不变。
+
+    0.10.0b30～b31直接用选择样式的Rich形式，默认主题下是“#094472 on #094472”，
+    选中的几行变成一整块蓝色、字全部看不见（负责人2026-11-13截图）。
+    对话区实际出现的三种行都要看：带角色色的行、弱化的操作行、按Markdown排版的回复。
+    """
+    shown = (
+        TranscriptLine(None, "你", "读取 README.md"),
+        TranscriptLine(None, "操作", "运行 pytest -q → 完成（退出码 0）"),
+        TranscriptLine(None, "Harnessix", "- 撞击：白热火球 + 垂直烟羽\n- 跨度 5.62 天"),
+    )
+    app = _Host()
+    async with app.run_test(size=(80, 12)) as pilot:
+        log = app.query_one(SelectableLog)
+        for line in shown:
+            log.write(line_renderable(line))
+        await pilot.pause()
+        before = [log.render_line(y) for y in range(6)]
+        await _drag(pilot, log, (0, 0), (40, 5))
+        after = [log.render_line(y) for y in range(6)]
+
+    changed = 0
+    for old, new in zip(before, after, strict=True):
+        old_styles = [s.style for s in old for _ in s.text]
+        new_segments = [(c, s.style) for s in new for c in s.text]
+        for (character, style), old_style in zip(new_segments, old_styles, strict=True):
+            if character.isspace() or style is None:
+                continue
+            assert style.color is None or style.color != style.bgcolor, (character, style)
+            if style.bgcolor != (old_style.bgcolor if old_style else None):
+                changed += 1
+                # 字色保持原样（角色色、弱化色）；选择只改背景。
+                assert old_style is None or style.color == old_style.color, (character, style)
+    assert changed > 20
