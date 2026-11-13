@@ -98,7 +98,7 @@ Windows 是 1.0 门槛，Beta 先开放 macOS 与 Linux（2026-11-10 决定）�
    ```
 
 5. **等待自动发布。** 在 Actions 页面查看这次 Release 运行，全部通过即已上传 PyPI 并创建 GitHub Release。
-6. **验证。** 在一台没有装过的机器上运行 `uv tool install harnessix==0.10.0b2`，再按用户手册做一次 `doctor`。国内镜像通常在数分钟到数小时内同步。
+6. **验证。** 在一台没有装过的机器上运行 `uv tool install --python 3.12 harnessix==0.10.0b2`（发布页与安装说明里的命令都带 `--python 3.12`，见 GitHub Issue #10），再按用户手册做一次 `doctor`。国内镜像通常在数分钟到数小时内同步。
 
 ## 4. 失败与重试
 

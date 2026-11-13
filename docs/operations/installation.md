@@ -40,7 +40,7 @@ supersedes: []
 
 **2026-11-10首发范围：macOS、Linux、Windows（用户决定）。** Beta先在macOS和Linux开放，Windows须在1.0前完成同等验收。2026-10-09“仅macOS”的范围已撤销；以下三平台实测仍是历史证据，不代表当前候选已经通过。各平台仍按实际OS、CPU架构和固定候选独立验收。
 
-本文描述当前预览版`0.10.0b26`、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。预览版经[发布流程](release.md)发布到PyPI（`uv tool install harnessix`），附PyPI可信发布的来源证明；仍没有平台安装器、自动更新器或代码签名，因此本文不把
+本文描述当前预览版`0.10.0b26`、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。预览版经[发布流程](release.md)发布到PyPI（`uv tool install --python 3.12 harnessix`；依赖`google-re2`尚无Python 3.15预编译包，不固定版本时可能被选中3.15而源码编译失败，GitHub Issue #10），附PyPI可信发布的来源证明；仍没有平台安装器、自动更新器或代码签名，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 后继Windows本地NTFS审批写入端口及专项已实现，见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。

@@ -84,7 +84,7 @@ flowchart LR
 | 项目 | 要求 |
 |---|---|
 | 操作系统 | macOS 或 Linux。Windows 为预览支持，见 [2.1](#21-windows-说明) |
-| 包管理器 | [uv](https://docs.astral.sh/uv/)。它会自动准备 Python 3.12，不需要单独安装 Python |
+| 包管理器 | [uv](https://docs.astral.sh/uv/)。安装命令里的 `--python 3.12` 会让它自动准备 Python 3.12，不需要单独安装 Python |
 | 沙箱 | macOS 自带 Seatbelt，无需安装；Linux 需要 bubblewrap，见 [3.4](#34-linux准备沙箱) |
 | Git | 推荐安装。工作区在 Git 仓库内时自动启用 Git 工具 |
 | 模型 | 一个模型服务的 API Key（DeepSeek、百炼或其他 OpenAI 兼容接口），或你自己部署的模型端点 |
@@ -126,14 +126,16 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 从 PyPI 安装：
 
 ```bash
-uv tool install harnessix
+uv tool install --python 3.12 harnessix
 ```
+
+`--python 3.12` 让 uv 为 Harnessix 准备经过验证的 Python 3.12，而不是沿用你电脑上已有的其他版本：依赖 `google-re2` 还没有 Python 3.15 的预编译包，用 3.15 安装会转为源码编译，没有 C++ 编译器时安装失败。
 
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
-- **国内网络：** 使用镜像，`uv tool install harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
-- **指定版本：** `uv tool install harnessix==0.10.0b26`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
-- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install ./harnessix-0.10.0b26-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
+- **国内网络：** 使用镜像，`uv tool install --python 3.12 harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
+- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b26`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
+- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b26-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
 
 **从源码构建（开发者）：**
 
@@ -141,7 +143,7 @@ uv tool install harnessix
 git clone https://github.com/carrie1988/Harnessix.git
 cd Harnessix
 uv build --wheel
-uv tool install dist/harnessix-*.whl
+uv tool install --python 3.12 dist/harnessix-*.whl
 ```
 
 ### 3.3 确认安装成功
@@ -803,7 +805,7 @@ harnessix state recover --state-directory "$STATE" --confirm-restore <同一个 
    uv tool upgrade harnessix
    ```
 
-   通过 wheel 文件安装的，先运行 `uv tool uninstall harnessix`，再 `uv tool install <新版本 wheel>`。
+   升级沿用安装时选定的 Python。通过 wheel 文件安装的，先运行 `uv tool uninstall harnessix`，再 `uv tool install --python 3.12 <新版本 wheel>`。
 
 4. 运行 `harnessix code doctor /path/to/repo --probe-model` 确认。
 
@@ -840,6 +842,7 @@ uv tool uninstall harnessix
 |---|---|
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
+| 安装时报 `Failed to build google-re2` 或要求安装 Microsoft Visual C++ | uv 选中了 Python 3.15 等还没有预编译包的版本。改用 `uv tool install --python 3.12 harnessix` |
 | 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export 变量名=你的Key`（变量名见提示，如 `DASHSCOPE_API_KEY`）后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#42-api-key) |
 | 配置时提示配置目录的权限不是 700，或目录不属于当前用户 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件；0.10.0b24 及更早的版本里，先运行 `harnessix exec` 再运行 `configure` 也会遇到 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
@@ -948,7 +951,7 @@ uv tool uninstall harnessix
 
 ```bash
 # 安装与信息
-uv tool install harnessix                  # 安装
+uv tool install --python 3.12 harnessix    # 安装
 uv tool upgrade harnessix                  # 升级
 harnessix --version                         # 已安装版本（0.10.0b9 起）
 harnessix --help                            # 全部命令

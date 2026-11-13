@@ -24,17 +24,19 @@ Harnessix Code 目前是预览版，不是正式商用版本，不提供任何�
 
 ## 1. 适用范围
 
-需要 macOS 或 Linux、Python 3.12 以上，以及 [uv](https://docs.astral.sh/uv/)。请在你有权发送给模型服务商的仓库里使用，并确保改动可以通过 Git 回退。
+需要 macOS 或 Linux，以及 [uv](https://docs.astral.sh/uv/)（安装命令会让它自动准备 Python 3.12）。请在你有权发送给模型服务商的仓库里使用，并确保改动可以通过 Git 回退。
 
 ## 2. 部署步骤
 
 **安装：**
 
 ```bash
-uv tool install harnessix
+uv tool install --python 3.12 harnessix
 ```
 
-国内下载慢时加镜像：`uv tool install harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟。
+`--python 3.12` 让 uv 为 Harnessix 准备经过验证的 Python 3.12，而不是沿用你电脑上已有的其他版本：依赖 `google-re2` 还没有 Python 3.15 的预编译包，用 3.15 安装会转为源码编译，没有 C++ 编译器时安装失败。
+
+国内下载慢时加镜像：`uv tool install --python 3.12 harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟。
 
 **配置模型：**
 
