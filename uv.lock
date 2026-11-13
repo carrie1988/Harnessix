@@ -449,7 +449,7 @@ wheels = [
 
 [[package]]
 name = "harnessix"
-version = "0.10.0b34"
+version = "0.10.0b35"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
