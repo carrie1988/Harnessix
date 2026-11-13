@@ -50,7 +50,7 @@ from harnessix.tools.search_contracts import (
     GlobInput,
     GrepInput,
 )
-from harnessix.tools.workspace import ReadOperation, run_read_operation
+from harnessix.tools.workspace import ReadOperation, Workspace, pinned_root, run_read_operation
 
 if TYPE_CHECKING:
     from harnessix.processes.owner_protocol import OutputRedactionSource
@@ -438,13 +438,8 @@ class CodingToolRuntime:
                 if self._windows is not None:
                     return self._windows.execute(args, operation, capture=capture)
                 assert self._workspace is not None
-                if isinstance(args, ListFilesInput):
-                    return files.list_files(self._workspace, args, operation)
-                if isinstance(args, GlobInput):
-                    return search.glob(self._workspace, args, operation, capture=capture)
-                if isinstance(args, GrepInput):
-                    return search.grep(self._workspace, args, operation, capture=capture)
-                return files.read_file_snapshot(self._workspace, args, operation)
+                with pinned_root(self._workspace, operation):
+                    return _read_posix(self._workspace, args, operation, capture)
 
             return await run_read_operation(read, timeout_seconds=self._read_timeout_seconds)
 
@@ -500,3 +495,18 @@ class CodingToolRuntime:
         traceback: TracebackType | None,
     ) -> None:
         await self.aclose()
+
+
+def _read_posix(
+    workspace: Workspace,
+    args: ListFilesInput | ReadFileInput | GlobInput | GrepInput,
+    operation: ReadOperation,
+    capture: search.SearchCapture | None,
+) -> ReadContract:
+    if isinstance(args, ListFilesInput):
+        return files.list_files(workspace, args, operation)
+    if isinstance(args, GlobInput):
+        return search.glob(workspace, args, operation, capture=capture)
+    if isinstance(args, GrepInput):
+        return search.grep(workspace, args, operation, capture=capture)
+    return files.read_file_snapshot(workspace, args, operation)

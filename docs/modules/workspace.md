@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 23
+version: 24
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -47,6 +47,10 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：Windows句柄链在根绑定后从根开始（ADR 0160）
+
+- [`WindowsWorkspaceRoot._open_chain`](../../src/harnessix/workspace/windows.py)在`_root_handle`已绑定时只从根开始逐段打开，不再每次从盘符打开根之上的各级；根本身照旧以不跟随Reparse Point的方式打开并核对对象身份与最终路径。Beta Issue #21。
 
 ## 当前增量：Windows快照同样允许写目标位于缺失的父目录之下（ADR 0137第2版）
 
@@ -1273,6 +1277,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 24 | `824c7f20` 增量 | 2026-11-13 | Windows句柄链在根绑定后从根开始（`_ancestors`只用于绑定时），根的身份与最终路径照旧核对（ADR 0160，Beta Issue #21） |
 | 23 | `093f3e09` 增量 | 2026-11-13 | Windows路径中间的段是普通文件时报`workspace_wrong_file_type`（原为`workspace_path_denied`），与POSIX一致（ADR 0137第2版，Windows真机复测） |
 | 22 | `33f91ad7` 增量 | 2026-11-13 | Windows快照允许写目标位于缺失的父目录之下（`creates_missing_parents`），已有父级是文件时以`workspace_wrong_file_type`拒绝（ADR 0137第2版） |
 | 21 | `ce5b7386` 增量 | 2026-11-12 | 计划快照对目录只绑定对象与权限：链接数、成员列表与成员数不再进入`identity`和`size`；缺失目标绑定父目录的同一身份加名称。观察对象新增`binding`（计划绑定身份），原生观察与读取工具不变（ADR 0143） |

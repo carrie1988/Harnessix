@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 23
+version: 24
 code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
@@ -88,6 +88,11 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 正则解释会静默无命中，回退把这类查询变为可用结果而不改变显式`match_mode=literal`的语义。
 
 # Coding Tool Runtime模块设计
+
+## 当前增量：一次读取操作只核对两次根（ADR 0160，Beta Issue #21）
+
+- [`workspace.pinned_root`](../../src/harnessix/tools/workspace.py)把按路径核对过的根描述符记在这次`ReadOperation`上，`Workspace.open`经`_root`从它的副本出发；结束时再按路径核对一次，被替换即`workspace_changed`。工具Runtime的POSIX读取都在其下执行（`runtime._read_posix`）。
+- 16,000个文件的整仓grep由5秒超时降到约2.3秒（macOS）。回归见`tests/tools/test_pinned_root.py`。
 
 ## 当前增量：Windows上也为精确锚定的edit补SHA（0.10.0b15）
 
@@ -1094,6 +1099,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 24 | `824c7f20` 增量 | 2026-11-13 | 一次读取操作只在开头与结尾核对工作区根（`workspace.pinned_root`），整仓搜索不再逐文件重走根路径（ADR 0160，Beta Issue #21） |
 | 23 | `151ab594` 增量 | 2026-11-12 | 大仓库整仓搜索：`_decode`的二进制判断改用一次正则扫描；快照与正则搜索先对整份文本判断、不命中的文件不逐行扫描；整仓上限放宽到四倍，执行合同v5/v6改为v7/v8；原字面量合同不变（ADR 0145，Beta 0.10.0b20复测B20-05） |
 | 22 | `152c9c28` 增量 | 2026-11-11 | 提案修复的整文件读取补上Windows后端，精确锚定的edit在Windows上也能补SHA（0.10.0b15） |
 | 21 | `0a05e8c3` 增量 | 2026-11-11 | Windows读工具的会话根允许根目录内改名，根本身仍固定（0.10.0b12） |

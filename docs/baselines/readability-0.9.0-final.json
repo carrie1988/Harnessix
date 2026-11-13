@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 637,
-    "physical_lines": 133051,
-    "logical_lines": 115774,
+    "physical_lines": 133091,
+    "logical_lines": 115799,
     "documented_modules": 637,
     "classes": 1230,
     "documented_classes": 640,
-    "functions": 5269,
-    "documented_functions": 1794,
+    "functions": 5273,
+    "documented_functions": 1797,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1869,7 +1869,7 @@
       "qualname": "CodingToolRuntime",
       "kind": "class",
       "line": 203,
-      "lines": 300,
+      "lines": 295,
       "documented": true
     },
     {
@@ -1878,8 +1878,8 @@
       "path": "src/harnessix/tools/workspace.py",
       "qualname": "Workspace",
       "kind": "class",
-      "line": 159,
-      "lines": 137,
+      "line": 161,
+      "lines": 136,
       "documented": true
     },
     {
@@ -1939,8 +1939,8 @@
       "path": "src/harnessix/workspace/windows.py",
       "qualname": "WindowsWorkspaceRoot",
       "kind": "class",
-      "line": 257,
-      "lines": 232,
+      "line": 263,
+      "lines": 229,
       "documented": true
     }
   ],

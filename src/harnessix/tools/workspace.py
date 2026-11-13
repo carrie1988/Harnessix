@@ -67,6 +67,8 @@ class ReadOperation:
             raise ValueError("读取操作时限必须是有限正数")
         self.stopped = Event()
         self.deadline = time.monotonic() + timeout
+        # Workspace.pinned_root在本次操作期间固定的根目录描述符；为None时每次打开都按路径核对根。
+        self.pinned_root: int | None = None
 
     def checkpoint(self) -> None:
         if self.stopped.is_set():
@@ -227,7 +229,7 @@ class Workspace:
         parts = self.parts(path)
         operation.checkpoint()
         with ExitStack() as stack:
-            fd = self._current_root()
+            fd = _root(self, operation)
             stack.callback(os.close, fd)
             links: list[tuple[int, str, int]] = []
             for index, part in enumerate(parts):
@@ -259,8 +261,7 @@ class Workspace:
             operation.checkpoint()
             if revision_state(before_read) != revision_state(os.fstat(fd)):
                 raise ReadToolError("workspace_changed")
-            check_root = self._current_root()
-            os.close(check_root)
+            os.close(_root(self, operation))
             try:
                 for parent, name, child in links:
                     operation.checkpoint()
@@ -293,3 +294,29 @@ class Workspace:
         traceback: TracebackType | None,
     ) -> None:
         self.close()
+
+
+def _root(workspace: Workspace, operation: ReadOperation) -> int:
+    """本次打开的起点：操作固定了根时用它的副本，否则按路径重新打开并核对根。"""
+    pinned = getattr(operation, "pinned_root", None)
+    return workspace._current_root() if pinned is None else os.dup(pinned)
+
+
+@contextmanager
+def pinned_root(workspace: Workspace, operation: ReadOperation) -> Iterator[None]:
+    """一次读取操作只在开头与结尾按路径核对根，其间各次打开都从这个根出发（Beta Issue #21）。
+
+    此前每打开一个文件，前后都要从“/”逐段重新打开并核对根，16000个文件的仓库5秒内搜不完。
+    固定的描述符始终指向原来的根目录：其间根路径即使被替换，读取也不会落到别处，结束时的核对报
+    workspace_changed。各路径段的no-follow与身份核对不变。固定只属于这一次操作，不在Workspace上共享。
+    """
+    if operation.pinned_root is not None:
+        yield
+        return
+    operation.pinned_root = workspace._current_root()
+    try:
+        yield
+    finally:
+        os.close(operation.pinned_root)
+        operation.pinned_root = None
+    os.close(workspace._current_root())

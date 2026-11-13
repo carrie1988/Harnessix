@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 31
+version: 32
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -37,6 +37,7 @@ related_tests:
   - tests/product_ui/test_paste_input.py
   - tests/test_exec_cli.py
   - tests/sandbox/test_native_policy.py
+  - tests/tools/test_pinned_root.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -116,9 +117,10 @@ supersedes: []
 | 三十二 | 终端界面粘贴多行任务只剩第一行（0.10.0b32，Issue #19） | 多行粘贴以标记显示，发送时还原原文 | 本文第46节 |
 | 三十三 | `harnessix exec`里手工批准与拒绝都被记成`harnessix-exec:auto`（0.10.0b32，Issue #23） | 提示处由人输入的决定另记`:interactive` | 本文第47节 |
 | 三十四 | 沙箱外命令没带上pnpm、Playwright等工具设置，测试前重装依赖、重新下载浏览器而超时（0.10.0b33，Issue #20） | 沙箱外命令继承这些工具的非机密设置 | 本文第48节 |
+| 三十五 | 大仓库里整仓搜索约5秒超时，没有任何结果（0.10.0b32/b33，Issue #21） | 一次读取操作只核对两次根 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)、本文第49节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十四项在第26～48节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十五项在第26～49节。
 
 ## 2. 需求背景
 
@@ -1373,3 +1375,10 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 验证：`tests/sandbox/test_native_policy.py::test_host_commands_get_common_tool_settings_but_never_tokens`（修复前失败）；
 真实进程（macOS，tmux，`harnessix exec`，获批的沙箱外命令把收到的变量写入文件）：修复前四个设置都没有，修复后四个都在，
 同时设置的`NPM_CONFIG__AUTH`仍未传入。
+
+## 49. 第三十五项：大仓库整仓搜索不再超时（Issue #21）
+
+见[ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)。Issue报告的是Windows（Dify，16,108个文件，整仓grep 6/6约5秒超时），
+本机用16,000个文件的合成仓库在macOS上同样超时，属于三个平台的共性问题；性能分析定位到每个文件前后都从“/”（Windows从盘符）重新核对根。
+修改后macOS上同一仓库整仓grep约2.3秒完成。超时时返回部分结果是新需求，只记录；整仓glob的条目上限另行记录。
+Windows上的收益与正确性由发布会话在Windows真机上用Issue的组件脚本复测。

@@ -254,6 +254,12 @@ def _observe_opened(
     )
 
 
+def _ancestors(path: Path) -> list[Path]:
+    """从盘符到path自身的每一级目录。"""
+    anchor = type(path)(path.anchor)
+    return [anchor.joinpath(*path.parts[1:end]) for end in range(1, len(path.parts) + 1)]
+
+
 class WindowsWorkspaceRoot:
     """Windows句柄链端口；逐段拒绝Reparse Point并禁止检查后重命名。"""
 
@@ -342,12 +348,9 @@ class WindowsWorkspaceRoot:
         checkpoint: Callable[[], None] | None = None,
     ) -> tuple[list[int], str]:
         normalized = normalize_workspace_path(logical_path, "windows")
-        current = Path(self.path.anchor)
-        paths = [current]
-        for part in self.path.parts[1:]:
-            current /= part
-            paths.append(current)
-        root_index = len(paths) - 1
+        # 根已绑定时从根开始（Beta Issue #21）；根之上的段被替换，由下面的根身份核对发现。
+        paths = [self.path] if self._root_handle is not None else _ancestors(self.path)
+        root_index, current = len(paths) - 1, paths[-1]
         if normalized != ".":
             for part in normalized.split("/"):
                 current /= part
