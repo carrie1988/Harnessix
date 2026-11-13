@@ -172,11 +172,11 @@ class ProductMainView(Widget):
     #composer { dock: bottom; }
     """
 
-    def __init__(self, config_hint: str | None = None) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self._rendered_revision = -1
         self._threads = ThreadList()
-        self._conversation = TranscriptPane(config_hint)
+        self._conversation = TranscriptPane()
         self._last_state: ProductControllerState | None = None
         self._status = Static("正在启动…", id="status")
         self._activity = ActivityIndicator()

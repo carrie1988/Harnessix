@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [product_config, models, product_ui]
@@ -10,7 +10,7 @@ related_adrs:
 related_tests:
   - tests/product_config/test_thinking_config.py
   - tests/models/test_chat_mapping.py
-  - tests/product_ui/test_config_hints.py
+  - tests/product_config/test_default_thinking_effort.py
 supersedes: []
 ---
 
@@ -55,9 +55,10 @@ supersedes: []
    上限必须低于单次输出上限。
 6. **放开思考预算对输出参数的限制。** `OpenAIChatConfig.thinking_budget`原先要求`max_completion_tokens`；
    百炼预设用`max_tokens`（只限制正文），思考上限在这种参数下同样有效，校验不再限制。
-7. **已有配置不自动修改。** 没有强度字段的配置照旧不发送任何强度参数。启动时如果活动模型核实过档位、配置却
-   既没设强度也没设上限（0.10.0b22及更早生成的配置都是这样），在空会话的输入提示下方和`harnessix code doctor`
-   里给出一条建议：重新运行`harnessix code configure`。
+7. **已有配置运行时按中档（第2版修订）。** 配置文件不改；运行时对核实过档位的模型，没有设置强度与上限、也没有
+   关闭思考的配置按新配置的写法补上思考协议与`medium`（`product_config/default_thinking.py`）。第1版只在启动时
+   提示重新运行configure，负责人本机的配置（11月10日生成）一直没有改，一个任务的第一步想了11分23秒、用满32,768个
+   输出Token仍没有写出内容；负责人2026-11-13决定运行时自动处理，原来的提示随之删除。
 
 ## 没有做的
 
@@ -71,3 +72,13 @@ supersedes: []
 - 新生成的百炼qwen3.8配置思考量大幅下降，单步耗时从分钟级降到秒级到几十秒；复杂推理的深度相应降低，
   需要时可以用`--thinking-effort high`恢复原来的行为。
 - 公开Schema新增三个可选字段（`reasoning_effort`、`thinking_effort`、`thinking_budget_tokens`），已有数据不受影响。
+
+## 修订（第2版，2026-11-13）
+
+- 决策第7条改为运行时补齐：`with_default_thinking_effort`在创建OpenAI Chat适配器前判断，条件是活动模型核实过档位
+  （`effort_tiers_verified`）、不是自托管端点、Profile既没有强度也没有思考上限且没有把思考设为`off`、
+  Provider没有思考协议或协议与预设一致。满足时补上预设的思考协议（及是否省略`tool_choice`）与`medium`，
+  与新配置发出的请求相同；配置文件不变。
+- 0.10.0b19之前的配置没有思考协议，原来每个请求都按服务端默认的最强档思考；补齐后改为只在工具步骤以中档思考，
+  思考量只减不增。窗口小于64K的旧配置同样如此（新向导对这类窗口写入`off`，旧配置没有这个字段）。
+- 启动提示（空会话与`doctor`里的“重新运行configure”）已不成立，与它专用的显示通道一起删除。

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 149
+version: 150
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -117,8 +117,15 @@ related_tests:
   - tests/product_config/test_private_directory.py
   - tests/product_config/test_retry_limit.py
   - tests/product_config/test_bailian_workspace_endpoint.py
+  - tests/product_config/test_default_thinking_effort.py
 supersedes: []
 ---
+
+## 当前增量：旧配置在核实过档位的模型上运行时按中档思考（ADR 0146第2版）
+
+- [`default_thinking.with_default_thinking_effort`](../../src/harnessix/product_config/default_thinking.py)：`runtime.default_provider_factory`创建OpenAI Chat适配器前调用。活动模型核实过档位（`wizard.effort_tiers_verified`）、不是自托管、Profile没有强度与思考上限且没有关闭思考、Provider没有思考协议或协议与`wizard.thinking_preset`一致时，补上预设协议（及`omit_tool_choice`）与`medium`；配置文件不变，候选记录的Profile与Provider也不变。
+- 此前0.10.0b22及更早的配置在百炼qwen3.8上按服务端默认的最强档思考，只有启动提示建议重新configure；提示（`product_ui/config_hints.py`）已删除。
+- 回归见`tests/product_config/test_default_thinking_effort.py`（含真实OpenAI Chat适配器发出的请求带`enable_thinking`与`reasoning_effort=medium`）。
 
 ## 当前增量：PowerShell命令带出原生程序的真实退出码
 
@@ -2337,6 +2344,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
+| 150 | `9409d884` 增量 | 2026-11-13 | 旧配置在核实过档位的模型上运行时按中档思考（`default_thinking.py`，ADR 0146第2版） |
 | 149 | `636f7c9f` 增量 | 2026-11-13 | PowerShell命令带出原生程序的真实退出码（`native_shells.shell_command_text`，Beta Issue #12） |
 | 148 | `f24afce5` 增量 | 2026-11-13 | 百炼北京的业务空间专属域名按共享域名核对牌价、窗口、思考预设与等待时间（`vendors.endpoint_host`，Beta Issue #6） |
 | 147 | `f24afce5` 增量 | 2026-11-13 | 配置了`service_failure_retries`时，一次模型请求最多尝试N+1次（最多6次），服务端明确拒绝与连接失败也受它限制（`runtime_options.request_attempts`，ADR 0144第2版，Beta Issue #2） |

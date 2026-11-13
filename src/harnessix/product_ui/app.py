@@ -114,7 +114,7 @@ class ProductApp(TurnPacing, App[CloseReport]):
         super().__init__()
         self.controller = controller
         self.request = request
-        self._main_view = ProductMainView(request.config_hint)
+        self._main_view = ProductMainView()
         self._presenter = InteractionPresenter(self, controller)
         self._watch_task: asyncio.Task[None] | None = None
         self._intent_in_flight = False

@@ -92,8 +92,6 @@ class StartRequest:
 
     workspace: str
     resume_thread_id: UUID | None = None
-    # 启动时对现有配置的一条建议（如没有设置思考强度）；空会话的输入提示下方显示。
-    config_hint: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

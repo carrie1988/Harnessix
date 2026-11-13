@@ -430,14 +430,15 @@ def test_thinking_off_with_protocol_none_means_no_thinking_parameter(tmp_path, c
     assert _provider_config(config).enable_thinking is None
 
 
-def test_configurations_written_before_the_new_defaults_behave_as_before(tmp_path, capsys):
-    """默认值只在生成配置时起作用：已有的配置文件不重新configure就不变。"""
-    # 旧向导为百炼qwen3.8写下的配置没有思考协议：仍然不发送任何思考参数。
+def test_configurations_written_before_the_new_defaults_think_at_medium(tmp_path, capsys):
+    """旧配置文件不变，运行时在核实过档位的模型上按中档思考（ADR 0146第2版）。"""
+    # 旧向导为百炼qwen3.8写下的配置没有思考协议：此前不发送任何思考参数，服务端按最强档思考。
     old_qwen = build_product_config(
         _draft(model="qwen3.8-flash", output_token_parameter="max_tokens")
     )
     assert old_qwen.providers[0].thinking_protocol is None
-    assert _provider_config(old_qwen).enable_thinking is None
+    old_wire = _provider_config(old_qwen)
+    assert old_wire.enable_thinking is True and old_wire.reasoning_effort == "medium"
     # 旧向导在40K窗口下保留思考并给出窗口允许的最大输出上限：这样的配置照常加载、照常思考。
     new_40k = _configure(
         tmp_path / "config.json", *_BAILIAN_QWEN, "--context-window-tokens", "40000"
@@ -451,6 +452,7 @@ def test_configurations_written_before_the_new_defaults_behave_as_before(tmp_pat
     assert effective_thinking(old_40k.profiles[0], old_40k.providers[0]) == "tool_steps"
     wire = _provider_config(old_40k)
     assert wire.enable_thinking is True and wire.max_output_tokens == 18_463
+    assert wire.reasoning_effort == "medium"
 
 
 def test_verified_models_default_to_medium_thinking_intensity(tmp_path, capsys):
@@ -519,15 +521,15 @@ def test_unverified_endpoints_and_no_thinking_get_no_intensity_setting(tmp_path,
         assert _provider_config(config).reasoning_effort is None
 
 
-def test_configurations_without_an_intensity_keep_sending_nothing():
-    """已有配置不重新configure就不变：没有强度字段的Profile照旧不发送档位，摘要与序列化不变。"""
+def test_configurations_without_an_intensity_send_medium_without_changing_the_file():
+    """没有强度字段的Profile序列化不变，运行时发送中档（ADR 0146第2版）。"""
     config = _bailian(model="qwen3.8-flash")
     data = config.model_dump(mode="json")
     assert data["profiles"][0].pop("thinking_effort") == "medium"
     old = ProductConfigV2.model_validate_json(json.dumps(data))
     assert "thinking_effort" not in old.profiles[0].model_dump(mode="json")
     wire = _provider_config(old)
-    assert wire.enable_thinking is True and wire.reasoning_effort is None
+    assert wire.enable_thinking is True and wire.reasoning_effort == "medium"
 
 
 @pytest.mark.parametrize(

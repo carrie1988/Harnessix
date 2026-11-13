@@ -40,6 +40,7 @@ from harnessix.product_config.contracts import (
     diagnostic_report_digest,
     effective_thinking,
 )
+from harnessix.product_config.default_thinking import with_default_thinking_effort
 from harnessix.product_config.profile_options import effort_wire_value
 from harnessix.product_config.reasoning_models import effective_timeouts
 from harnessix.product_config.runtime_options import request_attempts
@@ -216,6 +217,8 @@ def default_provider_factory(
     )
     if definition.kind == "openai_chat":
         from harnessix.models.openai_chat import OpenAIChatProvider
+
+        definition, profile = with_default_thinking_effort(definition, profile)
 
         protocol = definition.thinking_protocol
         thinking = effective_thinking(profile, definition)

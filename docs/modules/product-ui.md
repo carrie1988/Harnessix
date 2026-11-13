@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 57
+version: 58
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：去掉“没有设置思考强度”的启动提示
+
+- 旧配置在核实过档位的模型上已由运行时按中档思考（Product Config模块设计，ADR 0146第2版），提示内容不再成立：删除`config_hints.py`、`doctor`里的那一行，以及只为它服务的`StartRequest.config_hint`→`ProductMainView`→`TranscriptPane`显示通道；空会话只显示原来的输入提示。
 
 ## 当前增量：对话历史区支持鼠标拖选与复制
 
@@ -1228,6 +1232,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 58 | `9409d884` 增量 | 2026-11-13 | 删除“没有设置思考强度”的启动提示及其显示通道（运行时已按中档处理） |
 | 57 | `da4b117c` 增量 | 2026-11-13 | 对话历史区支持鼠标拖选与`Ctrl+C`复制（`selectable_log.py`） |
 | 56 | `636f7c9f` 增量 | 2026-11-13 | 命令失败行写出退出码（Beta Issue #13） |
 | 55 | `f24afce5` 增量 | 2026-11-13 | 已完成但最后一次修改之后没有检查（或检查失败）时，对话末尾如实提示；完成证据判断移到`verification.py`与`exec`共用（Beta Issue #9） |

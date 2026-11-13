@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 634,
-    "physical_lines": 132450,
-    "logical_lines": 115356,
+    "physical_lines": 132442,
+    "logical_lines": 115345,
     "documented_modules": 634,
     "classes": 1226,
     "documented_classes": 636,
@@ -1587,7 +1587,7 @@
       "path": "src/harnessix/product_config/runtime.py",
       "qualname": "SafeFallbackProvider",
       "kind": "class",
-      "line": 315,
+      "line": 318,
       "lines": 106,
       "documented": true
     },
@@ -1638,7 +1638,7 @@
       "path": "src/harnessix/product_ui/controller.py",
       "qualname": "ProductController",
       "kind": "class",
-      "line": 219,
+      "line": 217,
       "lines": 380,
       "documented": true
     },

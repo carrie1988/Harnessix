@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 21
+version: 22
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -40,7 +40,6 @@ related_tests:
   - tests/product_config/test_thinking_config.py
   - tests/models/test_chat_mapping.py
   - tests/agent/test_completion_guard.py
-  - tests/product_ui/test_config_hints.py
   - tests/product_ui/test_rendering_host_notices.py
   - tests/product_config/test_zero_config.py
   - tests/product_ui/test_wrap_up.py
@@ -62,6 +61,7 @@ related_tests:
   - tests/product_config/test_windows_host_command.py
   - tests/product_ui/test_tool_summary.py
   - tests/product_ui/test_selectable_transcript.py
+  - tests/product_config/test_default_thinking_effort.py
 supersedes: []
 ---
 
@@ -96,9 +96,10 @@ supersedes: []
 | 二十一 | Windows上命令的真实退出码2被记成1（0.10.0b25，Issue #12） | PowerShell命令后补一段带出原生退出码 | 本文第35节 |
 | 二十二 | 命令失败行不显示已记录的退出码（0.10.0b25，Issue #13） | 写成“失败（退出码 N）” | 本文第36节 |
 | 二十三 | 对话区不能用鼠标选中复制（负责人2026-11-13反馈） | 对话历史区支持拖选与Ctrl+C复制 | 本文第37节 |
+| 二十四 | 旧配置一直按最强档思考，第一步想了11分钟（负责人本机，0.10.0b28） | 运行时按中档，不用重新配置 | [ADR 0146](../adr/0146-thinking-intensity-tiers.md)第2版、本文第38节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十三项在第26～37节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十四项在第26～38节。
 
 ## 2. 需求背景
 
@@ -1125,3 +1126,32 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
 从程序输出截取OSC 52剪贴板序列解码，与屏幕上被选中的文字比对；回复很长、对话区已滚动时，选中的是屏幕上看到的最后几行。
 第一次核对发现复制出的行末尾各带约80个空格（整行宽度的补白），改为去掉行尾空格，
 `test_copied_lines_do_not_carry_the_padding_of_the_rendered_line`在修改前失败。0.10.0b29在同样的拖动下没有高亮，复制内容为空。
+
+## 38. 第二十四项：旧配置在核实过档位的模型上运行时按中档思考
+
+### 38.1 背景与决定
+
+负责人本机（0.10.0b28）的一个任务运行了40分钟仍在继续。只读查看会话记录：第1步思考683秒、用满32,768个输出Token
+（全部是思考），没有写出任何内容；配置文件是11月10日生成的，没有思考协议也没有强度，模型按服务端默认的最强档思考。
+第15节（ADR 0146）当时的决定是“已有配置不自动修改、启动时提示”，提示被忽略了。负责人决定：
+已核实档位的模型（百炼qwen3.8-max、qwen3.8-flash），旧配置里没有任何思考设置时运行时自动按中档。
+
+### 38.2 设计
+
+- `product_config/default_thinking.py::with_default_thinking_effort`，在`runtime.default_provider_factory`创建OpenAI Chat适配器前调用：
+  条件满足时补上`thinking_preset`给出的思考协议（及是否省略`tool_choice`）与`medium`，与新向导写出的配置发出同样的请求。
+- “没有任何思考设置”指：没有强度、没有思考上限、没有把思考设为`off`；不是自托管端点；Provider没有思考协议或协议与预设一致。
+  0.10.0b19～b22的配置（有协议、没有强度）与更早的配置（没有协议）都在此列。
+- 配置文件不改；启动提示与它专用的显示通道删除。
+
+### 38.3 边界
+
+- 0.10.0b19之前的配置原来每个请求都按最强档思考，补齐后只在工具步骤以中档思考，思考量只减不增；窗口小于64K的旧配置同样如此。
+- 显式设置过`--thinking-effort`、`--thinking-budget`或`--thinking off`的配置不变；想恢复最强档用`--thinking-effort high`。
+
+### 38.4 验证
+
+- `tests/product_config/test_default_thinking_effort.py`：两种旧配置补齐后的协议、强度、`omit_tool_choice`与新配置一致；
+  显式low、high、思考上限、关闭思考不变；未核实的模型（百炼deepseek-v4-pro、DeepSeek官方）不变；
+  真实OpenAI Chat适配器经产品装配，旧配置发出的请求带`enable_thinking: true`与`reasoning_effort: medium`。
+- 同样的旧配置经0.10.0b28的代码发出的请求两项都没有（服务端按最强档）。
