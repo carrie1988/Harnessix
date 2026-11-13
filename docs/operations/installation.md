@@ -40,7 +40,7 @@ supersedes: []
 
 **2026-11-10首发范围：macOS、Linux、Windows（用户决定）。** Beta先在macOS和Linux开放，Windows须在1.0前完成同等验收。2026-10-09“仅macOS”的范围已撤销；以下三平台实测仍是历史证据，不代表当前候选已经通过。各平台仍按实际OS、CPU架构和固定候选独立验收。
 
-本文描述当前预览版`0.10.0b32`、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。预览版经[发布流程](release.md)发布到PyPI（`uv tool install --python 3.12 harnessix`；依赖`google-re2`尚无Python 3.15预编译包，不固定版本时可能被选中3.15而源码编译失败，GitHub Issue #10），附PyPI可信发布的来源证明；仍没有平台安装器、自动更新器或代码签名，因此本文不把
+本文描述当前预览版`0.10.0b33`、源码开发、本地Wheel和开发命令镜像。独立Action HTTP/Worker容器已按ADR 0081退出产品边界。0.9.1b～d的产品入口、Configure、Doctor与Windows原生只读链已有对应全矩阵CI证据。预览版经[发布流程](release.md)发布到PyPI（`uv tool install --python 3.12 harnessix`；依赖`google-re2`尚无Python 3.15预编译包，不固定版本时可能被选中3.15而源码编译失败，GitHub Issue #10），附PyPI可信发布的来源证明；仍没有平台安装器、自动更新器或代码签名，因此本文不把
 “可以从源码运行”表述为“产品已经完成安装交付”。
 后继Windows本地NTFS审批写入端口及专项已实现，见[验证报告](../validation/windows-native-file-transactions-2026-09-28-v1/README.md)；
 这不是消费者目标OS、脱离源码安装、升级及独立Beta完成的证明。
@@ -140,7 +140,7 @@ CLI可导入，不证明Provider、数据库、Workspace或Sandbox可用。
 
 ## 5. 本地Wheel与锁定安装输入
 
-当前预览版文件名为`harnessix-0.10.0b32-py3-none-any.whl`，不是正式商用Release。
+当前预览版文件名为`harnessix-0.10.0b33-py3-none-any.whl`，不是正式商用Release。
 以已评审固定Revision为起点；以下独立验收目录必须尚不存在。`python`指前置条件中的Python 3.12解释器。
 命令复用[规范Wheel工作流](../../.github/workflows/installed-product-acceptance.yml)的锁定依赖、
 精确Wheel哈希及`--no-deps`，不依赖pip重新解析浮动版本。源码外环境不借用开发venv。
@@ -177,7 +177,7 @@ uv pip install --python ./venv/Scripts/python.exe --require-hashes --no-deps --o
 ./venv/Scripts/python.exe -I -c "import harnessix; from importlib.metadata import version; print(version('harnessix')); print(harnessix.__file__)"
 ```
 
-最后必须得到`0.10.0b32`及独立venv中的导入地址。Help、版本、License与SDK依赖安装不代表模型调用、
+最后必须得到`0.10.0b33`及独立venv中的导入地址。Help、版本、License与SDK依赖安装不代表模型调用、
 真实编码或消费者Windows11验收通过。配置与离线Doctor按[产品运行手册](../m08-product-runtime-and-extensions.md)执行；发模型请求另需满足费用及认证门禁。
 
 此处自算哈希证明安装字节与本地受控构建件一致，不是签名或官方来源证明。下载候选时应先核对可信发布
@@ -187,7 +187,7 @@ uv pip install --python ./venv/Scripts/python.exe --require-hashes --no-deps --o
 
 ### 5.1 Wheel边界
 
-- 当前包版本为`0.10.0b32`（预览版；预览号自2026-11-10起替代内部候选号`1.0.0rc1`），不等于路线图1.0商用已完成；
+- 当前包版本为`0.10.0b33`（预览版；预览号自2026-11-10起替代内部候选号`1.0.0rc1`），不等于路线图1.0商用已完成；
 - PyPI上的Wheel由发布流程构建，附PyPI可信发布生成的来源证明（PEP 740）；没有代码签名或可复现构建声明；
 - Wheel不携带外部`git`、搜索工具、容器后端或Provider凭据；
 - Python Wheel可安装不等于Windows Coding Agent达到正式产品支持；原生读取、NTFS审批写入及业务恢复专项也不能替代Windows 11完整编码验收。
