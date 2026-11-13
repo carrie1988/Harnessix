@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 23
+version: 24
 code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
@@ -53,6 +53,7 @@ supersedes: []
 ## 当前增量：历史正文在同一存储对象里只完整核对一次（ADR 0158）
 
 - [`batch_verify.verify_references`](../../src/harnessix/artifacts/batch_verify.py)记住同一存储对象已完整核对过的引用（作用域、归属、调用、用途、省略字段与整份清单）。之后的步骤照常核对记录、归属与用途、来源认证、清单、过期与正文SHA-256（`_require_same_body`，错误码与完整核对相同），跳过记录解析、命令输出校验、公开输出的密钥扫描与分页、省略覆盖。
+- 每批核对开始时用空正文确认公开输出保护仍然有效，作用域关闭后与完整核对一样拒绝（ADR 0158第2版）。
 - 记录用弱引用挂在存储对象上（`_VERIFIED`），与它的公开输出保护同生命周期，每个对象最多4096条。`sqlite.utc_now`显式导出，两条路径用同一个时钟判断过期。
 - 回归见`tests/artifacts/test_verified_history_bodies.py`。Beta Issue #8。
 
@@ -835,6 +836,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 24 | `da4b117c` 增量 | 2026-11-13 | 历史核对在每批开头确认公开输出保护仍然有效，命中记住结果的引用在作用域关闭后同样拒绝（ADR 0158第2版） |
 | 23 | `f24afce5` 增量 | 2026-11-13 | 历史正文在同一存储对象里只完整核对一次，之后只确认记录、认证、清单、过期与SHA-256（`batch_verify`，ADR 0158，Beta Issue #8） |
 | 22 | `5d18bb3e` 增量 | 2026-11-11 | 取消收尾时照常发布已对账命令的终态输出：发布改用宿主核对作用域，取消运行中的命令得到确定的`process_cancelled`而不是`unknown`（0.10.0b16，Beta反馈HX-10） |
 | 21 | `dad55d32` 增量 | 2026-11-11 | Action Review/Output发布容忍执行期间的Steering，其余Session变化仍按`sequence_conflict`拒绝（0.10.0b16，Beta反馈HX-01） |

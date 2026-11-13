@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [artifacts, agent]
@@ -45,7 +45,8 @@ supersedes: []
    过期时间）。任何一项不同都按首次核对。
 3. **记录挂在存储对象上**（弱引用），与它的公开输出保护同生命周期；进程重启或换一个存储对象都从头完整核对。
    每个存储对象最多记住4096条，超出时全部忘掉。
-4. **错误码与顺序不变。** 过期仍是`artifact_expired`，正文被改仍是`artifact_corrupt`，记录被删或换作用域
+4. **保护作用域关闭后照样拒绝。** 每批核对开始时用空正文向公开输出保护确认一次（第2版补充，发布会话审阅指出：第1版命中记住结果的引用在作用域关闭后不再报错）；作用域关闭时与首次完整核对报同一个错。
+5. **错误码与顺序不变。** 过期仍是`artifact_expired`，正文被改仍是`artifact_corrupt`，记录被删或换作用域
    仍是`artifact_not_found`。单条路径（非SQLite的验证器）不变。
 
 ## 取舍

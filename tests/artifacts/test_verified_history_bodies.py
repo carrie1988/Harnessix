@@ -14,10 +14,15 @@ from datetime import timedelta
 import pytest
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts import sqlite as artifact_sqlite
 from harnessix.artifacts.batch_verify import verify_references
 from harnessix.artifacts.contracts import ArtifactRef, HistoryReferenceCheck
-from tests.artifacts.helpers import exercise, results
+from harnessix.models.scripted import ScriptedProvider
+from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.tools.runtime import CodingToolRuntime
+from tests.agent.helpers import answer
+from tests.artifacts.helpers import exercise, results, step
 
 
 def _entries(thread, turn) -> tuple[HistoryReferenceCheck, ...]:
@@ -38,7 +43,8 @@ def _count_scans(artifacts, monkeypatch) -> list[bytes]:
     original = artifacts._publication.check_body
 
     async def counting(body: bytes, **kwargs) -> None:
-        scanned.append(body)
+        if body:  # 每批开头用空正文确认保护作用域仍然有效，不算扫描正文
+            scanned.append(body)
         await original(body, **kwargs)
 
     monkeypatch.setattr(artifacts._publication, "check_body", counting)
@@ -104,3 +110,52 @@ async def test_a_new_store_scans_again(tmp_path, monkeypatch) -> None:
     scanned = _count_scans(reopened, monkeypatch)
     await verify_references(reopened, entries, workspace_scope=scope)
     assert len(scanned) == 1
+
+
+class _ClosableProtection:
+    """可关闭的公开输出保护：关闭后与真实作用域一样拒绝检查。"""
+
+    def __init__(self) -> None:
+        self.closed = False
+
+    def _ensure_open(self) -> None:
+        if self.closed:
+            # 与真实的Secret保护作用域关闭后相同。
+            raise KernelError("trusted_action_secret_unavailable", "保护作用域已关闭")
+
+    def assert_public_json(self, value, *, checkpoint) -> None:  # type: ignore[no-untyped-def]
+        self._ensure_open()
+
+    def assert_public_jsonl(self, body: bytes, *, checkpoint) -> None:  # type: ignore[no-untyped-def]
+        self._ensure_open()
+
+
+async def test_remembered_results_are_not_used_after_the_protection_scope_closes(
+    tmp_path,
+) -> None:
+    """作用域关闭后完整核对失败即拒绝；记住的结果不能绕过这一点（发布会话审阅意见）。"""
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "main.py").write_text("needle 中文\n" * 300, encoding="utf-8")
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    protection = _ClosableProtection()
+    artifacts = artifact_sqlite.SQLiteArtifactStore(store, public_output_protection=protection)
+    async with CodingToolRuntime(root, artifacts=artifacts) as tools:
+        provider = ScriptedProvider([step(), answer()])
+        async with AgentRuntime(
+            store, provider, scoped_tools=tools, artifacts=artifacts
+        ) as runtime:
+            thread = await runtime.create_thread(str(tools.workspace_root))
+            turn = await runtime.run_turn(thread.thread_id, "归档搜索", request_id="r")
+        scope = tools.workspace_scope
+    entries = _entries(thread, turn)
+    await verify_references(artifacts, entries, workspace_scope=scope)
+
+    protection.closed = True
+    with pytest.raises(KernelError) as cached:
+        await verify_references(artifacts, entries, workspace_scope=scope)
+    fresh = artifact_sqlite.SQLiteArtifactStore(store, public_output_protection=protection)
+    with pytest.raises(KernelError) as full:
+        await verify_references(fresh, entries, workspace_scope=scope)
+    # 命中记住结果的核对与首次完整核对一样失败，错误码相同。
+    assert cached.value.code == full.value.code == "public_output_secret_unavailable"

@@ -910,6 +910,7 @@ Issue #8（0.10.0b24，macOS）：在新会话里续做一个备份校验CLI，�
 - 实现在`artifacts/batch_verify.py`：记住同一存储对象完整核对过的引用（弱引用挂在存储对象上，每个对象最多4096条），之后的步骤用`_require_same_body`确认正文仍是同一份，错误码与完整核对相同。运行时与存储类不变。
 - 验证（`tests/artifacts/test_verified_history_bodies.py`）：新的存储对象第一次核对扫描1次，之后三次核对不再扫描；已核对过的引用，正文被改、记录被删、过期、换作用域时仍分别报`artifact_corrupt`、`artifact_not_found`、`artifact_expired`、`artifact_not_found`；换一个存储对象重新扫描。原有批量核对与模型历史用例全部通过。
 - 量级：改动后每步剩下的线性开销是SHA-256，本机约2.8 GB/s（32 MiB约11毫秒），密钥扫描约11 MB/s。
+- 第2版补充（0.10.0b27正式测试中发布会话审阅指出）：第1版命中记住结果的引用只核对正文SHA-256，公开输出保护作用域关闭后不再报错，削弱了“作用域关闭后失败即拒绝”。现在每批核对开始时用空正文向保护确认一次，作用域关闭时与完整核对报同一个错（`test_remembered_results_are_not_used_after_the_protection_scope_closes`，修复前不报错）。
 
 ## 31. 第十七项：程序退出时运行时间检查点的定时器不再报错
 

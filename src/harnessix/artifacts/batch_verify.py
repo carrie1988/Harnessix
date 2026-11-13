@@ -180,6 +180,9 @@ async def verify_references(
                     database, entry.owner_thread_id
                 )
         verified = _VERIFIED.setdefault(store, set())
+        # 记住的结果只在公开输出保护仍然有效时可用：先用空正文确认一次，
+        # 作用域关闭后与完整核对一样拒绝。
+        await store._publication.check_body(b"")  # noqa: SLF001
         for entry in entries:
             key = _verified_key(entry, workspace_scope)
             await _check_entry(store, rows, snapshots, entry, verified, key)
