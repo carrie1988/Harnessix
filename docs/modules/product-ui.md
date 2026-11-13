@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 56
+version: 57
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：对话历史区支持鼠标拖选与复制
+
+- [`selectable_log.SelectableLog`](../../src/harnessix/product_ui/selectable_log.py)替代对话历史区的`RichLog`：绘制每行时附上Textual文字选择所需的位置信息（`Strip.apply_offsets`），`get_selection`返回各行的纯文字，选中范围按`screen--selection`样式高亮（`highlight_characters`）。复制沿用Textual的`Ctrl+C`（屏幕绑定`screen.copy_text`；输入框没有选中内容时会让出该键），经OSC 52转发到终端剪贴板，macOS自带“终端”不支持。
+- 此前RichLog不附位置信息、不实现`get_selection`，在对话区拖动没有任何反应（负责人2026-11-13反馈）。
+- 实时区（尚未定稿的行）仍不可选。回归见`tests/product_ui/test_selectable_transcript.py`。
 
 ## 当前增量：命令失败行写出退出码
 
@@ -1222,6 +1228,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 57 | `da4b117c` 增量 | 2026-11-13 | 对话历史区支持鼠标拖选与`Ctrl+C`复制（`selectable_log.py`） |
 | 56 | `636f7c9f` 增量 | 2026-11-13 | 命令失败行写出退出码（Beta Issue #13） |
 | 55 | `f24afce5` 增量 | 2026-11-13 | 已完成但最后一次修改之后没有检查（或检查失败）时，对话末尾如实提示；完成证据判断移到`verification.py`与`exec`共用（Beta Issue #9） |
 | 54 | `f24afce5` 增量 | 2026-11-13 | `cost_estimate.list_price_for`经`product_config.vendors.endpoint_host`查牌价，百炼北京的业务空间专属域名显示牌价与费用（Beta Issue #6） |

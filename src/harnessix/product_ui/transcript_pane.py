@@ -10,9 +10,10 @@ from rich.markdown import Markdown
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.widgets import RichLog, Static
+from textual.widgets import Static
 
 from harnessix.product_ui.rendering import TranscriptLine
+from harnessix.product_ui.selectable_log import SelectableLog
 
 EMPTY_HINT: Final = "输入任务并按 Enter 开始；Ctrl+N 可另开新会话。"
 _ROLE_STYLES: Final = {
@@ -60,7 +61,7 @@ class TranscriptPane(Vertical):
         super().__init__(id="conversation")
         # 空会话的输入提示；启动时对配置有建议（如没有设置思考强度）就附在下面。
         self._empty_text = EMPTY_HINT if config_hint is None else f"{EMPTY_HINT}\n{config_hint}"
-        self._log = RichLog(id="transcript", wrap=True, markup=False, max_lines=10_000)
+        self._log = SelectableLog(id="transcript", wrap=True, markup=False, max_lines=10_000)
         self._live = Static("", id="live")
         self._history: tuple[TranscriptLine, ...] = ()
         self._thread: UUID | None = None

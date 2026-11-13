@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 20
+version: 21
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -61,6 +61,7 @@ related_tests:
   - tests/product_ui/test_unverified_completion.py
   - tests/product_config/test_windows_host_command.py
   - tests/product_ui/test_tool_summary.py
+  - tests/product_ui/test_selectable_transcript.py
 supersedes: []
 ---
 
@@ -94,9 +95,10 @@ supersedes: []
 | 二十 | “已完成”，但总结声称的测试并没有在修复之后运行（0.10.0b25，Issue #9） | 对话末尾如实提示修改之后没有检查 | 本文第34节 |
 | 二十一 | Windows上命令的真实退出码2被记成1（0.10.0b25，Issue #12） | PowerShell命令后补一段带出原生退出码 | 本文第35节 |
 | 二十二 | 命令失败行不显示已记录的退出码（0.10.0b25，Issue #13） | 写成“失败（退出码 N）” | 本文第36节 |
+| 二十三 | 对话区不能用鼠标选中复制（负责人2026-11-13反馈） | 对话历史区支持拖选与Ctrl+C复制 | 本文第37节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十二项在第26～36节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十三项在第26～37节。
 
 ## 2. 需求背景
 
@@ -1091,3 +1093,30 @@ Issue #13（0.10.0b25，Windows）：成功显示“完成（退出码 0）”�
 而结果里已记录了确切的退出码。`product_ui/tool_summary.tool_result_text`对`process_nonzero_exit`且有整数`returncode`的结果改为
 “失败（退出码 N）”；启动失败、超时、取消等其他失败原样。回归见`tests/product_ui/test_tool_summary.py`（1、2、42三种）。
 与第35节合起来，Windows上用户在对话里就能看到程序的真实退出码。
+
+## 37. 第二十三项：对话区支持鼠标拖选与复制
+
+### 37.1 背景与决定
+
+负责人试用时反馈：“TUI 对话内容的区域，好像不能用鼠标复制粘贴，想复制对话的内容很不方便”。
+Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自己的文字选择需要控件支持，而对话历史区用的`RichLog`不支持，
+拖动没有任何反应。提出的四项（对话区拖选、剪贴板兜底、说明、验证）里，负责人只要第1项：对话区支持拖选。
+
+### 37.2 设计
+
+- `product_ui/selectable_log.py::SelectableLog`继承`RichLog`：
+  - 绘制每行时附上位置信息（`Strip.apply_offsets(scroll_x, 行号)`），Textual据此把鼠标落点换算成第几行第几个字；
+  - `get_selection`返回各行（折行后的）纯文字，按选择范围截取；
+  - 选中范围用`screen--selection`样式高亮（`highlight_characters`按字符位置切分片段）。
+- 复制沿用Textual的`Ctrl+C`：屏幕的`screen.copy_text`；输入框没有选中内容时让出该键。复制经OSC 52转发到终端剪贴板。
+
+### 37.3 边界
+
+- macOS自带“终端”不支持OSC 52，选中后复制进不了系统剪贴板；没有做调用系统剪贴板命令的兜底（负责人未选）。
+- 复制的是纯文字；界面上折行的地方会带换行。实时区（尚未定稿的行）不可选。
+- 中文一个字占两格，鼠标落点按Textual的规则对齐到字；松开处的字也算选中。
+
+### 37.4 验证
+
+`tests/product_ui/test_selectable_transcript.py`：跨行拖选得到带中文的纯文字，`Ctrl+C`后`app.clipboard`为同一段；
+单行内选中ASCII与中文、整段选中；高亮只覆盖选中的字符且不改变显示宽度。同样的拖动在原来的`RichLog`上选中内容为空。
