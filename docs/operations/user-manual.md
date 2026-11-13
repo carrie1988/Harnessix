@@ -320,6 +320,10 @@ harnessix code configure --provider-kind openai_chat \
 
 只支持 HTTP 代理。只设置了 SOCKS 代理（如 `ALL_PROXY=socks5://…`）不会生效，`doctor` 会提示。本机和内网的自托管模型总是直连。
 
+Harnessix **不读取操作系统的“系统代理”设置**（Windows 的 Internet 选项、macOS 的网络偏好设置）。只开了 Clash、V2Ray 等工具的“系统代理”时，Harnessix 的模型请求是直连的；需要经代理时用上面两种方式之一。
+
+**Clash 等工具开启“虚拟网卡 / TUN 模式”时：** 本机所有连接都会被这类工具接管，Harnessix 的直连请求也不例外。如果同时用的是**全局模式**，国内模型服务（阿里云百炼、DeepSeek、智谱等）的请求会被送到代理节点再绕回国内，可能很慢、长时间没有回复或中途断开（界面显示“等待模型服务响应”，随后自动重试）。改用**规则模式**，或在代理工具里把模型服务的域名设为直连（如 `aliyuncs.com`、`deepseek.com`、`bigmodel.cn`）即可。
+
 ### 4.6 修改已有配置
 
 换服务商或模型时，再运行一次 `harnessix code configure`。向导会先显示当前模型并询问是否替换，回答 `y` 后按 4.1 重新选择；回答其他内容则保留原配置。
@@ -850,6 +854,7 @@ uv tool uninstall harnessix
 | 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export 变量名=你的Key`（变量名见提示，如 `DASHSCOPE_API_KEY`）后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#42-api-key) |
 | 配置时提示配置目录的权限不是 700，或目录不属于当前用户 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件；0.10.0b24 及更早的版本里，先运行 `harnessix exec` 再运行 `configure` 也会遇到 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
+| 开着 Clash 等工具的虚拟网卡（TUN）时，模型请求长时间“等待模型服务响应”，关掉 TUN 后马上恢复 | 代理工具多半是全局模式，把国内模型服务的请求也送到了代理节点。改用规则模式，或把模型服务域名（如 `aliyuncs.com`）设为直连，见 [4.5](#45-使用代理) |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key |
 | 自托管模型很快报错或回答被截断 | 检查模型上下文窗口；Ollama 默认只有 4096 |
 | 任务以“会话内容已经放不进配置的上下文窗口”结束 | 已完成的修改都保留着。模型支持更大的窗口时，按 `Ctrl+Q` 退出，重新运行 `harnessix code configure` 把 `--context-window-tokens` 调大（如 131072），再打开 Harnessix，选中原会话发送“继续”；不能调大时按 `Ctrl+N` 新建会话，简要说明进展后继续 |
