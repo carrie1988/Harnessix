@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 34
+version: 35
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -38,6 +38,7 @@ related_tests:
   - tests/test_exec_cli.py
   - tests/sandbox/test_native_policy.py
   - tests/tools/test_pinned_root.py
+  - tests/tools/test_windows_directory_cache.py
   - tests/product_ui/test_wrap_up.py
   - tests/tools/test_regex_grep_py315.py
   - tests/delivery/test_trusted_action_patch.py
@@ -1387,6 +1388,9 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 本机用16,000个文件的合成仓库在macOS上同样超时，属于三个平台的共性问题；性能分析定位到每个文件前后都从“/”（Windows从盘符）重新核对根。
 修改后macOS上同一仓库整仓grep约2.3秒完成。超时时返回部分结果是新需求，只记录；整仓glob的条目上限另行记录。
 Windows上的收益与正确性由发布会话在Windows真机上用Issue的组件脚本复测。
+
+Windows真机复测（发布会话，0.10.0b35候选）：macOS、Linux达标，Windows上Dify检出整仓grep仍约9秒超时（约0.57毫秒/文件），原因是每个文件仍从根逐段打开工作区内的各级父目录。ADR 0160第2版：一次读取操作内每个目录只打开并核对一次，文件只打开自身这一段，目录句柄共享读写、不共享删除，根在开头与结尾各核对一次。0.10.0b35发布说明里#21写作“macOS、Linux改善，Windows大仓库整仓grep仍超时”，本项随下一版发布，由发布会话在Windows真机上用合成仓库（30×18×30）与Dify检出复测。
+
 ## 50. 第三十六项：Python 3.15上的正则搜索引擎（Issue #10）
 
 ### 50.1 背景与决定

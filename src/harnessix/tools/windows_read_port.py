@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal, Protocol, cast
 
@@ -11,6 +12,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.tools.contracts import MAX_SCAN_BYTES, ReadErrorCode, ReadToolError
 from harnessix.tools.workspace import ReadOperation, WorkspaceReadPolicy, digest
 from harnessix.workspace.windows import WindowsWorkspaceRoot, windows_port_source_digest
+from harnessix.workspace.windows_directory_cache import DirectoryHandles
 
 
 class Observation(Protocol):
@@ -89,6 +91,38 @@ def file_revision(port: WindowsReadPort, path: str, observed: Observation) -> st
     )
 
 
+def _read_error(error: KernelError) -> ReadToolError:
+    code = {
+        "workspace_path_denied": "path_denied",
+        "workspace_wrong_file_type": "wrong_file_type",
+        "workspace_parent_missing": "not_found",
+        "workspace_snapshot_limit": "limit_exceeded",
+        "workspace_changed": "workspace_changed",
+    }.get(error.code, "io_failed")
+    return ReadToolError(cast(ReadErrorCode, code))
+
+
+@contextmanager
+def directory_scope(port: WindowsReadPort, operation: ReadOperation) -> Iterator[None]:
+    """一次读取操作内复用已核对的目录句柄（Beta Issue #21）；只用于真实的Windows根。"""
+
+    root = port.root_handle
+    if not isinstance(root, WindowsWorkspaceRoot) or operation.windows_directories is not None:
+        yield
+        return
+    directories = DirectoryHandles(root)
+    operation.windows_directories = directories
+    try:
+        yield
+    finally:
+        operation.windows_directories = None
+        directories.close()
+    try:
+        directories.verify_root()
+    except KernelError as error:
+        raise _read_error(error) from None
+
+
 def session_workspace_root(root: Path) -> WindowsWorkspaceRoot:
     """会话期间一直持有的工作区根：用户的编辑器与构建工具仍可在根目录内新建、改名文件。"""
 
@@ -131,7 +165,17 @@ class WindowsReadPort:
         max_bytes: int = MAX_SCAN_BYTES,
     ) -> Observation:
         operation.checkpoint()
+        directories = operation.windows_directories
         try:
+            if directories is not None:
+                observed = directories.observe(
+                    path,
+                    include_content=include_content,
+                    max_bytes=max_bytes,
+                    checkpoint=operation.checkpoint,
+                )
+                if observed is not None:
+                    return observed
             return self.root_handle.observe(
                 path,
                 access="read",
@@ -140,14 +184,7 @@ class WindowsReadPort:
                 checkpoint=operation.checkpoint,
             )
         except KernelError as error:
-            code = {
-                "workspace_path_denied": "path_denied",
-                "workspace_wrong_file_type": "wrong_file_type",
-                "workspace_parent_missing": "not_found",
-                "workspace_snapshot_limit": "limit_exceeded",
-                "workspace_changed": "workspace_changed",
-            }.get(error.code, "io_failed")
-            raise ReadToolError(cast(ReadErrorCode, code)) from None
+            raise _read_error(error) from None
 
     def observe_candidate(
         self,

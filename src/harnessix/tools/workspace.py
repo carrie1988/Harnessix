@@ -14,10 +14,13 @@ from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from threading import Event
 from types import TracebackType
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.tools.contracts import READ_TIMEOUT_SECONDS, ReadToolError
+
+if TYPE_CHECKING:
+    from harnessix.workspace.windows_directory_cache import DirectoryHandles
 
 _DENIED_NAMES = frozenset(
     {
@@ -69,6 +72,9 @@ class ReadOperation:
         self.deadline = time.monotonic() + timeout
         # Workspace.pinned_root在本次操作期间固定的根目录描述符；为None时每次打开都按路径核对根。
         self.pinned_root: int | None = None
+        # Windows：本次操作内已核对的目录句柄（windows_read_port.directory_scope）；
+        # 为None时每个文件都从根走完整的句柄链。
+        self.windows_directories: DirectoryHandles | None = None
 
     def checkpoint(self) -> None:
         if self.stopped.is_set():

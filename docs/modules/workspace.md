@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 24
+version: 25
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -34,6 +34,7 @@ related_tests:
   - tests/delivery/test_git_projection_capacity.py
   - tests/tools/test_windows_read_adapter.py
   - tests/tools/test_windows_native_runtime.py
+  - tests/tools/test_windows_directory_cache.py
   - tests/workspace/test_leases.py
   - tests/execution/test_plans.py
   - tests/trusted_actions/test_router.py
@@ -47,6 +48,10 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：Windows一次读取操作内每个目录只打开一次（ADR 0160第2版）
+
+- [`windows_directory_cache.DirectoryHandles`](../../src/harnessix/workspace/windows_directory_cache.py)按工作区相对路径保存一次读取操作内已核对的目录句柄（不是Reparse Point、是目录、最终路径在根下），以`_DIRECTORY_SHARE`打开（共享读写、不共享删除）；`observe`只打开文件本身这一段，再交给原来的`_observe_opened`。根在第一次使用前与`verify_root`时各按路径核对一次。目录数达到`MAX_CACHED_DIRECTORIES`或遇到系统错误时返回None，调用方走`WindowsWorkspaceRoot.observe`的完整句柄链。Beta Issue #21。
 
 ## 当前增量：Windows句柄链在根绑定后从根开始（ADR 0160）
 
@@ -1277,6 +1282,7 @@ Windows没有满足当前写证明的原生端口，Catalog不广告Patch。POSI
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 25 | `da4c70d7` 增量 | 2026-11-13 | Windows一次读取操作内每个目录只打开并核对一次（`windows_directory_cache.DirectoryHandles`），文件只打开自身这一段（ADR 0160第2版，Beta Issue #21） |
 | 24 | `824c7f20` 增量 | 2026-11-13 | Windows句柄链在根绑定后从根开始（`_ancestors`只用于绑定时），根的身份与最终路径照旧核对（ADR 0160，Beta Issue #21） |
 | 23 | `093f3e09` 增量 | 2026-11-13 | Windows路径中间的段是普通文件时报`workspace_wrong_file_type`（原为`workspace_path_denied`），与POSIX一致（ADR 0137第2版，Windows真机复测） |
 | 22 | `33f91ad7` 增量 | 2026-11-13 | Windows快照允许写目标位于缺失的父目录之下（`creates_missing_parents`），已有父级是文件时以`workspace_wrong_file_type`拒绝（ADR 0137第2版） |
