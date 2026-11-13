@@ -124,6 +124,8 @@ class TurnPacing:
 
     def _tick_checkpoint(self) -> None:
         """定时累计实际运行时间；到点且界面空闲时打开询问。"""
+        if not self.screen_stack:
+            return  # 应用正在关闭：界面已全部移除，定时器停下之前还可能再触发一次。
         view = self.controller.state.thread_view
         turn = None if view is None else view.current_turn
         meter = self.pacing_meter

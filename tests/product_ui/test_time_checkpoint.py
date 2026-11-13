@@ -228,3 +228,18 @@ async def test_stop_after_a_pause_leaves_the_task_stopped(
     texts = await _session(tmp_path, provider, drive)
     assert [kind for kind, _ in texts].count("user_message") == 1
     assert len(provider.requests) == 1
+
+
+async def test_a_checkpoint_tick_while_the_app_shuts_down_is_ignored(tmp_path: Path) -> None:
+    """0.10.0b23主线CI实测：退出时界面已全部移除，定时器又触发一次，取最上层界面抛出IndexError。"""
+    closed: list[ProductApp] = []
+
+    async def drive(app: ProductApp, pilot, controller: ProductController) -> None:
+        await pilot.press("g", "o", "enter")
+        await _wait_until(lambda: _turn_status(controller) == "completed", timeout_seconds=30)
+        closed.append(app)
+
+    await _session(tmp_path, ScriptedProvider([answer("做完了。")]), drive)
+    (app,) = closed
+    assert app.screen_stack == []
+    app._tick_checkpoint()

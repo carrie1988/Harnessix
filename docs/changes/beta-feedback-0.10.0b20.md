@@ -689,3 +689,42 @@ POSIX上`Path.mkdir(mode=0o700, parents=True)`只把权限用在最后一级，�
 - 真实终端界面（全新的HOME，配置在别处，确认信任工作区后进入界面）：0.10.0b24上`~/.harnessix`是700
   （信任记录先创建了它），`~/.harnessix/workspaces`由客户端状态目录的创建建成755；本修改后各级都是700。
   在进程里记录每一次目录创建，两个流程中其余按默认权限发起的创建都落在已经存在的目录上。
+
+### 25.6 发布前补充：找到文件系统根就停止
+
+发布会话合入时复核：`prepare_private_directory`在Windows上也会调用`make_private_directories`。盘符或网络共享不存在时，
+`Z:\`的上一级仍是`Z:\`，`os.path.lexists`一直为假，逐级向上的循环不会结束，进程卡住；原来的`mkdir(parents=True)`
+在这种情况下直接报错。循环现在到达文件系统根（上一级等于自己）就停止，由随后的`os.mkdir`报错，与原来的结果一致。
+`test_a_missing_filesystem_root_is_an_error_not_an_endless_walk`让任何路径都“不存在”、`os.mkdir`报盘符不存在：
+修复前循环越过根后仍在向上找（用例在第100次查找时判失败），修复后抛出`FileNotFoundError`。
+
+## 26. 第十二项：程序退出时运行时间检查点的定时器不再报错
+
+### 26.1 背景
+
+0.10.0b23的主线CI（macOS第5片）中，`test_an_unanswered_checkpoint_pauses_and_the_choice_starts_a_new_turn`
+在测试结束、应用关闭时失败：
+
+```text
+src/harnessix/product_ui/turn_pacing.py:132 in _tick_checkpoint
+    running, top = _turn_is_active(self.controller), self.screen_stack[-1]
+IndexError: list index out of range
+```
+
+同一提交在开发分支上通过，发布时只看了开发分支的门禁，主线的这次失败当时没有发现。
+
+### 26.2 根因
+
+运行时间检查点（第五项，ADR 0148）每秒运行一次`_tick_checkpoint`。应用关闭时Textual先移除全部界面，再停止定时器；
+两者之间定时器还可能触发一次，此时`screen_stack`为空，取最上层界面抛出`IndexError`。这是产品代码在真实退出路径上的问题，
+不是测试本身不稳：用户退出Harnessix时可能看到一段报错，进程以非正常状态结束。0.10.0b23与0.10.0b24都受影响。
+
+### 26.3 设计与边界
+
+`_tick_checkpoint`开头在`screen_stack`为空时直接返回：没有界面就不可能打开或关闭询问，本次也不再累计运行时间
+（应用已在关闭）。其余逻辑不变。
+
+### 26.4 验证
+
+`tests/product_ui/test_time_checkpoint.py::test_a_checkpoint_tick_while_the_app_shuts_down_is_ignored`用真实的Runtime、
+协议服务与终端界面完成一轮后关闭应用，确认界面已全部移除，再触发一次定时器回调：修复前抛出上面的`IndexError`，修复后不报错。

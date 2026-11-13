@@ -122,7 +122,7 @@ supersedes: []
 
 - **现象。** 还没有运行过`harnessix code configure`就先用`harnessix exec --config <别处>`，`~/.harnessix`与`~/.harnessix/workspaces`被建成755，之后`configure`以“配置目录的权限是 755，需要 700”拒绝。
 - **原因。** POSIX上`Path.mkdir(mode=0o700, parents=True)`只把权限用在最后一级，缺失的父目录按umask创建。服务端启动时[`state_owner._state_address`](../../src/harnessix/product_config/state_owner.py)准备状态目录的上一级，是先用`exec`的用户第一次创建`~/.harnessix`的地方。Windows分支原本就逐级创建私有目录（`prepare_state_parent`）。
-- **修改。** 新增[`private_directory.make_private_directories`](../../src/harnessix/product_config/private_directory.py)：逐级创建缺失的目录，每一级0700；已有的目录不改动；最终不是目录时抛出`OSError`。`_state_address`的POSIX分支改用它。
+- **修改。** 新增[`private_directory.make_private_directories`](../../src/harnessix/product_config/private_directory.py)：逐级创建缺失的目录，每一级0700；已有的目录不改动；最终不是目录时抛出`OSError`。向上查找到文件系统根（上一级等于自己）就停止：Windows上不存在的盘符或共享由随后的`os.mkdir`报错，而不是无限循环。`_state_address`的POSIX分支改用它。
 - **边界。** 显式指定的状态目录（`--state-directory`、`HARNESSIX_PRODUCT_STATE_DIRECTORY`）缺失的父目录同样按0700创建，需要共享的上级目录应事先建好。已经是755的目录不自动修改，`configure`照旧给出`chmod 700`的提示。
 - 回归见`tests/product_config/test_private_directory.py`。
 
@@ -2313,6 +2313,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
 | 146 | `6d0c6152` 增量 | 2026-11-13 | 状态目录缺失的各级父目录都按0700创建（`private_directory.make_private_directories`）：先用`exec`的用户不再得到755的`~/.harnessix`而被`configure`拒绝 |
 | 145 | `ce5b7386` 增量 | 2026-11-12 | 本机命令的系统指令升为v5，加入完成规则（做完就结束、已有检查只验证一次、无法验证的写进最终回答）；容器与外部边界指令不变（ADR 0149） |
 | 144 | `74b08375` 增量 | 2026-11-12 | `ModelProfile.thinking_effort`（低、中、高）与`thinking_budget_tokens`：字段类型、端点映射与校验在`profile_options.py`；向导对百炼qwen3.8-max/flash默认中档（`effort_tiers_verified`）；终端界面的完成守卫用交互模式（ADR 0146、0147） |

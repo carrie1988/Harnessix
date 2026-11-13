@@ -17,7 +17,8 @@ def make_private_directories(path: Path) -> None:
     """
     missing: list[Path] = []
     level = path
-    while not os.path.lexists(level):
+    # 根目录的上一级是它自己：Windows上不存在的盘符或共享根不能无限向上找，交给mkdir报错。
+    while not os.path.lexists(level) and level.parent != level:
         missing.append(level)
         level = level.parent
     for level in reversed(missing):

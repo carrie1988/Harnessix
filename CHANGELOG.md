@@ -4,6 +4,7 @@
 
 ### 修复
 
+- 退出终端界面时偶尔出现一段 `IndexError: list index out of range` 报错、程序以非正常状态结束（0.10.0b23 起）。原因是每秒运行一次的运行时间检查点在界面已全部关闭后又触发了一次；现在这时直接跳过
 - 还没有运行过 `harnessix code configure` 就先使用 `harnessix exec --config <别处的配置>`（或设置了 `HARNESSIX_PRODUCT_CONFIG`）时，`~/.harnessix` 和 `~/.harnessix/workspaces` 被建成权限 755，之后运行 `harnessix code configure` 会被拒绝：“配置目录的权限是 755，需要 700”。现在 Harnessix 自己创建的状态目录每一级都是 700。已经被建成 755 的目录不会自动修改，按提示运行一次 `chmod 700 ~/.harnessix` 即可（macOS 与 Linux；Windows 不受影响）
 
 ### 改变

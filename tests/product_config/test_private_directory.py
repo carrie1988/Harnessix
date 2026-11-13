@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from harnessix.product_config import private_directory
 from harnessix.product_config.private_directory import make_private_directories
 from harnessix.product_config.state_owner import product_state_owner
 from harnessix.product_ui import ClientStateStore
@@ -68,6 +69,27 @@ def test_a_file_on_the_path_is_an_error(tmp_path: Path) -> None:
         make_private_directories(occupied)
     with pytest.raises(OSError):
         make_private_directories(occupied / "below")
+
+
+def test_a_missing_filesystem_root_is_an_error_not_an_endless_walk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Windows上盘符或网络共享不存在时，连根目录都不存在；逐级向上找到根就必须停下。"""
+    looked_at: list[str] = []
+
+    def nothing_exists(path: object) -> bool:
+        looked_at.append(str(path))
+        assert len(looked_at) < 100, "越过文件系统根仍在向上找"
+        return False
+
+    def missing_volume(path: object, mode: int = 0o777) -> None:
+        raise FileNotFoundError(str(path))
+
+    monkeypatch.setattr(private_directory.os.path, "lexists", nothing_exists)
+    monkeypatch.setattr(private_directory.os, "mkdir", missing_volume)
+
+    with pytest.raises(FileNotFoundError):
+        make_private_directories(tmp_path / "state" / "runtime")
 
 
 @posix_only
