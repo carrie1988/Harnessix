@@ -854,7 +854,7 @@ Plan/指针/回执篡改、陌生目录、粘性回退、四阶段中断、实�
 ## 不同版本升级与回退的固定验收范围
 
 [R4升级详设](changes/m09-r4-different-version-upgrade.md)区分同Wheel重装与真实不同版本。
-新[验收控制器](../scripts/installed_product_upgrade_acceptance.py)仅接受原归档`0.1.0`和预览版`0.10.0b35`，
+新[验收控制器](../scripts/installed_product_upgrade_acceptance.py)仅接受原归档`0.1.0`和预览版`0.10.0b36`，
 拒绝错误摘要、重复元数据、同版本、脚本Revision漂移及不完整Thread集合；阶段超时不自动重试。
 每阶段实际安装隔离解释器验证正式SDK/CLI、原六库/Key备份恢复、稳定恢复ID和回退后读写。
 两份Wheel按精确哈希离线安装，源码外实际运行和三平台结果独立记载；没有模型Turn，
