@@ -81,9 +81,10 @@ supersedes: []
 | 十四 | `--service-failure-retries 2`之后，连续HTTP 503仍发出6次请求（0.10.0b24，Issue #2） | 配置了它时，一次请求最多尝试N+1次 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第2版 |
 | 十五 | 模型迟迟不返回首帧、或读超时后重试的几分钟里，界面一直是“思考中”（0.10.0b25，Issue #7、#11） | 显示“等待模型服务响应 · 已等待 N 秒” | 本文第29节 |
 | 十六 | 新会话续做约10分钟后以`context_artifact_timeout`中断，没有恢复办法（0.10.0b24，Issue #8） | 补恢复说明；根本修复待定 | 本文第30节 |
+| 十七 | 退出终端界面时偶尔打印一段`IndexError`报错堆栈（0.10.0b23起） | 界面全部关闭后，运行时间检查点的定时器直接跳过 | 本文第31节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至十六项在第26～30节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至十七项在第26～31节。
 
 ## 2. 需求背景
 
@@ -710,37 +711,6 @@ POSIX上`Path.mkdir(mode=0o700, parents=True)`只把权限用在最后一级，�
 `test_a_missing_filesystem_root_is_an_error_not_an_endless_walk`让任何路径都“不存在”、`os.mkdir`报盘符不存在：
 修复前循环越过根后仍在向上找（用例在第100次查找时判失败），修复后抛出`FileNotFoundError`。
 
-## 26. 第十二项：程序退出时运行时间检查点的定时器不再报错
-
-### 26.1 背景
-
-0.10.0b23的主线CI（macOS第5片）中，`test_an_unanswered_checkpoint_pauses_and_the_choice_starts_a_new_turn`
-在测试结束、应用关闭时失败：
-
-```text
-src/harnessix/product_ui/turn_pacing.py:132 in _tick_checkpoint
-    running, top = _turn_is_active(self.controller), self.screen_stack[-1]
-IndexError: list index out of range
-```
-
-同一提交在开发分支上通过，发布时只看了开发分支的门禁，主线的这次失败当时没有发现。
-
-### 26.2 根因
-
-运行时间检查点（第五项，ADR 0148）每秒运行一次`_tick_checkpoint`。应用关闭时Textual先移除全部界面，再停止定时器；
-两者之间定时器还可能触发一次，此时`screen_stack`为空，取最上层界面抛出`IndexError`。这是产品代码在真实退出路径上的问题，
-不是测试本身不稳：用户退出Harnessix时可能看到一段报错，进程以非正常状态结束。0.10.0b23与0.10.0b24都受影响。
-
-### 26.3 设计与边界
-
-`_tick_checkpoint`开头在`screen_stack`为空时直接返回：没有界面就不可能打开或关闭询问，本次也不再累计运行时间
-（应用已在关闭）。其余逻辑不变。
-
-### 26.4 验证
-
-`tests/product_ui/test_time_checkpoint.py::test_a_checkpoint_tick_while_the_app_shuts_down_is_ignored`用真实的Runtime、
-协议服务与终端界面完成一轮后关闭应用，确认界面已全部移除，再触发一次定时器回调：修复前抛出上面的`IndexError`，修复后不报错。
-
 ## 26. 第十二项：没有名称的工具调用只拒绝该次调用
 
 ### 26.1 背景与决定
@@ -919,3 +889,36 @@ Issue #8（0.10.0b24，macOS）：在新会话里续做一个备份校验CLI，�
 
 对话与F1说明原因和办法：可以先发送“继续”（机器一时繁忙时有效）；再次出现时按Ctrl+N新建会话。
 改变核对方式或时限涉及上述原设计决定，交负责人决定。
+
+## 31. 第十七项：程序退出时运行时间检查点的定时器不再报错
+
+### 31.1 背景
+
+0.10.0b23的主线CI（macOS第5片）中，`test_an_unanswered_checkpoint_pauses_and_the_choice_starts_a_new_turn`
+在测试结束、应用关闭时失败：
+
+```text
+src/harnessix/product_ui/turn_pacing.py:132 in _tick_checkpoint
+    running, top = _turn_is_active(self.controller), self.screen_stack[-1]
+IndexError: list index out of range
+```
+
+同一提交在开发分支上通过，发布时只看了开发分支的门禁，主线的这次失败当时没有发现。
+
+### 31.2 根因
+
+运行时间检查点（第五项，ADR 0148）每秒运行一次`_tick_checkpoint`。应用关闭时Textual先移除全部界面，再停止定时器；
+两者之间定时器还可能触发一次，此时`screen_stack`为空，取最上层界面抛出`IndexError`。这是产品代码在真实退出路径上的问题，
+不是测试本身不稳：用户退出Harnessix时终端里可能打印一段报错堆栈，看起来像程序崩溃。0.10.0b23与0.10.0b24都受影响。
+`product_ui/cli.py`不读取Textual的`return_code`，所以退出码多半仍是0（没有实测）；0.10.0b25发布时这里曾写成“进程以非正常状态结束”，
+0.10.0b26改正。
+
+### 31.3 设计与边界
+
+`_tick_checkpoint`开头在`screen_stack`为空时直接返回：没有界面就不可能打开或关闭询问，本次也不再累计运行时间
+（应用已在关闭）。其余逻辑不变。
+
+### 31.4 验证
+
+`tests/product_ui/test_time_checkpoint.py::test_a_checkpoint_tick_while_the_app_shuts_down_is_ignored`用真实的Runtime、
+协议服务与终端界面完成一轮后关闭应用，确认界面已全部移除，再触发一次定时器回调：修复前抛出上面的`IndexError`，修复后不报错。
