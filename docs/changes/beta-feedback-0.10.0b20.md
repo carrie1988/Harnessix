@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 33
+version: 34
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -38,6 +38,7 @@ related_tests:
   - tests/test_exec_cli.py
   - tests/sandbox/test_native_policy.py
   - tests/tools/test_pinned_root.py
+  - tests/product_ui/test_wrap_up.py
   - tests/tools/test_regex_grep_py315.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
@@ -52,7 +53,6 @@ related_tests:
   - tests/agent/test_completion_guard.py
   - tests/product_ui/test_rendering_host_notices.py
   - tests/product_config/test_zero_config.py
-  - tests/product_ui/test_wrap_up.py
   - tests/product_ui/test_time_checkpoint.py
   - tests/workspace/test_plan_binding_ignores_directory_members.py
   - tests/agent/test_generation_progress.py
@@ -1325,6 +1325,9 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 设计与验证见[ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第2版：说明记入本轮之后，尚未开始、经审批边界的
 调用以`tool_wrap_up_requested`未执行，之后的模型步骤不提供工具；同一步里已提出的只读读取照常完成。与平台无关。
 负责人2026-11-13要求影响易用性与体验的问题都要处理，此前搁置的这一项随之修复。
+
+
+补充（发布会话Windows真机复测）：按`Ctrl+F`时调用已经在等审批、窗口还没弹出，第2版里窗口照常弹出、批准后照样执行。第3版由终端界面把这条审批直接拒绝并不再弹窗，见ADR 0148第3版。
 
 ## 45. 第三十一项：无头模式的审批提示读到输入结尾（Issue #18）
 

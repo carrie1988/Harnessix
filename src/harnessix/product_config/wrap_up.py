@@ -27,7 +27,7 @@ WRAP_UP_PROMPT: Final = (
     "上一轮已暂停。请不要再做新的修改或检查，直接给出最终总结："
     "已经完成了什么、哪些没有来得及做、哪些你没能验证需要我自己确认。"
 )
-_WRAP_UP_TEXTS: Final = frozenset({WRAP_UP_STEER, WRAP_UP_PROMPT})
+WRAP_UP_TEXTS: Final = frozenset({WRAP_UP_STEER, WRAP_UP_PROMPT})
 WRAP_UP_REFUSAL: Final = AgentFailure(
     code="tool_wrap_up_requested",
     message="你已要求收尾，这次调用没有执行；请直接给出最终总结",
@@ -40,7 +40,7 @@ def wrap_up_requested(turn: Turn) -> bool:
     return any(
         isinstance(item.content, TextContent)
         and item.content.kind == "user_message"
-        and item.content.text in _WRAP_UP_TEXTS
+        and item.content.text in WRAP_UP_TEXTS
         for item in turn.items
     )
 

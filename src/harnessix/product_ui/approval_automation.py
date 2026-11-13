@@ -7,10 +7,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Final
+from typing import Final, Literal
 from uuid import UUID
 
 from harnessix.product_config.command_rules import rule_label
+from harnessix.product_config.wrap_up import WRAP_UP_TEXTS
 from harnessix.product_ui.approval_rules import CommandRules, host_command
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_service import InteractionService
@@ -21,9 +22,11 @@ from harnessix.product_ui.interactions import (
     pending_approval,
 )
 from harnessix.product_ui.projection import ProductViewState
+from harnessix.protocol.contracts import PublicTextContent
 
 EDIT_APPROVAL_TYPES: Final = frozenset({"patch", "patch_batch"})
 AUTO_APPROVAL_REASON: Final = "用户已选择在本会话自动批准此类操作"
+WRAP_UP_REJECTION_REASON: Final = "你已要求收尾，这次操作不再执行"
 
 
 @dataclass(slots=True)
@@ -94,14 +97,31 @@ async def auto_approve_pending(
     except ProductUIError:
         # 事件分页间的瞬时状态，下一轮轮询再判断，不打扰用户。
         return None
+    # 收尾之后还在等审批的操作直接拒绝（Beta Issue #4）：Ctrl+F时调用已经提出、审批窗口还没弹出。
+    wrap_up = wrap_up_requested(view)
     reason = None if pending is None else automation.reason(pending)
+    reason = WRAP_UP_REJECTION_REASON if wrap_up and pending is not None else reason
     if pending is None or reason is None or not automation.claim_attempt(pending):
         return None
     evidence = await service.load_approval_evidence(view, pending.binding)
-    if not approval_review(view, evidence).approve_allowed:
+    if not wrap_up and not approval_review(view, evidence).approve_allowed:
         return None
+    outcome: Literal["approved", "rejected"] = "rejected" if wrap_up else "approved"
     return await service.respond_approval(
-        view,
-        evidence,
-        RespondApprovalIntent(pending.binding, outcome="approved", reason=reason),
+        view, evidence, RespondApprovalIntent(pending.binding, outcome=outcome, reason=reason)
+    )
+
+
+def wrap_up_requested(view: ProductViewState | None) -> bool:
+    """当前这一轮是否已记入收尾说明（与宿主的判定同一份文本）。"""
+
+    if view is None or view.current_turn is None:
+        return False
+    turn = view.current_turn
+    return any(
+        entry.turn_id == turn.turn_id
+        and isinstance(entry.item.content, PublicTextContent)
+        and entry.item.content.kind == "user_message"
+        and entry.item.content.text in WRAP_UP_TEXTS
+        for entry in view.items
     )

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 153
+version: 154
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -2360,6 +2360,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 154 | `9dca9d42` 增量 | 2026-11-13 | `wrap_up.WRAP_UP_TEXTS`改为公开，终端界面据此拒绝收尾之后还在等的审批（ADR 0148第3版，Beta Issue #4） |
 | 153 | `76f7dfed` 增量 | 2026-11-13 | 收尾之后不再发起新的修改或检查：`wrap_up.WrapUpToolView`不准入尚未开始、经审批边界的调用，之后的步骤不提供工具（ADR 0148第2版，Beta Issue #4） |
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
 | 152 | `458dda3e` 增量 | 2026-11-13 | 运行时指令按Profile链写出模型身份（`model_identity.py`，`harnessix.model-identity/v1`），被问到时按配置回答（Beta Issue #17） |

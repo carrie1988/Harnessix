@@ -8,6 +8,7 @@ from typing import Any, Literal
 from textual.app import App
 from textual.timer import Timer
 
+from harnessix.product_ui.approval_automation import wrap_up_requested
 from harnessix.product_ui.controller import ProductController, ToggleAutoAcceptIntent
 from harnessix.product_ui.error_help import current_error_help
 from harnessix.product_ui.errors import ProductUIError
@@ -52,7 +53,8 @@ class InteractionPresenter:
             approval, question = pending_approval(view), pending_question(view)
         except ProductUIError:
             return None
-        if approval is not None:
+        # 收尾之后的审批由Controller直接拒绝，不再弹窗请用户批准（Beta Issue #4）。
+        if approval is not None and not wrap_up_requested(view):
             return "approval", approval.binding
         if question is not None:
             return "question", question.binding

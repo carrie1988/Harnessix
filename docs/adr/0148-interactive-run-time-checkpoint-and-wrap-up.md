@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners: [product]
 modules: [product_ui, product_config]
@@ -97,3 +97,17 @@ supersedes: []
 已提出的只读读取照常完成但之后不再提供工具；其他补充说明不影响；检查点“收尾”开的新一轮从一开始就不提供工具；界面文本与宿主常量一致）。
 真实终端界面（tmux，模型换成在第1步扣住4秒后提出一条沙箱外命令的脚本，第1.5秒按`Ctrl+F`）：修复后命令以“你已要求收尾”
 未执行、第2次请求0个工具、以总结结束；修复前的代码上同一命令照常进入“等待你审批”，第2次请求仍有12个工具。
+
+## 修订（第3版，2026-11-13）：收尾时已经在等审批的操作
+
+发布会话在Windows真机上复测第2版（3/3）：按`Ctrl+F`时，第3步的`python -m unittest`已经提出、审批请求已经建立，审批窗口还没弹出
+（自动弹出有2秒延迟）。收尾说明记入之后窗口照常弹出，批准后命令照样执行，第4步才以总结结束。原因：调用准入只在建立审批请求之前
+检查一次，审批请求已经存在时不再经过它。Linux上沙箱内命令不需要审批，没有这个窗口。
+
+决定：终端界面在本轮记入收尾说明后，把还在等待的审批直接拒绝（`approval_automation.auto_approve_pending`，原因“你已要求收尾，
+这次操作不再执行”），并且不再自动弹出这条审批的窗口（`interaction_presenter`）。拒绝总是安全的，不需要先满足批准所需的证据条件。
+判定与宿主共用同一份收尾文本（`product_config/wrap_up.WRAP_UP_TEXTS`）。
+
+验证：`tests/product_ui/test_wrap_up.py::test_wrap_up_rejects_an_approval_still_waiting_for_its_dialog`（修复前该轮一直停在等待审批）；
+真实终端界面（tmux，脚本模型立即提出一条需要审批的沙箱外命令，1秒后按`Ctrl+F`，窗口尚未弹出）：修复前停在“等待你审批”，
+修复后审批记为“已拒绝：你已要求收尾，这次操作不再执行”，第2次请求0个工具，以总结结束，命令没有执行。

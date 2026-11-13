@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 62
+version: 63
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -1247,6 +1247,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 63 | `9dca9d42` 增量 | 2026-11-13 | 收尾之后还在等的审批由界面直接拒绝、不再弹窗（`approval_automation.wrap_up_requested`，ADR 0148第3版，Beta Issue #4） |
 | 62 | `1d8132c3` 增量 | 2026-11-13 | 多行粘贴不再只剩第一行：任务输入框、补充说明与回答问题的输入框改用`paste_input.PasteAwareInput`（Beta Issue #19） |
 | 61 | `76f7dfed` 增量 | 2026-11-13 | 一键收尾与检查点“收尾”的说明文本改为引用`product_config/wrap_up.py`的常量，宿主据此保证收尾（ADR 0148第2版，Beta Issue #4） |
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
