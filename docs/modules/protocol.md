@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 13
+version: 14
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -27,6 +27,11 @@ supersedes: []
 ---
 
 # Protocol模块设计
+
+## 当前增量：客户端判断增量是否属于思考预览
+
+- [`delta_streams.is_reasoning_delta`](../../src/harnessix/protocol/delta_streams.py)回答“这条`PublicItemDelta`是思考预览还是助手正文”：条目身份等于`uuid5(turn_id, "harnessix.reasoning-preview/v1:<step>")`即为思考预览。只依赖SDK与公共协议的客户端（薄CLI）由此区分两种增量，不必引用Agent内核。合同、Schema与线上格式不变。
+- 回归见`tests/app_server/test_agent_cli_thinking.py`。
 
 ## 当前增量：生成进度能力（ADR 0156）
 
@@ -1551,6 +1556,7 @@ Params摘要、State、Outcome摘要和两个时间。执行时重新读取并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 14 | `6d0c6152` 增量 | 2026-11-13 | 新增`delta_streams.is_reasoning_delta`，供只依赖公共协议的客户端区分思考预览与正文增量；合同与Schema不变 |
 | 13 | `a22e64ee` 增量 | 2026-11-13 | 握手增加`generation_progress`能力，生成进度沿用Delta格式；`protocol_json_size`由`contracts.py`移到`codec.py`（没有调用方，行为不变）（ADR 0156） |
 | 12 | `1d857b39` 增量 | 2026-11-10 | 握手增加`reasoning_deltas`能力，思考预览沿用Delta格式（0.10.0b9） |
 | 8 | `aa3372c0eb0c3b4ab674b19d26754a80dd035b46` | 2026-09-24 | Thread列表保持Protocol 1.0公开字段，由Session提供先筛选后分页与稳定游标；不增加外部Action服务 |

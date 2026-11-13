@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 8
+version: 9
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -45,6 +45,7 @@ related_tests:
   - tests/product_ui/test_time_checkpoint.py
   - tests/workspace/test_plan_binding_ignores_directory_members.py
   - tests/agent/test_generation_progress.py
+  - tests/app_server/test_agent_cli_thinking.py
 supersedes: []
 ---
 
@@ -65,9 +66,10 @@ supersedes: []
 | 七 | 任务早已做完，模型又自己验证、修改了一个多小时 | 本机模式的模型指令加入完成规则：做完就结束，已有检查只验证一次，无法验证的写进最终回答 | [ADR 0149](../adr/0149-completion-rule-in-native-instructions.md) |
 | 八 | 审批期间工作区里多出无关文件，批准后操作没有执行，要重新发起、再批准一次 | 计划对目录只绑定对象与权限，不绑定有哪些成员 | [ADR 0143](../adr/0143-plans-bind-directories-without-their-members.md) |
 | 九 | 一次模型请求持续几分钟，界面只有静止的“思考中”，Token与费用不变，看起来像卡死 | 请求进行中显示生成阶段与估算的Token、费用 | [ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md) |
+| 十 | `harnessix exec`的过程文本里，思考内容没有标注，还和下一行接在一起 | 思考的每一行以“思考：”开头，其后的输出另起一行 | 本文第24节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十项在第24节。
 
 ## 2. 需求背景
 
@@ -581,3 +583,44 @@ flowchart LR
 
 - 经协议直接连接产品服务进程：补发生效后，参数开头的10个字节在1秒内发布（`105 0 10 apply_patch_batch`），
   26秒后整段到达时发布最终值。
+
+## 24. 第十项：无头过程文本里的思考标注
+
+### 24.1 背景与决定
+
+`harnessix exec`把运行过程写到标准错误。0.10.0b22上核对生成进度时发现、0.10.0b24上复现：
+
+```text
+Turn状态：calling_model
+I'm going to read the README.md file.工具开始：read_file
+```
+
+第二行的前半句是模型的思考，后半句是工具调用。SDK客户端一律声明思考预览能力，薄CLI把收到的思考增量与正文增量
+一样直接写出：没有标注；思考预览没有对应的Item，也就没有Item结束事件来换行。负责人在三个选项里选了加标注
+（另两个是`exec`不再输出思考、不改）：不输出的话，模型长时间思考时日志没有任何动静，CI里看起来像卡住。
+
+### 24.2 设计
+
+- 薄CLI用`LabelledThinkingConsole`包装实际的Console（`agent_cli.py`）：
+  - 思考预览的每一行以“思考：”开头；空行不输出。逐行标注使日志可以按行区分与过滤，例如`grep -v '^思考：'`；
+  - 其后的任何输出——正文增量、事件行（工具、计划、Turn状态）、向人提问——之前先结束未写完的思考行；
+  - 正文增量与其他输出原样写出，行为不变。
+- 思考预览用`protocol.delta_streams.is_reasoning_delta`识别（条目身份由轮次与步骤派生）。薄CLI按依赖规则只能引用
+  SDK与公共协议，所以这个判断放在协议层，而不是让薄CLI引用Agent内核。
+
+### 24.3 边界
+
+- 只改过程文本。摘要JSON、`--events-file`与终端界面不受影响；`--quiet`照旧不输出过程文本。
+- 一个模型步骤里思考总在正文之前（思考预览在出现其他内容后即结束），所以不处理“正文写到一半又来思考”的情形。
+- 思考预览每步最多64 KiB（原有上限），超出部分不显示。
+
+### 24.4 验证
+
+- `tests/app_server/test_agent_cli_thinking.py`：思考之后接工具调用、接正文、接Turn状态、接向人提问，四种情形都另起一行；
+  多行思考逐行带标注、空行不输出；没有思考的回复与原来一致。前四个用例在0.10.0b24的代码上失败。
+- 真实运行（`harnessix exec`，百炼qwen3.8-flash，任务“读取README.md，告诉我第一行写了什么”）：
+
+| 版本 | 过程文本 |
+|---|---|
+| 0.10.0b24 | `I'm going to read the README.md file.工具开始：read_file` |
+| 本修改 | `思考：The user is asking to read the first line of README.md.`，下一行`工具开始：read_file`；第二步两段思考各自以“思考：”开头，回复另起一行 |

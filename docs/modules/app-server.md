@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 13
+version: 14
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -18,12 +18,20 @@ related_tests:
   - tests/app_server/test_budget_mapping.py
   - tests/app_server/test_server_sdk.py
   - tests/app_server/test_agent_cli.py
+  - tests/app_server/test_agent_cli_thinking.py
   - tests/product_config/test_server_and_cli.py
   - tests/protocol/test_requests.py
 supersedes: []
 ---
 
 # App Server模块设计
+
+## 当前增量：薄CLI给思考预览加标注
+
+- 薄CLI（[`agent_cli.py`](../../src/harnessix/agent_cli.py)，`harnessix exec`的过程文本由它输出）此前把思考预览增量与正文增量一样直接写出：没有标注；思考预览没有对应的Item，也就没有Item结束事件来换行，下一条输出（如“工具开始：read_file”）接在同一行。
+- 现在由`LabelledThinkingConsole`包装实际的Console：思考预览的每一行以“思考：”开头，空行不输出；其后的任何输出（正文增量、事件行、向人提问）之前先结束未写完的思考行。正文增量与其他输出不变。
+- 思考预览用[`protocol.delta_streams.is_reasoning_delta`](../../src/harnessix/protocol/delta_streams.py)识别，薄CLI仍只依赖SDK与公共协议。
+- 回归见`tests/app_server/test_agent_cli_thinking.py`。
 
 ## 当前增量：预览流按能力过滤（ADR 0156）
 
@@ -1235,6 +1243,7 @@ App Server当前没有注入[`Observability`](observability.md)端口，也没�
 - Delta低延迟、持久终态、Deadline边界、1000条溢出Gap和能力门禁；
 - Artifact只在Scoped Reader装配时广告并按页读取；
 - 薄CLI只依赖SDK完成协商上限内分页、提问、快速终态回放和Diff后审批；
+- 薄CLI把思考预览逐行标注为“思考：”，其后的正文、事件行与提问另起一行；
 - 薄CLI遇到自身审批策略不处理的待审批项时，先等`SYSTEM_DECISION_GRACE_SECONDS`（3秒）并以1秒等待继续读事件，宿主系统策略（本机沙箱内命令自动批准）在此期间决定的不再提示人工；仍未决定才提示或在非交互时判为需要人工；
 - 薄CLI的事件页被服务端以`response_too_large`（超过协商消息字节）或`public_output_limit`（超过公开数据保护扫描上限）拒绝时，减半页长重读，页长随后保持缩小；
 - Product启动失败不会提前激活配置或开放协议，固定Workspace拒绝其他Create根。
@@ -1378,6 +1387,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 14 | `6d0c6152` 增量 | 2026-11-13 | 薄CLI的过程文本给思考预览逐行加“思考：”标注，其后的输出另起一行（`LabelledThinkingConsole`）；此前思考内容没有标注并与下一条输出接在同一行 |
 | 13 | `a22e64ee` 增量 | 2026-11-13 | 预览流（思考预览、生成进度）的开关合并为`preview_streams.PreviewStreams`，握手时按客户端能力确定，`events/next`据此滤掉未声明的预览增量；新增`generation_progress`能力（ADR 0156） |
 | 12 | `1d857b39` 增量 | 2026-11-10 | 未声明`reasoning_deltas`的连接不收思考预览增量（0.10.0b9） |
 | 11 | `6376b10c` 增量 | 2026-11-10 | 薄CLI对自身不处理的待审批项先等3秒系统决定，修复`exec`在沙箱命令自动批准前误判需要人工（0.10.0b2） |

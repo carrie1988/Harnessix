@@ -30,6 +30,7 @@ from harnessix.protocol.contracts import (
     ThreadView,
     TurnStatePublicEvent,
 )
+from harnessix.protocol.delta_streams import is_reasoning_delta
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, SubprocessAgentTransport
 from harnessix.sdk.event_pages import read_event_page
 
@@ -76,6 +77,46 @@ class StandardAgentConsole:
         return await asyncio.to_thread(input, text)
 
 
+THINKING_LABEL = "思考："
+
+
+class LabelledThinkingConsole:
+    """给思考预览逐行加“思考：”标注的Console；其后的任何输出之前先结束未写完的思考行。
+
+    思考预览没有对应的Item，不像正文那样由Item结束事件换行；不在这里收尾，下一条输出会接在同一行。
+    """
+
+    def __init__(self, console: AgentConsole) -> None:
+        self._console = console
+        self._thinking_line_open = False
+
+    def write(self, text: str, *, end: str = "\n") -> None:
+        self._end_thinking_line()
+        self._console.write(text, end=end)
+
+    async def prompt(self, text: str) -> str:
+        self._end_thinking_line()
+        return await self._console.prompt(text)
+
+    def stream(self, delta: PublicItemDelta) -> None:
+        """写出一段实时增量：正文原样接续；思考的每一行以标注开头，空行不输出。"""
+        if not is_reasoning_delta(delta):
+            self.write(delta.delta, end="")
+            return
+        for index, line in enumerate(delta.delta.split("\n")):
+            if index:
+                self._end_thinking_line()
+            if line:
+                labelled = line if self._thinking_line_open else THINKING_LABEL + line
+                self._console.write(labelled, end="")
+                self._thinking_line_open = True
+
+    def _end_thinking_line(self) -> None:
+        if self._thinking_line_open:
+            self._console.write("")
+            self._thinking_line_open = False
+
+
 class ThinAgentCLI:
     """只消费Agent SDK的薄交互层；Session和Agent状态机仍归App Server。"""
 
@@ -91,7 +132,7 @@ class ThinAgentCLI:
         if not actor or len(actor) > 256:
             raise ValueError("CLI actor长度必须为1到256")
         self.client = client
-        self.console = console or StandardAgentConsole()
+        self.console = LabelledThinkingConsole(console or StandardAgentConsole())
         self.actor = actor
         self.approval_policy = approval_policy
         # 回放会从头重读事件；按游标去重后每个持久事件只交给回调一次。
@@ -327,7 +368,7 @@ class ThinAgentCLI:
         if delta.item_id in self._gapped_text or delta.item_id in self._completed_text:
             return
         self._streamed_text.add(delta.item_id)
-        self.console.write(delta.delta, end="")
+        self.console.stream(delta)
 
     async def run_turn(
         self,

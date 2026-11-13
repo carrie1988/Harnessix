@@ -730,7 +730,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 | `--max-output-chars`、`--max-tool-calls-per-step` | 单步输出与工具调用数量上限 |
 | `--summary-file` | 摘要写入文件，默认输出到标准输出 |
 | `--events-file` | 按发生顺序把事件逐行写成 JSONL |
-| `--quiet` | 不输出过程文本（过程文本默认写到标准错误） |
+| `--quiet` | 不输出过程文本（过程文本默认写到标准错误；其中模型的思考内容每一行以“思考：”开头） |
 | `--resume-thread <ID>` | 进程中断后，恢复该会话并等待任务结束 |
 | `--config`、`--profile`、`--action-config`、`--state-directory`、`--git-executable` | 同 `harnessix code` |
 
