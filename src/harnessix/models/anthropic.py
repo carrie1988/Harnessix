@@ -14,13 +14,14 @@ from anthropic.types.message_create_params import MessageCreateParamsStreaming
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.ids import new_id
-from harnessix.agent.usage import ModelAttemptStarted, ModelUsageObserved
+from harnessix.agent.usage import ModelAttemptStarted
 from harnessix.models._anthropic_http import AnthropicTransport
 from harnessix.models._anthropic_mapping import build_request
 from harnessix.models._anthropic_stream import AnthropicStream
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._provider_io import (
     finish_attempt,
+    persistent_output,
     read_key,
     retry_after_seconds,
     retry_delay_seconds,
@@ -183,7 +184,7 @@ class AnthropicProvider:
                         break
                     for event in state.feed(chunk):
                         cancel.checkpoint()
-                        exposed = exposed or not isinstance(event, ModelUsageObserved)
+                        exposed = exposed or persistent_output(event)
                         yield event
                 completed = state.finish()
                 terminal = completed[-1]

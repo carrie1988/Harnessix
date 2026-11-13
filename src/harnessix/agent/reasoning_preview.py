@@ -38,6 +38,9 @@ class ReasoningPreview:
     published_bytes: int = 0
     sequence: int = 0
     ended: bool = False
+    # 断开重试后新尝试的思考另起一段：用新的保护内容身份（已收尾的不能再写），前面空一行。
+    segment: int = 0
+    separator: str = ""
 
     async def observe(self, event: ProviderEvent) -> bool:
         """思考增量在此消费并返回True；其他事件到来即视为思考结束，返回False交回原流程。"""
@@ -45,19 +48,33 @@ class ReasoningPreview:
         if not isinstance(event, ReasoningDelta):
             await self._end()
             return False
-        size = len(event.delta.encode("utf-8", "replace"))
+        delta = self.separator + event.delta
+        size = len(delta.encode("utf-8", "replace"))
         if not self.ended and self.published_bytes + size <= MAX_REASONING_PREVIEW_BYTES:
             self.published_bytes += size
-            token, delta = self.token, event.delta
-            self._emit(await protect_text(self.protection, REASONING_CONTENT_ID, delta, token))
+            self.separator = ""
+            self._emit(await protect_text(self.protection, self._content_id, delta, self.token))
         return True
+
+    async def restart(self) -> None:
+        """同一步骤的新尝试从头思考：先放出上一段被扣住的尾部，新的思考空一行接着显示。"""
+
+        await self._end()
+        if self.published_bytes:
+            self.segment, self.ended, self.separator = self.segment + 1, False, "\n\n"
 
     async def _end(self) -> None:
         # 公开保护会扣住末尾可能构成密钥的字节，收尾才放出；之后本步骤的思考不再预览。
         if self.ended or not self.published_bytes:
             return
         self.ended = True
-        self._emit(await protect_text(self.protection, REASONING_CONTENT_ID, None, self.token))
+        self._emit(await protect_text(self.protection, self._content_id, None, self.token))
+
+    @property
+    def _content_id(self) -> str:
+        return (
+            REASONING_CONTENT_ID if not self.segment else f"{REASONING_CONTENT_ID}.{self.segment}"
+        )
 
     def _emit(self, prefix: str) -> None:
         if not prefix:

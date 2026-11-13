@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 35
+version: 36
 code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
@@ -35,6 +35,7 @@ related_tests:
   - tests/models/test_anthropic_mapping.py
   - tests/models/test_tool_alias_identity.py
   - tests/models/test_attempt_usage.py
+  - tests/agent/test_retry_after_thinking_break.py
   - tests/models/test_attempt_crash_recovery.py
   - tests/models/test_billing_metadata.py
   - tests/models/test_pricing.py
@@ -47,6 +48,12 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：只出过思考与进度就断开的请求照常重试（ADR 0144第3版）
+
+- “语义暴露”改由[`_provider_io.persistent_output`](../../src/harnessix/models/_provider_io.py)判断，OpenAI Chat与Anthropic两个适配器共用：`ResponseStarted`、`ReasoningDelta`、`ToolArgumentsProgress`和`ModelUsageObserved`不建Item、不进模型历史，只出现过这些事件时连接断开仍按原规则有界重试；出现过正文、工具调用或终态之后断开照旧不重试。此前任何非用量事件都关闭重试，而思考与参数进度之前必然先有`ResponseStarted`，思考到一半断开的请求从不重试。
+- 重试次数、退避、总Deadline与“用量未知”记账不变；产品层Fallback仍按任何非账本事件关闭切换窗口。
+- 回归见`tests/agent/test_retry_after_thinking_break.py`（两个适配器的正例与“正文已开始”反例）；`tests/models/test_tool_rejection.py`的传输守卫用例限定单次尝试。详见[ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第3版。
 
 ## 当前增量：名称缺失或超长的调用只拒绝该次调用（ADR 0157）
 
@@ -190,7 +197,7 @@ Model Runtime不是Agent Loop，也不是Prompt/Context规划器。它把已准�
 5. 原始SSE先严格校验，再交给可能执行类型转换的SDK；
 6. Tool Call只在完整参数、唯一身份、合法名称、正确Stop Reason、完整Usage和流终态后释放；
 7. Adapter先交付`ModelAttemptStarted`，Runtime持久化后才拉取下一事件并触发HTTP；
-8. 仅在没有语义输出暴露时执行有界重试，已出现Response/Text/Tool语义后不重发；
+8. 仅在没有语义输出暴露时执行有界重试，已出现正文、Tool或终态后不重发（响应开始、思考与参数进度不算，ADR 0144第3版）；
 9. 用量按Attempt累计快照记录，未知保持`null`，失败请求有完整用量时仍可计价；
 10. 价格必须显式绑定实际模型、平台、地域、等级、模式、时间、输入阶梯和缓存TTL；
 11. 成本报告可从Attempt与嵌入价格重算，未知、部分和完整三种结论不可混淆；
@@ -213,7 +220,7 @@ Model Runtime不是Agent Loop，也不是Prompt/Context规划器。它把已准�
 |---|---|---|
 | Model Step | Agent Loop的一次Provider调用阶段 | 同一Step可有多个HTTP Attempt |
 | Attempt | 一次可能发出HTTP的独立请求意图 | ID唯一，Step内Index连续；领域上限32，单Adapter配置上限5 |
-| Semantic Exposure | Response、文本、Tool或完成事件已经交付Runtime | 一旦发生，当前Adapter不再自动重试 |
+| Semantic Exposure | 文本、Tool或完成事件已经交付Runtime（`persistent_output`） | 一旦发生，当前Adapter不再自动重试 |
 | Usage Observation | 同一Attempt的累计用量快照 | 重复值不累加，后继不可回退 |
 | Billing Metadata | 响应中观测到的等级、地域和缓存TTL分项 | 不是平台身份、价格或账单证明 |
 | Price Snapshot | 宿主提供的不可变费率事实 | 需与Attempt摘要和计费上下文显式绑定 |
@@ -846,6 +853,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 36 | `8b07c214` 增量 | 2026-11-13 | 断开前只交付过响应开始、思考增量、工具参数进度与用量的请求照常有界重试，两个适配器共用`_provider_io.persistent_output`（ADR 0144第3版） |
 | 35 | `f24afce5` 增量 | 2026-11-13 | 名称缺失、为空或超长的工具调用只拒绝该次调用，不再使整个请求以`tool_name_unknown`失败；两个流式适配器一致，超长名称不保留原文（`_tool_names.py`，ADR 0157） |
 | 34 | `a22e64ee` 增量 | 2026-11-13 | 新增Provider事件`ToolArgumentsProgress`（累计UTF-8字节数与工具名，没有内容）；OpenAI Chat与Anthropic两个流式适配器在收到工具参数片段时经`_progress.ArgumentProgress`上报，第一批立即、之后每满256字节（ADR 0156） |
 | 33 | `74b08375` 增量 | 2026-11-12 | `OpenAIChatConfig.reasoning_effort`：随开启思考的请求在顶层思考格式下发送强度档位，与`thinking_budget`二选一；`thinking_budget`不再要求`max_completion_tokens`（百炼`max_tokens`只限制正文）（ADR 0146） |

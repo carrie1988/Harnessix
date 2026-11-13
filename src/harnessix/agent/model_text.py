@@ -186,6 +186,18 @@ async def _complete(state: ModelTextPublication, item: _TextItem, event: TextCom
     item.completed = True
 
 
+async def restart_attempt(state: ModelTextPublication, proposals: Sequence[object]) -> None:
+    """同一步骤的新尝试：断开前只显示过思考与生成进度时允许重来；已有正文或工具调用时拒绝。
+
+    思考预览与生成进度不建Item、不进模型历史，新尝试接着显示；正文Item与工具调用已经提交，
+    重来会让同一步出现两份回复（负责人2026-11-13决定先只做前一种）。
+    """
+    if state.items or proposals:
+        raise KernelError("invalid_provider_output", "响应开始后不得重试模型请求")
+    if state.reasoning is not None:
+        await state.reasoning.restart()
+
+
 async def protect_request(
     request: ModelRequest, protection: PublicOutputProtection | None, token: CancelToken
 ) -> None:

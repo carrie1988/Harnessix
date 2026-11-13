@@ -120,7 +120,9 @@ class GenerationProgress:
                 kind = _FAILURE_KINDS.get(event.error.code, "other")
                 self.counts = self.counts._replace(failure=kind)
         elif event.index > 1:
-            self._advance(self.counts._replace(attempt=event.index))
+            # 新尝试从头生成：上一次断开前的思考与参数不再计入估算。重试要马上让用户知道，不节流。
+            self.counts = GenerationCounts(attempt=event.index, failure=self.counts.failure)
+            self._publish()
 
     def close(self) -> None:
         """步骤的响应已经结束：不再补发。"""

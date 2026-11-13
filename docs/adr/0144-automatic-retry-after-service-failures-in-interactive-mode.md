@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners: [core]
 modules: [agent, product_config, models]
@@ -9,6 +9,7 @@ related_adrs:
   - docs/adr/0123-provider-service-failure-attribution.md
 related_tests:
   - tests/agent/test_model_attempts.py
+  - tests/agent/test_retry_after_thinking_break.py
   - tests/context/test_pressure_window_candidates.py
   - tests/product_config/test_service_failure_retries.py
   - tests/product_config/test_retry_limit.py
@@ -54,6 +55,7 @@ supersedes: []
 
 - 响应已经开始输出之后才断开的请求，适配器不重试（ADR 0123），该轮仍以原故障结束，界面提示直接发送“继续”。
   要在这种情况下自动重试，需要作废已经显示的半截内容并重新采样这一步，涉及事件合同，另行设计。
+  （第3版起，断开前只显示过思考与生成进度、还没有正文和工具调用的请求会自动重试，见下文“修订（第3版）”。）
 - 确定未计费的失败（HTTP错误响应、连接未建立）本来就会重试，不受本ADR影响。（第2版起，配置了`service_failure_retries`时它们的次数也受这个设置限制，见下文“修订”。）
 - 评测与冒烟配置仍要求`max_attempts=1`。
 
@@ -79,3 +81,25 @@ supersedes: []
 - 设置了它的旧配置（`max_attempts`为4）会按设置的次数尝试，比原来多；这正是设置的意思。
 - 交互与无人值守模式相同。评测与冒烟直接使用`max_attempts=1`的模型配置，不经过产品配置的这条路径。
 - 配置的回退模型是另一个Profile，主模型用完次数后，回退模型按同样的次数尝试。
+
+## 修订（第3版，2026-11-13）
+
+0.10.0b30 macOS正式测试的会话记录里有17次失败的模型尝试，其中16次在断开前没有任何正文：模型已经思考了
+46～148秒，连接断开（15次是`httpx_protocol_failure`），整轮直接结束，要用户发送“继续”。原因在“没有改变的”
+第一条：适配器只要交付过`ResponseStarted`就不再重试，而思考增量（`ReasoningDelta`）与工具参数进度
+（`ToolArgumentsProgress`）出现前必然先有`ResponseStarted`。负责人2026-11-13决定“先做A”：
+
+- **断开前只交付过临时内容的请求照常重试。** 临时内容指`ResponseStarted`、思考增量、工具参数进度和用量快照：
+  它们只作界面的实时显示，不建Item、不进模型历史，丢弃后重来不会让同一步出现两份结果。判断集中在
+  `models/_provider_io.persistent_output`，OpenAI Chat与Anthropic两个适配器共用。
+- **出现过正文、工具调用或终态之后断开，仍按原来结束**（B，等A发布后看数据再定）。
+- **次数与记账不变。** 新尝试仍受一次请求的尝试上限（`service_failure_retries`或`max_attempts`）和本ADR第2条的
+  连续次数约束；断开的那次请求用量按“未知”记，照第4条预留。
+- **运行时接受同一步骤的新尝试**：`model_text.restart_attempt`在还没有正文Item与工具调用时放行，否则仍以
+  `invalid_provider_output`拒绝。生成进度在新尝试开始时清零并立即说明“第 N 次尝试，上次网络中断或超时”；思考预览
+  先放出上一段被扣住的尾部，新尝试的思考空一行接着显示（用新的保护内容身份，已收尾的文本块不能再写）。
+- 多候选回退（`product_config/runtime.py`）的判断不变：出现过任何非账本事件后不切换到回退模型；同一模型的重试
+  用完后，这一轮仍以原故障结束。
+
+后果：思考到一半断开的请求会从头重新思考，已经显示的思考保留在界面上，新的思考另起一段；这次重试和其他重试
+一样可能已被计费。

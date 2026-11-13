@@ -705,6 +705,9 @@ async def test_rejection_preserves_original_budgets_and_transport_guards(
         if fault == "frame"
         else {"max_chunks": 1}
         if fault == "chunks"
+        # 断开前只出过参数进度（临时内容）时会重试（负责人2026-11-13决定A）；这里只看原传输守卫。
+        else {"max_attempts": 1}
+        if fault == "transport"
         else {}
     )
     parts = _frames(provider, _values(provider, calls))

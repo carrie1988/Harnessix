@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 634,
-    "physical_lines": 132442,
-    "logical_lines": 115345,
+    "physical_lines": 132492,
+    "logical_lines": 115376,
     "documented_modules": 634,
     "classes": 1226,
     "documented_classes": 636,
-    "functions": 5237,
-    "documented_functions": 1772,
+    "functions": 5241,
+    "documented_functions": 1775,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -204,7 +204,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3496
+      "lines": 3495
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -357,7 +357,7 @@
       "qualname": "AgentRuntime",
       "kind": "class",
       "line": 292,
-      "lines": 3205,
+      "lines": 3204,
       "documented": true
     },
     {
@@ -399,7 +399,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3330,
+      "line": 3329,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -433,7 +433,7 @@
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
       "line": 3038,
-      "lines": 280,
+      "lines": 279,
       "documented": true,
       "decision_complexity": 83
     },
@@ -1109,7 +1109,7 @@
       "path": "src/harnessix/models/anthropic.py",
       "qualname": "AnthropicProvider",
       "kind": "class",
-      "line": 79,
+      "line": 80,
       "lines": 155,
       "documented": true
     },
@@ -1119,7 +1119,7 @@
       "path": "src/harnessix/models/anthropic.py",
       "qualname": "AnthropicProvider.stream",
       "kind": "function",
-      "line": 135,
+      "line": 136,
       "lines": 99,
       "documented": false,
       "decision_complexity": 26
@@ -1163,7 +1163,7 @@
       "path": "src/harnessix/models/openai_chat.py",
       "qualname": "OpenAIChatProvider",
       "kind": "class",
-      "line": 94,
+      "line": 95,
       "lines": 254,
       "documented": true
     },
@@ -1173,7 +1173,7 @@
       "path": "src/harnessix/models/openai_chat.py",
       "qualname": "OpenAIChatProvider.stream",
       "kind": "function",
-      "line": 236,
+      "line": 237,
       "lines": 112,
       "documented": false,
       "decision_complexity": 28

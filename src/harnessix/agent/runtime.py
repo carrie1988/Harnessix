@@ -53,7 +53,7 @@ from harnessix.agent.model_input_budget import (
     estimate_rewritten_request_input_tokens,
     require_input_within_bound,
 )
-from harnessix.agent.model_text import ModelTextPublication, protect_request
+from harnessix.agent.model_text import ModelTextPublication, protect_request, restart_attempt
 from harnessix.agent.models import (
     TERMINAL_TURNS,
     AgentFailure,
@@ -3095,9 +3095,8 @@ class AgentRuntime:
                             )
                             self._require_request_slots(current)
                         if started:
-                            raise KernelError(
-                                "invalid_provider_output", "响应开始后不得重试模型请求"
-                            )
+                            await restart_attempt(texts, proposals)
+                            started, response_id = False, None
                         if (
                             accounted.total_tokens + unreported_reservations + request_reservation
                             > request.budget.max_tokens

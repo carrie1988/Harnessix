@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 62
+version: 63
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -33,6 +33,7 @@ related_tests:
   - tests/session/test_authenticated_history.py
   - tests/artifacts/test_binary_publication.py
   - tests/agent/test_runtime.py
+  - tests/agent/test_retry_after_thinking_break.py
   - tests/agent/test_store.py
   - tests/agent/test_semantic_items.py
   - tests/agent/test_tool_scheduling.py
@@ -49,6 +50,13 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：同一步骤在只显示过思考时接受新的尝试（ADR 0144第3版）
+
+- `_sample_events`收到第2次及以后的`ModelAttemptStarted`时不再一律以`invalid_provider_output`结束：[`model_text.restart_attempt`](../../src/harnessix/agent/model_text.py)在还没有正文Item与工具调用时放行，响应身份清空、等新尝试的`ResponseStarted`；已有正文或工具调用时照旧拒绝。运行时主文件行数不变。
+- [`GenerationProgress.attempt`](../../src/harnessix/agent/generation_progress.py)在新尝试开始时把思考、正文、参数计数清零并立即发布（不节流），界面马上显示“第 N 次尝试，上次网络中断或超时”。
+- [`ReasoningPreview.restart`](../../src/harnessix/agent/reasoning_preview.py)先放出上一段被公开保护扣住的尾部，新尝试的思考空一行接着显示，用新的保护内容身份（`SecretTextStep`拒绝向已收尾的文本块写入；预览在参数进度出现时已收尾）。序号连续，单步64 KiB上限跨尝试共用。
+- 断开的尝试按“用量未知”预留，付费交互模式的连续次数照旧（`service_failure_retries`）。回归见`tests/agent/test_retry_after_thinking_break.py`；[ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第3版。
 
 ## 当前增量：生成进度带上重试的尝试序号与失败类别
 
@@ -1016,6 +1024,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 63 | `8b07c214` 增量 | 2026-11-13 | 只显示过思考与生成进度的步骤接受新的尝试：`model_text.restart_attempt`、思考预览另起一段、进度清零并立即说明重试（ADR 0144第3版） |
 | 62 | `f24afce5` 增量 | 2026-11-13 | 生成进度在重试时带上尝试序号与失败类别（`ModelTextPublication.watch`、`GenerationProgress.attempt`），界面据此说明为什么还在等（Beta Issue #11） |
 | 61 | `a22e64ee` 增量 | 2026-11-13 | 模型请求进行中的生成进度：`generation_progress.py`按类别（思考、正文、工具参数）累计本步骤已生成的UTF-8字节数，每秒至多以临时`ItemDelta`发布一行累计值，条目身份确定、序号独立，不建Item、不进模型历史（ADR 0156） |
 | 60 | `74b08375` 增量 | 2026-11-12 | 完成守卫增加交互模式`interactive`：只在回复宣布了下一步却没有动作时补发提示，向用户提问的回复不算，完整守卫的判定不变；`AgentRuntime(completion_guard=...)`接受布尔值或模式名（ADR 0147） |

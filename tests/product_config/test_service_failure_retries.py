@@ -31,7 +31,7 @@ def _interrupted_then_answer():
     return [first, interrupted, *accounted_answer(start=second)]
 
 
-async def _run(tmp_path, config, monkeypatch) -> tuple[str, str | None, int]:
+async def _run(tmp_path, config, monkeypatch, steps=None) -> tuple[str, str | None, int]:
     _credentials(monkeypatch)
     root, state = tmp_path / "workspace", tmp_path / "state"
     root.mkdir()
@@ -46,7 +46,7 @@ async def _run(tmp_path, config, monkeypatch) -> tuple[str, str | None, int]:
         await client.initialize()
         try:
             thread = await client.create_thread(str(root), request_id="thread")
-            bundle.steps = (_interrupted_then_answer(),)
+            bundle.steps = ((steps or _interrupted_then_answer)(),)
             await client.start_turn(thread.thread_id, "回答一句话", request_id="turn")
             for _ in range(2000):
                 turn = (await client.get_thread(thread.thread_id)).latest_turn

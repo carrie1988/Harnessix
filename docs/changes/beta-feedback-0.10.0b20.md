@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 22
+version: 23
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -62,6 +62,7 @@ related_tests:
   - tests/product_ui/test_tool_summary.py
   - tests/product_ui/test_selectable_transcript.py
   - tests/product_config/test_default_thinking_effort.py
+  - tests/agent/test_retry_after_thinking_break.py
 supersedes: []
 ---
 
@@ -97,9 +98,10 @@ supersedes: []
 | 二十二 | 命令失败行不显示已记录的退出码（0.10.0b25，Issue #13） | 写成“失败（退出码 N）” | 本文第36节 |
 | 二十三 | 对话区不能用鼠标选中复制（负责人2026-11-13反馈） | 对话历史区支持拖选与Ctrl+C复制 | 本文第37节 |
 | 二十四 | 旧配置一直按最强档思考，第一步想了11分钟（负责人本机，0.10.0b28） | 运行时按中档，不用重新配置 | [ADR 0146](../adr/0146-thinking-intensity-tiers.md)第2版、本文第38节 |
+| 二十五 | 思考到一半连接断开，整轮结束要用户发送“继续”（0.10.0b30正式测试，16次） | 还没有正文和工具调用时自动重试 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第3版、本文第39节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十四项在第26～38节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十五项在第26～39节。
 
 ## 2. 需求背景
 
@@ -1155,3 +1157,40 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
   显式low、high、思考上限、关闭思考不变；未核实的模型（百炼deepseek-v4-pro、DeepSeek官方）不变；
   真实OpenAI Chat适配器经产品装配，旧配置发出的请求带`enable_thinking: true`与`reasoning_effort: medium`。
 - 同样的旧配置经0.10.0b28的代码发出的请求两项都没有（服务端按最强档）。
+
+## 39. 第二十五项：只显示过思考就断开的请求自动重试
+
+### 39.1 背景与决定
+
+0.10.0b30 macOS正式测试的会话记录：17次失败的模型尝试里16次断开前没有任何正文，模型已经思考了46～148秒，
+其中15次是`httpx_protocol_failure`。每次整轮直接结束，要用户发送“继续”。适配器只要交付过`ResponseStarted`就不再重试，
+思考增量之前必然先有它，所以思考到一半断开的请求从不重试。负责人2026-11-13决定“先做A”：断开前只出过临时内容
+（响应开始、思考、工具参数进度）、还没有正文和工具调用时自动重试；正文开始后断开（B）等A发布后看数据再定。
+
+### 39.2 设计
+
+- 适配器：`models/_provider_io.persistent_output`判断事件是否留下持久结果；OpenAI Chat与Anthropic共用，
+  `exposed`只在出现正文、工具调用或终态时置位。重试次数、退避、总时限不变。
+- 运行时：同一步骤的新`ModelAttemptStarted`经`model_text.restart_attempt`放行（没有正文Item与工具调用时），
+  否则照旧`invalid_provider_output`。运行时主文件行数不变（3495）。
+- 界面：生成进度在新尝试开始时清零并立即发布，运行提示马上显示“等待模型服务响应 · 第 N 次尝试，上次网络中断或超时”；
+  思考预览先放出上一段被扣住的尾部，新尝试的思考空一行接着显示（新的保护内容身份：已收尾的文本块不能再写）。
+
+### 39.3 边界
+
+- 断开的那次请求用量按“未知”记，付费交互模式下连续次数受`service_failure_retries`限制（默认5，0表示不重试）；
+  一次请求的尝试总数受`max_attempts`或该设置限制。
+- 多候选回退的判断不变：出现过任何非账本事件后不切换到回退模型。
+- 已经显示的思考保留在界面上；新尝试从头思考，不会接着上一次的内容。
+
+### 39.4 验证
+
+- `tests/agent/test_retry_after_thinking_break.py`：逐帧MockTransport，OpenAI Chat“思考两帧后断开→第2次成功”，
+  Anthropic“响应开始、参数写到一半断开→第2次成功”，两个适配器“正文已开始后断开→1次请求、仍以transport失败”；
+  断开那次尝试的用量不是complete；运行时整轮完成、尝试记录为failed/completed、进度行带“2 network”；
+  预览在参数进度时已收尾的情况，新尝试的思考空一行接着显示（带真实`SecretTextStep`）；
+  产品装配（含压缩与付费交互策略）默认重试成功，`service_failure_retries=0`时以`provider_transport`结束。
+- 同样的用例在0.10.0b31的代码上：正例全部失败（1次请求、整轮`provider_transport`或`invalid_provider_output`）；
+  去掉`ReasoningPreview.restart`时新尝试的思考丢失。
+- 原有用例按决定更新：`test_model_attempts`的“响应开始后重试”改为“正文开始后重试”，仍拒绝；
+  `test_tool_rejection`的传输守卫用例限定单次尝试。

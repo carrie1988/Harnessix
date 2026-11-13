@@ -17,7 +17,7 @@ from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.ids import new_id
 from harnessix.agent.model_input_budget import INCREMENTAL_REQUEST_OVERHEAD_TOKENS
 from harnessix.agent.models import Item
-from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted
 from harnessix.models._bounded_http import BoundedStream, BoundedTransport, InvalidWireData
 from harnessix.models._chat_errors import diagnostic_failure
 from harnessix.models._chat_input_anchor import CompletedChatInput
@@ -26,6 +26,7 @@ from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_f
 from harnessix.models._history import InvalidModelRequest, encode_json
 from harnessix.models._provider_io import (
     finish_attempt,
+    persistent_output,
     read_key,
     retry_after_seconds,
     retry_delay_seconds,
@@ -290,7 +291,7 @@ class OpenAIChatProvider:
                         break
                     for event in state.feed(chunk):
                         cancel.checkpoint()
-                        exposed = exposed or not isinstance(event, ModelUsageObserved)
+                        exposed = exposed or persistent_output(event)
                         yield event
                 bounded = stream.response.extensions.get("harnessix_stream")
                 if not isinstance(bounded, BoundedStream):

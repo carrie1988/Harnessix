@@ -11,7 +11,13 @@ from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import AgentFailure
 from harnessix.agent.usage import ModelAttemptFinished, ModelUsageObserved, UsageObservation
 from harnessix.models.config import ModelHTTPConfig
-from harnessix.models.contracts import ResponseFailed
+from harnessix.models.contracts import (
+    ProviderEvent,
+    ReasoningDelta,
+    ResponseFailed,
+    ResponseStarted,
+    ToolArgumentsProgress,
+)
 
 MAX_PROVIDER_API_KEY_BYTES = 8 * 1024
 MAX_RETRY_AFTER_SECONDS = 60.0
@@ -78,3 +84,15 @@ def validate_key(key: str, *, headers_env: str) -> str:
 
 def read_key(config: ModelHTTPConfig, *, headers_env: str) -> str:
     return validate_key(os.environ.get(config.api_key_env, ""), headers_env=headers_env)
+
+
+# 不建Item、不进模型历史的事件：响应开始、思考增量与工具参数进度只作界面的临时显示，
+# 用量快照由尝试账本记账。
+# 断开前只出现过这些事件时，丢弃重来是安全的（负责人2026-11-13决定“先做A”）。
+_TRANSIENT_EVENTS = (ModelUsageObserved, ResponseStarted, ReasoningDelta, ToolArgumentsProgress)
+
+
+def persistent_output(event: ProviderEvent) -> bool:
+    """这个事件会留下持久的结果（正文、工具调用、终态）；出现过这类事件之后请求断开不再重试。"""
+
+    return not isinstance(event, _TRANSIENT_EVENTS)
