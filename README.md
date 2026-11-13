@@ -60,7 +60,7 @@ Harnessix Code 根据任务描述自主完成读代码、改代码、运行测�
 
 ```bash
 # 1. 安装（国内网络可追加 --index-url https://mirrors.huaweicloud.com/repository/pypi/simple）
-#    --python 3.12：依赖 google-re2 还没有 Python 3.15 的预编译包，用 3.15 安装可能失败
+#    --python 3.12：验证最充分的版本；较早的版本用 Python 3.15 安装需要现场编译依赖，可能失败
 uv tool install --python 3.12 harnessix
 
 # 2. 配置模型：按向导选择服务商和模型

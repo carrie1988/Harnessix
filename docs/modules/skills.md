@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 3
+version: 4
 code_revision: 1a7a6f05ecbdf1ec7d0182e2ed4951fb2c100f1c
 owners:
   - core
@@ -18,6 +18,7 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
 related_tests:
   - tests/skills/test_runtime.py
+  - tests/skills/test_frontmatter_yaml.py
   - tests/skills/test_schemas.py
   - tests/governance/test_product_runtime_convergence.py
 supersedes: []
@@ -34,7 +35,7 @@ supersedes: []
 | 非职责 | 不执行Skill脚本，不采信Frontmatter权限声明，不安装或更新远端Skill，不实现Marketplace、签名发行、模型上下文优先级或默认产品自动装配 |
 | 主要入口 | `SkillSource`、`SkillRegistry`、`SQLiteSkillStore`、`build_skill_action_definitions`、`SkillActionGateway` |
 | 上游调用者 | 受信产品宿主或显式集成方；当前默认`agent-server`未装配Skill |
-| 下游依赖 | `SecureWorkspaceReader`、PyYAML、SQLite、`SecretLeakGuard`、`TrustedActionRouter`与`ExtensionActionPort` |
+| 下游依赖 | `SecureWorkspaceReader`、PyYAML（Python 3.15起为ruamel.yaml）、SQLite、`SecretLeakGuard`、`TrustedActionRouter`与`ExtensionActionPort` |
 | 公共Action | `skill.load`、`skill.read_resource`，均固定为`READ_ONLY`、`LOW`、`recovery=none` |
 | 持久化 | 独立SQLite保存目录代次、目录JSON及访问事件Hash链；不保存正文、资源内容和绝对Root |
 | 代码版本 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` |
@@ -129,7 +130,7 @@ Coding Agent需要把领域规范、工作流说明、检查清单和项目约�
 - Content进入模型前，宿主仍需施加不可信内容提示边界和上下文优先级；
 - Windows安全语义依赖Workspace Windows后端；POSIX和Windows的文件名比较规则不同；
 - 系统时钟只用于捕获和事件时间，不进入语义目录摘要；
-- 当前Package要求Python 3.12或更高，锁文件固定PyYAML 6.0.3；
+- 当前Package要求Python 3.12或更高；3.14及以下用PyYAML 6.0.3，3.15起用ruamel.yaml 0.19.1（ADR 0161）；
 - 所有v1合同均采用严格、冻结的`ExecutionContract`行为。
 
 ### 6.2 关键术语
@@ -382,7 +383,7 @@ flowchart TD
 | 编码 | 有效UTF-8、不得包含NUL | `skill_invalid_utf8`或`skill_manifest_invalid` |
 | 起始分隔符 | 第一行去空白后必须为`---` | `skill_frontmatter_missing` |
 | 结束分隔符 | 起始后256行内出现，内容不超过16 KiB | `skill_frontmatter_invalid/limit` |
-| YAML加载器 | `yaml.SafeLoader`派生；重复Key和不可哈希Key失败 | `skill_frontmatter_invalid` |
+| YAML加载器 | [`frontmatter_yaml`](../../src/harnessix/skills/frontmatter_yaml.py)：3.14及以下为`yaml.SafeLoader`派生，3.15起为ruamel.yaml的纯Python安全加载（YAML 1.1）；重复Key和不可哈希Key失败 | `skill_frontmatter_invalid` |
 | 根对象 | 必须为Mapping，最多64个根Key | `skill_frontmatter_invalid` |
 | 展开节点 | 最多512个节点，最大深度16 | `skill_frontmatter_limit` |
 | 数组 | 每个数组最多256项 | `skill_frontmatter_limit` |
@@ -395,7 +396,7 @@ flowchart TD
 
 ### 12.2 重复Key与YAML别名
 
-`_UniqueKeySafeLoader`覆盖Mapping构造逻辑，在展开前拒绝重复Key，避免攻击者通过后写值覆盖审核时看到的
+[`frontmatter_yaml._UniqueKeySafeLoader`](../../src/harnessix/skills/frontmatter_yaml.py)覆盖Mapping构造逻辑（3.15起由ruamel.yaml的`allow_duplicate_keys=False`拒绝重复Key，见ADR 0161），在展开前拒绝重复Key，避免攻击者通过后写值覆盖审核时看到的
 `name`或`description`。SafeLoader阻止任意Python对象构造；`_validate_yaml_shape()`再对别名展开后的对象树
 计数，避免较小YAML形成超大内存对象。当前预算在`yaml.load()`完成后检查，解析器本身仍需先构造对象；
 16 KiB原始Frontmatter上限是前置防线，但不是流式YAML解析器。
@@ -1728,6 +1729,7 @@ flowchart TD
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 4 | `6bc1757c` 增量 | 2026-11-13 | Frontmatter的YAML加载移入`frontmatter_yaml`；Python 3.15起改用纯Python的ruamel.yaml（PyYAML没有3.15的预编译包，Windows上装不上），3.14及以下不变（ADR 0161，Beta Issue #10） |
 | 1 | `e1aa95764da726d2c1e8f286e4400579ce3efae7` | 2026-09-12 | 建立Skill现行模块设计，覆盖本地来源、发现预算、Frontmatter、目录摘要、渐进加载、安全Reader、SQLite事件、Action Gateway、Secret边界、失败恢复、平台和生产差距 |
 
 ## 正式来源成功反馈合同与纯合同层

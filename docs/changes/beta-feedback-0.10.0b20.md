@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 35
+version: 36
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -41,6 +41,7 @@ related_tests:
   - tests/tools/test_windows_directory_cache.py
   - tests/product_ui/test_wrap_up.py
   - tests/tools/test_regex_grep_py315.py
+  - tests/skills/test_frontmatter_yaml.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -1409,3 +1410,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 - `tests/tools/test_regex_grep_py315.py`（真实工具Runtime上的3.15路径、与RE2逐行对比、拒绝、超时、失败关闭、执行合同、依赖声明、语法检查表）；
   `tests/tools`与`tests/governance`在macOS上通过（SBOM计数测试改为78项、912个引用）。
 - 发布会话：三个平台用`uv tool install --python 3.15`实际安装并运行正则搜索；3.12安装照旧。
+
+### 50.4 Windows上仍装不上：PyYAML（ADR 0161）
+
+0.10.0b35候选的三平台实测（uv 0.13.7，Python 3.15.2）：macOS、Linux能装，但PyYAML 6.0.3是现场编译的；Windows真机报`Microsoft Visual C++ 14.0 or greater is required`，仍装不上。0.10.0b35发布说明里#10写作“macOS、Linux能用Python 3.15安装（需要本机有C编译器），Windows仍不能”。六个平台上只用预编译包解析，缺3.15预编译包的只有PyYAML。按负责人对#10的决定（3.15上换引擎），3.15起Skill Frontmatter改用纯Python的ruamel.yaml（MIT），3.14及以下不变；边角写法的已知差异列在[ADR 0161](../adr/0161-skill-frontmatter-yaml-on-python-315.md)。SBOM、许可证证据与扫描重新生成（79个包、914个Archive）。验证见`tests/skills/test_frontmatter_yaml.py`；三个平台的实际安装由发布会话复测。

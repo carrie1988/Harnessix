@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 638,
-    "physical_lines": 133438,
-    "logical_lines": 116068,
-    "documented_modules": 638,
+    "source_files": 639,
+    "physical_lines": 133490,
+    "logical_lines": 116099,
+    "documented_modules": 639,
     "classes": 1231,
-    "documented_classes": 641,
-    "functions": 5290,
-    "documented_functions": 1807,
+    "documented_classes": 642,
+    "functions": 5292,
+    "documented_functions": 1810,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -276,7 +276,7 @@
     },
     {
       "path": "src/harnessix/skills/runtime.py",
-      "lines": 644
+      "lines": 604
     },
     {
       "path": "src/harnessix/trusted_actions/agent_gateway_support.py",
@@ -1804,7 +1804,7 @@
       "path": "src/harnessix/skills/runtime.py",
       "qualname": "SkillRegistry",
       "kind": "class",
-      "line": 138,
+      "line": 98,
       "lines": 507,
       "documented": true
     },

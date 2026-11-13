@@ -129,7 +129,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 uv tool install --python 3.12 harnessix
 ```
 
-`--python 3.12` 让 uv 为 Harnessix 准备验证最充分的 Python 3.12，而不是沿用你电脑上已有的其他版本。Python 3.15 现在也能直接安装（正则搜索在 3.15 上改用 `regex` 引擎）；更早的版本在 3.15 上会因依赖 `google-re2` 没有预编译包而安装失败。
+`--python 3.12` 让 uv 为 Harnessix 准备验证最充分的 Python 3.12，而不是沿用你电脑上已有的其他版本。Python 3.15 现在也能直接安装，不需要 C 编译器（3.15 上正则搜索改用 `regex` 引擎，Skill 的 YAML 解析改用 `ruamel.yaml`）；更早的版本在 3.15 上会因依赖 `google-re2` 或 `pyyaml` 没有预编译包而现场编译，Windows 上没有 Microsoft Visual C++ 就安装失败。
 
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
@@ -852,7 +852,7 @@ uv tool uninstall harnessix
 |---|---|
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
-| 安装时报 `Failed to build google-re2` 或要求安装 Microsoft Visual C++ | 安装的是较早的版本，uv 又选中了 Python 3.15。改用 `uv tool install --python 3.12 harnessix`，或安装最新版本（3.15 上改用 `regex` 引擎，不再需要 google-re2） |
+| 安装时报 `Failed to build google-re2`、构建 `pyyaml` 失败或要求安装 Microsoft Visual C++ | 安装的是较早的版本，uv 又选中了 Python 3.15。改用 `uv tool install --python 3.12 harnessix`，或安装最新版本（3.15 上改用 `regex` 与 `ruamel.yaml`，都不需要编译） |
 | 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export 变量名=你的Key`（变量名见提示，如 `DASHSCOPE_API_KEY`）后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#42-api-key) |
 | 配置时提示配置目录的权限不是 700，或目录不属于当前用户 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件；0.10.0b24 及更早的版本里，先运行 `harnessix exec` 再运行 `configure` 也会遇到 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |

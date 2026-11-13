@@ -9279,6 +9279,35 @@
       "version": "2026.6.3"
     },
     {
+      "bom-ref": "pkg:pypi/ruamel-yaml@0.19.1",
+      "externalReferences": [
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "27592957fedf6e0b62f281e96effd28043345e0e66001f97683aa9a40c667c93"
+            }
+          ],
+          "type": "distribution",
+          "url": "https://files.pythonhosted.org/packages/b8/0c/51f6841f1d84f404f92463fc2b1ba0da357ca1e3db6b7fbda26956c3b82a/ruamel_yaml-0.19.1-py3-none-any.whl"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "53eb66cd27849eff968ebf8f0bf61f46cdac2da1d1f3576dd4ccee9b25c31993"
+            }
+          ],
+          "type": "distribution",
+          "url": "https://files.pythonhosted.org/packages/c7/3b/ebda527b56beb90cb7652cb1c7e4f91f48649fbcd8d2eb2fb6e77cd3329b/ruamel_yaml-0.19.1.tar.gz"
+        }
+      ],
+      "name": "ruamel-yaml",
+      "purl": "pkg:pypi/ruamel-yaml@0.19.1",
+      "type": "library",
+      "version": "0.19.1"
+    },
+    {
       "bom-ref": "pkg:pypi/ruff@0.16.5",
       "externalReferences": [
         {
@@ -9921,12 +9950,13 @@
         "pkg:pypi/pytest@8.4.2",
         "pkg:pypi/pyyaml@6.0.3",
         "pkg:pypi/regex@2026.11.9",
+        "pkg:pypi/ruamel-yaml@0.19.1",
         "pkg:pypi/ruff@0.16.5",
         "pkg:pypi/textual@8.2.8",
         "pkg:pypi/types-jsonschema@4.26.0.20260518",
         "pkg:pypi/types-pyyaml@6.0.12.20260906"
       ],
-      "ref": "pkg:pypi/harnessix@0.10.0b35"
+      "ref": "pkg:pypi/harnessix@0.10.0b32"
     },
     {
       "dependsOn": [
@@ -10234,6 +10264,10 @@
     },
     {
       "dependsOn": [],
+      "ref": "pkg:pypi/ruamel-yaml@0.19.1"
+    },
+    {
+      "dependsOn": [],
       "ref": "pkg:pypi/ruff@0.16.5"
     },
     {
@@ -10309,16 +10343,16 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "pkg:pypi/harnessix@0.10.0b35",
+      "bom-ref": "pkg:pypi/harnessix@0.10.0b32",
       "licenses": [
         {
           "expression": "AGPL-3.0-only"
         }
       ],
       "name": "harnessix",
-      "purl": "pkg:pypi/harnessix@0.10.0b35",
+      "purl": "pkg:pypi/harnessix@0.10.0b32",
       "type": "application",
-      "version": "0.10.0b35"
+      "version": "0.10.0b32"
     },
     "lifecycles": [
       {
@@ -10336,11 +10370,11 @@
       },
       {
         "name": "harnessix:lock_sha256",
-        "value": "63f77f325f131a790ef917bd7e59723c4ecb29800c15fb28f1e302243bd386c2"
+        "value": "d995aa7cd27b1f5418bb4651fa6c784ce70016070403b885e869a57417bbfa24"
       },
       {
         "name": "harnessix:project_sha256",
-        "value": "67d8cc77401145f66187084417b08e74aa73f35dbc1ad15c2b64af154022504a"
+        "value": "510b266d2c926cefd276c69c03968bc85c70606be53dd44c008b2a168448c907"
       }
     ]
   },

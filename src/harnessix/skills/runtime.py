@@ -12,11 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
 from pydantic import ValidationError
-from yaml.constructor import ConstructorError
-from yaml.nodes import MappingNode
-from yaml.resolver import BaseResolver
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import utc_now
@@ -36,6 +32,7 @@ from harnessix.skills.contracts import (
     skill_manifest_snapshot_digest,
     skill_source_snapshot_digest,
 )
+from harnessix.skills.frontmatter_yaml import FrontmatterYamlError, load_frontmatter
 from harnessix.skills.store import SQLiteSkillStore
 from harnessix.workspace.snapshot import SecureWorkspaceReader
 
@@ -62,43 +59,6 @@ _SENSITIVE_NAMES = frozenset(
     }
 )
 _SENSITIVE_SUFFIXES = (".pem", ".key", ".p12", ".pfx")
-
-
-class _UniqueKeySafeLoader(yaml.SafeLoader):
-    pass
-
-
-def _construct_unique_mapping(
-    loader: yaml.SafeLoader, node: MappingNode, deep: bool = False
-) -> dict[object, object]:
-    loader.flatten_mapping(node)
-    result: dict[object, object] = {}
-    for key_node, value_node in node.value:
-        key = loader.construct_object(key_node, deep=deep)
-        try:
-            duplicate = key in result
-        except TypeError:
-            raise ConstructorError(
-                "while constructing a mapping",
-                node.start_mark,
-                "found unhashable key",
-                key_node.start_mark,
-            ) from None
-        if duplicate:
-            raise ConstructorError(
-                "while constructing a mapping",
-                node.start_mark,
-                "found duplicate key",
-                key_node.start_mark,
-            )
-        result[key] = loader.construct_object(value_node, deep=deep)
-    return result
-
-
-_UniqueKeySafeLoader.add_constructor(
-    BaseResolver.DEFAULT_MAPPING_TAG,
-    _construct_unique_mapping,
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -482,8 +442,8 @@ class SkillRegistry:
         if closing is None:
             raise KernelError("skill_frontmatter_invalid", "Skill Frontmatter缺少结束分隔符")
         try:
-            loaded: Any = yaml.load("".join(lines[1:closing]), Loader=_UniqueKeySafeLoader)
-        except yaml.YAMLError:
+            loaded: Any = load_frontmatter("".join(lines[1:closing]))
+        except FrontmatterYamlError:
             raise KernelError(
                 "skill_frontmatter_invalid", "Skill Frontmatter不是安全YAML"
             ) from None

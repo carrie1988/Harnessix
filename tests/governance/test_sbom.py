@@ -42,15 +42,16 @@ def test_sbom_graph_and_archive_identity_matches_all_locked_inputs() -> None:
     }
     # eecf8d1c加入google-re2（34个分发文件），锁定依赖由74项变为75项；
     # 并行测试加入pytest-xdist与execnet（各2个分发文件），变为77项；
-    # Python 3.15起正则搜索改用regex（Beta Issue #10，97个分发文件），变为78项。
-    assert len(identities) == 78
+    # Python 3.15起正则搜索改用regex（Beta Issue #10，97个分发文件），变为78项；
+    # 3.15起Frontmatter改用ruamel.yaml（同一Issue，2个分发文件），变为79项。
+    assert len(identities) == 79
     assert identities == {item["ref"] for item in sbom["dependencies"]}
     assert all(set(item["dependsOn"]) <= identities for item in sbom["dependencies"])
     for item in sbom["components"]:
         assert item["purl"] == item["bom-ref"] == f"pkg:pypi/{item['name']}@{item['version']}"
         assert "hashes" not in item and "scope" not in item
         assert item["externalReferences"]
-    assert sum(len(item["externalReferences"]) for item in sbom["components"]) == 912
+    assert sum(len(item["externalReferences"]) for item in sbom["components"]) == 914
 
 
 @pytest.mark.parametrize(

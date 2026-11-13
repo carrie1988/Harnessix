@@ -34,7 +34,7 @@ Harnessix Code 目前是预览版，不是正式商用版本，不提供任何�
 uv tool install --python 3.12 harnessix
 ```
 
-`--python 3.12` 让 uv 为 Harnessix 准备验证最充分的 Python 3.12，而不是沿用你电脑上已有的其他版本。Python 3.15 现在也能直接安装（正则搜索在 3.15 上改用 `regex` 引擎）；更早的版本在 3.15 上会因依赖 `google-re2` 没有预编译包而安装失败。
+`--python 3.12` 让 uv 为 Harnessix 准备验证最充分的 Python 3.12，而不是沿用你电脑上已有的其他版本。Python 3.15 现在也能直接安装，不需要 C 编译器（3.15 上正则搜索改用 `regex` 引擎，Skill 的 YAML 解析改用 `ruamel.yaml`）；更早的版本在 3.15 上会因依赖 `google-re2` 或 `pyyaml` 没有预编译包而现场编译，Windows 上没有 Microsoft Visual C++ 就安装失败。
 
 国内下载慢时加镜像：`uv tool install --python 3.12 harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟。
 
