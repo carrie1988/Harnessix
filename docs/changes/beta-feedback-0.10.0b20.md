@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 9
+version: 10
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -46,6 +46,7 @@ related_tests:
   - tests/workspace/test_plan_binding_ignores_directory_members.py
   - tests/agent/test_generation_progress.py
   - tests/app_server/test_agent_cli_thinking.py
+  - tests/product_config/test_private_directory.py
 supersedes: []
 ---
 
@@ -67,9 +68,10 @@ supersedes: []
 | 八 | 审批期间工作区里多出无关文件，批准后操作没有执行，要重新发起、再批准一次 | 计划对目录只绑定对象与权限，不绑定有哪些成员 | [ADR 0143](../adr/0143-plans-bind-directories-without-their-members.md) |
 | 九 | 一次模型请求持续几分钟，界面只有静止的“思考中”，Token与费用不变，看起来像卡死 | 请求进行中显示生成阶段与估算的Token、费用 | [ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md) |
 | 十 | `harnessix exec`的过程文本里，思考内容没有标注，还和下一行接在一起 | 思考的每一行以“思考：”开头，其后的输出另起一行 | 本文第24节 |
+| 十一 | 先用`harnessix exec`、后运行`harnessix code configure`，被以“配置目录的权限是 755”拒绝 | 产品自己创建的状态目录每一级都按0700创建 | 本文第25节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十项在第24节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节。
 
 ## 2. 需求背景
 
@@ -624,3 +626,66 @@ I'm going to read the README.md file.工具开始：read_file
 |---|---|
 | 0.10.0b24 | `I'm going to read the README.md file.工具开始：read_file` |
 | 本修改 | `思考：The user is asking to read the first line of README.md.`，下一行`工具开始：read_file`；第二步两段思考各自以“思考：”开头，回复另起一行 |
+
+## 25. 第十一项：状态目录缺失的各级父目录都按0700创建
+
+### 25.1 背景与决定
+
+发布会话在正式测试中发现（0.10.0b21起即存在）：还没有运行过`harnessix code configure`的用户先执行
+`harnessix exec --config <别处的配置>`，之后再运行`configure`，得到：
+
+```text
+配置没有完成：配置目录 ~/.harnessix 的权限是 755，需要 700（只允许你自己访问）。运行 chmod 700 ~/.harnessix 后重试
+```
+
+不丢数据，提示里也给了修法，但先用`exec`的CI与自动化用户都会遇到。负责人在三个选项里选了“创建时每一级都设为700，
+已经是755的旧目录仍按现有提示由用户自己修改”（另两个是在此基础上让`configure`自动收紧权限、不改）。
+
+### 25.2 根因
+
+POSIX上`Path.mkdir(mode=0o700, parents=True)`只把权限用在最后一级，缺失的父目录按umask创建（通常是755）。
+在服务进程里记录每一次目录创建后确认，第一次创建`~/.harnessix`的是服务端启动时准备状态目录上一级的
+`product_config/state_owner.py::_state_address`：
+
+```text
+777 ~/.harnessix                         <- state_owner.py（parents=True补建的父目录，umask后为755）
+777 ~/.harnessix/workspaces              <- 同上
+700 ~/.harnessix/workspaces/<指纹>        <- 只有这一级用了0700
+```
+
+终端界面一侧，`product_ui/state_file.py::prepare_private_directory`创建客户端状态目录时是同样的写法。
+先运行`configure`的用户不受影响，是因为`configure`创建的正好是最后一级`~/.harnessix`；但他们的
+`~/.harnessix/workspaces`同样是755（在700的上级目录之内，别人进不去）。Windows分支原本就逐级创建私有目录。
+
+### 25.3 设计
+
+- 新增`product_config/private_directory.py::make_private_directories(path)`：从path向上找到第一个已存在的层级，
+  再自上而下逐级`os.mkdir(level, 0o700)`；已有的目录不改动；另一个进程刚建好同一级时不报错；path最终不是目录时
+  抛出`OSError`（与原来`mkdir(exist_ok=True)`遇到文件时一致）。
+- `_state_address`的POSIX分支用它创建状态目录的上一级；`prepare_private_directory`用它创建客户端状态目录缺失的父目录，
+  最后一级仍按原来的方式严格创建（已存在即报错）。两处原有的属主、权限与符号链接检查不变。
+- 没有改动的同类写法：其余`mkdir(mode=0o700, parents=True)`创建的都是状态目录之内的层级，或其上一级此时必然已经存在
+  （配置文件与私有JSON的上一级就是`~/.harnessix`本身），不会留下权限过宽的中间目录。
+
+### 25.4 边界
+
+- 已经被建成755的`~/.harnessix`不自动修改：`configure`照旧拒绝并给出`chmod 700`的命令。
+- 显式指定的状态目录（`--state-directory`、`HARNESSIX_PRODUCT_STATE_DIRECTORY`）缺失的父目录也按0700创建；
+  此前它们是755。需要与其他用户共享的上级目录应事先建好，已有的目录不会被改动。
+- 只影响macOS与Linux；Windows上权限位不起作用，行为不变。
+
+### 25.5 验证
+
+- `tests/product_config/test_private_directory.py`（umask 022下）：缺失的每一级都是0700；已有的755目录保持不变；
+  路径上有文件时报错；服务端准备状态目录之后`configure`能在同一个`~/.harnessix`里写入配置；终端界面的客户端状态目录
+  各级都是0700。后两个用例在0.10.0b24的代码上失败。
+- 真实运行（全新的HOME，先`harnessix exec --config <另一个HOME里的配置>`完成一个任务，再`harnessix code configure`）：
+
+| 版本 | `~/.harnessix` | `~/.harnessix/workspaces` | 随后的`configure` |
+|---|---|---|---|
+| 0.10.0b24 | 755 | 755 | 退出码2，“配置目录……的权限是 755，需要 700” |
+| 本修改 | 700 | 700 | 退出码0，配置已保存 |
+
+- 真实终端界面（全新的HOME，配置在别处，确认信任工作区后进入界面）：0.10.0b24上`~/.harnessix`是700
+  （信任记录先创建了它），`~/.harnessix/workspaces`由客户端状态目录的创建建成755；本修改后各级都是700。
+  在进程里记录每一次目录创建，两个流程中其余按默认权限发起的创建都落在已经存在的目录上。

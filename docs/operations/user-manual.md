@@ -841,7 +841,7 @@ uv tool uninstall harnessix
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
 | 启动时提示“Harnessix 无法启动：缺少模型的 API Key” | 按提示在当前终端执行 `export 变量名=你的Key`（变量名见提示，如 `DASHSCOPE_API_KEY`）后重新运行；新打开的终端标签页不会继承之前手动设置的变量，想长期生效见 [4.1](#42-api-key) |
-| 配置时提示配置目录的权限不是 700，或目录不属于当前用户 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件 |
+| 配置时提示配置目录的权限不是 700，或目录不属于当前用户 | 按提示里给出的命令修正（如 `chmod 700 ~/.harnessix`），并确认目录属于当前用户。通常是先手动创建了目录导致的，应先运行一次 `configure` 再创建 Skills、MCP 等文件；0.10.0b24 及更早的版本里，先运行 `harnessix exec` 再运行 `configure` 也会遇到 |
 | `doctor --probe-model` 失败 | 检查 Key、`--base-url` 和模型名；需要代理时设置 `HTTPS_PROXY=http://…`，只设 SOCKS 代理不会生效 |
 | 自托管模型提示 Key 太短 | 使用至少 16 字节的 Key |
 | 自托管模型很快报错或回答被截断 | 检查模型上下文窗口；Ollama 默认只有 4096 |
@@ -990,7 +990,7 @@ uv tool uninstall harnessix
 | `<仓库>/AGENTS.md`、`AGENTS.override.md` | 项目指令 |
 | `<仓库>/.harnessix/skills/` | 仓库 Skills |
 
-`~/.harnessix` 必须只属于当前用户（权限 700），Harnessix 会拒绝使用权限过宽的目录。
+`~/.harnessix` 必须只属于当前用户（权限 700），Harnessix 会拒绝使用权限过宽的目录。Harnessix 自己创建这个目录及其下的状态目录时，每一级都按 700 创建。
 
 ## 附录 C：环境变量
 

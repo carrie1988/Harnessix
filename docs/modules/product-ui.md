@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 48
+version: 49
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,11 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：客户端状态目录缺失的各级父目录都按0700创建
+
+- [`state_file.prepare_private_directory`](../../src/harnessix/product_ui/state_file.py)创建客户端状态目录（默认`~/.harnessix/workspaces/<指纹>`）时，此前只有最后一级是0700，缺失的`~/.harnessix`与`workspaces`按umask建成755；现在缺失的父目录由`product_config.private_directory.make_private_directories`逐级按0700创建，最后一级仍严格创建（已存在即报错）。目录已存在时的检查不变。
+- 背景与服务端一侧的同一修改见[Product Config模块设计](product-config.md)；回归见`tests/product_config/test_private_directory.py`。
 
 ## 当前增量：请求进行中的生成阶段与用量估算（ADR 0156）
 
@@ -1186,6 +1191,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 49 | `6d0c6152` 增量 | 2026-11-13 | 客户端状态目录缺失的各级父目录都按0700创建，不再留下755的`~/.harnessix` |
 | 48 | `a22e64ee` 增量 | 2026-11-13 | 请求进行中显示生成阶段与用量估算：运行提示“思考中／正在生成修改内容／生成回复中 · 约 N tokens”，底栏“本轮 约 N tokens · 费用≈…”；投影识别生成进度流（只留最近一行、不进入对话），握手声明`generation_progress`（`generation_estimate.py`，ADR 0156） |
 | 47 | `ce5b7386` 增量 | 2026-11-12 | 一键收尾`Ctrl+F`；终端界面的运行时间检查点：按Turn累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；内核墙钟预算在交互模式下放到86,400秒（`turn_pacing.py`、`turn_checkpoint.py`、`CheckpointScreen`，ADR 0148） |
 | 46 | `74b08375` 增量 | 2026-11-12 | `configure`新增`--thinking-effort`、`--thinking-budget`（到不了模型的设置直接拒绝）；旧配置没有思考强度时在空会话与`doctor`里提示重新configure（`config_hints.py`）；宿主补发的说明显示为“提示”行（ADR 0146、0147） |

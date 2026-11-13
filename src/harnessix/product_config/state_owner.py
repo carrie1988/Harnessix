@@ -12,6 +12,7 @@ from pathlib import Path
 
 from harnessix.agent.errors import KernelError
 from harnessix.domain.file_lock import acquire_exclusive_file_lock
+from harnessix.product_config.private_directory import make_private_directories
 
 
 def state_owner_anchor(state_root: Path) -> Path:
@@ -44,7 +45,7 @@ def _state_address(path: Path) -> Path:
             return candidate.resolve(strict=False)
         finally:
             bound.close()
-    candidate.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    make_private_directories(candidate.parent)
     return candidate.parent.resolve(strict=True) / candidate.name
 
 

@@ -2,6 +2,10 @@
 
 ## 未发布
 
+### 修复
+
+- 还没有运行过 `harnessix code configure` 就先使用 `harnessix exec --config <别处的配置>`（或设置了 `HARNESSIX_PRODUCT_CONFIG`）时，`~/.harnessix` 和 `~/.harnessix/workspaces` 被建成权限 755，之后运行 `harnessix code configure` 会被拒绝：“配置目录的权限是 755，需要 700”。现在 Harnessix 自己创建的状态目录每一级都是 700。已经被建成 755 的目录不会自动修改，按提示运行一次 `chmod 700 ~/.harnessix` 即可（macOS 与 Linux；Windows 不受影响）
+
 ### 改变
 
 - `harnessix exec` 的过程文本（写到标准错误）里，模型的思考内容每一行都以“思考：”开头，之后的回复和工具调用另起一行。此前思考内容没有标注、结尾也不换行，日志里会出现“I'm going to read the README.md file.工具开始：read_file”这样接在一起的行，分不清哪段是思考、哪段是回复。摘要 JSON 与 `--events-file` 不变

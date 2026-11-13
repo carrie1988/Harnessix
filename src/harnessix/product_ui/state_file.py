@@ -11,6 +11,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from harnessix.file_lock import acquire_exclusive_file_lock
+from harnessix.product_config.private_directory import make_private_directories
 from harnessix.product_ui.contracts import MAX_CLIENT_STATE_BYTES, ClientStateV1
 from harnessix.product_ui.errors import ProductUIError
 
@@ -44,7 +45,8 @@ def prepare_private_directory(root: Path) -> None:
             if _is_link_or_junction(root) or not stat.S_ISDIR(info.st_mode):
                 raise OSError
         else:
-            root.mkdir(mode=0o700, parents=True)
+            make_private_directories(root.parent)
+            root.mkdir(mode=0o700)
             info = root.lstat()
         if not _private_owner(info, 0o700):
             raise OSError
