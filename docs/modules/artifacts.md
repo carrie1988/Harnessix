@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 22
+version: 23
 code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
@@ -23,6 +23,7 @@ related_adrs:
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
+  - docs/adr/0158-history-artifact-bodies-verified-once-per-store.md
 related_tests:
   - tests/artifacts/test_binary_publication.py
   - tests/artifacts/test_contracts.py
@@ -34,6 +35,7 @@ related_tests:
   - tests/artifacts/test_process_output_upgrade.py
   - tests/artifacts/test_legacy_process_output_reader.py
   - tests/artifacts/test_model_history.py
+  - tests/artifacts/test_verified_history_bodies.py
   - tests/artifacts/test_sdk.py
   - tests/product_config/test_server_and_cli.py
   - tests/processes/test_trusted_output.py
@@ -47,6 +49,12 @@ supersedes: []
 ---
 
 # Artifact模块设计
+
+## 当前增量：历史正文在同一存储对象里只完整核对一次（ADR 0158）
+
+- [`batch_verify.verify_references`](../../src/harnessix/artifacts/batch_verify.py)记住同一存储对象已完整核对过的引用（作用域、归属、调用、用途、省略字段与整份清单）。之后的步骤照常核对记录、归属与用途、来源认证、清单、过期与正文SHA-256（`_require_same_body`，错误码与完整核对相同），跳过记录解析、命令输出校验、公开输出的密钥扫描与分页、省略覆盖。
+- 记录用弱引用挂在存储对象上（`_VERIFIED`），与它的公开输出保护同生命周期，每个对象最多4096条。`sqlite.utc_now`显式导出，两条路径用同一个时钟判断过期。
+- 回归见`tests/artifacts/test_verified_history_bodies.py`。Beta Issue #8。
 
 ## 1. 文档摘要
 
@@ -827,6 +835,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 23 | `f24afce5` 增量 | 2026-11-13 | 历史正文在同一存储对象里只完整核对一次，之后只确认记录、认证、清单、过期与SHA-256（`batch_verify`，ADR 0158，Beta Issue #8） |
 | 22 | `5d18bb3e` 增量 | 2026-11-11 | 取消收尾时照常发布已对账命令的终态输出：发布改用宿主核对作用域，取消运行中的命令得到确定的`process_cancelled`而不是`unknown`（0.10.0b16，Beta反馈HX-10） |
 | 21 | `dad55d32` 增量 | 2026-11-11 | Action Review/Output发布容忍执行期间的Steering，其余Session变化仍按`sequence_conflict`拒绝（0.10.0b16，Beta反馈HX-01） |
 | 20 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 动作输出存储识别命令输出预览v4（`trusted-process-output/v4`，预览为流的末尾），旧版本按`LEGACY_PREVIEW_VERSIONS`识别 |

@@ -48,7 +48,10 @@ from harnessix.artifacts.contracts import (
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.artifact_pagination import paginate_artifact_lines
-from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
+from harnessix.domain.models import ApprovalOutcome, EffectClass
+
+# 显式导出：批量核对用同一个时钟判断过期，测试替换它时两条路径一致。
+from harnessix.domain.models import utc_now as utc_now
 from harnessix.processes.output_artifact import parse_process_output_document
 from harnessix.session.sqlite import SQLiteSessionStore
 

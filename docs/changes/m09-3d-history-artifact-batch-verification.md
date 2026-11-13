@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: reviewing
-version: 3
+version: 4
 code_revision: 39dda2bb218baed30dcf9b1326f899a3133f497b
 owners:
   - core
@@ -55,8 +55,8 @@ supersedes: []
 ### 3.2 非目标
 
 1. 不改变`verify_reference`单条路径的行为与签名；
-2. 不引入跨步骤/跨Turn验证缓存（TTL与外部清理必须按现状被每次验证发现）；
-3. 不扩大`HISTORY_ARTIFACT_TIMEOUT_SECONDS`；正文逐字节校验成本随历史正文总量线性增长，超出预算的历史规模仍失败关闭，本设计不承诺无限历史；
+2. 不引入跨步骤/跨Turn验证缓存（TTL与外部清理必须按现状被每次验证发现）；（2026-11-13起由[ADR 0158](../adr/0158-history-artifact-bodies-verified-once-per-store.md)修订：已完整核对过的正文之后只再确认记录、认证、清单、过期与SHA-256，TTL与外部清理仍每步发现）
+3. 不扩大`HISTORY_ARTIFACT_TIMEOUT_SECONDS`；正文逐字节校验成本随历史正文总量线性增长，超出预算的历史规模仍失败关闭，本设计不承诺无限历史；（时限仍不扩大；ADR 0158之后线性部分只剩SHA-256，约为密钥扫描的250倍速度）
 4. 不修改Session快照格式、Artifact Schema或公共协议。
 
 ## 4. 总体架构与数据流

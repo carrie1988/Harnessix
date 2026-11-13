@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 15
+version: 16
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -26,6 +26,7 @@ related_adrs:
   - docs/adr/0149-completion-rule-in-native-instructions.md
   - docs/adr/0156-generation-progress-and-live-usage-estimate.md
   - docs/adr/0157-nameless-tool-calls-are-rejected-individually.md
+  - docs/adr/0158-history-artifact-bodies-verified-once-per-store.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -55,6 +56,7 @@ related_tests:
   - tests/product_config/test_retry_limit.py
   - tests/product_ui/test_activity_indicator.py
   - tests/agent/test_retry_progress.py
+  - tests/artifacts/test_verified_history_bodies.py
 supersedes: []
 ---
 
@@ -81,7 +83,7 @@ supersedes: []
 | 十三 | 上下文耗尽后任务中断，界面只有一行内部报错，没有恢复办法（0.10.0b24，Issue #3） | 对话与F1说明怎样接着做；耗尽本身的根因归上下文预算的工作 | 本文第27节 |
 | 十四 | `--service-failure-retries 2`之后，连续HTTP 503仍发出6次请求（0.10.0b24，Issue #2） | 配置了它时，一次请求最多尝试N+1次 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第2版 |
 | 十五 | 模型迟迟不返回首帧、或读超时后重试的几分钟里，界面一直是“思考中”（0.10.0b25，Issue #7、#11） | 显示“等待模型服务响应 · 已等待 N 秒” | 本文第29节 |
-| 十六 | 新会话续做约10分钟后以`context_artifact_timeout`中断，没有恢复办法（0.10.0b24，Issue #8） | 补恢复说明；根本修复待定 | 本文第30节 |
+| 十六 | 新会话续做约10分钟后以`context_artifact_timeout`中断，没有恢复办法（0.10.0b24，Issue #8） | 补恢复说明；正文只完整核对一次 | 本文第30节、[ADR 0158](../adr/0158-history-artifact-bodies-verified-once-per-store.md) |
 | 十七 | 退出终端界面时偶尔打印一段`IndexError`报错堆栈（0.10.0b23起） | 界面全部关闭后，运行时间检查点的定时器直接跳过 | 本文第31节 |
 | 十八 | 重试期间看不出第几次尝试、为什么还在等（0.10.0b25，Issue #11） | 运行提示说明尝试序号与上次失败原因 | 本文第32节 |
 
@@ -891,6 +893,15 @@ Issue #8（0.10.0b24，macOS）：在新会话里续做一个备份校验CLI，�
 
 对话与F1说明原因和办法：可以先发送“继续”（机器一时繁忙时有效）；再次出现时按Ctrl+N新建会话。
 改变核对方式或时限涉及上述原设计决定，交负责人决定。
+
+### 30.4 根本修复（负责人选A）
+
+三个选项：A 每份正文只完整核对一次，之后只确认记录、认证、清单、过期与SHA-256；B 把时限放宽到30秒；C 维持现状。
+负责人选A，见[ADR 0158](../adr/0158-history-artifact-bodies-verified-once-per-store.md)。
+
+- 实现在`artifacts/batch_verify.py`：记住同一存储对象完整核对过的引用（弱引用挂在存储对象上，每个对象最多4096条），之后的步骤用`_require_same_body`确认正文仍是同一份，错误码与完整核对相同。运行时与存储类不变。
+- 验证（`tests/artifacts/test_verified_history_bodies.py`）：新的存储对象第一次核对扫描1次，之后三次核对不再扫描；已核对过的引用，正文被改、记录被删、过期、换作用域时仍分别报`artifact_corrupt`、`artifact_not_found`、`artifact_expired`、`artifact_not_found`；换一个存储对象重新扫描。原有批量核对与模型历史用例全部通过。
+- 量级：改动后每步剩下的线性开销是SHA-256，本机约2.8 GB/s（32 MiB约11毫秒），密钥扫描约11 MB/s。
 
 ## 31. 第十七项：程序退出时运行时间检查点的定时器不再报错
 

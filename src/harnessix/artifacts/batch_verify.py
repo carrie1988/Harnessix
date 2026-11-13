@@ -1,16 +1,24 @@
-"""模型历史Artifact引用的批量验证：共享连接与快照，逐引用语义与单条路径一致。"""
+"""模型历史Artifact引用的批量验证：共享连接与快照，逐引用语义与单条路径一致。
+
+同一存储对象核对过的正文只完整核对一次（ADR 0158）：之后的步骤照常核对记录归属、来源认证、清单、
+是否过期与正文SHA-256，跳过记录解析、公开输出的密钥扫描与分页、省略覆盖——这些对同一份正文、
+同一保护范围与已提交的历史，结果不会变。此前每一步都重做，耗时随会话里累计的输出线性增长。
+"""
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Sequence
 from typing import Protocol
 from uuid import UUID
+from weakref import WeakKeyDictionary
 
 import aiosqlite
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
+from harnessix.artifacts import sqlite as artifact_sqlite
 from harnessix.artifacts.contracts import (
     ArtifactOmittedField,
     ArtifactRef,
@@ -22,6 +30,10 @@ from harnessix.artifacts.ports import ArtifactAccessScope, ArtifactReferenceVeri
 from harnessix.artifacts.sqlite import _HISTORY_ARTIFACT_PURPOSES, SQLiteArtifactStore
 
 _ROW_CHUNK = 100
+# 每个存储对象最多记住这么多份已完整核对的引用；超出时全部忘掉，之后按首次核对重做。
+MAX_VERIFIED_REFERENCES = 4096
+# 存储对象与它的公开输出保护同生命周期：对象释放后记录随之消失，不跨进程或跨存储沿用。
+_VERIFIED: WeakKeyDictionary[SQLiteArtifactStore, set[str]] = WeakKeyDictionary()
 
 
 class _ReferenceBinding(Protocol):
@@ -77,8 +89,10 @@ async def _check_entry(
     rows: dict[str, aiosqlite.Row],
     snapshots: dict[UUID, Thread | None],
     entry: HistoryReferenceCheck,
+    verified: set[str],
+    key: str,
 ) -> None:
-    """按单条路径的精确顺序与错误码检查一条引用。"""
+    """按单条路径的精确顺序与错误码检查一条引用；已完整核对过的只再核对正文是否还是同一份。"""
 
     record = rows.get(str(entry.reference.artifact_id))
     if record is None or record["thread_id"] != str(entry.owner_thread_id):
@@ -99,6 +113,9 @@ async def _check_entry(
         raise
     if stored != entry.reference:
         raise KernelError("artifact_corrupt", "Artifact引用与已提交manifest不一致")
+    if key in verified:
+        _require_same_body(record, stored)
+        return
     lines = store._body(record, thread, stored)  # noqa: SLF001
     await store._publication.check_body(record["body"], purpose=record["purpose"])  # noqa: SLF001
     if entry.purpose == "artifact_page":
@@ -107,6 +124,37 @@ async def _check_entry(
         if entry.purpose != "tool_result" or not stored.complete:
             raise KernelError("artifact_corrupt", "局部Artifact不能证明结果省略")
         store._verify_coverage(thread, entry.call_id, lines, entry.omitted_field)  # noqa: SLF001
+    if len(verified) >= MAX_VERIFIED_REFERENCES:
+        verified.clear()
+    verified.add(key)
+
+
+def _verified_key(entry: HistoryReferenceCheck, workspace_scope: str) -> str:
+    """一条引用的完整身份：作用域、归属、调用、用途、省略字段与整份清单（含SHA-256与过期时间）。"""
+
+    return ":".join(
+        (
+            workspace_scope,
+            str(entry.owner_thread_id),
+            str(entry.call_id),
+            entry.purpose,
+            entry.omitted_field or "-",
+            entry.reference.model_dump_json(),
+        )
+    )
+
+
+def _require_same_body(record: aiosqlite.Row, ref: ArtifactRef) -> None:
+    """与完整核对相同的状态、过期与SHA-256检查及错误码，不再解析记录或扫描正文。"""
+
+    body = record["body"]
+    expired = record["state"] == "expired" or ref.expires_at <= artifact_sqlite.utc_now()
+    if expired:
+        raise KernelError("artifact_expired", "Artifact 已过期")
+    if record["state"] != "published" or not isinstance(body, bytes):
+        raise KernelError("artifact_corrupt", "Artifact状态或正文不存在")
+    if len(body) != ref.size_bytes or hashlib.sha256(body).hexdigest() != ref.sha256:
+        raise KernelError("artifact_corrupt", "Artifact 正文校验失败")
 
 
 async def verify_references(
@@ -131,8 +179,10 @@ async def verify_references(
                 snapshots[entry.owner_thread_id] = await store.session._snapshot(  # noqa: SLF001
                     database, entry.owner_thread_id
                 )
+        verified = _VERIFIED.setdefault(store, set())
         for entry in entries:
-            await _check_entry(store, rows, snapshots, entry)
+            key = _verified_key(entry, workspace_scope)
+            await _check_entry(store, rows, snapshots, entry, verified, key)
 
 
 def _entry(reference: _PreparedReference, thread: Thread) -> HistoryReferenceCheck:
