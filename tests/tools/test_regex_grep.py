@@ -8,7 +8,6 @@ import time
 from importlib import metadata
 
 import pytest
-import re2
 from pydantic import ValidationError
 
 from harnessix.agent.cancellation import TurnCancelled
@@ -27,6 +26,10 @@ from harnessix.tools.search_contracts import (
 from harnessix.tools.windows_read_port import WindowsReadPort
 from harnessix.tools.workspace import ReadOperation, Workspace
 from tests.tools.test_windows_grep_snapshots import _MemoryWindowsRoot
+
+# Python 3.15起正则搜索改用regex（Beta Issue #10），没有google-re2时跳过本文件；
+# 3.15的路径见test_regex_grep_py315.py。
+re2 = pytest.importorskip("re2")
 
 
 @pytest.fixture(params=["posix", "windows"])

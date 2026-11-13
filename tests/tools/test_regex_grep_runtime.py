@@ -5,7 +5,6 @@ import json
 from uuid import UUID, uuid4
 
 import pytest
-import re2
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.agent.errors import KernelError
@@ -21,6 +20,10 @@ from harnessix.tools.workspace import digest
 from tests.agent.helpers import answer
 from tests.artifacts.helpers import results, step
 from tests.tools.test_files import call, execute
+
+# Python 3.15起正则搜索改用regex（Beta Issue #10），没有google-re2时跳过本文件；
+# 3.15的路径见test_regex_grep_py315.py。
+re2 = pytest.importorskip("re2")
 
 
 def definitions(**flags):

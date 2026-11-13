@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 32
+version: 33
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -38,6 +38,7 @@ related_tests:
   - tests/test_exec_cli.py
   - tests/sandbox/test_native_policy.py
   - tests/tools/test_pinned_root.py
+  - tests/tools/test_regex_grep_py315.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -118,9 +119,10 @@ supersedes: []
 | 三十三 | `harnessix exec`里手工批准与拒绝都被记成`harnessix-exec:auto`（0.10.0b32，Issue #23） | 提示处由人输入的决定另记`:interactive` | 本文第47节 |
 | 三十四 | 沙箱外命令没带上pnpm、Playwright等工具设置，测试前重装依赖、重新下载浏览器而超时（0.10.0b33，Issue #20） | 沙箱外命令继承这些工具的非机密设置 | 本文第48节 |
 | 三十五 | 大仓库里整仓搜索约5秒超时，没有任何结果（0.10.0b32/b33，Issue #21） | 一次读取操作只核对两次根 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)、本文第49节 |
+| 三十六 | Python 3.15上安装失败：google-re2没有3.15的预编译包（0.10.0b25/b32，Issue #10） | 3.15起正则搜索改用regex，许可证策略允许CNRI-Python | [ADR 0159](../adr/0159-regex-engine-on-python-315.md)、本文第50节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十五项在第26～49节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十六项在第26～50节。
 
 ## 2. 需求背景
 
@@ -1382,3 +1384,21 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 本机用16,000个文件的合成仓库在macOS上同样超时，属于三个平台的共性问题；性能分析定位到每个文件前后都从“/”（Windows从盘符）重新核对根。
 修改后macOS上同一仓库整仓grep约2.3秒完成。超时时返回部分结果是新需求，只记录；整仓glob的条目上限另行记录。
 Windows上的收益与正确性由发布会话在Windows真机上用Issue的组件脚本复测。
+## 50. 第三十六项：Python 3.15上的正则搜索引擎（Issue #10）
+
+### 50.1 背景与决定
+
+google-re2只有CPython 3.10～3.14的预编译包，三个平台都没有3.15的；uv默认选3.15时安装转为源码编译并失败（Issue #10，
+b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv会退到旧版本）。负责人2026-11-13选方案C1：
+3.15起改用`regex`库，许可证策略允许其`CNRI-Python`条款，法律评估暂不考虑。
+
+### 50.2 设计
+
+见[ADR 0159](../adr/0159-regex-engine-on-python-315.md)：按Python版本只装一个引擎；3.15上先按RE2语法拒绝回溯写法，
+以`regex`编译、每行限时0.25秒；执行合同写明引擎；许可证策略、SBOM、许可证证据与扫描结果重新生成（78个包、912个Archive）。
+
+### 50.3 验证
+
+- `tests/tools/test_regex_grep_py315.py`（真实工具Runtime上的3.15路径、与RE2逐行对比、拒绝、超时、失败关闭、执行合同、依赖声明、语法检查表）；
+  `tests/tools`与`tests/governance`在macOS上通过（SBOM计数测试改为78项、912个引用）。
+- 发布会话：三个平台用`uv tool install --python 3.15`实际安装并运行正则搜索；3.12安装照旧。

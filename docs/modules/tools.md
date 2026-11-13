@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 24
+version: 25
 code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
@@ -93,6 +93,12 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 
 - [`workspace.pinned_root`](../../src/harnessix/tools/workspace.py)把按路径核对过的根描述符记在这次`ReadOperation`上，`Workspace.open`经`_root`从它的副本出发；结束时再按路径核对一次，被替换即`workspace_changed`。工具Runtime的POSIX读取都在其下执行（`runtime._read_posix`）。
 - 16,000个文件的整仓grep由5秒超时降到约2.3秒（macOS）。回归见`tests/tools/test_pinned_root.py`。
+
+## 当前增量：Python 3.15起正则搜索改用regex引擎（ADR 0159）
+
+- [`grep_matcher`](../../src/harnessix/tools/grep_matcher.py)按`USE_RE2`（`sys.version_info < (3, 15)`）选引擎：3.14及以下照旧google-re2；3.15起`_regex_line_matcher`先用`supported_by_re2`按RE2语法拒绝反向引用、前后查找、原子组、占有量词、递归、条件分支、注释组、RE2没有的内联标志与超过1000的计数重复，再以`regex.VERSION0`编译，每行限时`REGEX_LINE_TIMEOUT_SECONDS`（0.25秒），超时为`tool_regex_timeout`。
+- `execution_contract`按引擎给出（3.15上`engine: regex`），进入工具目录的规则摘要；`regex`缺失或版本不符时`tool_regex_unavailable`，失败关闭。
+- 已知差异：3.15上`\d\w\s\b`按Unicode判定（ASCII标志会让`\pL`失效）。回归见`tests/tools/test_regex_grep_py315.py`。Beta Issue #10。
 
 ## 当前增量：Windows上也为精确锚定的edit补SHA（0.10.0b15）
 
@@ -1099,6 +1105,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 25 | `d6595eef` 增量 | 2026-11-13 | Python 3.15起正则搜索改用regex：按RE2语法拒绝回溯写法、每行限时，执行合同按引擎给出（ADR 0159，Beta Issue #10） |
 | 24 | `824c7f20` 增量 | 2026-11-13 | 一次读取操作只在开头与结尾核对工作区根（`workspace.pinned_root`），整仓搜索不再逐文件重走根路径（ADR 0160，Beta Issue #21） |
 | 23 | `151ab594` 增量 | 2026-11-12 | 大仓库整仓搜索：`_decode`的二进制判断改用一次正则扫描；快照与正则搜索先对整份文本判断、不命中的文件不逐行扫描；整仓上限放宽到四倍，执行合同v5/v6改为v7/v8；原字面量合同不变（ADR 0145，Beta 0.10.0b20复测B20-05） |
 | 22 | `152c9c28` 增量 | 2026-11-11 | 提案修复的整文件读取补上Windows后端，精确锚定的edit在Windows上也能补SHA（0.10.0b15） |
