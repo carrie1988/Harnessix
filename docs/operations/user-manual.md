@@ -756,7 +756,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 
 ### 11.5 摘要内容
 
-摘要（`harnessix.exec-summary/v1`）包含：`status`、`error`、`model_steps`、`usage`（Token 用量）、`cost`（费用或上限）、`approval_mode`、`approvals`（每次审批的类型、结果和决定者）、`final_answer`（最后的回复）、`changed_paths`（改动的文件）、`commands`（运行过的命令）、`verification`（最后一次修改之后是否运行过检查）、`elapsed_seconds`，以及用于恢复的 `thread_id` 和 `turn_id`。
+摘要（`harnessix.exec-summary/v1`）包含：`status`、`error`、`model_steps`、`usage`（Token 用量）、`cost`（费用或上限）、`approval_mode`、`approvals`（每次审批的类型、结果和决定者：审批模式自动做的决定记 `harnessix-exec:<模式>`，你在终端提示处输入的记 `harnessix-exec:<模式>:interactive`）、`final_answer`（最后的回复）、`changed_paths`（改动的文件）、`commands`（运行过的命令）、`verification`（最后一次修改之后是否运行过检查）、`elapsed_seconds`，以及用于恢复的 `thread_id` 和 `turn_id`。
 
 ---
 

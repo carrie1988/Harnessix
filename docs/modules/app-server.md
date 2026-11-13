@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 15
+version: 16
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -1387,6 +1387,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 16 | `a47ce892` 增量 | 2026-11-13 | 瘦CLI配了审批策略时，提示处由人输入的决定记`<主体>:interactive`，与策略决定区分（`agent_cli._actors`，Beta Issue #23） |
 | 15 | `f24afce5` 增量 | 2026-11-13 | `harnessix exec`摘要的`verification`改由`product_ui.verification.verification_summary`计算（逻辑不变，与终端界面共用，Beta Issue #9） |
 | 14 | `6d0c6152` 增量 | 2026-11-13 | 薄CLI的过程文本给思考预览逐行加“思考：”标注，其后的输出另起一行（`LabelledThinkingConsole`）；此前思考内容没有标注并与下一条输出接在同一行 |
 | 13 | `a22e64ee` 增量 | 2026-11-13 | 预览流（思考预览、生成进度）的开关合并为`preview_streams.PreviewStreams`，握手时按客户端能力确定，`events/next`据此滤掉未声明的预览增量；新增`generation_progress`能力（ADR 0156） |

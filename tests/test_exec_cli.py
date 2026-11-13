@@ -70,6 +70,28 @@ def test_an_interactive_prompt_that_reads_end_of_input_needs_a_human_too(monkeyp
     assert needs.value.__cause__ is None and needs.value.__suppress_context__
 
 
+def test_decisions_typed_at_the_prompt_are_recorded_apart_from_policy_ones():
+    """策略做的决定记harnessix-exec:<模式>；人在提示处输入的另记来源（Beta Issue #23）。
+
+    此前都记harnessix-exec:auto，审计里分不出手工批准与自动批准。没有策略的普通CLI不变。
+    """
+    from harnessix.agent_cli import _actors, _typed_decision
+
+    assert _actors("harnessix-exec:auto", approval_policy("auto")) == (
+        "harnessix-exec:auto",
+        "harnessix-exec:auto:interactive",
+    )
+    assert _actors("local-user", None) == ("local-user", "local-user")
+    assert [_typed_decision(reply) for reply in ("y", "yes", "n", "")] == [
+        "approved",
+        "approved",
+        "rejected",
+        "rejected",
+    ]
+    with pytest.raises(ValueError):
+        _actors("x" * 250, approval_policy("manual"))
+
+
 def test_exec_requires_exactly_one_task_source():
     with pytest.raises(SystemExit):
         _parser().parse_args([])

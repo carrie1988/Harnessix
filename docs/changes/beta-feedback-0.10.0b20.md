@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 29
+version: 30
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -113,9 +113,10 @@ supersedes: []
 | 三十 | 按Ctrl+F收尾后模型仍又做了两项检查（0.10.0b24，Issue #4） | 收尾由宿主保证：不准入尚未开始的调用，之后不提供工具 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第2版、本文第44节 |
 | 三十一 | `harnessix exec`在审批提示处读到输入结尾时崩溃，退出码1、没有摘要（0.10.0b32，Issue #18） | 按“需要人工处理”以退出码2结束并写出摘要 | 本文第45节 |
 | 三十二 | 终端界面粘贴多行任务只剩第一行（0.10.0b32，Issue #19） | 多行粘贴以标记显示，发送时还原原文 | 本文第46节 |
+| 三十三 | `harnessix exec`里手工批准与拒绝都被记成`harnessix-exec:auto`（0.10.0b32，Issue #23） | 提示处由人输入的决定另记`:interactive` | 本文第47节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十二项在第26～46节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十三项在第26～47节。
 
 ## 2. 需求背景
 
@@ -1341,3 +1342,16 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 
 验证：`tests/product_ui/test_paste_input.py`（标记与还原、多段编号、删掉标记、清空；真实产品界面粘贴后按Enter，Agent收到完整三行；
 补充说明对话框）。真实终端界面（tmux `paste-buffer -p`）：修复前保存的用户消息只有第一行；修复后精确CRLF与终端送出的CR两种形式都保存为完整三行。
+
+## 47. 第三十三项：区分人工审批与策略审批（Issue #23）
+
+0.10.0b32 Windows（Issue #23）：`harnessix exec --approval-mode auto`下，4个会话里5条在终端提示处手工批准或拒绝的宿主命令，
+`approvals`与事件里的决定者都是`harnessix-exec:auto`，与同会话自动批准的补丁相同，审计里分不出谁做的决定。
+原因：瘦CLI对所有决定都用同一个主体（`agent_cli.ThinAgentCLI.actor`）。与平台无关。
+
+修改：`agent_cli._actors`——配了审批策略时，策略做的决定仍记原主体，在提示处由人输入的记`<主体>:interactive`
+（exec即`harnessix-exec:<模式>:interactive`）；没有策略的普通CLI所有决定都由人做，主体不变。
+
+验证：`tests/test_exec_cli.py::test_decisions_typed_at_the_prompt_are_recorded_apart_from_policy_ones`；真实进程（macOS，tmux，
+`--approval-mode auto`，脚本模型请求一条需要人批准的沙箱外命令，提示处输入y）：修复前摘要记`harnessix-exec:auto`，
+修复后`harnessix-exec:auto:interactive`。

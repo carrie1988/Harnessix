@@ -117,6 +117,21 @@ class LabelledThinkingConsole:
             self._thinking_line_open = False
 
 
+def _actors(actor: str, policy: ApprovalPolicy | None) -> tuple[str, str]:
+    """审批主体：策略做的决定记actor；配了策略时，人在提示处输入的决定另记来源（Beta Issue #23）。
+
+    此前两者都记actor，`harnessix exec`里手工批准与拒绝都显示为harnessix-exec:auto。
+    """
+    human = actor if policy is None else f"{actor}:interactive"
+    if not actor or len(human) > 256:
+        raise ValueError("CLI actor长度必须为1到256")
+    return actor, human
+
+
+def _typed_decision(reply: str) -> ApprovalOutcome:
+    return "approved" if reply in {"y", "yes"} else "rejected"
+
+
 class ThinAgentCLI:
     """只消费Agent SDK的薄交互层；Session和Agent状态机仍归App Server。"""
 
@@ -129,11 +144,9 @@ class ThinAgentCLI:
         approval_policy: ApprovalPolicy | None = None,
         on_event: Callable[[PublicEvent], None] | None = None,
     ) -> None:
-        if not actor or len(actor) > 256:
-            raise ValueError("CLI actor长度必须为1到256")
+        self.actor, self.human_actor = _actors(actor, approval_policy)
         self.client = client
         self.console = LabelledThinkingConsole(console or StandardAgentConsole())
-        self.actor = actor
         self.approval_policy = approval_policy
         # 回放会从头重读事件；按游标去重后每个持久事件只交给回调一次。
         self._on_event = on_event
@@ -260,13 +273,13 @@ class ThinAgentCLI:
                 return False
             content = approval_item.content
             assert isinstance(content, PublicApprovalRequestContent)
-            outcome = self._policy_decision(content)
+            outcome, actor = self._policy_decision(content), self.actor
             if outcome is None:
                 if _in_grace(self._pending_since, content.approval_id):
                     return False
                 await self._render_artifact(thread.thread_id, approval_item)
                 reply = (await self.console.prompt("批准该操作？[y/N] ")).strip().lower()
-                outcome = "approved" if reply in {"y", "yes"} else "rejected"
+                outcome, actor = _typed_decision(reply), self.human_actor
             await self.client.respond_approval(
                 ApprovalRespondParams(
                     request_id=f"cli-approval-{content.approval_id}",
@@ -274,7 +287,7 @@ class ThinAgentCLI:
                     turn_id=turn.turn_id,
                     approval_id=content.approval_id,
                     fingerprint=content.request_fingerprint,
-                    decision=PublicApprovalDecision(outcome=outcome, actor=self.actor),
+                    decision=PublicApprovalDecision(outcome=outcome, actor=actor),
                 )
             )
             self._submitted_approvals.add(content.approval_id)
