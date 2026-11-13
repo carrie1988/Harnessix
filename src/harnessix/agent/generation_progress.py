@@ -4,6 +4,8 @@
 工具参数完全没有增量），Token与费用也要等请求结束才更新，用户无从判断是不是卡住了。
 这里按类别累计本步骤已生成的UTF-8字节数——思考、正文、工具参数——每秒至多发布一次，只有数字和
 工具名，没有内容。每个模型步骤用确定的条目身份和独立序号，客户端据此与正文、思考预览区分。
+同一步骤的请求失败后自动重试时，这一行还带上第几次尝试与上次失败的类别（只有固定的几个词），
+界面据此说明为什么还在等（Beta Issue #11）。
 """
 
 from __future__ import annotations
@@ -16,11 +18,19 @@ from typing import Final, NamedTuple
 from uuid import UUID, uuid5
 
 from harnessix.agent.models import ItemDelta
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ToolArgumentsProgress
 
 GENERATION_PROGRESS_VERSION: Final = "harnessix.generation-progress/v1"
 PROGRESS_INTERVAL_SECONDS: Final = 1.0
 _UNKNOWN_TOOL: Final = "-"
+# 失败尝试的错误码到公开的类别；只发布类别，不发布原始错误。
+_FAILURE_KINDS: Final = {
+    "provider_transport": "network",
+    "provider_rate_limit": "rate_limit",
+    "provider_provider_internal": "server",
+}
+FAILURE_KINDS: Final = frozenset({*_FAILURE_KINDS.values(), "other"})
 
 
 def generation_progress_item_id(turn_id: UUID, model_step: int) -> UUID:
@@ -36,11 +46,17 @@ class GenerationCounts(NamedTuple):
     text: int = 0
     arguments: int = 0
     tool: str | None = None
+    # 本步骤第几次尝试，与上一次失败尝试的类别（FAILURE_KINDS之一）。
+    attempt: int = 1
+    failure: str | None = None
 
     def line(self) -> str:
-        """进度流的一行；每行都是累计值，客户端只需要最近一行。"""
+        """进度流的一行；每行都是累计值，客户端只需要最近一行。没有重试时只有前四项。"""
 
-        return f"{self.reasoning} {self.text} {self.arguments} {self.tool or _UNKNOWN_TOOL}\n"
+        line = f"{self.reasoning} {self.text} {self.arguments} {self.tool or _UNKNOWN_TOOL}"
+        if self.attempt > 1 or self.failure is not None:
+            line += f" {self.attempt} {self.failure or _UNKNOWN_TOOL}"
+        return line + "\n"
 
 
 def latest_counts(text: str) -> GenerationCounts | None:
@@ -48,11 +64,19 @@ def latest_counts(text: str) -> GenerationCounts | None:
 
     lines = text.splitlines()
     fields = lines[-1].split(" ") if lines else []
-    if len(fields) != 4 or not all(field.isdecimal() for field in fields[:3]):
+    if len(fields) not in {4, 6} or not all(field.isdecimal() for field in fields[:3]):
         return None
     reasoning, body, arguments = (int(field) for field in fields[:3])
-    return GenerationCounts(
+    counts = GenerationCounts(
         reasoning, body, arguments, None if fields[3] == _UNKNOWN_TOOL else fields[3]
+    )
+    if len(fields) == 4:
+        return counts
+    attempt, failure = fields[4], fields[5]
+    if not attempt.isdecimal() or failure not in {*FAILURE_KINDS, _UNKNOWN_TOOL}:
+        return None
+    return counts._replace(
+        attempt=int(attempt), failure=None if failure == _UNKNOWN_TOOL else failure
     )
 
 
@@ -87,6 +111,16 @@ class GenerationProgress:
             return False
         self._advance(self.counts._replace(arguments=event.utf8_bytes, tool=event.tool))
         return True
+
+    def attempt(self, event: ModelAttemptStarted | ModelAttemptFinished) -> None:
+        """记下失败尝试的类别；重试开始时发布第几次尝试，让界面说明为什么还在等。"""
+
+        if isinstance(event, ModelAttemptFinished):
+            if event.error is not None:
+                kind = _FAILURE_KINDS.get(event.error.code, "other")
+                self.counts = self.counts._replace(failure=kind)
+        elif event.index > 1:
+            self._advance(self.counts._replace(attempt=event.index))
 
     def close(self) -> None:
         """步骤的响应已经结束：不再补发。"""

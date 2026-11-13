@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 52
+version: 53
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：重试时说明第几次尝试与上次失败原因
+
+- [`generation_estimate.request_retry`](../../src/harnessix/product_ui/generation_estimate.py)从生成进度行读出尝试序号与失败类别；`activity_text`在重试时立即显示“等待模型服务响应 · 第 2 次尝试，上次网络中断或超时 · 已等待 N 秒”，不必等5秒。
+- `in_flight_request`在这一步还没有生成任何内容时返回None（只有重试信息的进度行不触发用量估算，底栏照常显示已结算的数字）。
+- 回归见`tests/agent/test_retry_progress.py`。Beta Issue #11。
 
 ## 当前增量：等待首帧时的运行提示与核对超时的恢复说明
 
@@ -1205,6 +1211,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 53 | `f24afce5` 增量 | 2026-11-13 | 重试时运行提示说明第几次尝试与上次失败原因（`request_retry`，Beta Issue #11） |
 | 52 | `f24afce5` 增量 | 2026-11-13 | 等待首帧或重试期间显示“等待模型服务响应 · 已等待 N 秒”；`context_artifact_timeout`的恢复说明（Beta Issue #7、#11、#8） |
 | 51 | `f24afce5` 增量 | 2026-11-13 | 上下文耗尽的恢复说明改为首选“调大窗口后重新打开、原会话继续”；`configure --service-failure-retries`的帮助文字说明它决定一次请求最多尝试N+1次（Beta Issue #3、#2） |
 | 50 | `f24afce5` 增量 | 2026-11-13 | 上下文耗尽（`context_budget_exceeded`）与模型输出不合规（`provider_invalid_provider_output`）结束任务时，对话与F1给出恢复办法（Beta Issue #3、#1） |

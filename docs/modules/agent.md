@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 61
+version: 62
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -49,6 +49,12 @@ related_tests:
   - tests/product_config/test_native_sandbox_profile.py
 supersedes: []
 ---
+
+## 当前增量：生成进度带上重试的尝试序号与失败类别
+
+- [`ModelTextPublication.watch`](../../src/harnessix/agent/model_text.py)包住Provider事件流：事件原样传下去，模型尝试的开始与结束同时交给[`GenerationProgress.attempt`](../../src/harnessix/agent/generation_progress.py)。`_sample_events`只把`self.provider.stream(...)`换成`texts.watch(self.provider.stream(...))`，运行时主文件行数不变。
+- 失败尝试只记下类别：`provider_transport`→`network`、`provider_rate_limit`→`rate_limit`、`provider_provider_internal`→`server`，其余为`other`；不发布原始错误。第2次及以后的尝试开始时发布一行，进度行在四项之后追加`<尝试序号> <失败类别或->`；没有重试时仍是原来的四项。
+- 回归见`tests/agent/test_retry_progress.py`（含真实OpenAI Chat适配器503后重试）。Beta Issue #11。
 
 ## 当前增量：补SHA认得只差换行的锚点（0.10.0b21，ADR 0141）
 
@@ -1010,6 +1016,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 62 | `f24afce5` 增量 | 2026-11-13 | 生成进度在重试时带上尝试序号与失败类别（`ModelTextPublication.watch`、`GenerationProgress.attempt`），界面据此说明为什么还在等（Beta Issue #11） |
 | 61 | `a22e64ee` 增量 | 2026-11-13 | 模型请求进行中的生成进度：`generation_progress.py`按类别（思考、正文、工具参数）累计本步骤已生成的UTF-8字节数，每秒至多以临时`ItemDelta`发布一行累计值，条目身份确定、序号独立，不建Item、不进模型历史（ADR 0156） |
 | 60 | `74b08375` 增量 | 2026-11-12 | 完成守卫增加交互模式`interactive`：只在回复宣布了下一步却没有动作时补发提示，向用户提问的回复不算，完整守卫的判定不变；`AgentRuntime(completion_guard=...)`接受布尔值或模式名（ADR 0147） |
 | 59 | `151ab594` 增量 | 2026-11-12 | `continue_after_unknown_usage`开关改为`UnknownUsagePolicy`：交互模式下服务方故障（连接与超时、429、5xx）造成的用量未知连续至多自动重试5次，其他原因照旧停止；判定在`provider_stop.service_failures_within`（ADR 0144，Beta 0.10.0b20复测） |

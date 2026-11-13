@@ -39,6 +39,7 @@ supersedes: []
   `initialize-params-v2`/`initialize-result-v2`增补）。只有客户端同时声明`item_deltas`与`generation_progress`，服务端才下发生成进度。
 - 生成进度沿用`PublicItemDelta`格式，条目身份由`uuid5(turn_id, "harnessix.generation-progress/v1:<step>")`约定；`delta`是一行
   `<思考字节数> <正文字节数> <工具参数字节数> <工具名或->`，每行都是本步骤到目前为止的累计值，客户端只需要最近一行，序号有缺口不影响。
+  请求失败后重试时，行尾追加`<尝试序号> <失败类别或->`（类别为`network`、`rate_limit`、`server`、`other`之一）；解析方应同时接受四项与六项（Beta Issue #11）。
   不新增字段，未声明的客户端行为不变。
 - `protocol_json_size`移到[`codec.py`](../../src/harnessix/protocol/codec.py)：它没有调用方，属于编解码辅助；合同文件因此留出新增字段的空间。
 - 详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。

@@ -10,13 +10,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final, Literal
 
-from harnessix.agent.generation_progress import latest_counts
+from harnessix.agent.generation_progress import GenerationCounts, latest_counts
 from harnessix.product_ui.projection import ProductViewState
 
 # 与上下文预算相同的换算口径：约3个UTF-8字节折合1个Token（中文一字约1个，英文与代码约4个字符1个）。
 UTF8_BYTES_PER_TOKEN: Final = 3
 _PATCH_TOOL: Final = "apply_patch_batch"
 GenerationPhase = Literal["thinking", "editing", "calling", "replying"]
+# 失败尝试的类别（agent/generation_progress.py发布的固定词）到界面说明。
+_FAILURE_TEXT: Final = {
+    "network": "网络中断或超时",
+    "rate_limit": "被限流",
+    "server": "服务端出错",
+}
 _PHASE_LABELS: Final[dict[GenerationPhase, str]] = {
     "thinking": "思考中",
     "editing": "正在生成修改内容",
@@ -48,8 +54,8 @@ class InFlightRequest:
         return self.input_tokens + self.output_tokens
 
 
-def in_flight_request(view: ProductViewState | None) -> InFlightRequest | None:
-    """当前Turn正在调用模型且已有生成进度时给出估算；否则返回None，界面照常显示已结算的用量。"""
+def _current_counts(view: ProductViewState | None) -> GenerationCounts | None:
+    """正在调用模型的这一步最近一行生成进度；不在调用模型或还没有进度时返回None。"""
 
     turn = None if view is None else view.current_turn
     if view is None or turn is None or turn.status != "calling_model":
@@ -61,19 +67,47 @@ def in_flight_request(view: ProductViewState | None) -> InFlightRequest | None:
             and stream.turn_id == turn.turn_id
             and stream.model_step > turn.model_step
         ):
-            counts = latest_counts(stream.text)
-            if counts is None:
-                return None
-            phase: GenerationPhase = "thinking"
-            if counts.arguments:
-                phase = "editing" if counts.tool == _PATCH_TOOL else "calling"
-            elif counts.text:
-                phase = "replying"
-            generated = counts.reasoning + counts.text + counts.arguments
-            return InFlightRequest(
-                phase, generated // UTF8_BYTES_PER_TOKEN, view.last_request_tokens or 0
-            )
+            return latest_counts(stream.text)
     return None
+
+
+def in_flight_request(view: ProductViewState | None) -> InFlightRequest | None:
+    """当前Turn正在调用模型且已有生成内容时给出估算；否则返回None，界面照常显示已结算的用量。"""
+
+    counts = _current_counts(view)
+    generated = 0 if counts is None else counts.reasoning + counts.text + counts.arguments
+    if view is None or counts is None or not generated:
+        return None
+    phase: GenerationPhase = "thinking"
+    if counts.arguments:
+        phase = "editing" if counts.tool == _PATCH_TOOL else "calling"
+    elif counts.text:
+        phase = "replying"
+    return InFlightRequest(phase, generated // UTF8_BYTES_PER_TOKEN, view.last_request_tokens or 0)
+
+
+@dataclass(frozen=True, slots=True)
+class RequestRetry:
+    """这一步的请求失败后正在自动重试：第几次尝试，上次失败的类别。"""
+
+    attempt: int
+    failure: str | None
+
+    @property
+    def text(self) -> str:
+        """例如“第 2 次尝试，上次网络中断或超时”。"""
+
+        reason = _FAILURE_TEXT.get(self.failure or "", "请求失败")
+        return f"第 {self.attempt} 次尝试，上次{reason}"
+
+
+def request_retry(view: ProductViewState | None) -> RequestRetry | None:
+    """这一步正在重试时返回尝试序号与上次失败的类别（Beta Issue #11）；第一次尝试时返回None。"""
+
+    counts = _current_counts(view)
+    if counts is None or counts.attempt < 2:
+        return None
+    return RequestRetry(counts.attempt, counts.failure)
 
 
 def approximate(tokens: int) -> int:

@@ -14,7 +14,12 @@ from uuid import UUID
 from textual.widgets import Static
 
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
-from harnessix.product_ui.generation_estimate import InFlightRequest, in_flight_request
+from harnessix.product_ui.generation_estimate import (
+    InFlightRequest,
+    RequestRetry,
+    in_flight_request,
+    request_retry,
+)
 from harnessix.product_ui.rendering import turn_status_label
 
 TICK_SECONDS: Final = 0.12
@@ -42,6 +47,7 @@ def activity_text(
     streaming: bool,
     generation: InFlightRequest | None = None,
     silent_seconds: float = 0.0,
+    retry: RequestRetry | None = None,
 ) -> str:
     """一行运行提示，例如“⠹ 思考中 · 已运行 23 秒”。
 
@@ -50,12 +56,14 @@ def activity_text(
     进度有一阵没有变化时改为说明等了多久：“⠹ 正在生成修改内容 · 模型服务 18 秒未返回新内容 · …”。
     请求发出后还没有收到任何内容（等首帧，或读超时后正在重试）时同样说明：
     “⠹ 等待模型服务响应 · 已等待 3 分 01 秒 · …”。
-    silent_seconds从最近一次有新内容、或这一步开始调用模型算起。
+    silent_seconds从最近一次有新内容、或这一步开始调用模型算起。请求失败后正在重试时立即说明：
+    “⠹ 等待模型服务响应 · 第 2 次尝试，上次网络中断或超时 · 已等待 15 秒 · …”。
     """
 
     waiting = silent_seconds >= SILENCE_NOTICE_SECONDS
-    if status == "calling_model" and generation is None and not streaming and waiting:
-        label = f"等待模型服务响应 · 已等待 {_duration(silent_seconds)}"
+    if status == "calling_model" and generation is None and not streaming and (waiting or retry):
+        attempt = "" if retry is None else f" · {retry.text}"
+        label = f"等待模型服务响应{attempt} · 已等待 {_duration(silent_seconds)}"
     elif generation is not None and status == "calling_model":
         label = (
             generation.label
@@ -91,6 +99,7 @@ class ActivityIndicator(Static):
         self._status = ""
         self._streaming = False
         self._generation: InFlightRequest | None = None
+        self._retry: RequestRetry | None = None
         # 最近一次有新内容（生成进度变化），或进入当前状态的时刻；等待提示从这里算起。
         self._generation_at = 0.0
         self._frame = 0
@@ -124,9 +133,10 @@ class ActivityIndicator(Static):
             and stream.model_step > turn.model_step
             for stream in view.streams
         )
-        generation = in_flight_request(view)
-        if generation != self._generation:
-            self._generation, self._generation_at = generation, monotonic()
+        generation, retry = in_flight_request(view), request_retry(view)
+        if (generation, retry) != (self._generation, self._retry):
+            self._generation, self._retry = generation, retry
+            self._generation_at = monotonic()
         self.display = True
         self._render_line()
 
@@ -145,5 +155,6 @@ class ActivityIndicator(Static):
                 streaming=self._streaming,
                 generation=self._generation,
                 silent_seconds=monotonic() - self._generation_at,
+                retry=self._retry,
             )
         )

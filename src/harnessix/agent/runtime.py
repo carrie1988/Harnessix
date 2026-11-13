@@ -3073,7 +3073,7 @@ class AgentRuntime:
             )
             accounted = current
 
-        async with aclosing(self.provider.stream(request, token)) as stream:
+        async with aclosing(texts.watch(self.provider.stream(request, token))) as stream:
             while True:
                 token.checkpoint()
                 try:

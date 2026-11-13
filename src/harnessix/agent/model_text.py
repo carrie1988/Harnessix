@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
+from contextlib import aclosing
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -26,6 +27,7 @@ from harnessix.agent.publication import (
     protect_text,
 )
 from harnessix.agent.reasoning_preview import ReasoningPreview
+from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -94,6 +96,17 @@ class ModelTextPublication:
             self._progress().close()
         # 进度事件也先经过思考预览：它不是思考增量，预览据此收尾（思考到此结束）。
         return await self.reasoning.observe(event) or self._progress().observe(event)
+
+    async def watch(
+        self, events: AsyncGenerator[ProviderEvent, None]
+    ) -> AsyncGenerator[ProviderEvent, None]:
+        """Provider事件原样传下去；尝试的开始与结束同时交给生成进度（第几次尝试、上次为什么失败）。"""
+
+        async with aclosing(events) as source:
+            async for event in source:
+                if isinstance(event, ModelAttemptStarted | ModelAttemptFinished):
+                    self._progress().attempt(event)
+                yield event
 
     def _progress(self) -> GenerationProgress:
         if self.progress is None:
