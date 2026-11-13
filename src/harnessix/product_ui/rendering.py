@@ -51,6 +51,14 @@ _FAILURE_TEXT: Final = {
     "provider_internal": "模型服务内部错误，请稍后重试",
     "provider_provider_internal": "模型服务内部错误，请稍后重试",
     "provider_context_overflow": "对话超出模型的上下文长度，请按 Ctrl+N 新建会话继续",
+    "provider_invalid_provider_output": (
+        "模型服务返回的内容不完整或格式不对，本轮已停止；已完成的修改都保留着，直接发送“继续”就能接着做"
+    ),
+    "context_budget_exceeded": (
+        "会话内容已经放不进配置的上下文窗口，本轮已停止，已完成的修改都保留着。"
+        "请按 Ctrl+N 新建会话，简要说明进展后继续；配置的窗口小于 64K 时，先重新运行 "
+        "harnessix code configure，把 --context-window-tokens 设为 65536 或模型支持的更大值"
+    ),
     "provider_max_output_tokens": "模型单次输出达到长度上限，可以让它分步完成",
     "budget_exceeded": "已达到本轮的 Token 上限，可以继续发送任务开始新一轮",
     "time_budget_exceeded": "已达到本轮的时间上限，可以继续发送任务开始新一轮",

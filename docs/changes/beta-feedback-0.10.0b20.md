@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 11
+version: 12
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -50,6 +50,8 @@ related_tests:
   - tests/product_config/test_private_directory.py
   - tests/models/test_tool_rejection.py
   - tests/models/test_chat_empty_name.py
+  - tests/product_ui/test_error_help_f1.py
+  - tests/product_ui/test_rendering.py
 supersedes: []
 ---
 
@@ -73,9 +75,10 @@ supersedes: []
 | 十 | `harnessix exec`的过程文本里，思考内容没有标注，还和下一行接在一起 | 思考的每一行以“思考：”开头，其后的输出另起一行 | 本文第24节 |
 | 十一 | 先用`harnessix exec`、后运行`harnessix code configure`，被以“配置目录的权限是 755”拒绝 | 产品自己创建的状态目录每一级都按0700创建 | 本文第25节 |
 | 十二 | 百炼返回没有名称的工具调用，整轮任务中断，要手动“继续”（0.10.0b24，Issue #1） | 只拒绝这一次调用，模型改正后任务继续 | [ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md) |
+| 十三 | 上下文耗尽后任务中断，界面只有一行内部报错，没有恢复办法（0.10.0b24，Issue #3） | 对话与F1说明怎样接着做；耗尽本身的根因归上下文预算的工作 | 本文第27节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二项在第26节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二、十三项在第26、27节。
 
 ## 2. 需求背景
 
@@ -774,3 +777,42 @@ IndexError: list index out of range
 | 0.10.0b25 | 第1次模型请求后`status=failed`、`provider_invalid_provider_output`，退出码1 |
 | 本修改（空名） | 第2次请求里该调用以`harnessix_rejected_tool_v1`占位、结果为“工具未注册”；任务完成，退出码0 |
 | 本修改（超长名） | 同上，任务完成，退出码0 |
+
+## 27. 第十三项：上下文耗尽与模型输出不合规时的恢复说明
+
+### 27.1 背景与决定
+
+0.10.0b24的Beta复测（GitHub Issue #3）报告了两次`context_budget_exceeded`：
+
+- 32K窗口（输出上限8192、思考关闭）下修改一个约1328行文件的任务，约18秒、5次模型尝试后结束，工作区没有修改；
+- 131072窗口（输出上限32768、低档思考）下从空目录开发一个CLI，约36分钟后结束，已有代码和测试，
+  测试者要新开会话才能继续。
+
+两次界面上都只有`错误：Runtime 或用户必选指令超过可用 Context 输入预算（context_budget_exceeded）`，
+没有说明该怎样接着做，也没有指出窗口太小该换更大的。Issue #1（第26节）里测试者同样指出，
+模型输出不合规而结束时只有“Provider 返回结构化失败”，没有恢复办法。
+
+这一项只补恢复说明。上下文为什么会耗尽——32K是已知限制，131072窗口的长任务是这次新出现的证据——
+属于上下文预算与压缩的工作，由第二轮开发负责，不在主线上重复修改；131072那次没有会话数据，根因尚未确认。
+
+### 27.2 设计
+
+只改两张静态文案表，不改任何判定：
+
+| 错误码 | 对话里的一行 | F1 |
+|---|---|---|
+| `context_budget_exceeded` | 会话内容已经放不进配置的上下文窗口，已完成的修改都保留着；按Ctrl+N新建会话后继续；窗口小于64K时重新运行configure换更大的窗口 | 同样的原因与处理办法 |
+| `provider_invalid_provider_output` | 模型服务返回的内容不完整或格式不对，已完成的修改都保留着；直接发送“继续” | 同上，另提示反复出现时换模型或用`doctor --probe-model`核对 |
+
+用户手册与Beta快速上手的故障排查表各补一行。
+
+### 27.3 边界
+
+- 文案是静态的，不知道当前配置的窗口大小，所以两种处理办法都写出来。
+- 32K窗口下新建会话后读同一个大文件仍会耗尽，根本的办法是换更大的窗口；这一点写在文案里。
+- 没有验证“在原会话里重发任务是否必然再次失败”，文案只写确定有效的做法（新建会话）。
+
+### 27.4 验证
+
+- `tests/product_ui/test_rendering.py`：两个错误码在对话里显示白话说明与处理办法，不再带错误码原文。
+- `tests/product_ui/test_error_help_f1.py`：F1给出各自的条目而不是通用的“上一轮任务未完成”。修改前这些断言失败。

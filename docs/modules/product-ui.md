@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 49
+version: 50
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,11 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：上下文耗尽与模型输出不合规时的恢复说明
+
+- [`rendering._FAILURE_TEXT`](../../src/harnessix/product_ui/rendering.py)与[`error_help._TURN_HELP`](../../src/harnessix/product_ui/error_help.py)新增两个错误码的白话说明：`context_budget_exceeded`（会话内容放不进配置的上下文窗口：按Ctrl+N新建会话后继续，窗口小于64K时换更大的窗口）与`provider_invalid_provider_output`（模型返回的内容不完整或格式不对：直接发送“继续”）。此前这两种失败在对话里只有内部说明加错误码，F1落到通用的“上一轮任务未完成”。
+- 只改文案，不改任何判定；回归见`tests/product_ui/test_rendering.py`、`tests/product_ui/test_error_help_f1.py`。
 
 ## 当前增量：客户端状态目录缺失的各级父目录都按0700创建
 
@@ -1194,6 +1199,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 50 | `f24afce5` 增量 | 2026-11-13 | 上下文耗尽（`context_budget_exceeded`）与模型输出不合规（`provider_invalid_provider_output`）结束任务时，对话与F1给出恢复办法（Beta Issue #3、#1） |
 | 49 | `6d0c6152` 增量 | 2026-11-13 | 客户端状态目录缺失的各级父目录都按0700创建，不再留下755的`~/.harnessix` |
 | 48 | `a22e64ee` 增量 | 2026-11-13 | 请求进行中显示生成阶段与用量估算：运行提示“思考中／正在生成修改内容／生成回复中 · 约 N tokens”，底栏“本轮 约 N tokens · 费用≈…”；投影识别生成进度流（只留最近一行、不进入对话），握手声明`generation_progress`（`generation_estimate.py`，ADR 0156） |
 | 47 | `ce5b7386` 增量 | 2026-11-12 | 一键收尾`Ctrl+F`；终端界面的运行时间检查点：按Turn累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；内核墙钟预算在交互模式下放到86,400秒（`turn_pacing.py`、`turn_checkpoint.py`、`CheckpointScreen`，ADR 0148） |

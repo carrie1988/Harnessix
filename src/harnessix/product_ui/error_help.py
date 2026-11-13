@@ -174,6 +174,26 @@ _TURN_HELP: Final = {
             _DIAGNOSTICS,
         ),
         ProductErrorHelp(
+            "context_budget_exceeded",
+            "会话内容放不进上下文窗口",
+            "会话累积的历史、工具说明和必要指令，超过了配置的上下文窗口留给输入的部分；"
+            "配置的窗口小于 64K、或读入了很大的文件时更容易遇到。",
+            _KEPT,
+            "按 Ctrl+N 新建会话，简要说明之前的进展后继续。窗口小于 64K 时，先重新运行 "
+            "harnessix code configure，把 --context-window-tokens 设为 65536 或模型支持的更大值，"
+            "然后重新打开 Harnessix。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
+            "provider_invalid_provider_output",
+            "模型返回的内容不完整或格式不对",
+            "模型服务这一次的回复缺少结束标记或用量，或者工具调用的结构不合规；多为偶发。",
+            _KEPT,
+            "直接发送“继续”接着做；反复出现时换用其他模型，或用 harnessix code doctor "
+            "--probe-model 核对模型服务。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
             "provider_max_output_tokens",
             "模型单次输出达到长度上限",
             "一次要生成的内容太长。",

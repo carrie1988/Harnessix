@@ -23,6 +23,21 @@ def test_failed_turn_shows_its_own_help() -> None:
     assert unknown is not None and unknown.title == "操作结果无法确认"
 
 
+def test_context_exhaustion_says_how_to_go_on() -> None:
+    """Beta Issue #3：上下文耗尽后只有一行原始报错，没有说该新建会话、窗口太小该怎么改。"""
+    item = current_error_help(None, "failed", "context_budget_exceeded")
+    assert item is not None and item.title == "会话内容放不进上下文窗口"
+    assert "Ctrl+N" in item.action and "--context-window-tokens" in item.action
+    assert "保留" in item.impact
+
+
+def test_malformed_model_output_says_that_continuing_works() -> None:
+    """Beta Issue #1：模型返回的内容不合规时只显示“Provider 返回结构化失败”，没有恢复办法。"""
+    item = current_error_help(None, "failed", "provider_invalid_provider_output")
+    assert item is not None and item.title == "模型返回的内容不完整或格式不对"
+    assert "继续" in item.action
+
+
 def test_unknown_turn_failure_is_generic_and_does_not_echo_the_code() -> None:
     item = current_error_help(None, "failed", "provider-secret-/private/path")
     assert item is not None and item.code == "turn_failed"

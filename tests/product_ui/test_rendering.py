@@ -287,3 +287,16 @@ def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
     dropped = transcript_lines(view("provider_transport", "Provider 返回结构化失败"))
     assert dropped[0].text.startswith("连不上模型服务，请检查网络或代理设置")
     assert "直接发送“继续”就能接着做" in dropped[0].text
+    # Beta Issue #3：上下文耗尽只显示内部说明和错误码，没有恢复办法。
+    exhausted = transcript_lines(
+        view("context_budget_exceeded", "Runtime 或用户必选指令超过可用 Context 输入预算")
+    )
+    assert exhausted[0].role == "错误" and "context_budget_exceeded" not in exhausted[0].text
+    assert "Ctrl+N 新建会话" in exhausted[0].text
+    assert "--context-window-tokens" in exhausted[0].text
+    # Beta Issue #1：模型输出不合规时同样要说明怎样接着做。
+    malformed = transcript_lines(
+        view("provider_invalid_provider_output", "Provider 返回结构化失败")
+    )
+    assert malformed[0].text.startswith("模型服务返回的内容不完整或格式不对")
+    assert "直接发送“继续”就能接着做" in malformed[0].text
