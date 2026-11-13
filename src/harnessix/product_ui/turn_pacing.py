@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from textual.app import App
 
+from harnessix.product_config.wrap_up import WRAP_UP_STEER
 from harnessix.product_ui.controller import ProductController, SubmitPromptIntent
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_screens import CheckpointScreen
@@ -31,10 +32,8 @@ from harnessix.product_ui.turn_checkpoint import (
 
 CHECKPOINT_TICK_SECONDS = 1.0
 # 一键收尾替用户发送的补充说明：任务其实已经做完、模型还在自己加验证时用。
-WRAP_UP_MESSAGE = (
-    "请现在收尾：不要再做新的修改或检查，直接给出最终总结——已经完成了什么、"
-    "哪些没有来得及做、哪些你没能验证需要我自己确认。"
-)
+# 宿主据此不再执行尚未开始的调用，之后的步骤不提供工具（Beta Issue #4）。
+WRAP_UP_MESSAGE = WRAP_UP_STEER
 
 
 async def wrap_up(controller: ProductController) -> None:

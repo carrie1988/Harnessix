@@ -11,6 +11,9 @@ from dataclasses import dataclass
 from typing import Final, Literal
 from uuid import UUID
 
+# 收尾说明与宿主的判定共用一份文本（Beta Issue #4）。
+from harnessix.product_config.wrap_up import WRAP_UP_PROMPT as WRAP_UP_PROMPT
+
 CHECKPOINT_SECONDS: Final = 3600.0
 UNANSWERED_PAUSE_SECONDS: Final = 300.0
 # 交互模式下内核的墙钟预算放到合同允许的最大值：到时询问由本模块负责，步数上限照旧。
@@ -20,10 +23,6 @@ _RUNNING_STATES: Final = frozenset(
     {"accepted", "preparing_context", "calling_model", "executing_tools", "finalizing"}
 )
 CONTINUE_PROMPT: Final = "继续完成上一轮没有做完的任务。"
-WRAP_UP_PROMPT: Final = (
-    "上一轮已暂停。请不要再做新的修改或检查，直接给出最终总结："
-    "已经完成了什么、哪些没有来得及做、哪些你没能验证需要我自己确认。"
-)
 CheckpointChoice = Literal["continue", "wrap_up", "stop"]
 
 

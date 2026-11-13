@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 635,
-    "physical_lines": 132875,
-    "logical_lines": 115658,
-    "documented_modules": 635,
-    "classes": 1228,
-    "documented_classes": 638,
-    "functions": 5257,
-    "documented_functions": 1788,
+    "source_files": 636,
+    "physical_lines": 132947,
+    "logical_lines": 115704,
+    "documented_modules": 636,
+    "classes": 1229,
+    "documented_classes": 639,
+    "functions": 5261,
+    "documented_functions": 1790,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1597,10 +1597,10 @@
       "path": "src/harnessix/product_config/server.py",
       "qualname": "_serve_product_stdio",
       "kind": "function",
-      "line": 273,
+      "line": 274,
       "lines": 139,
       "documented": true,
-      "decision_complexity": 11
+      "decision_complexity": 10
     },
     {
       "id": "harnessix.product_config.store:SQLiteProductConfigStore",

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 152
+version: 153
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -120,6 +120,11 @@ related_tests:
   - tests/product_config/test_default_thinking_effort.py
 supersedes: []
 ---
+
+## 当前增量：收尾由宿主保证（ADR 0148第2版，Beta Issue #4）
+
+- [`wrap_up.WrapUpToolView`](../../src/harnessix/product_config/wrap_up.py)：本轮记入固定收尾说明之后，`select`返回空的工具集，`admit_call`以`tool_wrap_up_requested`拒绝尚未开始、经审批边界的调用；之前照原视图（通用执行时为全部工具）。
+- `server._model_tool_view`始终安装它；`WRAP_UP_STEER`、`WRAP_UP_PROMPT`由界面直接引用。回归见`tests/product_config/test_wrap_up_stops_work.py`。
 
 ## 当前增量：按配置告诉模型它是谁（Beta Issue #17）
 
@@ -2355,6 +2360,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 153 | `76f7dfed` 增量 | 2026-11-13 | 收尾之后不再发起新的修改或检查：`wrap_up.WrapUpToolView`不准入尚未开始、经审批边界的调用，之后的步骤不提供工具（ADR 0148第2版，Beta Issue #4） |
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
 | 152 | `458dda3e` 增量 | 2026-11-13 | 运行时指令按Profile链写出模型身份（`model_identity.py`，`harnessix.model-identity/v1`），被问到时按配置回答（Beta Issue #17） |
 | 151 | `458dda3e` 增量 | 2026-11-13 | 私有JSON记录的读改写跨进程串行（`private_json.serialized_update`），Windows替换被拒绝时短暂重试（Beta Issue #15） |

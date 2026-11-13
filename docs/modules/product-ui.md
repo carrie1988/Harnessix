@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 60
+version: 61
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -1242,6 +1242,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 61 | `76f7dfed` 增量 | 2026-11-13 | 一键收尾与检查点“收尾”的说明文本改为引用`product_config/wrap_up.py`的常量，宿主据此保证收尾（ADR 0148第2版，Beta Issue #4） |
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
 | 60 | `458dda3e` 增量 | 2026-11-13 | 工作区信任与命令免询问规则的保存跨进程串行；记录写不进去时本次照常进入并提示，不出现Traceback（Beta Issue #15） |
 | 59 | `8b07c214` 增量 | 2026-11-13 | 选中的字保持原来的字色，选择背景按透明度叠加（`selection_painter`）；此前选中部分字色等于背景色，看不见 |

@@ -56,6 +56,7 @@ from harnessix.product_config.skill_composition import (
     skill_context_fragments,
 )
 from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
+from harnessix.product_config.wrap_up import WrapUpToolView
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sandbox.contracts import DEFAULT_CONTAINER_WORKSPACE
 from harnessix.secrets.provider import SecretProvider
@@ -376,7 +377,7 @@ async def _serve_product_stdio(
                             async_context=context.context,
                             compaction=context.compaction,
                             summary_provider=bundle,
-                            model_tool_view=None if generic_execution else CodingWorkflowToolView(),
+                            model_tool_view=_model_tool_view(generic_execution),
                             enable_planning=True,
                             normalize_stringified_arguments=any(
                                 provider.normalize_tool_arguments
@@ -430,6 +431,11 @@ def _active_profiles(startup: _ProductRuntimeStartup) -> list[ModelProfile]:
     """当前Profile链（含Fallback）的Profile定义，按配置顺序；Context策略与Provider选项由此派生。"""
     chain = set(startup.profile.profile_chain)
     return [profile for profile in startup.config.config.profiles if profile.profile_id in chain]
+
+
+def _model_tool_view(generic_execution: bool) -> WrapUpToolView:
+    """收尾之后不再提供工具（Beta Issue #4）；通用执行之外仍按编码阶段视图选择工具。"""
+    return WrapUpToolView(None if generic_execution else CodingWorkflowToolView())
 
 
 def _extra_fragments(

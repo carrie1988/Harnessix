@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 27
+version: 28
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -33,6 +33,7 @@ related_tests:
   - tests/product_config/test_model_identity.py
   - tests/delivery/test_windows_create_missing_parents.py
   - tests/delivery/test_parent_file_conflicts.py
+  - tests/product_config/test_wrap_up_stops_work.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -107,9 +108,10 @@ supersedes: []
 | 二十七 | 同时在几个新仓库确认信任，有进程崩溃、确认记录丢失（0.10.0b32，Issue #15） | 读改写跨进程串行，Windows替换被拒绝时重试 | 本文第41节 |
 | 二十八 | 百炼qwen3.8-flash自称Claude并否认是千问（0.10.0b32，Issue #17） | 运行时指令按配置写出模型身份 | 本文第42节 |
 | 二十九 | Windows上首个补丁因父目录不存在失败，本轮仍显示“已完成”、仓库为空（0.10.0b32，Issue #16） | Windows事务端口同样补建父目录 | [ADR 0137](../adr/0137-create-with-missing-parent-directories.md)第2版、本文第43节 |
+| 三十 | 按Ctrl+F收尾后模型仍又做了两项检查（0.10.0b24，Issue #4） | 收尾由宿主保证：不准入尚未开始的调用，之后不提供工具 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第2版、本文第44节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十九项在第26～43节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十项在第26～44节。
 
 ## 2. 需求背景
 
@@ -1305,3 +1307,10 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 - Windows 11（发布会话的Windows电脑）：`tests/delivery/test_windows_create_missing_parents.py`（两代计划补建、失败只删自己建的、
   缺失成员观察为absent、文件父级与批次冲突在规划期拒绝、回滚清理）与`tests/product_config/test_patch_missing_parents.py`
   （Beta批次、整批原子、用户拒绝、回滚、普通文件父级、同批冲突；符号链接一项只在POSIX运行），以及按Issue步骤的终端界面复测。
+
+## 44. 第三十项：收尾由宿主保证（Issue #4）
+
+0.10.0b24（Issue #4）：按`Ctrl+F`后收尾说明已进入会话，模型仍又读了README、运行了两条检查命令，约53秒后才结束。
+设计与验证见[ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第2版：说明记入本轮之后，尚未开始、经审批边界的
+调用以`tool_wrap_up_requested`未执行，之后的模型步骤不提供工具；同一步里已提出的只读读取照常完成。与平台无关。
+负责人2026-11-13要求影响易用性与体验的问题都要处理，此前搁置的这一项随之修复。
