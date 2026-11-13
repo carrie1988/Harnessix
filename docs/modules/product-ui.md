@@ -46,7 +46,7 @@ supersedes: []
 
 ## 当前增量：已完成但修改之后没有检查时如实提示
 
-- [`verification.verification_summary`](../../src/harnessix/product_ui/verification.py)判断一轮的完成证据（最后一次成功修改之后是否运行过`exec_command.*`/`run_profile.*`检查、结果如何），由`exec_cli._verification`移来，`harnessix exec`摘要与终端界面共用。
+- [`verification.verification_summary`](../../src/harnessix/product_ui/verification.py)判断一轮的完成证据（最后一次成功修改之后是否运行过`exec_command.*`/`host_command.*`/`run_profile.*`检查、结果如何），由`exec_cli._verification`移来，`harnessix exec`摘要与终端界面共用。
 - `rendering.transcript_lines`在当前一轮以“已完成”结束、且`unverified_notice`给出提示时，在对话末尾加一行“提示”（不定稿，只在实时区，下一轮开始后消失，不改动历史区）：最后一次修改之后没有检查，或最后一次检查没有通过（附命令）。
 - 回归见`tests/product_ui/test_unverified_completion.py`。Beta Issue #9。
 

@@ -12,7 +12,8 @@ from typing import Any
 from harnessix.protocol.contracts import PublicItem, PublicToolCallContent, PublicToolResultContent
 
 PATCH_TOOLS = ("apply_patch", "apply_patch_batch")
-CHECK_TOOL_PREFIXES = ("exec_command.", "run_profile.")
+# 沙箱内命令、沙箱外命令（沙箱不可用时逐条审批，Windows与没有Seatbelt的macOS）与检查配置。
+CHECK_TOOL_PREFIXES = ("exec_command.", "host_command.", "run_profile.")
 
 
 def verification_summary(items: Sequence[PublicItem]) -> dict[str, Any]:

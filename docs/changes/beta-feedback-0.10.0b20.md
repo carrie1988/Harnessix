@@ -1017,7 +1017,7 @@ Issue #9（0.10.0b25，Windows，逐条审批）：要求“先加回归测试�
 ### 34.3 设计
 
 - 判断逻辑由`exec_cli._verification`移到`product_ui/verification.py::verification_summary`，`exec`与界面共用一份，逻辑不变：
-  只看这一轮成功的补丁与其后的`exec_command.*`/`run_profile.*`调用。
+  只看这一轮成功的补丁与其后的`exec_command.*`/`host_command.*`/`run_profile.*`调用（`host_command.*`自0.10.0b28起，见34.6）。
 - 当前一轮以“已完成”结束时，`unverified_notice`给出提示则在对话末尾加一行“提示”：
   - 最后一次修改之后没有检查：“本轮最后一次修改之后没有运行过测试或其他检查；回复里提到的检查结果不是在这些修改之后得到的，请自行确认”；
   - 最后一次检查没有通过：写出那条命令，提示先确认再使用这些修改。
@@ -1035,3 +1035,13 @@ Issue #9（0.10.0b25，Windows，逐条审批）：要求“先加回归测试�
   修改后检查通过、没有修改时不提示；未结束、失败、取消的一轮不判断。`tests/test_exec_cli.py`原有的完成证据用例改为引用共用模块，照常通过。
 - 真实终端界面（tmux驱动，自动接受修改，模型换成“新建hello.py，然后声称pytest全部通过”的脚本）：
   修复后对话末尾出现上述提示，`hello.py`已写入；0.10.0b25在同样情形下只有“已完成”。
+
+### 34.6 修订：沙箱外命令也算检查（0.10.0b28）
+
+0.10.0b27正式测试：macOS（本机沙箱不可用，命令逐条审批）与Windows真机的10个端到端任务全部在对话末尾出现
+“本轮最后一次修改之后没有运行过测试或其他检查”，而模型在最后一次修改之后都用沙箱外命令运行过测试，并且通过。
+原因是检查只认`exec_command.*`与`run_profile.*`，漏了`host_command.*`：沙箱不可用时（Windows、没有Seatbelt的macOS）
+命令都经它逐条审批运行。这个口径从`exec`摘要沿用而来，`exec`的`verification`字段在这些平台上同样误报为`unverified`。
+
+修订：`host_command.*`与另外两类一样算作检查，命令取同一个`cmd`参数。
+`tests/product_ui/test_unverified_completion.py::test_a_check_run_outside_the_sandbox_counts_as_a_check`在0.10.0b27上失败，修订后通过。

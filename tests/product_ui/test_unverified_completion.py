@@ -107,6 +107,30 @@ def test_nothing_is_added_when_the_last_edit_was_checked_or_nothing_was_edited()
     assert transcript_lines(_view([_answer("这个函数是做什么的：……")]))[-1].role != "提示"
 
 
+def test_a_check_run_outside_the_sandbox_counts_as_a_check() -> None:
+    """沙箱不可用（Windows、没有Seatbelt的macOS）时命令走host_command.*，逐条审批后运行。
+
+    0.10.0b27 macOS与Windows正式测试：模型修复后用沙箱外命令运行unittest并通过，
+    对话末尾仍提示“没有运行过检查”。
+    """
+    fix, check = uuid4(), uuid4()
+    host_run = ("host_command.host-shell", {"cmd": "python -m unittest"})
+    checked = [
+        _call(fix, "apply_patch_batch"),
+        _result(fix, "succeeded"),
+        _call(check, *host_run),
+        _result(check, "succeeded"),
+        _answer("完成。"),
+    ]
+    assert verification_summary(checked) == {
+        "status": "passed_after_last_edit",
+        "last_check": "python -m unittest",
+    }
+    assert transcript_lines(_view(checked))[-1].role != "提示"
+    failed = [*checked[:3], _result(check, "failed"), _answer("完成。")]
+    assert "python -m unittest" in transcript_lines(_view(failed))[-1].text
+
+
 def test_only_a_finished_turn_is_judged() -> None:
     for status in ("calling_model", "executing_tools", "failed", "cancelled"):
         lines = transcript_lines(_view(_red_then_fix(), status=status))
