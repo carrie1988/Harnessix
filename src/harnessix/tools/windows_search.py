@@ -299,27 +299,41 @@ def _decode_search(content: bytes, scan: _Scan) -> str | None:
         return None
 
 
-def _load_text(
-    port: WindowsReadPort,
-    candidate: _Candidate,
-    operation: ReadOperation,
-    scan: _Scan,
-) -> tuple[Observation, str] | None:
+def _candidate_content(
+    port: WindowsReadPort, candidate: _Candidate, operation: ReadOperation
+) -> Observation:
     try:
-        metadata = _stable_metadata(port, candidate, operation)
-        if metadata.size > MAX_SEARCH_FILE_BYTES:
-            scan.oversized_files += 1
-            return None
-        if scan.bytes_read + metadata.size > scan.max_total_bytes:
-            raise ReadToolError("limit_exceeded")
         observed = port.observe_candidate(
             candidate.path,
             operation,
             content=True,
             max_bytes=MAX_SEARCH_FILE_BYTES,
         )
-        if metadata.identity != observed.identity or metadata.size != observed.size:
-            raise ReadToolError("workspace_changed")
+    except ReadToolError as error:
+        # 收集时未超上限，读时超了：文件在其间变化。
+        if error.code == "limit_exceeded":
+            raise ReadToolError("workspace_changed") from None
+        raise
+    if candidate.identity != observed.identity or candidate.size != observed.size:
+        raise ReadToolError("workspace_changed")
+    return observed
+
+
+def _load_text(
+    port: WindowsReadPort,
+    candidate: _Candidate,
+    operation: ReadOperation,
+    scan: _Scan,
+) -> tuple[Observation, str] | None:
+    # 大小上限用收集时记下的大小，读内容时照旧核对身份与大小。此前读内容前
+    # 还要再打开一次只为核对元数据，Windows上每个文件多一次打开（Beta Issue #21）。
+    if candidate.size > MAX_SEARCH_FILE_BYTES:
+        scan.oversized_files += 1
+        return None
+    if scan.bytes_read + candidate.size > scan.max_total_bytes:
+        raise ReadToolError("limit_exceeded")
+    try:
+        observed = _candidate_content(port, candidate, operation)
     except ReadToolError as error:
         if error.code != "io_failed":
             raise

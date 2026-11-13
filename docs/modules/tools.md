@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 26
+version: 27
 code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
@@ -95,6 +95,7 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 - [`workspace.pinned_root`](../../src/harnessix/tools/workspace.py)把按路径核对过的根描述符记在这次`ReadOperation`上，`Workspace.open`经`_root`从它的副本出发；结束时再按路径核对一次，被替换即`workspace_changed`。工具Runtime的POSIX读取都在其下执行（`runtime._read_posix`）。
 - 16,000个文件的整仓grep由5秒超时降到约2.3秒（macOS）。回归见`tests/tools/test_pinned_root.py`。
 - Windows（第2版）：[`windows_read_port.directory_scope`](../../src/harnessix/tools/windows_read_port.py)在`WindowsReadRuntime.execute`期间为这次操作建立`DirectoryHandles`（记在`ReadOperation.windows_directories`上），`WindowsReadPort.observe`先经它只打开文件本身，不行再走完整句柄链；结束时关闭全部句柄并再核对一次根，根变化映射为`workspace_changed`。回归见`tests/tools/test_windows_directory_cache.py`。
+- Windows grep（第3版）：[`windows_search._load_text`](../../src/harnessix/tools/windows_search.py)用收集时记下的大小判断单文件上限与总量预算，读内容时由`_candidate_content`核对身份与大小，不再为核对元数据先多观察一次；回归见`tests/tools/test_windows_read_adapter.py`。
 
 ## 当前增量：Python 3.15起正则搜索改用regex引擎（ADR 0159）
 
@@ -1107,6 +1108,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 27 | `6bc1757c` 增量 | 2026-11-13 | Windows grep读内容前不再为核对元数据多观察一次文件（`windows_search._candidate_content`），每个文件由三次观察降到两次（ADR 0160第3版，Beta Issue #21） |
 | 26 | `da4c70d7` 增量 | 2026-11-13 | Windows读取在一次操作内复用已核对的目录句柄（`windows_read_port.directory_scope`），整仓搜索每个文件只打开自身（ADR 0160第2版，Beta Issue #21） |
 | 25 | `d6595eef` 增量 | 2026-11-13 | Python 3.15起正则搜索改用regex：按RE2语法拒绝回溯写法、每行限时，执行合同按引擎给出（ADR 0159，Beta Issue #10） |
 | 24 | `824c7f20` 增量 | 2026-11-13 | 一次读取操作只在开头与结尾核对工作区根（`workspace.pinned_root`），整仓搜索不再逐文件重走根路径（ADR 0160，Beta Issue #21） |

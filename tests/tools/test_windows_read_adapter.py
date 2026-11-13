@@ -316,3 +316,52 @@ def test_close_releases_native_root(runtime: WindowsReadRuntime) -> None:
     root = runtime._root
     runtime.close()
     assert root.closed  # type: ignore[attr-defined]
+
+
+def _count_file_observations(runtime: WindowsReadRuntime) -> dict[str, list[bool]]:
+    root = cast(_FakeWindowsRoot, runtime._port.root_handle)
+    original = root.observe
+    calls: dict[str, list[bool]] = {}
+
+    def counted(path: str, **kwargs: Any) -> _Observed:
+        observed = original(path, **kwargs)
+        if observed.kind == "file":
+            calls.setdefault(path, []).append(kwargs["include_content"])
+        return observed
+
+    root.observe = counted  # type: ignore[method-assign]
+    return calls
+
+
+def test_grep_opens_each_file_once_to_list_and_once_to_read(
+    tmp_path: Path, runtime: WindowsReadRuntime
+) -> None:
+    """Beta Issue #21：此前读内容之前还为核对元数据多打开一次，Windows上每个文件三次。"""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/a.py").write_text("needle = 1\n", encoding="utf-8")
+    (tmp_path / "src/b.py").write_text("other\n", encoding="utf-8")
+    calls = _count_file_observations(runtime)
+
+    result = runtime.grep(GrepInput(query="needle"), ReadOperation(), capture=None)
+
+    assert [(item.path, item.line) for item in result.matches] == [("src/a.py", 1)]
+    assert calls == {"src/a.py": [False, True], "src/b.py": [False, True]}
+
+
+def test_a_file_that_grows_past_the_limit_after_listing_is_a_change(
+    tmp_path: Path, runtime: WindowsReadRuntime
+) -> None:
+    target = tmp_path / "a.py"
+    target.write_text("needle\n", encoding="utf-8")
+    root = cast(_FakeWindowsRoot, runtime._port.root_handle)
+    original = root.observe
+
+    def grow_after_listing(path: str, **kwargs: Any) -> _Observed:
+        observed = original(path, **kwargs)
+        if path == "a.py" and not kwargs["include_content"]:
+            target.write_bytes(b"x" * (2 * 1024 * 1024 + 1))
+        return observed
+
+    root.observe = grow_after_listing  # type: ignore[method-assign]
+    with pytest.raises(ReadToolError, match="workspace_changed"):
+        runtime.grep(GrepInput(query="needle"), ReadOperation(), capture=None)

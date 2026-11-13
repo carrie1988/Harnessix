@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners: [core]
 modules: [tools, workspace]
@@ -10,6 +10,7 @@ related_adrs:
 related_tests:
   - tests/tools/test_pinned_root.py
   - tests/tools/test_windows_directory_cache.py
+  - tests/tools/test_windows_read_adapter.py
   - tests/tools/test_workspace.py
 supersedes: []
 ---
@@ -17,7 +18,7 @@ supersedes: []
 # ADR 0160 一次读取操作只在开头与结尾核对工作区根
 
 - 状态：评审中
-- 日期：2026-11-13（第2版同日：Windows一次读取操作内复用已核对的目录句柄）
+- 日期：2026-11-13（第2版同日：Windows一次读取操作内复用已核对的目录句柄；第3版同日：Windows grep每个文件少打开一次）
 
 ## 背景
 
@@ -53,6 +54,10 @@ supersedes: []
      结束时报`workspace_changed`，这次结果作废（读到的内容不返回给模型）。
    - 目录数达到上限（8192）、打开目录或文件时遇到意外的系统错误（包括不存在），这一次观察退回原来的完整句柄链。
    - 只用于真实的`WindowsWorkspaceRoot`；缓存只属于这一次操作，结束时全部关闭。
+4. **Windows grep：每个文件收集时观察一次、读内容时观察一次（第3版）。** 第2版在Windows真机上把540个文件的模块由约0.30秒降到
+   0.14秒，16,207个文件的整仓grep仍5秒超时（约0.26毫秒/文件）。`windows_search._load_text`此前在读内容之前还要再观察一次文件，
+   只为核对身份与大小，而读内容那次观察本身就核对同样的内容：现在大小上限与总量预算用收集时记下的大小，读内容时核对身份与大小
+   （`_candidate_content`），收集时未超上限、读时超了视为`workspace_changed`。glob在加入结果前的复查不变。
 
 ## 没有改变的
 
@@ -66,6 +71,7 @@ supersedes: []
 - 根目录在一次读取期间被替换时，这次读取不再中途失败，而是在结束时失败；读到的内容仍只来自原来的根目录。
 - Windows每个文件少打开“盘符到根”的那几级目录（第1版），并且不再重复打开工作区内的各级父目录（第2版）：每个文件只打开
   文件本身一次。实际收益与正确性由发布会话在Windows真机上用Issue的组件脚本验证。
+- 第3版：Windows grep每个文件的观察由3次降到2次；收集时已超过单文件上限的文件直接计入`oversized_files`，不再为确认它没变而打开一次。
 - 第2版的代价：一次读取操作期间（至多5秒），用到的目录不能被其他程序删除或改名；在其中新建、改名文件不受影响。此前这些目录
   在每个文件的读取期间同样被短暂持有，且不共享写入。
 
@@ -78,3 +84,5 @@ supersedes: []
   目录句柄共享读写；父目录是Junction、文件或最终路径在根外时如实拒绝；缺失、根本身、达到上限时退回完整句柄链；根在开头与
   结尾各核对一次，被替换即`workspace_changed`；缓存只属于一次操作，正常结束、失败结束都全部关闭。真实句柄语义（Junction、
   硬链接、长路径、根目录内改名）由`tests/tools/test_windows_native_runtime.py`在Windows上验证。
+- `tests/tools/test_windows_read_adapter.py`（第3版）：grep对每个文件只观察两次（收集一次、读内容一次，修改前三次）；收集之后
+  文件变大超过上限报`workspace_changed`。
