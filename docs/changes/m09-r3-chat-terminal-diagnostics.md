@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 4
+version: 5
 code_revision: 1793af58f969979f8418736dd3698c7788f7bc8f
 owners: [core]
 modules: [models, agent]
@@ -86,7 +86,7 @@ Attempt失败于`tool_name_unknown`，整组没有释放工具，按新未决即
 只有名称缺失或形状无效才抛该错误。流阶段的非法名称长度会在Usage前被拒绝，因此本次记录
 把问题收敛到完成阶段没有积累有效名称，不证明供应商原始wire具体内容，也不反推前次原因。
 
-新增缺名/延后补名合成控制：完整Usage和合法首调用不能放行缺名尾调用；
+新增缺名/延后补名合成控制：完整Usage和合法首调用不能放行缺名尾调用（2026-11-13起由[ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md)修订：缺名的调用只拒绝该次调用，合法首调用照常放行）；
 名称在后续分片合法补齐则接受，不要求名称必须出现在第一片。失败原样持久化及回放，零工具执行。
 相关164项离线回归通过；生产Parser未改，不能据此声称真实兼容问题已修复。
 

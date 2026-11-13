@@ -364,43 +364,67 @@ async def test_unknown_name_accepts_only_nonempty_bounded_strings(
 
 @pytest.mark.parametrize("provider", ["chat", "anthropic"])
 @pytest.mark.parametrize("name", ["", "界" * 257], ids=["empty", "overlength"])
-def test_invalid_name_is_not_retained_or_released(provider: Provider, name: str) -> None:
+async def test_a_call_without_a_usable_name_is_rejected_alone(
+    provider: Provider, name: str
+) -> None:
+    """名称为空或超长：只拒绝这一次调用，同组里合法的调用照常放行；原名称不保留、不外泄。
+
+    0.10.0b24 Beta（Issue #1）：百炼返回这样的调用时整个请求以tool_name_unknown失败，任务中断。
+    """
+    calls = [_call(0, name, ARGUMENTS), _call(1, tool_alias("test.read"))]
+    events = await _collect(provider, _frames(provider, _values(provider, calls)))
+    assert [event for event in events if isinstance(event, PROPOSALS)] == [
+        ToolCallRejected(call_id="wire-call-0", argument_chars=len(ARGUMENTS)),
+        ToolCallCompleted(call_id="wire-call-1", tool="test.read", arguments={}),
+    ]
+    assert isinstance(events[-1], ResponseCompleted)
+    assert "界" * 257 not in "".join(event.model_dump_json() for event in events)
+
+
+@pytest.mark.parametrize("provider", ["chat", "anthropic"])
+def test_an_overlong_name_is_not_kept_in_the_stream_state(provider: Provider) -> None:
     request = model_request(with_tools=True)
     names = {tool_alias("test.read"): "test.read"}
+    values = _values(provider, [_call(0, "界" * 257, ARGUMENTS)])
     if provider == "chat":
         state = ChatStream(request, names, parallel=True, attempt_id=uuid4())
-        value = ChatCompletionChunk.model_validate(
-            wire.chunk({"tool_calls": [_call(0, name, ARGUMENTS)]}), strict=True
-        )
-        if name == "":
-            # 空增量与缺省一样可等待后片；整流结束仍缺名时才判定失败。
-            for raw in _values("chat", [_call(0, name, ARGUMENTS)]):
-                events = state.feed(ChatCompletionChunk.model_validate(raw, strict=True))
-                assert not any(isinstance(event, PROPOSALS) for event in events)
-            with pytest.raises(ChatProtocolError) as caught:
-                state.finish(seen_done=True)
-        else:
-            with pytest.raises(ChatProtocolError) as caught:
-                state.feed(value)
-        assert caught.value.reason is ChatProtocolReason.TOOL_NAME_UNKNOWN
-        assert str(caught.value) == "Chat终态不符合协议"
-        assert all(call.name is None for call in state._calls.values())
+        state.feed(ChatCompletionChunk.model_validate(values[0], strict=True))
+        kept = [call.name for call in state._calls.values()]
     else:
         anthropic_state = AnthropicStream(request, names, parallel=True, attempt_id=uuid4())
-        values = _values(provider, [_call(0, name, ARGUMENTS)])
-        anthropic_state.feed(validate_event(values[0]))
-        with pytest.raises(InvalidWireData, match="工具 Block 身份或能力无效"):
-            anthropic_state.feed(validate_event(values[1]))
-        assert anthropic_state._blocks == {} and anthropic_state._call_ids == set()
+        for value in values[:2]:
+            anthropic_state.feed(validate_event(value))
+        kept = [block.name for block in anthropic_state._blocks.values()]
+    assert kept == [""]
+
+
+def test_a_chat_name_may_not_change_after_an_overlong_one() -> None:
+    """超长名称之后又来了另一个名称，仍按名称漂移失败关闭；重复同一个超长名称不算漂移。"""
+    request = model_request(with_tools=True)
+    state = ChatStream(
+        request, {tool_alias("test.read"): "test.read"}, parallel=True, attempt_id=uuid4()
+    )
+    overlong = wire.chunk({"tool_calls": [_call(0, "界" * 257)]})
+    state.feed(ChatCompletionChunk.model_validate(overlong, strict=True))
+    state.feed(ChatCompletionChunk.model_validate(overlong, strict=True))
+    later = wire.chunk(
+        {"tool_calls": [{"index": 0, "function": {"name": tool_alias("test.read")}}]}
+    )
+    with pytest.raises(ChatProtocolError) as caught:
+        state.feed(ChatCompletionChunk.model_validate(later, strict=True))
+    assert caught.value.reason is ChatProtocolReason.TOOL_NAME_CHANGED
 
 
 @pytest.mark.parametrize("name", [None, "", "界" * 257], ids=["missing", "empty", "overlength"])
-def test_standalone_chat_group_validation_rejects_invalid_name(name: str | None) -> None:
-    parts = CallParts(call_id="wire-call-0", name=name, arguments=ARGUMENTS, type="function")
-    with pytest.raises(ChatProtocolError) as caught:
-        _complete_calls({0: parts}, {tool_alias("test.read"): "test.read"})
-    assert caught.value.reason is ChatProtocolReason.TOOL_NAME_UNKNOWN
-    assert str(caught.value) == "Chat终态不符合协议"
+def test_standalone_chat_group_validation_rejects_only_the_nameless_call(name: str | None) -> None:
+    nameless = CallParts(call_id="wire-call-0", name=name, arguments=ARGUMENTS, type="function")
+    valid = CallParts(
+        call_id="wire-call-1", name=tool_alias("test.read"), arguments="{}", type="function"
+    )
+    assert _complete_calls({0: nameless, 1: valid}, {tool_alias("test.read"): "test.read"}) == [
+        ToolCallRejected(call_id="wire-call-0", argument_chars=len(ARGUMENTS)),
+        ToolCallCompleted(call_id="wire-call-1", tool="test.read", arguments={}),
+    ]
 
 
 @pytest.mark.parametrize("provider", ["chat", "anthropic"])
@@ -602,8 +626,6 @@ def test_catalog_is_not_consulted_until_every_member_is_structurally_valid(
         "duplicate_id",
         "index_gap",
         "negative_index",
-        "empty_name",
-        "long_name",
         "missing_name",
         "wrong_name_type",
         "missing_usage",
@@ -626,14 +648,10 @@ async def test_structural_faults_do_not_become_recoverable_rejections(
         calls[1]["id"] = calls[0]["id"]
     elif fault in {"index_gap", "negative_index"}:
         calls[1]["index"] = 2 if fault == "index_gap" else -1
-    elif fault in {"empty_name", "missing_name", "wrong_name_type"}:
-        calls[1]["function"]["name"] = {
-            "empty_name": "",
-            "missing_name": None,
-            "wrong_name_type": 1,
-        }[fault]
-    elif fault == "long_name":
-        calls[1]["function"]["name"] = "界" * 257
+    elif fault in {"missing_name", "wrong_name_type"}:
+        if (provider, fault) == ("chat", "missing_name"):
+            pytest.skip("Chat协议里名称可以缺省：结束时仍缺名的调用只被拒绝（ADR 0157）")
+        calls[1]["function"]["name"] = None if fault == "missing_name" else 1
     values = _values(provider, calls)
     if fault == "missing_usage":
         if provider == "chat":

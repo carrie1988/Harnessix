@@ -60,6 +60,10 @@ def malformed_frames(scenario):
         item["function"]["name"] = IDENTITY_CANARY
     elif scenario == "missing_name":
         item["function"].pop("name")
+    elif scenario == "empty_name":
+        item["function"]["name"] = ""
+    elif scenario == "overlong_name":
+        item["function"]["name"] = "n" * 257
     elif scenario == "missing_type":
         item.pop("type")
     elif scenario == "index_gap":
@@ -89,11 +93,15 @@ def malformed_frames(scenario):
     return parts
 
 
+# 名称缺失、为空或超长的调用：与目录外名称一样只拒绝该次调用（Issue #1）。
+NAMELESS = {"missing_name", "empty_name", "overlong_name"}
 SCENARIOS = [
     ("missing_id", "tool_id_missing"),
     ("duplicate_id", "tool_id_duplicate"),
     ("unknown_tool", "tool_name_unknown"),
-    ("missing_name", "tool_name_unknown"),
+    ("missing_name", None),
+    ("empty_name", None),
+    ("overlong_name", None),
     ("missing_type", "tool_type_invalid"),
     ("index_gap", "tool_index_gap"),
     ("second_tool_invalid", "tool_name_unknown"),
@@ -150,9 +158,9 @@ async def test_deferred_name_must_arrive_before_batch_completion(supply_late_nam
         assert len(calls) == 2 and all(isinstance(e, ToolCallCompleted) for e in calls)
         assert isinstance(events[-1], ResponseCompleted)
     else:
-        assert calls == [] and events[-1] == ResponseFailed(code="invalid_provider_output")
-        finished = next(e for e in events if isinstance(e, ModelAttemptFinished))
-        assert finished.error.message.endswith("chat_protocol/v1:tool_name_unknown")
+        # 名称始终没有到达的调用只拒绝这一次；同组里完整的调用照常放行。
+        assert [type(e) for e in calls] == [ToolCallCompleted, ToolCallRejected]
+        assert isinstance(events[-1], ResponseCompleted)
 
 
 @pytest.mark.parametrize("scenario,reason", SCENARIOS)
@@ -163,7 +171,7 @@ async def test_sdk_terminal_diagnostic_preserves_failure_and_releases_no_tools(s
     ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
     assert len(starts) == len(ends) == 1
     assert ends[0].attempt_id == starts[0].attempt_id
-    if scenario in {"unknown_tool", "second_tool_invalid", *MALFORMED_ARGUMENTS}:
+    if scenario in {"unknown_tool", "second_tool_invalid", *MALFORMED_ARGUMENTS, *NAMELESS}:
         expected = []
         if scenario == "second_tool_invalid":
             expected.append(ToolCallCompleted(call_id=call()["id"], tool="test.read", arguments={}))
@@ -213,7 +221,8 @@ async def test_sdk_terminal_diagnostic_preserves_failure_and_releases_no_tools(s
 
 
 @pytest.mark.parametrize(
-    "scenario", ["unknown_tool", "second_tool_invalid", "missing_name", "bad_json", "no_done"]
+    "scenario",
+    ["unknown_tool", "second_tool_invalid", *sorted(NAMELESS), "bad_json", "no_done"],
 )
 async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execution(
     tmp_path, scenario, caplog
@@ -235,7 +244,7 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
             async with AgentRuntime(store, provider, tools) as runtime:
                 thread = await runtime.create_thread(str(tmp_path))
                 turn = await runtime.run_turn(thread.thread_id, "协议失败诊断", request_id="r")
-    if scenario in {"unknown_tool", "second_tool_invalid", "bad_json"}:
+    if scenario in {"unknown_tool", "second_tool_invalid", "bad_json", *NAMELESS}:
         reason, failure = (
             ("invalid_arguments_json", rejection_result(uuid4(), "invalid_arguments_json").error)
             if scenario == "bad_json"
@@ -282,10 +291,7 @@ async def test_sdk_failed_attempt_diagnostic_persists_and_replays_without_execut
         assert turn.status == "failed" and turn.error.code == "provider_invalid_provider_output"
         assert turn.usage == Usage(input_tokens=10, output_tokens=2)
         assert len(turn.model_attempts) == 1 and turn.model_attempts[0].status == "failed"
-        expected_reason = {
-            "missing_name": "tool_name_unknown",
-            "no_done": "completion_incomplete",
-        }[scenario]
+        expected_reason = {"no_done": "completion_incomplete"}[scenario]
         assert turn.model_attempts[0].error.message == (
             f"Provider 返回结构化失败；chat_protocol/v1:{expected_reason}"
         )

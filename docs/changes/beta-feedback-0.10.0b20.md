@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 10
+version: 11
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -25,6 +25,7 @@ related_adrs:
   - docs/adr/0148-interactive-run-time-checkpoint-and-wrap-up.md
   - docs/adr/0149-completion-rule-in-native-instructions.md
   - docs/adr/0156-generation-progress-and-live-usage-estimate.md
+  - docs/adr/0157-nameless-tool-calls-are-rejected-individually.md
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/delivery/test_trusted_action_patch.py
@@ -47,6 +48,8 @@ related_tests:
   - tests/agent/test_generation_progress.py
   - tests/app_server/test_agent_cli_thinking.py
   - tests/product_config/test_private_directory.py
+  - tests/models/test_tool_rejection.py
+  - tests/models/test_chat_empty_name.py
 supersedes: []
 ---
 
@@ -69,9 +72,10 @@ supersedes: []
 | 九 | 一次模型请求持续几分钟，界面只有静止的“思考中”，Token与费用不变，看起来像卡死 | 请求进行中显示生成阶段与估算的Token、费用 | [ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md) |
 | 十 | `harnessix exec`的过程文本里，思考内容没有标注，还和下一行接在一起 | 思考的每一行以“思考：”开头，其后的输出另起一行 | 本文第24节 |
 | 十一 | 先用`harnessix exec`、后运行`harnessix code configure`，被以“配置目录的权限是 755”拒绝 | 产品自己创建的状态目录每一级都按0700创建 | 本文第25节 |
+| 十二 | 百炼返回没有名称的工具调用，整轮任务中断，要手动“继续”（0.10.0b24，Issue #1） | 只拒绝这一次调用，模型改正后任务继续 | [ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md) |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二项在第26节。
 
 ## 2. 需求背景
 
@@ -728,3 +732,45 @@ IndexError: list index out of range
 
 `tests/product_ui/test_time_checkpoint.py::test_a_checkpoint_tick_while_the_app_shuts_down_is_ignored`用真实的Runtime、
 协议服务与终端界面完成一轮后关闭应用，确认界面已全部移除，再触发一次定时器回调：修复前抛出上面的`IndexError`，修复后不报错。
+
+## 26. 第十二项：没有名称的工具调用只拒绝该次调用
+
+### 26.1 背景与决定
+
+0.10.0b24的Beta复测（GitHub Issue #1）：阿里云百炼`qwen3.8-flash`、131072窗口、中档思考，从空仓开发两个带测试的Python工具
+（SQLite任务交接队列、FastAPI预约服务），两次分别在约5分12秒和14分59秒后以
+`错误：Provider 返回结构化失败（provider_invalid_provider_output）`结束，模型尝试记录的原因是
+`chat_protocol/v1:tool_name_unknown`。负责人的决定是只处理严重程度高的问题，这一项在内。
+
+### 26.2 根因
+
+`tool_name_unknown`只在工具调用没有可用名称时产生（`models/_chat_stream.py`）：名称始终没有到达、为空，或超过256个字符。
+名称不在工具目录里、参数不是JSON对象这两种情形早已只拒绝该次调用，唯独这一种仍使整个请求失败且不可重试。
+这是当初的有意规定（“空名/过长名不是可恢复目录错误”），不是疏漏；真实使用证明它会中断长任务。
+
+### 26.3 设计
+
+- 两个流式适配器把没有可用名称的调用归入已有的目录外拒绝：`ToolCallRejected(reason="unregistered_tool")`，
+  同一响应里其他完整的调用照常放行；超长名称不保留原文（`models/_tool_names.py`）。
+- 不新增拒绝原因、不改合同与Schema；模型看到的仍是“工具未注册”加当前工具清单。
+- 其余结构性错误不变。完整的取舍见ADR 0157。
+
+### 26.4 边界
+
+- 百炼实际返回的是哪一种形态（缺名、空名还是超长）没有取到原始数据；三种形态都已覆盖。
+- 模型连续给出无名调用时每次多花一步，由步骤预算终止。
+- 其他原因的`provider_invalid_provider_output`（缺终态、缺用量等）仍会结束本轮。
+
+### 26.5 验证
+
+- 单元与运行时用例（`tests/models/`三个文件）：缺名、空名、超长三种形态，两种协议，都只拒绝该次调用、同组合法调用放行；
+  超长名称不留在流状态里；超长名称之后换名仍按名称漂移失败；运行时用例里模型在下一步收到拒绝结果后完成任务，
+  会话可重放。修改前这些用例失败（此前的预期是整个请求失败，相应的旧用例已按新规定改写）。
+- 真实`harnessix exec`进程：只把最底层的网络传输换成返回“无名称工具调用”的数据源，帧校验、协议解析、运行时与CLI都是真实代码
+  （本机沙箱不允许连接回环端口，无法起模拟服务）。
+
+| 版本 | 结果 |
+|---|---|
+| 0.10.0b25 | 第1次模型请求后`status=failed`、`provider_invalid_provider_output`，退出码1 |
+| 本修改（空名） | 第2次请求里该调用以`harnessix_rejected_tool_v1`占位、结果为“工具未注册”；任务完成，退出码0 |
+| 本修改（超长名） | 同上，任务完成，退出码0 |

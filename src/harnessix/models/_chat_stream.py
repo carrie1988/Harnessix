@@ -16,6 +16,7 @@ from harnessix.models._billing import merge_billing
 from harnessix.models._chat_errors import ChatProtocolError, ChatProtocolReason
 from harnessix.models._json import json_object_or_none, strict_json
 from harnessix.models._progress import ArgumentProgress
+from harnessix.models._tool_names import usable_tool_name
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -44,7 +45,7 @@ def _complete_calls(
     """先校验整组结构，再按本次精确目录分类；畸形组不释放任何提案。"""
     if sorted(calls) != list(range(len(calls))):
         raise ChatProtocolError(ChatProtocolReason.TOOL_INDEX_GAP)
-    validated: list[tuple[str, str, dict[str, JsonValue] | None, int]] = []
+    validated: list[tuple[str, str | None, dict[str, JsonValue] | None, int]] = []
     ids: set[str] = set()
     for index in sorted(calls):
         call = calls[index]
@@ -54,12 +55,11 @@ def _complete_calls(
             raise ChatProtocolError(ChatProtocolReason.TOOL_ID_LIMIT_EXCEEDED)
         if call.call_id in ids:
             raise ChatProtocolError(ChatProtocolReason.TOOL_ID_DUPLICATE)
-        if not isinstance(call.name, str) or not 1 <= len(call.name) <= 256:
-            raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
         if call.type != "function":
             raise ChatProtocolError(ChatProtocolReason.TOOL_TYPE_INVALID)
         ids.add(call.call_id)
-        # 参数不是JSON对象：只拒绝这一次调用（无效果），不使整Turn失败；所有端点相同。
+        # 名称缺失、为空或超长，或参数不是JSON对象：只拒绝这一次调用（无效果），不使整Turn失败；
+        # 所有端点相同（ADR 0157）。
         arguments = json_object_or_none(call.arguments, repair=repair_arguments)
         validated.append((call.call_id, call.name, arguments, len(call.arguments)))
     return [
@@ -70,12 +70,12 @@ def _complete_calls(
 
 def _proposal(
     call_id: str,
-    name: str,
+    name: str | None,
     arguments: dict[str, JsonValue] | None,
     argument_chars: int,
     names: dict[str, str],
 ) -> ToolCallCompleted | ToolCallRejected:
-    if name not in names:
+    if name is None or name not in names:
         return ToolCallRejected(call_id=call_id, argument_chars=argument_chars)
     if arguments is None:
         return ToolCallRejected(
@@ -263,11 +263,10 @@ class ChatStream:
             if part.function is not None:
                 # 空增量不覆盖名称；最终仍须有完整名称，非空名称仍不得漂移。
                 if part.function.name:
-                    if not 1 <= len(part.function.name) <= 256:
-                        raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_UNKNOWN)
-                    if call.name is not None and call.name != part.function.name:
+                    name = usable_tool_name(part.function.name)
+                    if call.name is not None and call.name != name:
                         raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_CHANGED)
-                    call.name = part.function.name
+                    call.name = name
                 if part.function.arguments is not None:
                     events.extend(_append_arguments(self, call, part.function.arguments))
         if self._characters > self._request.budget.max_output_chars:

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 3
+version: 4
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners: [core]
 modules: [models, agent, session, context, protocol, app_server, sdk, product_ui, product_config, evals]
@@ -104,7 +104,7 @@ Context保存闭合模型视图；Protocol移除Provider身份；UI不得将拒�
 
 拒绝事实与结果Item均为completed、Item.error=null；这是“事实提交完成”，不是“工具成功”。
 argument_chars只保留在中立事件中计入原输出预算，不进入持久或公共Item。
-ToolCallCompleted/Rejected共用ID唯一性与调用数量预算。两个Adapter对名称执行1～256字符结构限制，空名/过长名不是可恢复目录错误。
+ToolCallCompleted/Rejected共用ID唯一性与调用数量预算。两个Adapter对名称执行1～256字符结构限制，空名/过长名不是可恢复目录错误（2026-11-13起由[ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md)修订：这类调用只拒绝该次调用）。
 
 ## 6. 正常流程与时序
 

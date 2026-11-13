@@ -33,6 +33,7 @@ class ChatProtocolReason(StrEnum):
     TOOL_INDEX_GAP = "tool_index_gap"
     TOOL_ID_MISSING = "tool_id_missing"
     TOOL_ID_DUPLICATE = "tool_id_duplicate"
+    # 0.10.0b26起不再产生：没有可用名称的调用只拒绝该次调用（ADR 0157）；历史记录里仍有这个原因。
     TOOL_NAME_UNKNOWN = "tool_name_unknown"
     TOOL_TYPE_INVALID = "tool_type_invalid"
 

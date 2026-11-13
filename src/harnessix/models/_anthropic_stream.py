@@ -29,6 +29,7 @@ from harnessix.models._billing import merge_billing
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._json import json_object_or_none
 from harnessix.models._progress import ArgumentProgress
+from harnessix.models._tool_names import usable_tool_name
 from harnessix.models.contracts import (
     ModelRequest,
     ProviderEvent,
@@ -125,7 +126,6 @@ class AnthropicStream:
                     not content.id
                     or len(content.id) > 256
                     or content.id in self._call_ids
-                    or not 1 <= len(content.name) <= 256
                     or content.input
                     or content.toolset_name is not None
                     or (content.caller is not None and content.caller.type != "direct")
@@ -136,8 +136,9 @@ class AnthropicStream:
                     not self._parallel and len(self._call_ids) > 1
                 ):
                     raise InvalidWireData("工具数量超过能力或预算")
+                # 名称为空或超长的调用不在这里失败：结束时只拒绝这一次调用（ADR 0157）。
                 self._blocks[event.index] = Block(
-                    type="tool_use", call_id=content.id, name=content.name
+                    type="tool_use", call_id=content.id, name=usable_tool_name(content.name)
                 )
                 return []
             raise InvalidWireData("不支持的内容 Block；不丢弃私有签名或推理后继续")

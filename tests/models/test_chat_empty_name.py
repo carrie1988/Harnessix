@@ -1,4 +1,4 @@
-"""空名称分片不覆盖已知名称；最终缺名及其他畸形仍不释放工具。"""
+"""空名称分片不覆盖已知名称；最终仍缺名的调用只拒绝该次调用，其他畸形仍不释放工具。"""
 
 import httpx
 import pytest
@@ -56,27 +56,11 @@ async def test_empty_name_is_no_update_not_a_guessed_tool(deferred, registered):
 
 @pytest.mark.parametrize(
     "violation",
-    [
-        "missing_name",
-        "name_changed",
-        "name_too_long",
-        "invalid_type",
-        "missing_done",
-        "missing_usage",
-        "second_call_missing_name",
-    ],
+    ["name_changed", "name_too_long", "invalid_type", "missing_done", "missing_usage"],
 )
 async def test_empty_name_preserves_whole_group_validation_and_no_retry(violation):
     parts = empty_name_frames()
-    if violation == "missing_name":
-        first = call(arguments="{")
-        first["function"]["name"] = ""
-        parts[0] = frame(chunk({"tool_calls": [first]}))
-    elif violation == "second_call_missing_name":
-        second = call(index=1)
-        second["function"]["name"] = ""
-        parts.insert(2, frame(chunk({"tool_calls": [second]})))
-    elif violation == "missing_done":
+    if violation == "missing_done":
         parts.pop()
     elif violation == "missing_usage":
         parts.pop(-2)
@@ -93,6 +77,31 @@ async def test_empty_name_preserves_whole_group_validation_and_no_retry(violatio
         isinstance(event, ToolCallCompleted | ToolCallRejected | ResponseCompleted)
         for event in events
     )
+    assert sum(isinstance(event, ModelAttemptStarted) for event in events) == 1
+    assert wire.closed
+
+
+@pytest.mark.parametrize("nameless_index", [0, 1])
+async def test_a_call_whose_name_never_arrives_is_rejected_alone(nameless_index):
+    """整流结束仍缺名的调用只拒绝这一次，同组里名称完整的调用照常放行（ADR 0157）。
+
+    0.10.0b24 Beta（Issue #1）：这样的响应此前让整个请求以tool_name_unknown失败，任务中断。
+    """
+    parts = empty_name_frames()
+    nameless = call(index=nameless_index, arguments="{" if nameless_index == 0 else "{}")
+    nameless["function"]["name"] = ""
+    if nameless_index == 0:
+        parts[0] = frame(chunk({"tool_calls": [nameless]}))
+    else:
+        parts.insert(2, frame(chunk({"tool_calls": [nameless]})))
+    events, wire = await collect(parts, max_attempts=3)
+    proposals = [
+        event for event in events if isinstance(event, ToolCallCompleted | ToolCallRejected)
+    ]
+    rejected = ToolCallRejected(call_id=call(index=nameless_index)["id"], argument_chars=2)
+    completed = ToolCallCompleted(call_id=call()["id"], tool="test.read", arguments={})
+    assert proposals == ([rejected] if nameless_index == 0 else [completed, rejected])
+    assert isinstance(events[-1], ResponseCompleted) and events[-1].finish_reason == "tool_calls"
     assert sum(isinstance(event, ModelAttemptStarted) for event in events) == 1
     assert wire.closed
 

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 34
+version: 35
 code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
 owners:
   - core
@@ -47,6 +47,13 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：名称缺失或超长的调用只拒绝该次调用（ADR 0157）
+
+- 模型给出的工具调用没有可用名称——名称始终没有到达、是空字符串，或超过256个字符——时，[`_chat_stream._complete_calls`](../../src/harnessix/models/_chat_stream.py)与[`AnthropicStream`](../../src/harnessix/models/_anthropic_stream.py)不再使整个请求失败，而是与目录外名称一样只产生这一次调用的`ToolCallRejected(reason="unregistered_tool")`；同一响应里其他完整的调用照常放行。
+- 超长名称不保留原文：[`_tool_names.usable_tool_name`](../../src/harnessix/models/_tool_names.py)把它换成不可能被登记的占位。名称在分片之间变化（包括超长名称之后又出现另一个名称）仍按`tool_name_changed`失败。
+- 缺ID、ID重复、index缺口、类型错误、缺终态或用量等结构性错误不变。`tool_name_unknown`不再产生，枚举值为历史记录保留。
+- 回归见`tests/models/test_tool_rejection.py`、`tests/models/test_chat_empty_name.py`、`tests/models/test_chat_terminal_diagnostics.py`。详见[ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md)。
 
 ## 当前增量：工具参数的生成进度（ADR 0156）
 
@@ -457,7 +464,7 @@ stateDiagram-v2
 原始SSE Frame先严格解析为`ChatCompletionChunk`，防止SDK把布尔或字符串宽松转换为计数。响应ID和实际
 模型首次确定后不可漂移；只接受Choice Index 0，Usage只能在Finish Reason后以无Choice Chunk到达，
 并要求输入加输出等于总量。Tool分片按连续Index聚合，非空ID/名称不可漂移，参数终值不是JSON Object的调用只被拒绝、不执行（见文末“当前增量：畸形工具参数只拒绝该次调用”）。
-Chat名称的空字符串分片与缺省一样不更新已有名称；迟到的完整名称可补齐，最终仍缺名则整批拒绝。
+Chat名称的空字符串分片与缺省一样不更新已有名称；迟到的完整名称可补齐，最终仍缺名的调用只拒绝该次调用（[ADR 0157](../adr/0157-nameless-tool-calls-are-rejected-individually.md)）。
 不猜名称或拼接不同非空名称；相关兼容边界及失败时点见[详细说明](../changes/m09-r3-chat-terminal-diagnostics.md#81-空名称增量兼容修正2026-10-10)。
 成功结束还要求`[DONE]`、Finish Reason和完整Usage同时存在。
 
@@ -839,6 +846,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 35 | `f24afce5` 增量 | 2026-11-13 | 名称缺失、为空或超长的工具调用只拒绝该次调用，不再使整个请求以`tool_name_unknown`失败；两个流式适配器一致，超长名称不保留原文（`_tool_names.py`，ADR 0157） |
 | 34 | `a22e64ee` 增量 | 2026-11-13 | 新增Provider事件`ToolArgumentsProgress`（累计UTF-8字节数与工具名，没有内容）；OpenAI Chat与Anthropic两个流式适配器在收到工具参数片段时经`_progress.ArgumentProgress`上报，第一批立即、之后每满256字节（ADR 0156） |
 | 33 | `74b08375` 增量 | 2026-11-12 | `OpenAIChatConfig.reasoning_effort`：随开启思考的请求在顶层思考格式下发送强度档位，与`thinking_budget`二选一；`thinking_budget`不再要求`max_completion_tokens`（百炼`max_tokens`只限制正文）（ADR 0146） |
 | 32 | `151ab594` 增量 | 2026-11-12 | `ModelHTTPConfig.max_attempts`上界由5放宽到6，配合向导的“首次请求加至多5次重试”（ADR 0144）；重试逻辑不变 |
