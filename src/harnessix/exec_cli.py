@@ -101,7 +101,13 @@ class HeadlessConsole:
     async def prompt(self, text: str) -> str:
         if not self._interactive:
             raise NeedsHumanInput(text)
-        return await asyncio.to_thread(input, text)
+        try:
+            return await asyncio.to_thread(input, text)
+        except EOFError:
+            # 标准输入是终端却读到结尾（Windows控制台的某些启动方式，或在提示处按Ctrl+D/Ctrl+Z）：
+            # 与非交互相同，以“需要人工输入”结束：退出码2并写出摘要，
+            # 不留下Traceback（Beta Issue #18）。
+            raise NeedsHumanInput(text) from None
 
 
 def _parser() -> argparse.ArgumentParser:

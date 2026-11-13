@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 28
+version: 29
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -34,6 +34,8 @@ related_tests:
   - tests/delivery/test_windows_create_missing_parents.py
   - tests/delivery/test_parent_file_conflicts.py
   - tests/product_config/test_wrap_up_stops_work.py
+  - tests/product_ui/test_paste_input.py
+  - tests/test_exec_cli.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -109,9 +111,11 @@ supersedes: []
 | 二十八 | 百炼qwen3.8-flash自称Claude并否认是千问（0.10.0b32，Issue #17） | 运行时指令按配置写出模型身份 | 本文第42节 |
 | 二十九 | Windows上首个补丁因父目录不存在失败，本轮仍显示“已完成”、仓库为空（0.10.0b32，Issue #16） | Windows事务端口同样补建父目录 | [ADR 0137](../adr/0137-create-with-missing-parent-directories.md)第2版、本文第43节 |
 | 三十 | 按Ctrl+F收尾后模型仍又做了两项检查（0.10.0b24，Issue #4） | 收尾由宿主保证：不准入尚未开始的调用，之后不提供工具 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第2版、本文第44节 |
+| 三十一 | `harnessix exec`在审批提示处读到输入结尾时崩溃，退出码1、没有摘要（0.10.0b32，Issue #18） | 按“需要人工处理”以退出码2结束并写出摘要 | 本文第45节 |
+| 三十二 | 终端界面粘贴多行任务只剩第一行（0.10.0b32，Issue #19） | 多行粘贴以标记显示，发送时还原原文 | 本文第46节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十项在第26～44节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十二项在第26～46节。
 
 ## 2. 需求背景
 
@@ -1314,3 +1318,26 @@ Windows批次的“既是文件又是父目录”在规划期拒绝、已有父�
 设计与验证见[ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第2版：说明记入本轮之后，尚未开始、经审批边界的
 调用以`tool_wrap_up_requested`未执行，之后的模型步骤不提供工具；同一步里已提出的只读读取照常完成。与平台无关。
 负责人2026-11-13要求影响易用性与体验的问题都要处理，此前搁置的这一项随之修复。
+
+## 45. 第三十一项：无头模式的审批提示读到输入结尾（Issue #18）
+
+0.10.0b32 Windows（Issue #18）：`harnessix exec`在Windows控制台里运行，标准输入被识别为终端但读不到内容；第一次需要人工批准时
+`HeadlessConsole.prompt → input()`抛出`EOFError`，进程以1退出并打印Traceback，`--summary-file`没有写出，调用方无法按约定的
+退出码2区分“需要批准”与“失败”。三个平台都会发生：macOS与Linux上在提示处按`Ctrl+D`、或标准输入是已到结尾的终端，同样抛出。
+
+修改：`prompt`把`EOFError`当作读不到人工输入，与非交互相同抛`NeedsHumanInput`——取消当前Turn、以2退出并写出摘要。
+
+验证：`tests/test_exec_cli.py::test_an_interactive_prompt_that_reads_end_of_input_needs_a_human_too`；真实进程（macOS，tmux里的终端，
+脚本模型请求一条需要批准的沙箱外命令，在“批准该操作？[y/N]”处按`Ctrl+D`）：修复前退出码1、没有摘要、`EOFError`；修复后退出码2，
+摘要`status`为`needs_input`。
+
+## 46. 第三十二项：多行粘贴保留全文（Issue #19）
+
+0.10.0b32 Windows（Issue #19）：把三行文本（bracketed paste，CRLF分隔）粘贴进任务输入框，只插入第一行，其余静默丢弃。
+原因是Textual单行`Input`的粘贴处理只取`splitlines()[0]`，与平台无关。
+
+修改：`product_ui/paste_input.PasteAwareInput`——多行粘贴显示为“[粘贴的文本 #N：M 行]”，提交时换回原文（CRLF与CR统一为LF），
+单行粘贴照旧；删掉标记即不发送那段粘贴。任务输入框、补充说明与回答问题的对话框都改用它。
+
+验证：`tests/product_ui/test_paste_input.py`（标记与还原、多段编号、删掉标记、清空；真实产品界面粘贴后按Enter，Agent收到完整三行；
+补充说明对话框）。真实终端界面（tmux `paste-buffer -p`）：修复前保存的用户消息只有第一行；修复后精确CRLF与终端送出的CR两种形式都保存为完整三行。

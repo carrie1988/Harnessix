@@ -25,6 +25,7 @@ from harnessix.product_ui.interactions import (
     PendingApproval,
     PendingQuestion,
 )
+from harnessix.product_ui.paste_input import PasteAwareInput
 from harnessix.product_ui.tool_summary import describe_tool
 from harnessix.product_ui.turn_checkpoint import CheckpointChoice, checkpoint_minutes
 
@@ -221,7 +222,7 @@ class QuestionScreen(ModalScreen[str | None]):
             yield Label("需要你的输入", classes="interaction-title")
             yield Static(self.question.question, markup=False, classes="interaction-summary")
             yield Static(options, markup=False, classes="interaction-content")
-            yield Input(
+            yield PasteAwareInput(
                 placeholder="输入回答或选项序号",
                 id="question-answer",
                 classes="interaction-input",
@@ -233,7 +234,7 @@ class QuestionScreen(ModalScreen[str | None]):
                 yield Button("暂不回答", id="question-close")
 
     def _submit(self) -> None:
-        answer = self.query_one("#question-answer", Input).value.strip()
+        answer = self.query_one("#question-answer", PasteAwareInput).full_value.strip()
         if answer.isdecimal() and self.question.options:
             index = int(answer)
             if 1 <= index <= len(self.question.options):
@@ -276,7 +277,7 @@ class SteerScreen(ModalScreen[str | None]):
                 markup=False,
                 classes="interaction-summary",
             )
-            yield Input(
+            yield PasteAwareInput(
                 placeholder="输入需要追加给当前Turn的要求",
                 id="steer-text",
                 classes="interaction-input",
@@ -288,7 +289,7 @@ class SteerScreen(ModalScreen[str | None]):
                 yield Button("关闭", id="steer-close")
 
     def _submit(self) -> None:
-        text = self.query_one("#steer-text", Input).value
+        text = self.query_one("#steer-text", PasteAwareInput).full_value
         if not text.strip():
             self.query_one("#steer-error", Static).update("补充输入不能为空")
             return

@@ -32,6 +32,7 @@ from harnessix.product_ui.interactions import (
     pending_question,
 )
 from harnessix.product_ui.main_view import ProductMainView
+from harnessix.product_ui.paste_input import clear_input, submitted_text
 from harnessix.product_ui.turn_pacing import TurnPacing
 
 PRODUCT_QUIT_DEADLINE_SECONDS = 20.0
@@ -201,11 +202,11 @@ class ProductApp(TurnPacing, App[CloseReport]):
 
     @on(Input.Submitted, "#composer")
     async def _submit_prompt(self, event: Input.Submitted) -> None:
-        if self._intent_in_flight or not event.value.strip():
+        if self._intent_in_flight or not (text := submitted_text(event)).strip():
             return
-        event.input.value = ""
+        clear_input(event.input)
         self.run_worker(
-            self._dispatch(SubmitPromptIntent(event.value)),
+            self._dispatch(SubmitPromptIntent(text)),
             name="submit-prompt",
             group="local-intent-waiter",
         )

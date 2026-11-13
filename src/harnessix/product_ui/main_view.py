@@ -8,7 +8,7 @@ from textual import events
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widget import Widget
-from textual.widgets import Input, Label, ListItem, ListView, Static
+from textual.widgets import Label, ListItem, ListView, Static
 
 from harnessix.product_ui.activity_indicator import ActivityIndicator
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
@@ -22,6 +22,7 @@ from harnessix.product_ui.interactions import (
     pending_question,
     usage_cost_view,
 )
+from harnessix.product_ui.paste_input import PasteAwareInput
 from harnessix.product_ui.rendering import thread_label, transcript_lines, turn_status_label
 from harnessix.product_ui.transcript_pane import TranscriptPane
 from harnessix.product_ui.turn_budget import UNCAPPED_TOKENS
@@ -180,7 +181,7 @@ class ProductMainView(Widget):
         self._last_state: ProductControllerState | None = None
         self._status = Static("正在启动…", id="status")
         self._activity = ActivityIndicator()
-        self._composer = Input(
+        self._composer = PasteAwareInput(
             placeholder="输入任务，Enter发送",
             id="composer",
             max_length=1_000_000,

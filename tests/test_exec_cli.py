@@ -54,6 +54,22 @@ def test_non_interactive_console_turns_a_human_prompt_into_needs_input():
         asyncio.run(console.prompt("批准该操作？[y/N] "))
 
 
+def test_an_interactive_prompt_that_reads_end_of_input_needs_a_human_too(monkeypatch):
+    """标准输入是终端但读到结尾时，与非交互相同（Beta Issue #18）。
+
+    此前EOFError冒出，进程退出码1且没有摘要。
+    """
+
+    def end_of_input(_prompt: str) -> str:
+        raise EOFError("EOF when reading a line")
+
+    monkeypatch.setattr("builtins.input", end_of_input)
+    console = HeadlessConsole(quiet=True, interactive=True)
+    with pytest.raises(NeedsHumanInput) as needs:
+        asyncio.run(console.prompt("批准该操作？[y/N] "))
+    assert needs.value.__cause__ is None and needs.value.__suppress_context__
+
+
 def test_exec_requires_exactly_one_task_source():
     with pytest.raises(SystemExit):
         _parser().parse_args([])

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 61
+version: 62
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,11 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：多行粘贴保留全文（Beta Issue #19）
+
+- Textual的单行`Input`对粘贴只取第一行（`splitlines()[0]`），其余静默丢弃，三个平台的终端都一样。[`paste_input.PasteAwareInput`](../../src/harnessix/product_ui/paste_input.py)把多行粘贴显示为“[粘贴的文本 #N：M 行]”，`full_value`在提交时换回原文（CRLF与CR统一为LF）；单行粘贴交给`Input`原处理器。Textual会依次调用各层类的`_on_paste`，多行时以`prevent_default`阻止基类再插入第一行。
+- 任务输入框（`app._submit_prompt`经`submitted_text`/`clear_input`）、补充说明与回答问题的对话框都改用它。回归见`tests/product_ui/test_paste_input.py`。
 
 ## 当前增量：同时确认几个工作区的信任不丢记录、不崩溃（Beta Issue #15）
 
@@ -1242,6 +1247,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 62 | `1d8132c3` 增量 | 2026-11-13 | 多行粘贴不再只剩第一行：任务输入框、补充说明与回答问题的输入框改用`paste_input.PasteAwareInput`（Beta Issue #19） |
 | 61 | `76f7dfed` 增量 | 2026-11-13 | 一键收尾与检查点“收尾”的说明文本改为引用`product_config/wrap_up.py`的常量，宿主据此保证收尾（ADR 0148第2版，Beta Issue #4） |
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
 | 60 | `458dda3e` 增量 | 2026-11-13 | 工作区信任与命令免询问规则的保存跨进程串行；记录写不进去时本次照常进入并提示，不出现Traceback（Beta Issue #15） |
