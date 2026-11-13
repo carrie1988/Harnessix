@@ -20,6 +20,7 @@ from harnessix.agent.runtime import AgentRuntime
 from harnessix.models.contracts import ModelRequest, ProviderEvent
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.product_config.wrap_up import (
+    WRAP_UP_NOTICE,
     WRAP_UP_PROMPT,
     WRAP_UP_STEER,
     WrapUpToolView,
@@ -127,6 +128,9 @@ async def test_a_turn_started_with_the_checkpoint_wrap_up_offers_no_tools(tmp_pa
         turn = await runtime.run_turn(thread.thread_id, WRAP_UP_PROMPT, request_id="r")
     assert turn.status.value == "completed"
     assert [len(request.tools) for request in provider.requests] == [0]
+    # 0.10.0b36：只有空目录时，百炼qwen3.8-flash约五分之一的情况下仍连续4～6次调用工具。
+    # 目录说明写明是用户要求收尾、调用不会执行、应直接总结之后，同一场景24次都直接给出总结。
+    assert [request.tool_notice for request in provider.requests] == [WRAP_UP_NOTICE]
 
 
 @pytest.mark.parametrize(

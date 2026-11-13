@@ -28,6 +28,12 @@ WRAP_UP_PROMPT: Final = (
     "已经完成了什么、哪些没有来得及做、哪些你没能验证需要我自己确认。"
 )
 WRAP_UP_TEXTS: Final = frozenset({WRAP_UP_STEER, WRAP_UP_PROMPT})
+# 收尾之后每一步的工具目录说明（随目录说明放在请求末尾）。0.10.0b36：百炼qwen3.8-flash
+# 在不带工具的请求里仍连续4～6次发出工具调用，每次只得到“工具未注册”，半分钟后才给出总结。
+WRAP_UP_NOTICE: Final = (
+    "用户已要求收尾：这一步不提供任何工具，任何工具调用都不会执行。"
+    "请直接用文字给出最终总结：已经完成了什么、哪些没有来得及做、哪些没能验证需要用户自己确认。"
+)
 WRAP_UP_REFUSAL: Final = AgentFailure(
     code="tool_wrap_up_requested",
     message="你已要求收尾，这次调用没有执行；请直接给出最终总结",
@@ -55,7 +61,7 @@ class WrapUpToolView:
         self, turn: Turn, definitions: tuple[ToolDescriptor, ...]
     ) -> ModelToolSelection | tuple[ToolDescriptor, ...]:
         if wrap_up_requested(turn):
-            return ModelToolSelection(())
+            return ModelToolSelection((), notice=WRAP_UP_NOTICE)
         if self.inner is None:
             return ModelToolSelection(definitions)
         return self.inner.select(turn, definitions)
