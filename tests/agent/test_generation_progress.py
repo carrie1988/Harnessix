@@ -346,6 +346,19 @@ def test_the_tui_names_the_phase_and_estimates_what_was_generated() -> None:
     assert "约 1,200 tokens" in activity_text(
         "calling_model", 60, 0, streaming=False, generation=request, silent_seconds=4.9
     )
+    # Issue #7、#11：请求发出后一个字节都没有收到（等首帧、读超时后重试）时，同样说明等了多久，
+    # 并与“已经有输出、后来停住”区分开。
+    before_first_frame = activity_text(
+        "calling_model", 200, 0, streaming=False, generation=None, silent_seconds=181.2
+    )
+    assert before_first_frame == "⠋ 等待模型服务响应 · 已等待 3 分 01 秒 · 已运行 3 分 20 秒"
+    assert activity_text("calling_model", 3, 0, streaming=False, silent_seconds=3) == (
+        "⠋ 思考中 · 已运行 3 秒"
+    )
+    # 其他状态（执行工具、准备上下文）不受影响。
+    assert activity_text("executing_tools", 90, 0, streaming=False, silent_seconds=90) == (
+        "⠋ 执行中 · 已运行 1 分 30 秒"
+    )
 
     # 序号有缺口也不要紧：每行都是累计值，只看最近到达的一行。
     editing = apply_events_next(

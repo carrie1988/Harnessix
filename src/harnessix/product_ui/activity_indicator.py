@@ -48,12 +48,18 @@ def activity_text(
     有生成进度时写明模型正在做什么、已经生成了多少：
     “⠹ 正在生成修改内容 · 约 3,400 tokens · 已运行 2 分 05 秒”。
     进度有一阵没有变化时改为说明等了多久：“⠹ 正在生成修改内容 · 模型服务 18 秒未返回新内容 · …”。
+    请求发出后还没有收到任何内容（等首帧，或读超时后正在重试）时同样说明：
+    “⠹ 等待模型服务响应 · 已等待 3 分 01 秒 · …”。
+    silent_seconds从最近一次有新内容、或这一步开始调用模型算起。
     """
 
-    if generation is not None and status == "calling_model":
+    waiting = silent_seconds >= SILENCE_NOTICE_SECONDS
+    if status == "calling_model" and generation is None and not streaming and waiting:
+        label = f"等待模型服务响应 · 已等待 {_duration(silent_seconds)}"
+    elif generation is not None and status == "calling_model":
         label = (
             generation.label
-            if silent_seconds < SILENCE_NOTICE_SECONDS
+            if not waiting
             else f"{generation.phase_label} · 模型服务 {int(silent_seconds)} 秒未返回新内容"
         )
     else:
@@ -85,6 +91,7 @@ class ActivityIndicator(Static):
         self._status = ""
         self._streaming = False
         self._generation: InFlightRequest | None = None
+        # 最近一次有新内容（生成进度变化），或进入当前状态的时刻；等待提示从这里算起。
         self._generation_at = 0.0
         self._frame = 0
 
@@ -105,6 +112,9 @@ class ActivityIndicator(Static):
             return
         if turn.turn_id != self._turn:
             self._turn, self._since = turn.turn_id, monotonic()
+            self._status = ""
+        if turn.status != self._status:
+            self._generation_at = monotonic()
         self._status = turn.status
         # model_step是已结算用量的步数；正在调用模型的步骤号更大。思考预览不算回复正文。
         self._streaming = view is not None and any(

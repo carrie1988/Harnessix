@@ -39,6 +39,13 @@ def test_malformed_model_output_says_that_continuing_works() -> None:
     assert "继续" in item.action
 
 
+def test_a_slow_history_check_says_how_to_go_on() -> None:
+    """Beta Issue #8：context_artifact_timeout落到通用说明，没有说可以继续或新建会话。"""
+    item = current_error_help(None, "failed", "context_artifact_timeout")
+    assert item is not None and item.title == "核对会话记录超时"
+    assert "继续" in item.action and "Ctrl+N" in item.action
+
+
 def test_unknown_turn_failure_is_generic_and_does_not_echo_the_code() -> None:
     item = current_error_help(None, "failed", "provider-secret-/private/path")
     assert item is not None and item.code == "turn_failed"

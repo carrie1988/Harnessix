@@ -185,6 +185,15 @@ _TURN_HELP: Final = {
             _DIAGNOSTICS,
         ),
         ProductErrorHelp(
+            "context_artifact_timeout",
+            "核对会话记录超时",
+            "每次请求模型之前，Harnessix 会核对会话里保存的命令和工具输出；输出累积很多、"
+            "或电脑一时很忙时，核对超过了 5 秒的时限。",
+            _KEPT,
+            "可以先发送“继续”；再次出现时，按 Ctrl+N 新建会话，简要说明之前的进展后继续。",
+            _DIAGNOSTICS,
+        ),
+        ProductErrorHelp(
             "provider_invalid_provider_output",
             "模型返回的内容不完整或格式不对",
             "模型服务这一次的回复缺少结束标记或用量，或者工具调用的结构不合规；多为偶发。",

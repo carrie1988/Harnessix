@@ -302,3 +302,7 @@ def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
     )
     assert malformed[0].text.startswith("模型服务返回的内容不完整或格式不对")
     assert "直接发送“继续”就能接着做" in malformed[0].text
+    # Beta Issue #8：核对会话记录超时只显示内部说明，没有恢复办法。
+    slow = transcript_lines(view("context_artifact_timeout", "模型历史Artifact验证超过时间上限"))
+    assert slow[0].text.startswith("核对会话记录超时") and "context_artifact" not in slow[0].text
+    assert "发送“继续”" in slow[0].text and "Ctrl+N 新建会话" in slow[0].text

@@ -99,3 +99,41 @@ async def test_elapsed_time_continues_across_an_approval_in_the_same_turn(monkey
         indicator.follow(_state(next_turn, 4))
         await pilot.pause()
         assert "已运行 0 秒" in str(indicator.render())
+
+
+async def test_waiting_for_the_first_frame_shows_how_long(monkeypatch) -> None:
+    """Issue #7、#11：请求发出后迟迟没有任何内容时（等首帧、读超时后重试），此前一直显示“思考中”。
+
+    等待从这一步开始调用模型算起：之前执行工具用掉的时间不算在“已等待”里。
+    """
+    from harnessix.product_ui import activity_indicator
+
+    clock = [100.0]
+    monkeypatch.setattr(activity_indicator, "monotonic", lambda: clock[0])
+    app = _Host()
+    async with app.run_test(size=(100, 10)) as pilot:
+        indicator = app.query_one(ActivityIndicator)
+        tools = _view("executing_tools")
+        indicator.follow(_state(tools, 1))
+        clock[0] += 40
+        calling = replace(tools, current_turn=replace(tools.current_turn, status="calling_model"))
+        indicator.follow(_state(calling, 2))
+        clock[0] += 3
+        indicator._tick()
+        await pilot.pause()
+        assert "思考中 · 已运行 43 秒" in str(indicator.render())
+        clock[0] += 182
+        indicator._tick()
+        await pilot.pause()
+        assert "等待模型服务响应 · 已等待 3 分 05 秒 · 已运行 3 分 45 秒" in str(indicator.render())
+        # 开始有回复正文后不再显示等待。
+        reply = TransientItemStream(
+            item_id=uuid4(),
+            turn_id=calling.current_turn.turn_id,
+            model_step=1,
+            last_sequence=1,
+            text="好的",
+        )
+        indicator.follow(_state(replace(calling, streams=(reply,)), 3))
+        await pilot.pause()
+        assert "等待模型服务响应" not in str(indicator.render())

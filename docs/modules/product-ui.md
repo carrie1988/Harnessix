@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 51
+version: 52
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：等待首帧时的运行提示与核对超时的恢复说明
+
+- [`activity_indicator.activity_text`](../../src/harnessix/product_ui/activity_indicator.py)：正在调用模型、还没有任何生成进度也没有回复正文、且已等待`SILENCE_NOTICE_SECONDS`（5秒）时，显示“等待模型服务响应 · 已等待 N 秒”。等待从最近一次有新内容或进入当前状态（新的一轮也重新计）算起，所以执行工具用掉的时间不计入。此前没有进度数据时一直显示“思考中”（Beta Issue #7、#11：首帧等了180秒、读超时后重试的5分钟里界面不动）。
+- `rendering._FAILURE_TEXT`与`error_help._TURN_HELP`新增`context_artifact_timeout`：可以先发送“继续”，再次出现时按Ctrl+N新建会话（Beta Issue #8）。
+- 回归见`tests/product_ui/test_activity_indicator.py`、`tests/agent/test_generation_progress.py`、`tests/product_ui/test_rendering.py`、`tests/product_ui/test_error_help_f1.py`。
 
 ## 当前增量：上下文耗尽与模型输出不合规时的恢复说明
 
@@ -1199,6 +1205,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 52 | `f24afce5` 增量 | 2026-11-13 | 等待首帧或重试期间显示“等待模型服务响应 · 已等待 N 秒”；`context_artifact_timeout`的恢复说明（Beta Issue #7、#11、#8） |
 | 51 | `f24afce5` 增量 | 2026-11-13 | 上下文耗尽的恢复说明改为首选“调大窗口后重新打开、原会话继续”；`configure --service-failure-retries`的帮助文字说明它决定一次请求最多尝试N+1次（Beta Issue #3、#2） |
 | 50 | `f24afce5` 增量 | 2026-11-13 | 上下文耗尽（`context_budget_exceeded`）与模型输出不合规（`provider_invalid_provider_output`）结束任务时，对话与F1给出恢复办法（Beta Issue #3、#1） |
 | 49 | `6d0c6152` 增量 | 2026-11-13 | 客户端状态目录缺失的各级父目录都按0700创建，不再留下755的`~/.harnessix` |

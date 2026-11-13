@@ -61,6 +61,10 @@ _FAILURE_TEXT: Final = {
         "否则按 Ctrl+N 新建会话，简要说明进展后继续"
     ),
     "provider_max_output_tokens": "模型单次输出达到长度上限，可以让它分步完成",
+    "context_artifact_timeout": (
+        "核对会话记录超时，本轮已停止，已完成的修改都保留着；可以先发送“继续”，"
+        "再次出现时多半是会话里的命令输出太多，请按 Ctrl+N 新建会话，简要说明进展后继续"
+    ),
     "budget_exceeded": "已达到本轮的 Token 上限，可以继续发送任务开始新一轮",
     "time_budget_exceeded": "已达到本轮的时间上限，可以继续发送任务开始新一轮",
     "uncertain_effect": (
