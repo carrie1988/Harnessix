@@ -10,9 +10,9 @@ from harnessix.exec_cli import (
     NeedsHumanInput,
     _commands,
     _parser,
-    _verification,
     approval_policy,
 )
+from harnessix.product_ui.verification import verification_summary as _verification
 from harnessix.protocol.contracts import PublicApprovalRequestContent, PublicItem
 
 

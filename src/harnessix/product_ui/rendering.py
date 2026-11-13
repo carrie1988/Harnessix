@@ -5,13 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Final
-from uuid import UUID
+from uuid import UUID, uuid5
 
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_item_id
 from harnessix.agent.completion_guard import completion_notice_item_id
 from harnessix.agent.truncation_recovery import recovery_notice_item_id
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem, TransientItemStream
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
+from harnessix.product_ui.verification import unverified_notice
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
     PublicCompactionContent,
@@ -32,6 +33,8 @@ _REJECTION_REASONS = {
     "unregistered_tool": "工具未注册",
     "invalid_arguments_json": "工具参数不是合法JSON",
 }
+# 一轮结束后“修改之后没有检查”提示的稳定身份（由轮次派生）。
+_COMPLETION_NOTICE_VERSION: Final = "harnessix.completion-evidence-notice/v1"
 _PLAN_MARKS: Final = {"completed": "✓", "in_progress": "▸", "pending": "○"}
 # 宿主在Turn中途补发给模型的英文说明。它们是持久的用户消息Item，但不是用户说的话：
 # 界面各用一行中文交代发生了什么，不显示英文正文。按派生的Item身份识别，不看正文前缀。
@@ -239,7 +242,25 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
         and not (stream.reasoning and stream.gap)
         and not stream.progress
     )
+    lines.extend(_completion_notice(view))
     return tuple(lines)
+
+
+def _completion_notice(view: ProductViewState) -> tuple[TranscriptLine, ...]:
+    """刚以“已完成”结束的一轮：最后一次修改之后没有检查、或检查没有通过时，在对话末尾如实说明。
+
+    只在实时区显示（不定稿），下一轮开始后消失，不改动已经追加到历史区的内容（Beta Issue #9）。
+    """
+    turn = view.current_turn
+    if turn is None or turn.status != "completed":
+        return ()
+    notice = unverified_notice(
+        [entry.item for entry in view.items if entry.turn_id == turn.turn_id]
+    )
+    if notice is None:
+        return ()
+    item_id = uuid5(turn.turn_id, _COMPLETION_NOTICE_VERSION)
+    return (TranscriptLine(item_id, "提示", notice, final=False),)
 
 
 def _shown_lines(

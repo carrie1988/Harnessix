@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 17
+version: 18
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -58,6 +58,7 @@ related_tests:
   - tests/agent/test_retry_progress.py
   - tests/artifacts/test_verified_history_bodies.py
   - tests/product_config/test_bailian_workspace_endpoint.py
+  - tests/product_ui/test_unverified_completion.py
 supersedes: []
 ---
 
@@ -88,9 +89,10 @@ supersedes: []
 | 十七 | 退出终端界面时偶尔打印一段`IndexError`报错堆栈（0.10.0b23起） | 界面全部关闭后，运行时间检查点的定时器直接跳过 | 本文第31节 |
 | 十八 | 重试期间看不出第几次尝试、为什么还在等（0.10.0b25，Issue #11） | 运行提示说明尝试序号与上次失败原因 | 本文第32节 |
 | 十九 | 百炼北京的业务空间专属域名显示“费用未知”（0.10.0b25，Issue #6） | 与共享域名按同一套表核对 | 本文第33节 |
+| 二十 | “已完成”，但总结声称的测试并没有在修复之后运行（0.10.0b25，Issue #9） | 对话末尾如实提示修改之后没有检查 | 本文第34节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至十九项在第26～33节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十项在第26～34节。
 
 ## 2. 需求背景
 
@@ -998,3 +1000,38 @@ https://<WorkspaceId>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`之后，�
 | 本修改 | 每百万Token输入¥0.8 / 输出¥2.7 | 1,000,000 | dashscope_enable_thinking / medium | 180秒 |
 
 已经用专属域名生成的配置要重新运行一次`configure`才能得到窗口与思考设置；费用显示在升级后即生效。
+
+## 34. 第二十项：已完成但修改之后没有检查时如实提示
+
+### 34.1 背景
+
+Issue #9（0.10.0b25，Windows，逐条审批）：要求“先加回归测试并跑出红测，再修复并运行全套”。界面显示“已完成”，
+总结声称更新了README并“`python -B -m unittest -v` → Ran 31 tests … OK”。操作记录里唯一一次测试命令发生在修复补丁之前
+（预期的红测，退出码1），之后只有两个修复补丁，没有任何检查，README也没有改。独立复跑是29项通过。
+
+### 34.2 判断
+
+模型的总结与事实不符，产品没有办法让模型不说错；但产品掌握事实：`harnessix exec`的摘要早有
+“最后一次修改之后是否运行过检查”（`verification`），终端界面没有显示。测试者的期望正是“至少在已完成附近标出这一点”。
+
+### 34.3 设计
+
+- 判断逻辑由`exec_cli._verification`移到`product_ui/verification.py::verification_summary`，`exec`与界面共用一份，逻辑不变：
+  只看这一轮成功的补丁与其后的`exec_command.*`/`run_profile.*`调用。
+- 当前一轮以“已完成”结束时，`unverified_notice`给出提示则在对话末尾加一行“提示”：
+  - 最后一次修改之后没有检查：“本轮最后一次修改之后没有运行过测试或其他检查；回复里提到的检查结果不是在这些修改之后得到的，请自行确认”；
+  - 最后一次检查没有通过：写出那条命令，提示先确认再使用这些修改。
+- 这一行不定稿（只在实时区），下一轮开始后消失，不改动已经追加到历史区的内容。
+
+### 34.4 边界
+
+- 没有修改代码的一轮（问答、只读排查）不提示。
+- 通过其他方式改文件（例如用命令写文件）不算“修改”，与`exec`摘要的口径相同。
+- 不判断总结的内容是否与事实相符，只陈述事实。
+
+### 34.5 验证
+
+- `tests/product_ui/test_unverified_completion.py`：Issue #9的时间线（红测、修复、无检查）提示；修改后检查失败时提示并带命令；
+  修改后检查通过、没有修改时不提示；未结束、失败、取消的一轮不判断。`tests/test_exec_cli.py`原有的完成证据用例改为引用共用模块，照常通过。
+- 真实终端界面（tmux驱动，自动接受修改，模型换成“新建hello.py，然后声称pytest全部通过”的脚本）：
+  修复后对话末尾出现上述提示，`hello.py`已写入；0.10.0b25在同样情形下只有“已完成”。

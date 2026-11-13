@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 54
+version: 55
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：已完成但修改之后没有检查时如实提示
+
+- [`verification.verification_summary`](../../src/harnessix/product_ui/verification.py)判断一轮的完成证据（最后一次成功修改之后是否运行过`exec_command.*`/`run_profile.*`检查、结果如何），由`exec_cli._verification`移来，`harnessix exec`摘要与终端界面共用。
+- `rendering.transcript_lines`在当前一轮以“已完成”结束、且`unverified_notice`给出提示时，在对话末尾加一行“提示”（不定稿，只在实时区，下一轮开始后消失，不改动历史区）：最后一次修改之后没有检查，或最后一次检查没有通过（附命令）。
+- 回归见`tests/product_ui/test_unverified_completion.py`。Beta Issue #9。
 
 ## 当前增量：重试时说明第几次尝试与上次失败原因
 
@@ -1211,6 +1217,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 50 | `49cf3d92` 增量 | 2026-11-13 | 运行时间检查点的定时器在界面已全部移除时直接返回，应用关闭时不再抛出`IndexError`（0.10.0b25） |
+| 55 | `f24afce5` 增量 | 2026-11-13 | 已完成但最后一次修改之后没有检查（或检查失败）时，对话末尾如实提示；完成证据判断移到`verification.py`与`exec`共用（Beta Issue #9） |
 | 54 | `f24afce5` 增量 | 2026-11-13 | `cost_estimate.list_price_for`经`product_config.vendors.endpoint_host`查牌价，百炼北京的业务空间专属域名显示牌价与费用（Beta Issue #6） |
 | 53 | `f24afce5` 增量 | 2026-11-13 | 重试时运行提示说明第几次尝试与上次失败原因（`request_retry`，Beta Issue #11） |
 | 52 | `f24afce5` 增量 | 2026-11-13 | 等待首帧或重试期间显示“等待模型服务响应 · 已等待 N 秒”；`context_artifact_timeout`的恢复说明（Beta Issue #7、#11、#8） |

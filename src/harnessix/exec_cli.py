@@ -41,6 +41,7 @@ from harnessix.product_ui.git_detection import detected_git_executable
 from harnessix.product_ui.preflight_text import sandbox_status_line
 from harnessix.product_ui.startup_failure import startup_failure_text
 from harnessix.product_ui.turn_budget import turn_budget_for
+from harnessix.product_ui.verification import verification_summary
 from harnessix.product_ui.workspace_trust import confirm_workspace_trust
 from harnessix.protocol.contracts import (
     PublicApprovalRequestContent,
@@ -197,41 +198,6 @@ def _commands(items: Sequence[PublicItem]) -> list[dict[str, Any]]:
     return commands
 
 
-_PATCH_TOOLS = ("apply_patch", "apply_patch_batch")
-_CHECK_TOOL_PREFIXES = ("exec_command.", "run_profile.")
-
-
-def _verification(items: Sequence[PublicItem]) -> dict[str, Any]:
-    """完成证据：最后一次成功改代码之后是否运行过检查，以及最后一次检查的结果。"""
-
-    results = {
-        item.content.call_id: item.content
-        for item in items
-        if isinstance(item.content, PublicToolResultContent)
-    }
-    edited = False
-    last_check: tuple[str | None, str | None] | None = None
-    for item in items:
-        call = item.content
-        if not isinstance(call, PublicToolCallContent):
-            continue
-        result = results.get(call.call_id)
-        outcome = None if result is None else result.outcome
-        if call.tool in _PATCH_TOOLS and outcome == "succeeded":
-            edited, last_check = True, None  # 之后的检查才算数
-        elif call.tool.startswith(_CHECK_TOOL_PREFIXES) and edited:
-            command = call.arguments.get("cmd")
-            last_check = (command if isinstance(command, str) else call.tool, outcome)
-    if not edited:
-        return {"status": "no_changes"}
-    if last_check is None:
-        return {"status": "unverified"}
-    command, check_outcome = last_check
-    passed = check_outcome == "succeeded"
-    status = "passed_after_last_edit" if passed else "failed_after_last_edit"
-    return {"status": status, "last_check": command}
-
-
 def _cost_summary(
     turn: TurnView | None, pricing: str, list_price: ListPrice | None
 ) -> dict[str, Any]:
@@ -290,7 +256,7 @@ def _summary(
         "final_answer": answers[-1] if answers else None,
         "changed_paths": changed,
         "commands": _commands(items),
-        "verification": _verification(items),
+        "verification": verification_summary(items),
         "elapsed_seconds": round(elapsed, 3),
     }
 
