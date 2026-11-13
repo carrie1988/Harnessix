@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path, PureWindowsPath
 
 import pytest
@@ -16,6 +17,9 @@ from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.search_contracts import GrepSnapshotInput
 from harnessix.tools.workspace import ReadOperation, Workspace, pinned_root
 from harnessix.workspace.windows import _ancestors
+
+# Workspace是POSIX的no-follow读根；Windows的读取见test_windows_directory_cache.py。
+POSIX_ONLY = pytest.mark.skipif(os.name != "posix", reason="Workspace只支持POSIX")
 
 
 def _repository(root: Path, files: int) -> None:
@@ -40,6 +44,7 @@ def _count_root_walks(workspace: Workspace, monkeypatch: pytest.MonkeyPatch) -> 
     return walks
 
 
+@POSIX_ONLY
 def test_a_whole_repository_search_checks_the_root_twice_not_per_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -61,6 +66,7 @@ def test_a_whole_repository_search_checks_the_root_twice_not_per_file(
         assert len(walks) > 100
 
 
+@POSIX_ONLY
 def test_a_root_replaced_during_the_operation_is_never_read_and_is_reported(
     tmp_path: Path,
 ) -> None:
@@ -75,13 +81,12 @@ def test_a_root_replaced_during_the_operation_is_never_read_and_is_reported(
                 root.mkdir()
                 (root / "a.txt").write_text("替换后的根", encoding="utf-8")
                 with workspace.open("a.txt", operation, directory=False) as fd:
-                    import os
-
                     # 固定的描述符指向原来的根：读到的是原内容，不是替换后的目录。
                     assert os.read(fd, 100).decode("utf-8") == "原来的根"
         assert operation.pinned_root is None
 
 
+@POSIX_ONLY
 def test_the_pin_belongs_to_one_operation(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("x", encoding="utf-8")
     with Workspace(tmp_path) as workspace:
