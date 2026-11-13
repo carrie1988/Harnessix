@@ -17,6 +17,7 @@ from harnessix.app_server.server import AgentProtocolServer
 from harnessix.app_server.service import AgentApplicationService
 from harnessix.app_server.stdio import run_stdio
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
+from harnessix.context.contracts import ContextFragment
 from harnessix.product_config.action_codec import (
     load_product_action_config,
     product_action_config_snapshot,
@@ -38,6 +39,7 @@ from harnessix.product_config.contracts import (
     ProviderDefinition,
 )
 from harnessix.product_config.extension_composition import product_extension_sources
+from harnessix.product_config.model_identity import model_identity_fragment
 from harnessix.product_config.native_process import native_tool_name
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import ProductPreflightReport
@@ -50,6 +52,7 @@ from harnessix.product_config.runtime import (
 )
 from harnessix.product_config.session_key import open_product_session_binding
 from harnessix.product_config.skill_composition import (
+    ProductSkills,
     skill_context_fragments,
 )
 from harnessix.product_config.state_owner import ProductStateOwner, product_state_owner
@@ -358,8 +361,8 @@ async def _serve_product_stdio(
                             external_boundary_execution=native_instructions == "external_boundary",
                             enable_planning=True,
                             enable_regex_search=True,
-                            extra_fragments=skill_context_fragments(
-                                action_owner.skills, tools_visible=generic_execution
+                            extra_fragments=_extra_fragments(
+                                startup, chain, action_owner.skills, tools_visible=generic_execution
                             ),
                         )
                         async with AgentRuntime(
@@ -427,6 +430,20 @@ def _active_profiles(startup: _ProductRuntimeStartup) -> list[ModelProfile]:
     """当前Profile链（含Fallback）的Profile定义，按配置顺序；Context策略与Provider选项由此派生。"""
     chain = set(startup.profile.profile_chain)
     return [profile for profile in startup.config.config.profiles if profile.profile_id in chain]
+
+
+def _extra_fragments(
+    startup: _ProductRuntimeStartup,
+    chain: list[ModelProfile],
+    skills: ProductSkills | None,
+    *,
+    tools_visible: bool,
+) -> tuple[ContextFragment, ...]:
+    """模型身份说明在前（被问到身份时按配置回答，Beta Issue #17），Skill元数据在后。"""
+    return (
+        model_identity_fragment(chain, _active_providers(startup)),
+        *skill_context_fragments(skills, tools_visible=tools_visible),
+    )
 
 
 def _active_providers(startup: _ProductRuntimeStartup) -> tuple[ProviderDefinition, ...]:

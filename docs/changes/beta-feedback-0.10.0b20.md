@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 25
+version: 26
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -30,6 +30,7 @@ related_adrs:
 related_tests:
   - tests/trusted_actions/test_router.py
   - tests/product_config/test_private_json_concurrency.py
+  - tests/product_config/test_model_identity.py
   - tests/delivery/test_trusted_action_patch.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/product_config/test_parent_closure_product_sdk.py
@@ -102,9 +103,10 @@ supersedes: []
 | 二十五 | 思考到一半连接断开，整轮结束要用户发送“继续”（0.10.0b30正式测试，16次） | 还没有正文和工具调用时自动重试 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第3版、本文第39节 |
 | 二十六 | 对话区选中的字看不见，只剩一整块蓝色（负责人本机，0.10.0b31） | 选择背景按透明度叠加，字色不变 | 本文第40节 |
 | 二十七 | 同时在几个新仓库确认信任，有进程崩溃、确认记录丢失（0.10.0b32，Issue #15） | 读改写跨进程串行，Windows替换被拒绝时重试 | 本文第41节 |
+| 二十八 | 百炼qwen3.8-flash自称Claude并否认是千问（0.10.0b32，Issue #17） | 运行时指令按配置写出模型身份 | 本文第42节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十七项在第26～41节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至二十八项在第26～42节。
 
 ## 2. 需求背景
 
@@ -1248,3 +1250,32 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
 - Windows替换被拒绝两次后成功、POSIX不重试、锁被占用时报`PrivateJsonBusy`、记录写不进去时本次照常进入且没有Traceback，各有用例。
 - 真实进程（macOS，tmux）：4个`harnessix code`共用一个HOME，同时在4个新目录输入y，4个都进入终端界面，信任文件4条。
 - Windows上的替换重试需要发布会话在Windows电脑上按Issue的步骤复测（3个原生终端同时确认；4进程同写一份临时文件）。
+
+## 42. 第二十八项：按配置告诉模型它是谁（Issue #17）
+
+### 42.1 背景
+
+0.10.0b32 Windows（Issue #17）：在新会话里问“你是哪个模型？”，百炼qwen3.8-flash两轮自称“Anthropic开发的Claude”，
+追问时否认自己是千问；状态栏、请求事件的`requested_model`与响应的`actual_model`都是qwen3.8-flash。
+核对指令：运行时指令里没有任何身份说明（没有模型名、没有“Claude”“Anthropic”字样），模型被问到时按训练数据作答。
+本机用同一配置经`harnessix exec`真实请求两次，0.10.0b32分别答“Kimi，由月之暗面开发”和“通义千问”，同样不可靠。
+
+### 42.2 设计
+
+- `product_config/model_identity.model_identity_fragment`：由当前Profile链生成一段运行时指令（`harnessix.model-identity/v1`）。
+  内容只来自配置：主模型名与服务商（已知厂商写名称和主机名，百炼北京专属域名归到百炼，自托管与未知端点只写主机名），
+  回退模型依次列出；说明运行在Harnessix Code中，被问到模型或公司时按这份配置回答，不自称配置以外的模型或厂商。
+- 经`build_product_agent_context(extra_fragments=...)`装配，主运行时指令的正文与版本号不变；同一配置每次生成相同文本，
+  不影响提示缓存的稳定前缀。终端界面与`exec`都走`server.py`这条装配，与平台无关。
+
+### 42.3 边界
+
+- 说明的是“配置把请求发给谁”，不替服务商证明实际服务的模型；实际模型仍以响应的`actual_model`为准、记录在会话里。
+- 回退生效的那几次请求，模型读到的仍是整条链的说明（主模型在前，回退在后），不会说成只有主模型。
+
+### 42.4 验证
+
+- `tests/product_config/test_model_identity.py`：主模型与厂商、回退顺序、百炼专属域名、自托管地址；
+  `test_server_and_cli.py`的产品装配用例核对实际发出的请求里有这段说明且写出配置的模型名。
+- 真实请求（本机，百炼qwen3.8-flash，`harnessix exec`，经本地代理）：修复后2/2答“qwen3.8-flash，由阿里云百炼提供服务，
+  运行在Harnessix Code中”；0.10.0b32两次分别答Kimi与通义千问。

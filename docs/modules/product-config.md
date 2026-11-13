@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 151
+version: 152
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -120,6 +120,12 @@ related_tests:
   - tests/product_config/test_default_thinking_effort.py
 supersedes: []
 ---
+
+## 当前增量：按配置告诉模型它是谁（Beta Issue #17）
+
+- [`model_identity.model_identity_fragment`](../../src/harnessix/product_config/model_identity.py)按当前Profile链生成一段运行时指令（`harnessix.model-identity/v1`）：主模型名与服务商（已知厂商写名称加主机名，百炼北京专属域名按`vendors.endpoint_host`归到百炼，自托管与未知端点只写主机名），回退模型依次列出；说明运行在Harnessix Code中，被问到身份时按配置回答，不自称配置以外的模型或厂商。
+- `server.py`经`build_product_agent_context(extra_fragments=...)`放在Skill片段之前，主指令正文与版本不变。终端界面与`exec`都走这条装配，三个平台相同。
+- 此前运行时指令没有任何身份说明：0.10.0b32上百炼qwen3.8-flash被问到时自称Claude（Issue截图）或Kimi（本机真实请求）；补上后真实请求2/2答“qwen3.8-flash，由阿里云百炼提供”。回归见`tests/product_config/test_model_identity.py`与`test_server_and_cli.py::test_product_server_model_catalog_reflects_verified_workspace_patch`。
 
 ## 当前增量：私有记录的“读出→修改→写回”跨进程串行（Beta Issue #15）
 
@@ -2350,6 +2356,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
+| 152 | `458dda3e` 增量 | 2026-11-13 | 运行时指令按Profile链写出模型身份（`model_identity.py`，`harnessix.model-identity/v1`），被问到时按配置回答（Beta Issue #17） |
 | 151 | `458dda3e` 增量 | 2026-11-13 | 私有JSON记录的读改写跨进程串行（`private_json.serialized_update`），Windows替换被拒绝时短暂重试（Beta Issue #15） |
 | 150 | `9409d884` 增量 | 2026-11-13 | 旧配置在核实过档位的模型上运行时按中档思考（`default_thinking.py`，ADR 0146第2版） |
 | 149 | `636f7c9f` 增量 | 2026-11-13 | PowerShell命令带出原生程序的真实退出码（`native_shells.shell_command_text`，Beta Issue #12） |

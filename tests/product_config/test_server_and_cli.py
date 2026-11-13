@@ -47,6 +47,7 @@ from harnessix.product_config.agent_context import (
 from harnessix.product_config.cli import config_main
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot, ProductConfigV2
+from harnessix.product_config.model_identity import MODEL_IDENTITY_SOURCE
 from harnessix.product_config.process_profile import probe_product_process_profile
 from harnessix.product_config.server import run_product_stdio
 from harnessix.product_config.session_key import open_product_session_binding
@@ -444,6 +445,11 @@ async def test_product_server_model_catalog_reflects_verified_workspace_patch(
         item["source"] == "AGENTS.md" and item["content"] == "遵守公开接口与失败恢复约束。"
         for item in instructions["fragments"]
     )
+    # 被问到身份时按配置回答（Beta Issue #17）：说明写出配置的模型名。
+    (identity,) = [
+        item for item in instructions["fragments"] if item["source"] == MODEL_IDENTITY_SOURCE
+    ]
+    assert f'"{config.profiles[0].model}"' in identity["content"]
     tool_names = {tool.name for tool in bundle.requests[0].tools}
     assert "update_plan" in tool_names
     if workspace_patch_supported(workspace):
