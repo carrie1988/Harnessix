@@ -19,7 +19,8 @@ class SelectableLog(RichLog):
     """可拖选的RichLog：选中的是各行的纯文字，不带颜色与排版标记。"""
 
     def get_selection(self, selection: Selection) -> tuple[str, str] | None:
-        text = "\n".join(line.text for line in self.lines)
+        # Markdown等按整行宽度补空格绘制；复制时去掉行尾空格，前面各字的位置不变。
+        text = "\n".join(line.text.rstrip() for line in self.lines)
         return selection.extract(text), "\n"
 
     def selection_updated(self, selection: Selection | None) -> None:

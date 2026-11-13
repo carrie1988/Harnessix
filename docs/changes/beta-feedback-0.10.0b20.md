@@ -1106,7 +1106,7 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
 
 - `product_ui/selectable_log.py::SelectableLog`继承`RichLog`：
   - 绘制每行时附上位置信息（`Strip.apply_offsets(scroll_x, 行号)`），Textual据此把鼠标落点换算成第几行第几个字；
-  - `get_selection`返回各行（折行后的）纯文字，按选择范围截取；
+  - `get_selection`返回各行（折行后的）纯文字，按选择范围截取；各行去掉行尾空格（Markdown等按整行宽度补空格绘制）；
   - 选中范围用`screen--selection`样式高亮（`highlight_characters`按字符位置切分片段）。
 - 复制沿用Textual的`Ctrl+C`：屏幕的`screen.copy_text`；输入框没有选中内容时让出该键。复制经OSC 52转发到终端剪贴板。
 
@@ -1120,3 +1120,8 @@ Textual接管了鼠标，终端自带的拖选复制不再起作用；Textual自
 
 `tests/product_ui/test_selectable_transcript.py`：跨行拖选得到带中文的纯文字，`Ctrl+C`后`app.clipboard`为同一段；
 单行内选中ASCII与中文、整段选中；高亮只覆盖选中的字符且不改变显示宽度。同样的拖动在原来的`RichLog`上选中内容为空。
+
+发布会话的协议层核对（247，伪终端里的真实终端界面，模型换成固定回复的脚本）：写入SGR鼠标序列拖过三行列表项，再按`Ctrl+C`，
+从程序输出截取OSC 52剪贴板序列解码，与屏幕上被选中的文字比对；回复很长、对话区已滚动时，选中的是屏幕上看到的最后几行。
+第一次核对发现复制出的行末尾各带约80个空格（整行宽度的补白），改为去掉行尾空格，
+`test_copied_lines_do_not_carry_the_padding_of_the_rendered_line`在修改前失败。0.10.0b29在同样的拖动下没有高亮，复制内容为空。

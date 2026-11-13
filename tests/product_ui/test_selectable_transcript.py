@@ -68,6 +68,22 @@ async def test_selecting_inside_one_line_and_the_whole_history() -> None:
         assert app.screen.get_selected_text() == "\n".join(LINES)
 
 
+async def test_copied_lines_do_not_carry_the_padding_of_the_rendered_line() -> None:
+    """对话区的Markdown回复按整行宽度补空格绘制；复制出的每行不带这些空格。
+
+    0.10.0b30发布前在247的真实终端界面里拖选三行列表项，复制出的前两行末尾各带约80个空格。
+    """
+    app = _Host()
+    async with app.run_test(size=(80, 12)) as pilot:
+        log = app.query_one(SelectableLog)
+        log.write(Text("• 第一行 alpha" + " " * 40))
+        log.write(Text(" • 第二行 beta" + " " * 40))
+        await pilot.pause()
+
+        await _drag(pilot, log, (0, 0), (60, 1))
+        assert app.screen.get_selected_text() == "• 第一行 alpha\n • 第二行 beta"
+
+
 def test_only_the_selected_characters_are_highlighted() -> None:
     selected = Style(reverse=True)
     strip = Strip(list(Text("ab中文cd", style="green").render(Console())))
