@@ -397,7 +397,7 @@ Artifact字段缺少证据出发，说明静态字段来源、失败与恢复、
 固定`65d7323`的原生两项观察者实验及原未决恢复均通过，但112项组合步骤在79项通过后被CI进程期限截断。
 [完整集合分组](changes/m09-r1-single-child-reaper.md#10-原生验收进程分组与完整性)只调整37/75编排，
 所有112项、恢复断言、原步骤保护和产品期限保留；完整原生门禁尚未通过。
-[安装手册](operations/installation.md)现行操作使用预览版0.10.0b37及哈希锁定源码外环境，原历史版本事实不改写。
+[安装手册](operations/installation.md)现行操作使用预览版0.10.0b38及哈希锁定源码外环境，原历史版本事实不改写。
 
 
 [正式Git Review详设](changes/m09-r4-git-review.md)与[组件验收](validation/git-review-2026-10-07-v1/README.md)
