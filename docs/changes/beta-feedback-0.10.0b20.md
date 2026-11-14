@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 43
+version: 44
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -125,9 +125,10 @@ supersedes: []
 | 三十七 | Windows上真实Dify检出整仓grep仍5秒超时（0.10.0b38，Issue #24，#21的后续） | 搜索只观察符合模式的文件 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)第4版、本文第51节 |
 | 三十八 | `harnessix exec`的审批提示看不到要批准的命令（0.10.0b38，Issue #26） | 提示写明工具、完整命令与理由，写到标准错误 | 本文第52节 |
 | 三十九 | 传输错误恢复后又成功请求几十次，最后仍以那次传输错误结束（0.10.0b38，Issue #32） | 预算将用完时如实报预算，并给出数字 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第4版、本文第53节 |
+| 四十 | 沙箱命令放在TMPDIR的文件下一条命令就不见了（0.10.0b38 macOS，Issue #29） | 命令工具说明与手册写明TMPDIR每条命令前清空 | 本文第54节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十九项在第26～53节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十项在第26～54节。
 
 ## 2. 需求背景
 
@@ -1439,3 +1440,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 53. 第三十九项：预算将用完时的停止原因（Issue #32）
 
 见ADR 0144第4版。报告人的三次现场都是一次`provider_transport`恢复之后又成功请求了多次，最后在准备上下文时结束、没有新的失败请求，与“为用量未知的那次请求预留后，已用量加预留达到`--max-tokens`”一致：预留只让停止提前大约一次请求，但说明一直归到那次早已恢复的传输错误上。修改后以`budget_exceeded`结束，说明形如“本轮Token预算将用完：已用X，另为用量未知的失败请求预留Y，合计达到上限Z；提高预算后可在同一会话续做”。计费安全规则本身（预留、默认策略下故障后即停）不变。
+
+## 54. 第四十项：沙箱TMPDIR的生命周期（Issue #29）
+
+0.10.0b38 macOS：Agent在一条沙箱命令里把编译产物放到`$TMPDIR`，下一条命令找不到，只好挪到工作区。私有TMPDIR在每条命令开始前清空（`native_sandbox`调用`bubblewrap.prepare_private_directories`，Seatbelt与bubblewrap相同），这是隔离设计：一条命令留下的临时文件不影响下一条。问题在于命令工具的说明只写了“只能写工作区、TMPDIR与私有缓存目录”，没有说生命周期，模型只能试错。修改：沙箱内命令工具的说明写明“TMPDIR在每条命令开始前清空，后面的命令还要用的文件请放在工作区里”，用户手册8.5节同样写明。按轮或按会话保留TMPDIR会改变隔离设计，另作可选项，未采用。回归：`tests/product_config/test_native_sandbox_profile.py`断言说明里有这句。

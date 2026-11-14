@@ -342,8 +342,7 @@ def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescr
             f'{profile.version}）；必填"cmd"'
             + ('和"reason"' if host else "")
             + f'，"profile"可省略（工具名已确定，传入时须为"{profile.profile_id}"）。'
-            + "cmd必须非空白，允许管道、重定向和多行，"
-            "不含NUL且最多16384 UTF-8字节。"
+            + "cmd必须非空白，允许管道、重定向和多行，不含NUL且最多16384 UTF-8字节。"
             + _boundary_description(profile)
             + (
                 "预设环境变量：" + "、".join(name for name, _ in profile.environment) + "。"
@@ -367,7 +366,7 @@ def native_process_descriptor(profile: ProductNativeProcessProfile) -> ToolDescr
 
 
 def _boundary_description(profile: ProductNativeProcessProfile) -> str:
-    """如实写明边界，模型不必靠试错发现限制；外部边界文本保持原样，已有工具指纹不变。"""
+    """如实写明边界（含TMPDIR每条命令前清空），模型不必试错；外部边界文本与指纹不变。"""
 
     if profile.backend == "external_boundary":
         return (
@@ -387,6 +386,7 @@ def _boundary_description(profile: ProductNativeProcessProfile) -> str:
         f"命令在本机沙箱中从工作区根目录开始运行，{workspace}；"
         "可读整台机器，但凭据、命令历史、Harnessix状态与工作区.env文件不可读；"
         "只能写工作区、TMPDIR与私有缓存目录，HOME不可写；"
+        "TMPDIR在每条命令开始前清空，后面的命令还要用的文件（如编译产物、测试夹具）请放在工作区里；"
         ".git只读，提交与暂存由Harnessix交付流程完成；没有网络，联网操作会失败。"
     )
 
