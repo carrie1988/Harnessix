@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from fnmatch import fnmatchcase
 from typing import Protocol
 
@@ -46,6 +47,30 @@ def select_included[C: _Located](candidates: list[C], args: GrepInput, start: st
     if candidates and not selected:
         raise ReadToolError("no_files_searched")
     return selected
+
+
+def included_while_walking[C: _Located](
+    candidates: Iterator[C], args: GrepInput, start: str
+) -> Iterator[C]:
+    """快照与正则Grep边遍历边筛选（ADR 0162第2版），规则与select_included相同；其余Grep先遍历完。
+
+    起点本身是文件时不筛选；整棵树走完、有文件却无一符合include时失败。时限先到或已达max_results时
+    调用方不再取，不判断“没有文件符合”。
+    """
+    if not isinstance(args, GrepSnapshotInput):
+        yield from select_included(list(candidates), args, start)
+        return
+    pattern, seen, selected = grep_include(args), False, False
+    for node in candidates:
+        if node.path == start:
+            yield node
+            return
+        seen = True
+        if pattern.matches(relative_to_start(node.path, start)):
+            selected = True
+            yield node
+    if seen and not selected:
+        raise ReadToolError("no_files_searched")
 
 
 def include_pattern(pattern: str) -> PathPattern | BasenamePattern:

@@ -163,7 +163,7 @@ async def test_discovered_object_replacement_fails_before_read(tmp_path, monkeyp
     real_collect = search._collect
 
     def replace(*args):
-        nodes = real_collect(*args)
+        nodes = list(real_collect(*args))  # 遍历完（发现对象）之后、读取之前替换
         if kind == "directory":
             (tmp_path / "sub").rename(tmp_path / "old")
             (tmp_path / "sub").mkdir()

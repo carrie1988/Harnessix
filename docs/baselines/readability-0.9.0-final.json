@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 650,
-    "physical_lines": 136419,
-    "logical_lines": 118200,
-    "documented_modules": 650,
+    "source_files": 651,
+    "physical_lines": 136483,
+    "logical_lines": 118238,
+    "documented_modules": 651,
     "classes": 1252,
     "documented_classes": 658,
-    "functions": 5447,
-    "documented_functions": 1926,
+    "functions": 5449,
+    "documented_functions": 1929,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1584,9 +1584,9 @@
       "qualname": "_serve_product_stdio",
       "kind": "function",
       "line": 275,
-      "lines": 143,
+      "lines": 141,
       "documented": true,
-      "decision_complexity": 10
+      "decision_complexity": 9
     },
     {
       "id": "harnessix.product_config.store:SQLiteProductConfigStore",

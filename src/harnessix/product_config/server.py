@@ -44,6 +44,7 @@ from harnessix.product_config.model_identity import model_identity_fragment
 from harnessix.product_config.native_process import native_tool_name
 from harnessix.product_config.preflight import ProductPreflightRequest, run_product_preflight
 from harnessix.product_config.product_contracts import ProductPreflightReport
+from harnessix.product_config.read_time_limit import workspace_read_timeout
 from harnessix.product_config.runtime import (
     build_provider_bundle,
     diagnose_configuration,
@@ -64,7 +65,6 @@ from harnessix.secrets.provider import SecretProvider
 from harnessix.secrets.publication import SecretPublicationScope
 from harnessix.session.maintenance_io import MaintenanceIOControl, run_maintenance_io
 from harnessix.session.sqlite import SQLiteSessionStore
-from harnessix.tools.contracts import READ_TIMEOUT_SECONDS
 from harnessix.tools.runtime import CodingToolRuntime
 
 # 付费交互模式下，网络中断、限流、服务端错误之后最多连续自动重试次数的默认值；
@@ -314,9 +314,7 @@ async def _serve_product_stdio(
                     git_state_directory=startup.state_root,
                     git_output_redaction=public_scope,
                     enable_regex_search=True,
-                    read_timeout_seconds=(
-                        startup.config.config.workspace_read_timeout_seconds or READ_TIMEOUT_SECONDS
-                    ),
+                    read_timeout_seconds=workspace_read_timeout(startup.config.config),
                     container_workspace_paths=_container_workspace_paths(startup.actions.config),
                 ) as tools:
                     async with open_default_product_action_runtime(

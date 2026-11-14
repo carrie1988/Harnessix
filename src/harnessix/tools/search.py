@@ -22,7 +22,7 @@ from harnessix.tools.grep_matcher import (
     literal_fallback_args,
     whole_text_decides,
 )
-from harnessix.tools.patterns import PathPattern, relative_to_start, select_included
+from harnessix.tools.patterns import PathPattern, included_while_walking, relative_to_start
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
     MAX_MATCH_BYTES,
@@ -134,20 +134,25 @@ def _open_candidate(
 
 def _collect(
     workspace: Workspace, args: SearchInput, operation: ReadOperation, scan: _Scan
-) -> list[_Candidate]:
-    candidates: list[_Candidate] = []
+) -> Iterator[_Candidate]:
+    """按完整路径的字典序逐个给出候选文件，边遍历边交给调用方（ADR 0162第2版，Beta Issue #24）。
+
+    每个目录的条目按“名称”（目录为“名称/”）排序后深度优先：给出的顺序与收集完再按完整路径
+    排序相同，调用方可以先读已经遍历到的文件，读取时限到了也有命中可返回。
+    """
 
     try:
         with workspace.open(args.path, operation, directory=False) as fd:
             info = os.fstat(fd)
             scan.entries_scanned = 1
             scan.names_bytes = len(os.fsencode(args.path.rsplit("/", 1)[-1]))
-            return [_Candidate(args.path, info)]
+            yield _Candidate(args.path, info)
+            return
     except ReadToolError as error:
         if error.code != "wrong_file_type":
             raise
 
-    def visit(path: str, depth: int, expected: _Candidate | None = None) -> None:
+    def visit(path: str, depth: int, expected: _Candidate | None = None) -> Iterator[_Candidate]:
         operation.checkpoint()
         if depth > MAX_SEARCH_DEPTH:
             raise ReadToolError("limit_exceeded")
@@ -156,7 +161,7 @@ def _collect(
             if expected
             else workspace.open(path, operation, directory=True)
         )
-        directories = []
+        members: list[tuple[str, bool, _Candidate]] = []
         with context as fd, os.scandir(fd) as entries:
             for entry in entries:
                 operation.checkpoint()
@@ -185,19 +190,21 @@ def _collect(
                     if not args.include_ignored and entry.name.casefold() in IGNORED_DIRECTORIES:
                         scan.ignored_entries += 1
                     else:
-                        directories.append(node)
+                        members.append((entry.name + "/", True, node))
                 elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
-                    candidates.append(node)
+                    members.append((entry.name, False, node))
                 else:
                     scan.ignored_entries += 1
-        for node in sorted(directories, key=lambda node: node.path):
+        for _, directory, node in sorted(members, key=lambda member: member[0]):
+            if not directory:
+                yield node
+                continue
             try:
-                visit(node.path, depth + 1, node)
+                yield from visit(node.path, depth + 1, node)
             except PermissionError:
                 scan.unreadable_entries += 1
 
-    visit(args.path, 0)
-    return sorted(candidates, key=lambda node: node.path)
+    yield from visit(args.path, 0)
 
 
 class _Records:
@@ -232,7 +239,7 @@ def glob(
 ) -> GlobOutput:
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths = []
-    for node in _collect(workspace, args, operation, scan):
+    for node in list(_collect(workspace, args, operation, scan)):
         operation.checkpoint()
         if not pattern.matches(relative_to_start(node.path, args.path)):
             continue
@@ -517,7 +524,8 @@ def grep(
     matches: list[GrepMatch] = []
     timed_out = False
     try:
-        for node in select_included(_collect(workspace, args, operation, scan), args, args.path):
+        walk = _collect(workspace, args, operation, scan)
+        for node in included_while_walking(walk, args, args.path):
             operation.checkpoint()
             try:
                 with _open_candidate(workspace, node, operation, directory=False) as fd:
