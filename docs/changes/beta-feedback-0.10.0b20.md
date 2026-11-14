@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 39
+version: 40
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -123,9 +123,10 @@ supersedes: []
 | 三十五 | 大仓库里整仓搜索约5秒超时，没有任何结果（0.10.0b32/b33，Issue #21） | 一次读取操作只核对两次根 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)、本文第49节 |
 | 三十六 | Python 3.15上安装失败：google-re2没有3.15的预编译包（0.10.0b25/b32，Issue #10） | 3.15起正则搜索改用regex，许可证策略允许CNRI-Python | [ADR 0159](../adr/0159-regex-engine-on-python-315.md)、本文第50节 |
 | 三十七 | Windows上真实Dify检出整仓grep仍5秒超时（0.10.0b38，Issue #24，#21的后续） | 搜索只观察符合模式的文件 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)第4版、本文第51节 |
+| 三十八 | `harnessix exec`的审批提示看不到要批准的命令（0.10.0b38，Issue #26） | 提示写明工具、完整命令与理由，写到标准错误 | 本文第52节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十七项在第26～51节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十八项在第26～52节。
 
 ## 2. 需求背景
 
@@ -1423,3 +1424,11 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 51. 第三十七项：真实仓库上的Windows整仓搜索（Issue #24）
 
 0.10.0b37把#21标为已修复，依据是Windows 11上合成仓库（16,207个文件全是`.ts`）约3.3秒。报告人在0.10.0b38上用真实的Dify检出（提交05f3723c，16,108个文件）复测同一查询（`useWorkflowNodeStarted`，`include="*.ts"`，默认5秒时限）：干净检出4/4超时，原检出3/4超时，子目录对照都在0.02秒返回。合成仓库没有代表真实仓库：Dify里`.ts`只有2,866个，其余是`.py`、`.tsx`、`.json`等，目录3,664个（合成仓库约570个）。Windows的候选收集对每个文件都观察一次，不符合include的文件也要打开。见ADR 0160第4版：不符合模式的文件不再打开。本地Dify检出上观察次数由25,154降到11,927。超时提示原本就建议缩小path、收窄include；超时返回部分结果仍是已记录的新需求。发布会话在Windows真机上用同一提交的Dify检出复测（不再只用合成仓库）。
+
+## 52. 第三十八项：无头模式的审批提示写明要批准什么（Issue #26）
+
+0.10.0b38 Windows（原生ConPTY）：`harnessix exec --quiet`审批沙箱外命令时终端只有“批准该操作？[y/N]”，要另开窗口读`--events-file`才能知道要执行什么；不加`--quiet`也只多一行“需要审批。”。瘦CLI（`agent_cli`）从不显示调用内容，三个平台相同。另发现：提示经`input(prompt)`写到标准输出，而`exec`的JSON摘要也在标准输出，`exec ... > summary.json`时提示会混进摘要。
+
+修改：`agent_cli.approval_prompt`按审批对应的调用写出工具、完整命令（多行照原样缩进）、理由、Profile，修改类列出文件（不显示内容），其余参数以JSON给出（超过2000字符截断并指向事件记录）；模型给出的文本里的控制字符与双向排版字符转成可见的`\uXXXX`，不能借此隐藏或改写显示的命令。`HeadlessConsole.prompt`把提示写到标准错误，不受`--quiet`影响。`harnessix agent`照旧写标准输出。
+
+验证：`tests/test_exec_cli.py`（命令与理由完整显示、控制字符转义、修改只列文件、提示写到标准错误且标准输出为空）；真实进程（macOS，tmux，百炼qwen3.8-flash，`exec --quiet --approval-mode auto`，标准输出重定向到文件）：提示显示工具、命令、理由与Profile，批准后退出码0，摘要文件是完整的JSON。

@@ -7,7 +7,8 @@ import asyncio
 import json
 import sys
 import time
-from collections.abc import Awaitable, Callable, Sequence
+import unicodedata
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Literal, Protocol
 from uuid import UUID
 
@@ -55,6 +56,53 @@ def _wait_ms(turn: object) -> int:
     """等待人工或系统决定时缩短事件等待，以便宽限期结束后及时提示。"""
     return (
         1_000 if getattr(turn, "status", None) in {"waiting_approval", "waiting_input"} else 30_000
+    )
+
+
+# 审批提示里其余参数的JSON最多显示的字符数；命令与理由总是完整显示。
+_APPROVAL_ARGUMENTS_CHARS = 2000
+
+
+def approval_prompt(items: Mapping[UUID, PublicItem], request: PublicApprovalRequestContent) -> str:
+    """审批提示本身写明要批准什么：工具、完整命令与理由、要修改的文件（Beta Issue #26）。
+
+    此前提示只有“批准该操作？[y/N]”，`--quiet`下终端完全看不到将在沙箱外执行的命令。
+    这些文本来自模型，控制字符与双向排版字符转成可见的转义，不能借此隐藏或改写显示的命令。
+    """
+    call = next(
+        (
+            item.content
+            for item in items.values()
+            if isinstance(item.content, PublicToolCallContent)
+            and item.content.call_id == request.call_id
+        ),
+        None,
+    )
+    if call is None:
+        return f"需要你批准一项操作（{request.approval_type}）。\n批准该操作？[y/N] "
+    lines, rest = [f"需要你批准：{_visible(call.tool)}"], dict(call.arguments)
+    for key, label in (("cmd", "命令"), ("reason", "理由"), ("profile", "Profile")):
+        value = rest.pop(key, None)
+        if isinstance(value, str) and value:
+            lines.append(f"  {label}：" + _visible(value).replace("\n", "\n    "))
+    files = rest.pop("files", None)
+    if isinstance(files, list):
+        paths = [str(item.get("path")) for item in files if isinstance(item, dict)]
+        lines.append("  文件：" + _visible("、".join(paths)))
+    if rest:
+        text = json.dumps(rest, ensure_ascii=False, sort_keys=True)
+        if len(text) > _APPROVAL_ARGUMENTS_CHARS:
+            text = text[:_APPROVAL_ARGUMENTS_CHARS] + "…（完整参数见事件记录）"
+        lines.append("  参数：" + _visible(text))
+    return "\n".join(lines) + "\n批准该操作？[y/N] "
+
+
+def _visible(text: str) -> str:
+    return "".join(
+        character
+        if character in "\n\t" or unicodedata.category(character) not in {"Cc", "Cf"}
+        else f"\\u{ord(character):04x}"
+        for character in text
     )
 
 
@@ -129,7 +177,7 @@ def _actors(actor: str, policy: ApprovalPolicy | None) -> tuple[str, str]:
 
 
 def _typed_decision(reply: str) -> ApprovalOutcome:
-    return "approved" if reply in {"y", "yes"} else "rejected"
+    return "approved" if reply.strip().lower() in {"y", "yes"} else "rejected"
 
 
 class ThinAgentCLI:
@@ -278,7 +326,7 @@ class ThinAgentCLI:
                 if _in_grace(self._pending_since, content.approval_id):
                     return False
                 await self._render_artifact(thread.thread_id, approval_item)
-                reply = (await self.console.prompt("批准该操作？[y/N] ")).strip().lower()
+                reply = await self.console.prompt(approval_prompt(self._items, content))
                 outcome, actor = _typed_decision(reply), self.human_actor
             await self.client.respond_approval(
                 ApprovalRespondParams(
