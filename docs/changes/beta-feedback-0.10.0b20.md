@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 48
+version: 49
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -1473,3 +1473,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 0.10.0b39 Windows正式测试复跑#15的场景（三个ConPTY共用一个HOME，同时首次确认信任）：b33～b39约9次里有1次，第三个进程确认信任后输出“Harnessix 无法启动：还没有配置模型”并退出2，另外两个正常进入，配置文件确实存在，重跑即好。`preflight_configuration._read`把读取配置的任何失败都记为`run_configure`；`codec.read_product_config_bytes`也把“文件不存在”和“这次读不到”都报成`product_config_unavailable`。同一目录里另一个进程正在替换信任记录等文件时，Windows上偶尔打不开该目录（共享冲突）或读到替换中的文件。
 
 修改：文件不存在报`product_config_missing`（只有这时提示去运行configure）；`product_config_unavailable`、`product_config_changed`在2秒内每50毫秒重试，仍失败才如实报出；预检对其余读取失败给`retry_config_read`，启动失败显示“这次没能读取配置文件……稍等片刻重新运行即可，不需要重新配置”。三个平台共用。验证：`tests/product_config/test_contracts_and_codec.py`（不存在与读取失败分开、两次失败后第三次读到、持续失败时为`retry_config_read`）、`tests/product_config/test_startup_failure.py`。Windows真机复测由发布会话完成。
+
+### 57.1 边遍历边读与Windows默认时限（ADR 0162第2版）
+
+0.10.0b40真机数据：时限落在遍历阶段（热缓存约1.3秒）时没有命中可返回；同一份检出上无命中的整仓搜索第一次22.3秒（约1,150个从未读过的文件，约18毫秒/文件），之后1.77～1.82秒。负责人2026-11-14选A+B+C：Windows未配置时读取时限默认20秒；快照与正则Grep边遍历边读，顺序与按完整路径排序相同；用户手册17.4节说明首次搜索慢的原因、Dev Drive与排除项、`workspace_read_timeout_seconds`。macOS本机对照：Dify无命中搜索修改前后均约1.3秒，没有变慢。

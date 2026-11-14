@@ -8,7 +8,7 @@ import json
 import os
 import stat
 from collections import deque
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -141,20 +141,25 @@ def _open_candidate(
 
 def _collect(
     workspace: Workspace, args: SearchInput, operation: ReadOperation, scan: _Scan
-) -> list[_Candidate]:
-    candidates: list[_Candidate] = []
+) -> Iterator[_Candidate]:
+    """按完整路径的字典序逐个给出候选文件，边遍历边交给调用方（ADR 0162第2版，Beta Issue #24）。
+
+    每个目录的条目按“名称”（目录为“名称/”）排序后深度优先：给出的顺序与收集完再按完整路径
+    排序相同，调用方可以先读已经遍历到的文件，读取时限到了也有命中可返回。
+    """
 
     try:
         with workspace.open(args.path, operation, directory=False) as fd:
             info = os.fstat(fd)
             scan.entries_scanned = 1
             scan.names_bytes = len(os.fsencode(args.path.rsplit("/", 1)[-1]))
-            return [_Candidate(args.path, info)]
+            yield _Candidate(args.path, info)
+            return
     except ReadToolError as error:
         if error.code != "wrong_file_type":
             raise
 
-    def visit(path: str, depth: int, expected: _Candidate | None = None) -> None:
+    def visit(path: str, depth: int, expected: _Candidate | None = None) -> Iterator[_Candidate]:
         operation.checkpoint()
         if depth > MAX_SEARCH_DEPTH:
             raise ReadToolError("limit_exceeded")
@@ -163,7 +168,7 @@ def _collect(
             if expected
             else workspace.open(path, operation, directory=True)
         )
-        directories = []
+        members: list[tuple[str, bool, _Candidate]] = []
         with context as fd, os.scandir(fd) as entries:
             for entry in entries:
                 operation.checkpoint()
@@ -192,19 +197,21 @@ def _collect(
                     if not args.include_ignored and entry.name.casefold() in IGNORED_DIRECTORIES:
                         scan.ignored_entries += 1
                     else:
-                        directories.append(node)
+                        members.append((entry.name + "/", True, node))
                 elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
-                    candidates.append(node)
+                    members.append((entry.name, False, node))
                 else:
                     scan.ignored_entries += 1
-        for node in sorted(directories, key=lambda node: node.path):
+        for _, directory, node in sorted(members, key=lambda member: member[0]):
+            if not directory:
+                yield node
+                continue
             try:
-                visit(node.path, depth + 1, node)
+                yield from visit(node.path, depth + 1, node)
             except PermissionError:
                 scan.unreadable_entries += 1
 
-    visit(args.path, 0)
-    return sorted(candidates, key=lambda node: node.path)
+    yield from visit(args.path, 0)
 
 
 class _Records:
@@ -247,7 +254,7 @@ def glob(
 ) -> GlobOutput:
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths = []
-    for node in _collect(workspace, args, operation, scan):
+    for node in list(_collect(workspace, args, operation, scan)):
         operation.checkpoint()
         if not pattern.matches(_relative(node.path, args.path)):
             continue
@@ -465,6 +472,12 @@ class LiteralFallback:
             capture.records += self.capture.records
 
 
+def search_order[T](candidates: Iterator[T], args: SearchInput) -> Iterable[T]:
+    """快照与正则Grep边遍历边读；原字面量Grep与Glob照旧先遍历完（扫描统计与此前相同）。"""
+
+    return candidates if isinstance(args, GrepSnapshotInput) else list(candidates)
+
+
 def timed_out_with_results(
     error: ReadToolError,
     args: GrepInput,
@@ -532,7 +545,7 @@ def grep(
     matches: list[GrepMatch] = []
     timed_out = False
     try:
-        for node in _collect(workspace, args, operation, scan):
+        for node in search_order(_collect(workspace, args, operation, scan), args):
             operation.checkpoint()
             if not pattern.matches(_relative(node.path, args.path)):
                 continue

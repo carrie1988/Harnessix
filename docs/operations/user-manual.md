@@ -852,7 +852,7 @@ uv tool uninstall harnessix
 
 | 现象 | 处理 |
 |---|---|
-| Windows 上第一次在刚克隆的大仓库里搜索代码很慢，结果标着“没搜完”（`time_limit`） | 第一次读取文件内容时 Windows Defender 会先扫描它们，任何搜索工具都要多花时间；第二次就快了。Agent 会先用已找到的结果，需要时缩小范围再搜。想让第一次也快，可以把开发目录放到 Dev Drive，或在 Windows 安全中心把它加入排除项（请自行评估安全影响） |
+| Windows 上第一次在刚克隆的大仓库里搜索代码很慢，或结果标着“没搜完”（`time_limit`） | 见 [17.4 读取时限与 Windows 上的第一次搜索](#174-读取时限与-windows-上的第一次搜索) |
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
 | 安装时报 `Failed to build google-re2`、构建 `pyyaml` 失败或要求安装 Microsoft Visual C++ | 安装的是较早的版本，uv 又选中了 Python 3.15。改用 `uv tool install --python 3.12 harnessix`，或安装最新版本（3.15 上改用 `regex` 与 `ruamel.yaml`，都不需要编译） |
@@ -906,7 +906,17 @@ uv tool uninstall harnessix
 
 需要使用固定的容器命令环境、自定义命令 Profile 时，可以通过 `--action-config` 提供 Action 配置文件。格式见[配置参考](configuration.md)。普通用户不需要。
 
-### 17.4 程序集成
+### 17.4 读取时限与 Windows 上的第一次搜索
+
+Agent 读文件、列目录、查找文件和搜索代码，每次都有读取时限：未配置时 Windows 为 20 秒，macOS 和 Linux 为 5 秒；自己部署的模型由 `configure --self-hosted` 设为 20 秒。到了时限还没搜完、但已经找到结果时，搜索会先返回这些结果，并标为“没搜完”（`truncation_reason` 为 `time_limit`），Agent 需要时会缩小范围再搜；一条都没找到时报超时。
+
+Windows 上第一次读到一个文件，Windows Defender 会先扫描它，约 18 毫秒一个；读过之后约 0.15 毫秒。所以刚克隆或很久没打开的大仓库，第一次整仓搜索可能很慢，之后就快了（Dify 这样约 16,000 个文件的仓库约 2 秒）。想让第一次也快：
+
+- 把开发目录放到 [Dev Drive](https://learn.microsoft.com/windows/dev-drive/)（Windows 11），Defender 在其中使用性能模式；
+- 或在“Windows 安全中心 → 病毒和威胁防护 → 排除项”里排除开发目录（会降低这个目录的防护，请自行评估）；
+- 或调整时限：在配置文件（默认 `~/.harnessix/config.json`）顶层加 `"workspace_read_timeout_seconds": 30`（1～60 的整数），重新启动 Harnessix 生效。
+
+### 17.5 程序集成
 
 | 入口 | 用途 |
 |---|---|

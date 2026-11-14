@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import Literal
 
@@ -152,22 +152,24 @@ def _collect(
     operation: ReadOperation,
     scan: _Scan,
     wanted: Callable[[str], bool],
-) -> list[_Candidate]:
-    """遍历并观察候选文件；不符合模式（wanted，按相对搜索起点的路径）的文件只计入扫描条目、不打开。
+) -> Iterator[_Candidate]:
+    """按完整路径的字典序逐个给出候选文件，边遍历边交给调用方（ADR 0162第2版）。
 
-    Windows上观察一个文件就要打开它并取最终路径。此前不符合include的文件也逐个观察：真实的Dify检出
-    16,108个文件里只有2,866个.ts，整仓grep仍5秒超时（Beta Issue #24）。
+    不符合模式（wanted，按相对搜索起点的路径）的文件只计入扫描条目、不打开：Windows上观察
+    一个文件就要打开它并取最终路径，真实的Dify检出16,108个文件里只有2,866个.ts（Beta Issue #24）。
+    每个目录列出成员、观察完其中的候选文件后即核对目录未变，再按“名称”（目录为“名称/”）的
+    顺序给出文件、进入子目录。
     """
-    candidates: list[_Candidate] = []
     root = port.path(args.path)
     observed = port.observe(root, operation, include_content=False)
     if observed.kind == "file":
         scan.entries_scanned = 1
         scan.names_bytes = len(root.rsplit("/", 1)[-1].encode("utf-8"))
-        return [_Candidate(path=root, identity=observed.identity, size=observed.size)]
+        yield _Candidate(path=root, identity=observed.identity, size=observed.size)
+        return
     require_kind(observed, "directory")
 
-    def visit(path: str, depth: int) -> None:
+    def visit(path: str, depth: int) -> Iterator[_Candidate]:
         operation.checkpoint()
         if depth > MAX_SEARCH_DEPTH:
             raise ReadToolError("limit_exceeded")
@@ -179,30 +181,32 @@ def _collect(
         require_kind(before, "directory")
         if before.entries is None:
             raise ReadToolError("io_failed")
-        directories: list[str] = []
+        members: list[tuple[str, str | _Candidate]] = []
         for name, kind in before.entries:
             relative = _scan_entry(port, args, path, name, kind, operation, scan)
             if relative is None:
                 continue
             if kind == "directory":
-                directories.append(relative)
+                members.append((name + "/", relative))
             elif kind == "file" and wanted(relative_path(relative, root)):
                 found = _candidate(port, relative, operation, scan)
                 if found is not None:
-                    candidates.append(found)
-        for directory in sorted(directories):
+                    members.append((name, found))
+        after = port.observe(path, operation, include_content=False)
+        if not same_observation(before, after):
+            raise ReadToolError("workspace_changed")
+        for _, member in sorted(members, key=lambda item: item[0]):
+            if isinstance(member, _Candidate):
+                yield member
+                continue
             try:
-                visit(directory, depth + 1)
+                yield from visit(member, depth + 1)
             except ReadToolError as error:
                 if error.code != "io_failed":
                     raise
                 scan.unreadable_entries += 1
-        after = port.observe(path, operation, include_content=False)
-        if not same_observation(before, after):
-            raise ReadToolError("workspace_changed")
 
-    visit(root, 0)
-    return sorted(candidates, key=lambda item: item.path)
+    yield from visit(root, 0)
 
 
 def _scan_entry(
@@ -273,7 +277,7 @@ def glob_files(
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths: list[str] = []
     root = port.path(args.path)
-    for candidate in _collect(port, args, operation, scan, pattern.matches):
+    for candidate in list(_collect(port, args, operation, scan, pattern.matches)):
         operation.checkpoint()
         if not pattern.matches(relative_path(candidate.path, root)):
             continue
@@ -430,7 +434,8 @@ def grep_files(
     root = port.path(args.path)
     timed_out = False
     try:
-        for candidate in _collect(port, args, operation, scan, pattern.matches):
+        walk = _collect(port, args, operation, scan, pattern.matches)
+        for candidate in search.search_order(walk, args):
             operation.checkpoint()
             if not pattern.matches(relative_path(candidate.path, root)):
                 continue

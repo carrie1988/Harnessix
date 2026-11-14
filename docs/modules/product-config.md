@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 159
+version: 160
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -2361,6 +2361,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 160 | `e604ed7d` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为20秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
 | 159 | `e9e5b0cd` 增量 | 2026-11-14 | `codec.read_product_config_bytes`区分配置文件不存在（`product_config_missing`）与读取失败，读取失败（`product_config_unavailable`、`product_config_changed`）在2秒内短暂重试；预检只有文件不存在才给`run_configure`，其余为`retry_config_read`（0.10.0b39 Windows并发首次启动约1/9误报“还没有配置模型”） |
 | 158 | `40b90d3b` 增量 | 2026-11-14 | 命令工具说明要求检查命令以检查本身结尾或显式带出退出码（`native_process_text.CHECK_COMMAND_GUIDANCE`，边界说明一并移入该模块）；PowerShell命令最后一条语句成功、而最后一个原生程序失败时，在stderr末尾注明其退出码（`native_shells.NATIVE_EXIT_NOTE`）（Beta Issue #27） |
 | 157 | `0fe07db5` 增量 | 2026-11-14 | `native_sandbox`在Seatbelt下以`jvm_temporary_directory`构造沙箱环境，Java临时目录指向私有TMPDIR（Beta Issue #25，见Sandbox模块设计） |

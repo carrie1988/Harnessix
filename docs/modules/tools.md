@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 31
+version: 32
 code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
@@ -1110,6 +1110,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 32 | `e604ed7d` 增量 | 2026-11-14 | `search._collect`与`windows_search._collect`改为按完整路径字典序逐个给出候选的生成器（目录名按“名称/”排序），快照与正则Grep边遍历边读（`search.search_order`），原字面量Grep与Glob仍先遍历完；Windows目录在观察完成员后即核对未变（ADR 0162第2版，Beta Issue #24） |
 | 31 | `10556cd8` 增量 | 2026-11-14 | 快照与正则Grep在读取时限到了而已有命中时返回这些命中（`truncation_reason=time_limit`，`search.timed_out_with_results`），执行合同v9/v10（ADR 0162，Beta Issue #24） |
 | 30 | `9686668f` 增量 | 2026-11-14 | Windows搜索收集时，有多个硬链接的文件与POSIX一样只计入忽略条目（`windows_search._candidate`），不再以`workspace_changed`结束整次搜索 |
 | 29 | `518cce3a` 增量 | 2026-11-14 | 逻辑路径的控制字符检查改用预编译正则（`workspace._CONTROL_CHARACTER`），判定不变；整仓搜索每个条目都要检查，Windows真机Dify检出上逐字符生成器约占0.3秒（Beta Issue #24） |
