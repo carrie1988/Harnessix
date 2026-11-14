@@ -122,18 +122,27 @@ def _candidate(
     operation: ReadOperation,
     scan: _Scan,
 ) -> _Candidate | None:
+    """收集时观察一个列出的普通文件。
+
+    与POSIX的收集相同：有多个硬链接（或其间被换成Reparse Point）的文件只计入忽略条目，不读，
+    也不让整次搜索失败；此前它以workspace_changed结束整次搜索。消失或变成目录仍是workspace_changed。
+    """
     try:
-        observed = port.observe_candidate(
-            path,
-            operation,
-            content=False,
-            max_bytes=MAX_SEARCH_FILE_BYTES,
+        observed = port.observe(
+            path, operation, include_content=False, max_bytes=MAX_SEARCH_FILE_BYTES
         )
     except ReadToolError as error:
-        if error.code != "io_failed":
-            raise
-        scan.unreadable_entries += 1
-        return None
+        if error.code == "path_denied":
+            scan.ignored_entries += 1
+            return None
+        if error.code == "io_failed":
+            scan.unreadable_entries += 1
+            return None
+        if error.code in {"not_found", "wrong_file_type"}:
+            raise ReadToolError("workspace_changed") from None
+        raise
+    if observed.kind != "file":
+        raise ReadToolError("workspace_changed")
     return _Candidate(path=path, identity=observed.identity, size=observed.size)
 
 

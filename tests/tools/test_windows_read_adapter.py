@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import stat
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -388,3 +389,18 @@ def test_search_does_not_open_files_its_pattern_excludes(
     listed = runtime.glob(GlobInput(pattern="**/*.py"), ReadOperation(), capture=None)
     assert listed.paths == ("api.py",)
     assert set(calls) == {"api.py"}
+
+
+def test_a_hard_linked_file_is_skipped_like_on_posix(
+    tmp_path: Path, runtime: WindowsReadRuntime
+) -> None:
+    """此前Windows上一个符合include、有两个硬链接的文件会让整次搜索以workspace_changed结束。"""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/a.ts").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "linked.ts").write_text("needle\n", encoding="utf-8")
+    os.link(tmp_path / "linked.ts", tmp_path / "src/b.ts")
+
+    found = runtime.grep(GrepInput(query="needle"), ReadOperation(), capture=None)
+
+    assert [item.path for item in found.matches] == ["src/a.ts"]
+    assert found.stats.ignored_entries == 2  # linked.ts与src/b.ts
