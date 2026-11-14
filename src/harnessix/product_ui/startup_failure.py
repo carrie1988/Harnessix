@@ -19,6 +19,7 @@ from harnessix.product_ui.preflight_text import remediation_text
 
 _TITLES: Final = {
     "run_configure": "还没有配置模型",
+    "retry_config_read": "这次没能读取配置文件",
     "migrate_or_configure": "配置文件无效或版本过旧",
     "select_profile": "找不到指定的模型配置（Profile）",
     "install_provider_extra": "缺少模型服务的依赖组件",

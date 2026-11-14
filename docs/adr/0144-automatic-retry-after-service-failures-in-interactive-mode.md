@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 3
+version: 4
 code_revision: pending
 owners: [core]
 modules: [agent, product_config, models]
@@ -103,3 +103,13 @@ supersedes: []
 
 后果：思考到一半断开的请求会从头重新思考，已经显示的思考保留在界面上，新的思考另起一段；这次重试和其他重试
 一样可能已被计费。
+
+## 修订（第4版，2026-11-14）：预算将用完时不借用早已恢复的故障
+
+0.10.0b38 Windows `harnessix exec`（GitHub Issue #32，百炼qwen3.8-flash，`service_failure_retries=1`，`--max-tokens 1880000`）：一次`provider_transport`恢复后又成功请求了42、38、3次，最后在准备上下文时以“Provider服务失败且该次请求用量未知；按计费安全规则不再发起付费请求”（错误码`provider_transport`）结束，用户以为恢复后又被那次传输错误中断。
+
+原因：按第4条，用量未知的尝试按本轮已知的单次最大消耗预留；`require_reserved_unknown_usage`在已用量加预留达到上限时停止。它经`unknown_usage_stop`沿用ADR 0123的归因，取最近一次服务方故障的错误码与说明。ADR 0123的归因针对“故障之后立即停止”，这里停止的原因是预算：预留只让停止提前了大约一次请求。
+
+决定：这一检查以`budget_exceeded`结束，说明里给出已用量、为用量未知的请求预留的量与上限，并提示提高预算后可在同一会话续做。其余停止的归因不变：默认策略下故障后的下一步停止、连续故障超过次数、一次请求内仅因失败尝试的预留超限，仍以故障的原错误码结束。
+
+验证：`tests/agent/test_model_attempts.py::test_a_recovered_transport_failure_is_not_blamed_when_the_budget_runs_out`（修改前为`provider_transport`）与`test_unknown_usage_is_reserved_at_the_largest_known_request`（说明含三个数字）。

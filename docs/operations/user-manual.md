@@ -23,7 +23,7 @@ supersedes: []
 
 # Harnessix Code 用户手册
 
-适用版本：`0.10.0b39`（预览版）
+适用版本：`0.10.0b40`（预览版）
 
 > **当前是预览版，不是正式商用版本，不提供任何担保。** 请只在可以通过 Git 回退的仓库里使用，并且只处理你有权发送给模型服务商的代码。
 
@@ -134,8 +134,8 @@ uv tool install --python 3.12 harnessix
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
 - **国内网络：** 使用镜像，`uv tool install --python 3.12 harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
-- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b39`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
-- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b39-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
+- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b40`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
+- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b40-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
 
 **从源码构建（开发者）：**
 
@@ -550,7 +550,9 @@ harnessix code            # 不写目录时使用当前目录
 - **不能联网**。Linux 沙箱完全断网；macOS 沙箱只放行本机回环地址，已配置的本机代理端口也被拦截；
 - **读不到凭据和隐私数据**，包括 `~/.ssh`、`~/.gnupg`、`~/.aws`、`~/.config/gcloud`、`~/.azure`、`~/.kube`、`~/.docker`、`~/.netrc`、`~/.git-credentials`、`~/.npmrc`、`~/.pypirc`、各类 shell 历史、`~/.harnessix`，以及钥匙串和浏览器数据；
 - 读不到工作区里的 `.env` 和 `.env.*` 文件，Agent 的读文件工具同样不能读取它们；
-- 只继承必要的环境变量，模型 API Key 等机密不会传给命令。
+- 只继承必要的环境变量，模型 API Key 等机密不会传给命令；
+- 临时目录（`$TMPDIR`）是沙箱私有的，**每条命令开始前都会清空**：上一条命令放在里面的文件，下一条命令看不到。需要跨命令使用的文件（编译产物、测试夹具等）应放在工作区里，Agent 的命令工具说明里也写明了这一点；
+- macOS 上 Java 不使用 `$TMPDIR`，默认的临时目录在沙箱写入范围之外。Harnessix 会在沙箱内命令的 `JAVA_TOOL_OPTIONS` 末尾加上 `-Djava.io.tmpdir=<沙箱临时目录>`，`Files.createTempDirectory` 等无需改项目配置即可使用；每次启动 Java 时标准错误会多一行 `Picked up JAVA_TOOL_OPTIONS: …`，属正常现象。
 
 需要联网（如安装依赖）或写 `.git` 时，Agent 会改为申请在沙箱外运行，由你逐条批准。
 
@@ -758,7 +760,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 
 ### 11.5 摘要内容
 
-摘要（`harnessix.exec-summary/v1`）包含：`status`、`error`、`model_steps`、`usage`（Token 用量）、`cost`（费用或上限）、`approval_mode`、`approvals`（每次审批的类型、结果和决定者：审批模式自动做的决定记 `harnessix-exec:<模式>`，你在终端提示处输入的记 `harnessix-exec:<模式>:interactive`）、`final_answer`（最后的回复）、`changed_paths`（改动的文件）、`commands`（运行过的命令）、`verification`（最后一次修改之后是否运行过检查）、`elapsed_seconds`，以及用于恢复的 `thread_id` 和 `turn_id`。
+摘要（`harnessix.exec-summary/v1`）包含：`status`、`error`、`model_steps`、`usage`（Token 用量）、`cost`（费用或上限）、`approval_mode`、`approvals`（每次审批的类型、结果和决定者：审批模式自动做的决定记 `harnessix-exec:<模式>`，你在终端提示处输入的记 `harnessix-exec:<模式>:interactive`）、`final_answer`（最后的回复）、`changed_paths`（改动的文件）、`commands`（运行过的命令）、`verification`（最后一次修改之后是否运行过检查：`passed_after_last_edit`、`failed_after_last_edit`、`unverified` 或 `no_changes`；Windows 上检查命令本身退出 0、但其中最后一个外部程序失败时（例如测试之后又打印了一行），记为 `failed_after_last_edit`，并给出 `last_native_returncode`）、`elapsed_seconds`，以及用于恢复的 `thread_id` 和 `turn_id`。
 
 ---
 
@@ -850,6 +852,7 @@ uv tool uninstall harnessix
 
 | 现象 | 处理 |
 |---|---|
+| Windows 上第一次在刚克隆的大仓库里搜索代码很慢，结果标着“没搜完”（`time_limit`） | 第一次读取文件内容时 Windows Defender 会先扫描它们，任何搜索工具都要多花时间；第二次就快了。Agent 会先用已找到的结果，需要时缩小范围再搜。想让第一次也快，可以把开发目录放到 Dev Drive，或在 Windows 安全中心把它加入排除项（请自行评估安全影响） |
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
 | 安装时报 `Failed to build google-re2`、构建 `pyyaml` 失败或要求安装 Microsoft Visual C++ | 安装的是较早的版本，uv 又选中了 Python 3.15。改用 `uv tool install --python 3.12 harnessix`，或安装最新版本（3.15 上改用 `regex` 与 `ruamel.yaml`，都不需要编译） |

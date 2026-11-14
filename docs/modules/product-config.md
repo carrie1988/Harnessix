@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 163
+version: 167
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -2420,14 +2420,18 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 163 | 第二轮合入 | 2026-11-14 | 文档版本156～162即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
-| 162 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
-| 161 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |
-| 160 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
-| 159 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
-| 158 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
-| 157 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
-| 156 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
+| 167 | 第二轮合入 | 2026-11-14 | 文档版本160～166即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
+| 166 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
+| 165 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |
+| 164 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
+| 163 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
+| 162 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
+| 161 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
+| 160 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
+| 159 | `e9e5b0cd` 增量 | 2026-11-14 | `codec.read_product_config_bytes`区分配置文件不存在（`product_config_missing`）与读取失败，读取失败（`product_config_unavailable`、`product_config_changed`）在2秒内短暂重试；预检只有文件不存在才给`run_configure`，其余为`retry_config_read`（0.10.0b39 Windows并发首次启动约1/9误报“还没有配置模型”） |
+| 158 | `40b90d3b` 增量 | 2026-11-14 | 命令工具说明要求检查命令以检查本身结尾或显式带出退出码（`native_process_text.CHECK_COMMAND_GUIDANCE`，边界说明一并移入该模块）；PowerShell命令最后一条语句成功、而最后一个原生程序失败时，在stderr末尾注明其退出码（`native_shells.NATIVE_EXIT_NOTE`）（Beta Issue #27） |
+| 157 | `0fe07db5` 增量 | 2026-11-14 | `native_sandbox`在Seatbelt下以`jvm_temporary_directory`构造沙箱环境，Java临时目录指向私有TMPDIR（Beta Issue #25，见Sandbox模块设计） |
+| 156 | `0604e776` 增量 | 2026-11-14 | 沙箱内命令工具的说明写明私有TMPDIR在每条命令开始前清空、跨命令的文件放在工作区（`native_process._boundary_description`，Beta Issue #29） |
 | 155 | `bcc92e1c` 增量 | 2026-11-13 | 收尾之后的空工具目录附上说明`wrap_up.WRAP_UP_NOTICE`，告诉模型是用户要求收尾、调用不会执行、应直接总结（ADR 0148第4版，Beta Issue #4） |
 | 154 | `9dca9d42` 增量 | 2026-11-13 | `wrap_up.WRAP_UP_TEXTS`改为公开，终端界面据此拒绝收尾之后还在等的审批（ADR 0148第3版，Beta Issue #4） |
 | 153 | `76f7dfed` 增量 | 2026-11-13 | 收尾之后不再发起新的修改或检查：`wrap_up.WrapUpToolView`不准入尚未开始、经审批边界的调用，之后的步骤不提供工具（ADR 0148第2版，Beta Issue #4） |

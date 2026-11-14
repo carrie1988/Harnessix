@@ -67,10 +67,20 @@ def unknown_usage_reservation(turn: Turn) -> int:
 
 
 def require_reserved_unknown_usage(turn: Turn) -> None:
-    """允许继续时，未知用量的预留一旦耗尽Token预算就停止。"""
+    """允许继续时，未知用量的预留一旦耗尽Token预算就停止。
 
-    if turn.usage.total_tokens + unknown_usage_reservation(turn) >= turn.budget.max_tokens:
-        raise unknown_usage_stop(turn, "费用未知尝试的预留额已耗尽Token预算")
+    停止的原因是预算（已用量加上为那次失败请求预留的用量），以budget_exceeded结束并给出数字。
+    此前沿用那次早已恢复的服务方故障的错误码与“计费安全规则”的说明：0.10.0b38上一次传输
+    错误恢复后又成功请求了42次，最后仍报那次传输错误，用户以为恢复被它中断（Beta Issue #32）。
+    """
+
+    reservation = unknown_usage_reservation(turn)
+    if turn.usage.total_tokens + reservation >= turn.budget.max_tokens:
+        raise KernelError(
+            "budget_exceeded",
+            f"本轮Token预算将用完：已用{turn.usage.total_tokens}，另为用量未知的失败请求预留"
+            f"{reservation}，合计达到上限{turn.budget.max_tokens}；提高预算后可在同一会话续做",
+        )
 
 
 def require_request_slots(turn: Turn, slots: int = 1) -> int:

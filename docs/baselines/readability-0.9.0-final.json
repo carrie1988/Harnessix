@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 648,
-    "physical_lines": 136242,
-    "logical_lines": 118077,
-    "documented_modules": 648,
+    "source_files": 650,
+    "physical_lines": 136419,
+    "logical_lines": 118200,
+    "documented_modules": 650,
     "classes": 1252,
     "documented_classes": 658,
-    "functions": 5444,
-    "documented_functions": 1923,
+    "functions": 5447,
+    "documented_functions": 1926,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -253,10 +253,6 @@
     {
       "path": "src/harnessix/product_config/coding_tool_view.py",
       "lines": 895
-    },
-    {
-      "path": "src/harnessix/product_config/native_process.py",
-      "lines": 608
     },
     {
       "path": "src/harnessix/product_config/process_action.py",

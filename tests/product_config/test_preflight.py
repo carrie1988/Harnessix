@@ -145,7 +145,7 @@ def test_explicit_action_config_failure_blocks_but_capability_omission_is_adviso
 @pytest.mark.parametrize(
     ("kind", "expected_status", "expected_code"),
     [
-        ("missing", "failed", "product_config_unavailable"),
+        ("missing", "failed", "product_config_missing"),
         ("invalid", "failed", "product_config_invalid"),
         ("legacy", "failed", "product_config_migration_required"),
     ],

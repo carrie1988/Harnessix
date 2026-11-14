@@ -16,6 +16,7 @@ from harnessix.tools import grep_matcher, search
 from harnessix.tools.read_catalog import _build_definitions, _read_bindings
 from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.tools.search_contracts import GrepSnapshotMatch, GrepSnapshotOutput
+from harnessix.tools.search_execution_contract import execution_contract
 from harnessix.tools.workspace import digest
 from tests.agent.helpers import answer
 from tests.artifacts.helpers import results, step
@@ -54,13 +55,14 @@ def test_legacy_and_snapshot_descriptors_are_byte_identical_to_prechange_sha():
     )
     snapshots = definitions(enable_grep_snapshots=True)
     # 快照Grep：文件名include、整仓库上限、20行上下文（向后兼容的放宽）改变描述与合同摘要；
-    # 执行合同v7把整仓库上限放宽到四倍、不含查询的文件不再逐行扫描（ADR 0145），
-    # 并与其余Grep合同一样带有include的语义（ADR 0129）。
-    expected["grep"] = "39ea35058581c8d551bba8af434b819c4483e97d2064d4301ef5e79183144dfb"
+    # 执行合同v7把整仓库上限放宽到四倍、不含查询的文件不再逐行扫描（ADR 0145）；
+    # v9在读取时限到了而已有命中时返回这些命中（time_limit，ADR 0162）。原字面量Grep不变；
+    # 与其余Grep合同一样带有include的语义（ADR 0129）。
+    expected["grep"] = "16e732ddc78722fb181be651d111ae8a2e3bd330ad110d36bd69bda2deb8a9ef"
     for name, definition in snapshots.items():
         assert digest(definition.model_dump(mode="json")) == expected[name]
     assert hashlib.sha256(snapshots["grep"].model_dump_json().encode()).hexdigest() == (
-        "bde1ae8c57cf685d0339937297bafefa3504f5be1f7d6e350eda08ae9177cda8"
+        "a43f342d1ee4232178bc60b4f7f5e01d613be2ebbf0df3e395182812a7a92678"
     )
 
 
@@ -73,7 +75,7 @@ def test_major4_only_replaces_grep_and_fingerprints_engine_semantics(monkeypatch
     assert schema["match_mode"]["default"] == "regex"
     assert schema["match_mode"]["enum"] == ["regex", "literal"]
     assert schema["context_lines"]["default"] == 2 and schema["max_results"]["default"] == 10
-    contract = search.execution_contract(enable_regex_search=True)["regex"]
+    contract = execution_contract(enable_regex_search=True)["regex"]
     assert contract["engine"] == "google-re2" and contract["version"] == "1.1.20251105"
     assert contract["engine_cache_max_mem"] == 128 * 1024 * 1024
     with monkeypatch.context() as changed:

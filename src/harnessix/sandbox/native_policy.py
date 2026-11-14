@@ -373,8 +373,15 @@ def sandbox_environment(
     private_cache: Path,
     presets: Iterable[tuple[str, str]] = (),
     secret_names: Iterable[str] = (),
+    jvm_temporary_directory: bool = False,
 ) -> Mapping[str, str]:
-    """沙箱内命令的环境：继承白名单、无代理、临时与缓存目录指向私有位置。"""
+    """沙箱内命令的环境：继承白名单、无代理、临时与缓存目录指向私有位置。
+
+    jvm_temporary_directory（macOS Seatbelt）：macOS上的JVM不读TMPDIR，按系统给每个用户的临时目录
+    （/var/folders/…/T）取java.io.tmpdir，那里在沙箱写入范围之外，`Files.createTempDirectory`失败
+    （Beta Issue #25）。经JAVA_TOOL_OPTIONS把它指向私有TMPDIR，追加在预设值之后（后出现的-D生效），
+    不扩大沙箱的写入范围。JVM启动时会在stderr打印一行“Picked up JAVA_TOOL_OPTIONS”。
+    """
 
     environment = _inherited(environ, secret_names, include_proxies=False)
     environment.update(dict(presets))
@@ -382,6 +389,12 @@ def sandbox_environment(
         environment[name] = str(private_tmp)
     for name, directory in _PRIVATE_CACHE_VARIABLES.items():
         environment[name] = str(private_cache / directory)
+    if jvm_temporary_directory:
+        location = str(private_tmp)
+        quoted = f'"{location}"' if any(c.isspace() for c in location) else location
+        option = f"-Djava.io.tmpdir={quoted}"
+        preset = environment.get("JAVA_TOOL_OPTIONS", "").strip()
+        environment["JAVA_TOOL_OPTIONS"] = f"{preset} {option}".strip()
     return MappingProxyType(dict(sorted(environment.items())))
 
 

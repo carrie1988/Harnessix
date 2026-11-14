@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 41
+version: 48
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -36,6 +36,7 @@ related_tests:
   - tests/product_config/test_wrap_up_stops_work.py
   - tests/product_ui/test_paste_input.py
   - tests/test_exec_cli.py
+  - tests/tools/test_grep_time_limit.py
   - tests/sandbox/test_native_policy.py
   - tests/tools/test_pinned_root.py
   - tests/tools/test_windows_directory_cache.py
@@ -124,9 +125,15 @@ supersedes: []
 | 三十六 | Python 3.15上安装失败：google-re2没有3.15的预编译包（0.10.0b25/b32，Issue #10） | 3.15起正则搜索改用regex，许可证策略允许CNRI-Python | [ADR 0159](../adr/0159-regex-engine-on-python-315.md)、本文第50节 |
 | 三十七 | Windows上真实Dify检出整仓grep仍5秒超时（0.10.0b38，Issue #24，#21的后续） | 搜索只观察符合模式的文件 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)第4版、本文第51节 |
 | 三十八 | `harnessix exec`的审批提示看不到要批准的命令（0.10.0b38，Issue #26） | 提示写明工具、完整命令与理由，写到标准错误 | 本文第52节 |
+| 三十九 | 传输错误恢复后又成功请求几十次，最后仍以那次传输错误结束（0.10.0b38，Issue #32） | 预算将用完时如实报预算，并给出数字 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第4版、本文第53节 |
+| 四十 | 沙箱命令放在TMPDIR的文件下一条命令就不见了（0.10.0b38 macOS，Issue #29） | 命令工具说明与手册写明TMPDIR每条命令前清空 | 本文第54节 |
+| 四十一 | macOS沙箱里Java默认临时目录不可写，标准库测试失败（0.10.0b38，Issue #25） | Seatbelt下经JAVA_TOOL_OPTIONS把java.io.tmpdir指向私有TMPDIR | 本文第55节 |
+| 四十二 | 检查命令末尾的打印掩盖了测试失败，完成证据标成通过（0.10.0b38 Windows，Issue #27） | 工具说明约束检查命令写法；PowerShell注明最后一个原生程序的退出码，完成证据据此不记通过 | 本文第56节 |
+| 四十三 | 第一次搜索刚克隆的大仓库仍超时、没有结果（0.10.0b39 Windows，Issue #24的剩余部分） | 读取时限到了而已有命中时返回这些命中 | [ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)、本文第57节 |
+| 四十四 | 几个进程同时首次启动，偶尔提示“还没有配置模型”（0.10.0b39 Windows，发布会话复测#15时约1/9） | 区分文件不存在与读取失败，读取失败短暂重试并如实提示 | 本文第58节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十八项在第26～52节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十四项在第26～58节。
 
 ## 2. 需求背景
 
@@ -1425,6 +1432,8 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 
 0.10.0b37把#21标为已修复，依据是Windows 11上合成仓库（16,207个文件全是`.ts`）约3.3秒。报告人在0.10.0b38上用真实的Dify检出（提交05f3723c，16,108个文件）复测同一查询（`useWorkflowNodeStarted`，`include="*.ts"`，默认5秒时限）：干净检出4/4超时，原检出3/4超时，子目录对照都在0.02秒返回。合成仓库没有代表真实仓库：Dify里`.ts`只有2,866个，其余是`.py`、`.tsx`、`.json`等，目录3,664个（合成仓库约570个）。Windows的候选收集对每个文件都观察一次，不符合include的文件也要打开。见ADR 0160第4版：不符合模式的文件不再打开。本地Dify检出上观察次数由25,154降到11,927。超时提示原本就建议缩小path、收窄include；超时返回部分结果仍是已记录的新需求。发布会话在Windows真机上用同一提交的Dify检出复测（不再只用合成仓库）：修改前4/4超时；修改后热缓存约1.67秒，这份检出第一次被搜索时约4.6秒。剖析中路径控制字符检查的逐字符生成器调用112万次（约0.3秒），改用预编译正则，判定不变（三个平台共用）。
 
+顺带发现的平台差异：POSIX的收集跳过有多个硬链接的文件（计入忽略条目）；Windows的收集观察到这样的文件会报`path_denied`，再被当作`workspace_changed`结束整次搜索。现在Windows与POSIX相同，只计入忽略条目；消失或变成目录仍是`workspace_changed`。回归：`tests/tools/test_windows_read_adapter.py::test_a_hard_linked_file_is_skipped_like_on_posix`（修改前整次搜索失败）。
+
 ## 52. 第三十八项：无头模式的审批提示写明要批准什么（Issue #26）
 
 0.10.0b38 Windows（原生ConPTY）：`harnessix exec --quiet`审批沙箱外命令时终端只有“批准该操作？[y/N]”，要另开窗口读`--events-file`才能知道要执行什么；不加`--quiet`也只多一行“需要审批。”。瘦CLI（`agent_cli`）从不显示调用内容，三个平台相同。另发现：提示经`input(prompt)`写到标准输出，而`exec`的JSON摘要也在标准输出，`exec ... > summary.json`时提示会混进摘要。
@@ -1432,3 +1441,35 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 修改：`agent_cli.approval_prompt`按审批对应的调用写出工具、完整命令（多行照原样缩进）、理由、Profile，修改类列出文件（不显示内容），其余参数以JSON给出（超过2000字符截断并指向事件记录）；模型给出的文本里的控制字符与双向排版字符转成可见的`\uXXXX`，不能借此隐藏或改写显示的命令。`HeadlessConsole.prompt`把提示写到标准错误，不受`--quiet`影响。`harnessix agent`照旧写标准输出。
 
 验证：`tests/test_exec_cli.py`（命令与理由完整显示、控制字符转义、修改只列文件、提示写到标准错误且标准输出为空）；真实进程（macOS，tmux，百炼qwen3.8-flash，`exec --quiet --approval-mode auto`，标准输出重定向到文件）：提示显示工具、命令、理由与Profile，批准后退出码0，摘要文件是完整的JSON。
+
+## 53. 第三十九项：预算将用完时的停止原因（Issue #32）
+
+见ADR 0144第4版。报告人的三次现场都是一次`provider_transport`恢复之后又成功请求了多次，最后在准备上下文时结束、没有新的失败请求，与“为用量未知的那次请求预留后，已用量加预留达到`--max-tokens`”一致：预留只让停止提前大约一次请求，但说明一直归到那次早已恢复的传输错误上。修改后以`budget_exceeded`结束，说明形如“本轮Token预算将用完：已用X，另为用量未知的失败请求预留Y，合计达到上限Z；提高预算后可在同一会话续做”。计费安全规则本身（预留、默认策略下故障后即停）不变。
+
+## 54. 第四十项：沙箱TMPDIR的生命周期（Issue #29）
+
+0.10.0b38 macOS：Agent在一条沙箱命令里把编译产物放到`$TMPDIR`，下一条命令找不到，只好挪到工作区。私有TMPDIR在每条命令开始前清空（`native_sandbox`调用`bubblewrap.prepare_private_directories`，Seatbelt与bubblewrap相同），这是隔离设计：一条命令留下的临时文件不影响下一条。问题在于命令工具的说明只写了“只能写工作区、TMPDIR与私有缓存目录”，没有说生命周期，模型只能试错。修改：沙箱内命令工具的说明写明“TMPDIR在每条命令开始前清空，后面的命令还要用的文件请放在工作区里”，用户手册8.5节同样写明。按轮或按会话保留TMPDIR会改变隔离设计，另作可选项，未采用。回归：`tests/product_config/test_native_sandbox_profile.py`断言说明里有这句。
+
+## 55. 第四十一项：macOS沙箱里Java的临时目录（Issue #25）
+
+0.10.0b38 macOS Seatbelt，OpenJDK 21：`Files.createTempDirectory`报`Operation not permitted`（`/var/folders/…/T`），14个测试只过5个；显式`-Djava.io.tmpdir=$TMPDIR`时14/14。macOS上的JVM按系统给每个用户的临时目录取`java.io.tmpdir`，不读TMPDIR（本机JDK 17核对：TMPDIR指向别处时`java.io.tmpdir`仍是`/var/folders/…/T/`），那里在Seatbelt写入范围之外。Linux的bubblewrap在`/tmp`挂载tmpfs，JVM默认的`/tmp`可写；Windows上JVM读TMP/TEMP，都不受影响。负责人2026-11-14选方案A：Seatbelt下沙箱内命令的`JAVA_TOOL_OPTIONS`在预设值之后追加`-Djava.io.tmpdir=<私有TMPDIR>`（路径含空白时加引号，JDK 9起支持），不扩大写入范围（方案B为放行系统临时目录，未采用）。代价是每次启动JVM在stderr多一行“Picked up JAVA_TOOL_OPTIONS”。报告人补充的现场里，模型为绕开这个问题把不带引号的`JAVA_TOOL_OPTIONS`写进Makefile，工作区路径含空格时`make test`直接失败；由产品统一设置后不再需要这类写法。验证：`tests/sandbox/test_native_policy.py::test_the_jvm_temporary_directory_is_the_private_tmpdir_under_seatbelt`；本机JDK 17核对`JAVA_TOOL_OPTIONS`（含带引号的含空格路径）使`Files.createTempDirectory`落在指定目录；Seatbelt下的实测由发布会话在macOS上完成。
+
+## 56. 第四十二项：检查命令吞掉失败的退出码（Issue #27）
+
+0.10.0b38 Windows：模型写的检查命令在测试之后又`Write-Host "exit=$LASTEXITCODE"`，测试17过2败，整条命令退出0，`verification.status`记为`passed_after_last_edit`；Go、.NET项目里的管道过滤同样如此。Shell以最后一条语句的结果作为退出码，bash的`pytest; echo $?`也返回0，三个平台相同。负责人2026-11-14选方案A：
+
+- 命令工具说明（`native_process_text.CHECK_COMMAND_GUIDANCE`，三个平台）：作为检查运行的测试或构建命令要以检查本身结尾，或用`exit $?`（PowerShell用`exit $LASTEXITCODE`）带出退出码；之后再打印、过滤输出或接其他命令，失败会被记成成功。
+- Windows：PowerShell命令末尾固定的退出码段（Beta Issue #12）再加一行：最后一条语句成功、而最后一个原生程序非零退出时，在stderr末尾写`harnessix: the last native program exited with N`，不改变命令的退出码。完成证据（`product_ui.verification`）在最后一次检查的stderr预览里看到这一行时记为`failed_after_last_edit`，并给出`last_native_returncode`；模型也能从输出里看到测试其实失败了。
+- bash没有对应的“最后一个原生程序退出码”，只靠说明约束；方案B（任何原生程序失败即整条失败）会改变命令语义，未采用。
+
+验证：`tests/product_config/test_windows_host_command.py`用真实PowerShell 7（macOS上的pwsh）核对：测试之后Write-Host时退出0且stderr末尾注明42，`exit $LASTEXITCODE`、后一个原生程序成功、纯cmdlet时不注明；原有11种退出码情形不变。`tests/test_exec_cli.py`核对完成证据。
+
+## 57. 第四十三项：超时时返回已找到的命中（Issue #24的剩余部分）
+
+见[ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)。0.10.0b39在Windows真机上热缓存约1.7秒，但刚克隆的Dify检出第一次整仓grep仍5秒超时：同一份新克隆上PowerShell的`Select-String`第一次要13.3秒，是第一次读文件内容的固有成本（Defender扫描）。负责人2026-11-14同意实施推荐方案：快照与正则Grep在时限到了而已有命中时返回这些命中，标为`time_limit`；用户手册的故障排查补充Dev Drive与Defender排除项的建议。
+
+## 58. 第四十四项：读不到配置文件不等于没有配置（发布会话发现）
+
+0.10.0b39 Windows正式测试复跑#15的场景（三个ConPTY共用一个HOME，同时首次确认信任）：b33～b39约9次里有1次，第三个进程确认信任后输出“Harnessix 无法启动：还没有配置模型”并退出2，另外两个正常进入，配置文件确实存在，重跑即好。`preflight_configuration._read`把读取配置的任何失败都记为`run_configure`；`codec.read_product_config_bytes`也把“文件不存在”和“这次读不到”都报成`product_config_unavailable`。同一目录里另一个进程正在替换信任记录等文件时，Windows上偶尔打不开该目录（共享冲突）或读到替换中的文件。
+
+修改：文件不存在报`product_config_missing`（只有这时提示去运行configure）；`product_config_unavailable`、`product_config_changed`在2秒内每50毫秒重试，仍失败才如实报出；预检对其余读取失败给`retry_config_read`，启动失败显示“这次没能读取配置文件……稍等片刻重新运行即可，不需要重新配置”。三个平台共用。验证：`tests/product_config/test_contracts_and_codec.py`（不存在与读取失败分开、两次失败后第三次读到、持续失败时为`retry_config_read`）、`tests/product_config/test_startup_failure.py`。Windows真机复测由发布会话完成。

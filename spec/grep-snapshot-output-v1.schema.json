@@ -195,7 +195,8 @@
         {
           "enum": [
             "result_limit",
-            "output_limit"
+            "output_limit",
+            "time_limit"
           ],
           "type": "string"
         },

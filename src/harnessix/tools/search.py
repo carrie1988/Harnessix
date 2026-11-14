@@ -8,7 +8,7 @@ import json
 import os
 import stat
 from collections import deque
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -22,11 +22,9 @@ from harnessix.tools.grep_matcher import (
     literal_fallback_args,
     whole_text_decides,
 )
-from harnessix.tools.grep_matcher import execution_contract as regex_execution_contract
 from harnessix.tools.patterns import PathPattern, relative_to_start, select_included
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
-    MAX_GREP_CONTEXT_LINES,
     MAX_MATCH_BYTES,
     MAX_SEARCH_DEPTH,
     MAX_SEARCH_ENTRIES,
@@ -34,7 +32,6 @@ from harnessix.tools.search_contracts import (
     MAX_SEARCH_NAMES_BYTES,
     MAX_SEARCH_RECORD_BYTES,
     MAX_SEARCH_TOTAL_BYTES,
-    MAX_SNAPSHOT_GREP_CONTEXT_LINES,
     MAX_SNAPSHOT_SEARCH_ENTRIES,
     MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
     MAX_SNAPSHOT_SEARCH_RECORD_BYTES,
@@ -55,50 +52,6 @@ from harnessix.tools.search_contracts import (
     SnapshotSearchStats,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity, revision_state
-
-
-def execution_contract(
-    *, enable_regex_search: bool = False, snapshot_grep: bool = False
-) -> dict[str, object]:
-    """原字面量Grep与Glob合同不变；快照与正则Grep另有整仓库上限、文件名include与更宽上下文。
-
-    v7（快照）与v8（正则）：整仓库上限放宽到四倍；整份文本不命中的文件不再逐行扫描，
-    超长行只在可能命中的文件里计数（ADR 0145）。此前分别是v5、v6。
-    """
-    rules: dict[str, object] = {
-        "version": "bounded-search/v3",
-        "start_path": "regular-file-or-directory",
-        "pattern": "case-sensitive-segments-and-globstar",
-        "grep": "case-sensitive-literal-lines",
-        "ignored_directories": IGNORED_DIRECTORIES,
-        "max_entries": MAX_SEARCH_ENTRIES,
-        "max_names_bytes": MAX_SEARCH_NAMES_BYTES,
-        "max_depth": MAX_SEARCH_DEPTH,
-        "max_file_bytes": MAX_SEARCH_FILE_BYTES,
-        "max_total_bytes": MAX_SEARCH_TOTAL_BYTES,
-        "max_record_bytes": MAX_SEARCH_RECORD_BYTES,
-        "max_match_bytes": MAX_MATCH_BYTES,
-        "max_grep_context_lines": MAX_GREP_CONTEXT_LINES,
-    }
-    if snapshot_grep or enable_regex_search:
-        rules.update(
-            version="bounded-search/v7",
-            snapshot_grep={
-                "include": "basename-at-any-depth-without-slash-else-segments-and-globstar",
-                "max_entries": MAX_SNAPSHOT_SEARCH_ENTRIES,
-                "max_names_bytes": MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
-                "max_total_bytes": MAX_SNAPSHOT_SEARCH_TOTAL_BYTES,
-                "max_record_bytes": MAX_SNAPSHOT_SEARCH_RECORD_BYTES,
-                "max_context_lines": MAX_SNAPSHOT_GREP_CONTEXT_LINES,
-            },
-        )
-    if enable_regex_search:
-        rules.update(
-            version="bounded-search/v8",
-            grep="case-sensitive-re2-or-explicit-literal-lines",
-            regex=regex_execution_contract(),
-        )
-    return rules
 
 
 class SearchCapture:
@@ -497,6 +450,24 @@ class LiteralFallback:
             capture.records += self.capture.records
 
 
+def timed_out_with_results(
+    error: ReadToolError,
+    args: GrepInput,
+    matches: Sequence[GrepMatch],
+    fallback: LiteralFallback | None,
+) -> bool:
+    """读取时限到了：快照与正则Grep已经找到命中时返回这些命中（ADR 0162，Beta Issue #24）。
+
+    Windows上第一次搜索新检出的大仓库，读文件内容要先经Defender扫描，同类工具同样要十几秒；
+    此前超时一律没有结果。没有命中、或原字面量Grep，照旧以超时失败。
+    """
+    return (
+        error.code == "timeout"
+        and isinstance(args, GrepSnapshotInput)
+        and bool(matches or (fallback is not None and fallback.matches))
+    )
+
+
 def grep_result(
     args: GrepInput,
     stats: SearchStats,
@@ -504,22 +475,30 @@ def grep_result(
     reason: Literal["result_limit", "output_limit"] | None,
     fallback: LiteralFallback | None,
     capture: SearchCapture | None,
+    *,
+    timed_out: bool = False,
 ) -> GrepOutput:
-    """组装搜索结果；正则无命中而字面量有命中时改用字面量结果并标记。"""
+    """组装搜索结果；正则无命中而字面量有命中时改用字面量结果并标记。
+
+    timed_out：读取时限到了还没搜完，结果只含已找到的命中，标为time_limit（ADR 0162）。
+    """
     fields: dict[str, object] = {}
+    final: Literal["result_limit", "output_limit", "time_limit"] | None = reason
     if fallback is not None and fallback.replaces(matches):
         fallback.publish_to(capture)
-        matches, reason = fallback.matches, fallback.records.reason
+        matches, final = fallback.matches, fallback.records.reason
         fields["literal_fallback"] = True
+    if timed_out and final is None:
+        final = "time_limit"
     output_type = GrepSnapshotOutput if isinstance(args, GrepSnapshotInput) else GrepOutput
     return output_type.model_validate(
         {
             "path": args.path,
             "matches": tuple(matches),
             "stats": stats,
-            "scan_complete": reason is None and not stats.has_gaps,
-            "truncated": reason is not None,
-            "truncation_reason": reason,
+            "scan_complete": final is None and not stats.has_gaps,
+            "truncated": final is not None,
+            "truncation_reason": final,
             **fields,
         }
     )
@@ -536,44 +515,52 @@ def grep(
     fallback = LiteralFallback.start(args, operation, capture)
     scan, records = _scan_for(args), _Records(args)
     matches: list[GrepMatch] = []
-    for node in select_included(_collect(workspace, args, operation, scan), args, args.path):
-        operation.checkpoint()
-        try:
-            with _open_candidate(workspace, node, operation, directory=False) as fd:
-                state = revision_state(os.fstat(fd))
-                revision = digest((workspace.scope, node.path, state))
-                text = _read(fd, operation, scan)
-                if isinstance(args, GrepSnapshotInput) and state != revision_state(os.fstat(fd)):
-                    raise ReadToolError("workspace_changed")
-                if text is None:
-                    continue
-                for hit in grep_line_matches(
-                    node.path, revision, text, args, operation, scan, matcher=matcher
-                ):
-                    encoded = hit.model_dump_json()
-                    if capture is not None:
-                        capture.append(encoded)
-                    if records.accept(encoded):
-                        matches.append(hit)
-                    elif capture is None:
-                        break
-                if fallback is not None and not matches:
-                    fallback.observe(
-                        grep_line_matches(
-                            node.path,
-                            revision,
-                            text,
-                            fallback.args,
-                            operation,
-                            LineGaps(),
-                            matcher=fallback.matcher,
+    timed_out = False
+    try:
+        for node in select_included(_collect(workspace, args, operation, scan), args, args.path):
+            operation.checkpoint()
+            try:
+                with _open_candidate(workspace, node, operation, directory=False) as fd:
+                    state = revision_state(os.fstat(fd))
+                    revision = digest((workspace.scope, node.path, state))
+                    text = _read(fd, operation, scan)
+                    if isinstance(args, GrepSnapshotInput) and state != revision_state(
+                        os.fstat(fd)
+                    ):
+                        raise ReadToolError("workspace_changed")
+                    if text is None:
+                        continue
+                    for hit in grep_line_matches(
+                        node.path, revision, text, args, operation, scan, matcher=matcher
+                    ):
+                        encoded = hit.model_dump_json()
+                        if capture is not None:
+                            capture.append(encoded)
+                        if records.accept(encoded):
+                            matches.append(hit)
+                        elif capture is None:
+                            break
+                    if fallback is not None and not matches:
+                        fallback.observe(
+                            grep_line_matches(
+                                node.path,
+                                revision,
+                                text,
+                                fallback.args,
+                                operation,
+                                LineGaps(),
+                                matcher=fallback.matcher,
+                            )
                         )
-                    )
-        except PermissionError:
-            scan.unreadable_entries += 1
-        if records.reason is not None and capture is None:
-            break
+            except PermissionError:
+                scan.unreadable_entries += 1
+            if records.reason is not None and capture is None:
+                break
+    except ReadToolError as error:
+        if not timed_out_with_results(error, args, matches, fallback):
+            raise
+        timed_out = True
     stats = scan.snapshot()
     if capture is not None:
-        capture.complete = not stats.has_gaps
-    return grep_result(args, stats, matches, records.reason, fallback, capture)
+        capture.complete = not stats.has_gaps and not timed_out
+    return grep_result(args, stats, matches, records.reason, fallback, capture, timed_out=timed_out)

@@ -19,6 +19,7 @@ from harnessix.product_config import zero_config
 from harnessix.product_config.action_contracts import build_product_native_process_profile
 from harnessix.product_config.native_process import attest_native_process_profile
 from harnessix.product_config.native_shells import (
+    NATIVE_EXIT_NOTE,
     POWERSHELL_ARGUMENTS,
     POWERSHELL_EXIT_TRAILER,
     fixed_shell,
@@ -253,3 +254,32 @@ def test_a_real_powershell_reports_the_native_exit_code(command: str, expected: 
         [program, *POWERSHELL_ARGUMENTS, text], capture_output=True, timeout=120, check=False
     )
     assert completed.returncode == expected, completed.stderr.decode("utf-8", "replace")
+
+
+@pytest.mark.skipif(_real_powershell() is None, reason="本机没有PowerShell")
+@pytest.mark.parametrize(
+    ("command", "note"),
+    [
+        ("{python} -c 'raise SystemExit(42)'; Write-Host done", "42"),
+        ("{python} -c 'raise SystemExit(42)'; exit $LASTEXITCODE", None),
+        ("{python} -c 'raise SystemExit(3)'\n{python} -c 'raise SystemExit(0)'", None),
+        ("Write-Output plain", None),
+    ],
+)
+def test_a_real_powershell_notes_the_failed_native_program_it_did_not_exit_with(
+    command: str, note: str | None
+) -> None:
+    """Beta Issue #27：测试失败后又Write-Host，整条命令退出0；stderr末尾注明原生退出码。"""
+    program = _real_powershell()
+    assert program is not None
+    profile = _powershell_profile(program if os.name == "nt" else PWSH)
+    text = shell_command_text(profile, command.format(python=f"& '{sys.executable}'"))
+    completed = subprocess.run(
+        [program, *POWERSHELL_ARGUMENTS, text], capture_output=True, timeout=120, check=False
+    )
+    stderr = completed.stderr.decode("utf-8", "replace")
+    if note is None:
+        assert NATIVE_EXIT_NOTE not in stderr
+    else:
+        assert completed.returncode == 0
+        assert stderr.strip().endswith(NATIVE_EXIT_NOTE + note)

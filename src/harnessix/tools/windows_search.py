@@ -122,18 +122,27 @@ def _candidate(
     operation: ReadOperation,
     scan: _Scan,
 ) -> _Candidate | None:
+    """收集时观察一个列出的普通文件。
+
+    与POSIX的收集相同：有多个硬链接（或其间被换成Reparse Point）的文件只计入忽略条目，不读，
+    也不让整次搜索失败；此前它以workspace_changed结束整次搜索。消失或变成目录仍是workspace_changed。
+    """
     try:
-        observed = port.observe_candidate(
-            path,
-            operation,
-            content=False,
-            max_bytes=MAX_SEARCH_FILE_BYTES,
+        observed = port.observe(
+            path, operation, include_content=False, max_bytes=MAX_SEARCH_FILE_BYTES
         )
     except ReadToolError as error:
-        if error.code != "io_failed":
-            raise
-        scan.unreadable_entries += 1
-        return None
+        if error.code == "path_denied":
+            scan.ignored_entries += 1
+            return None
+        if error.code == "io_failed":
+            scan.unreadable_entries += 1
+            return None
+        if error.code in {"not_found", "wrong_file_type"}:
+            raise ReadToolError("workspace_changed") from None
+        raise
+    if observed.kind != "file":
+        raise ReadToolError("workspace_changed")
     return _Candidate(path=path, identity=observed.identity, size=observed.size)
 
 
@@ -439,26 +448,36 @@ def grep_files(
     fallback = search.LiteralFallback.start(args, operation, capture)
     scan, records = _scan_for(args), _Records(args)
     matches: list[GrepMatch] = []
-    for candidate in _included(port, args, operation, scan):
-        operation.checkpoint()
-        loaded = _load_text(port, candidate, operation, scan)
-        if loaded is not None:
-            observed, text = loaded
-            _append_matches(
-                port,
-                candidate,
-                observed,
-                text,
-                args,
-                operation,
-                scan,
-                records,
-                matches,
-                capture,
-                matcher,
-                fallback,
-            )
-        if records.reason is not None and capture is None:
-            break
+    timed_out = False
+    try:
+        for candidate in _included(port, args, operation, scan):
+            operation.checkpoint()
+            loaded = _load_text(port, candidate, operation, scan)
+            if loaded is not None:
+                observed, text = loaded
+                _append_matches(
+                    port,
+                    candidate,
+                    observed,
+                    text,
+                    args,
+                    operation,
+                    scan,
+                    records,
+                    matches,
+                    capture,
+                    matcher,
+                    fallback,
+                )
+            if records.reason is not None and capture is None:
+                break
+    except ReadToolError as error:
+        if not search.timed_out_with_results(error, args, matches, fallback):
+            raise
+        timed_out = True
     stats, _ = _capture_status(capture, scan, records)
-    return search.grep_result(args, stats, matches, records.reason, fallback, capture)
+    if capture is not None and timed_out:
+        capture.complete = False
+    return search.grep_result(
+        args, stats, matches, records.reason, fallback, capture, timed_out=timed_out
+    )

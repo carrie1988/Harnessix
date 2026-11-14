@@ -18,7 +18,7 @@ from harnessix.models.contracts import ResponseCompleted, ResponseStarted, ToolC
 from harnessix.models.openai_chat import OpenAIChatProvider
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
-from harnessix.tools import search
+from harnessix.tools import search, search_execution_contract
 from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.tools.search_contracts import GlobInput, GlobOutput, GrepInput, GrepOutput
 from tests.agent.helpers import answer
@@ -162,7 +162,9 @@ async def test_reopened_search_approval_and_old_contract_compatibility(
             assert turn.status == TurnStatus.WAITING_APPROVAL
             assert not any(isinstance(i.content, ToolResultContent) for i in turn.items)
     if change:
-        monkeypatch.setattr(search, "MAX_SEARCH_TOTAL_BYTES", search.MAX_SEARCH_TOTAL_BYTES // 2)
+        halved = search.MAX_SEARCH_TOTAL_BYTES // 2
+        monkeypatch.setattr(search, "MAX_SEARCH_TOTAL_BYTES", halved)
+        monkeypatch.setattr(search_execution_contract, "MAX_SEARCH_TOTAL_BYTES", halved)
     provider = ScriptedProvider([tool_step(tool), answer()])
     async with CodingToolRuntime(root, require_approval=True) as tools:
         for definition in tools.definitions():

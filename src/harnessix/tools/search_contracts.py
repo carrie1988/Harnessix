@@ -262,6 +262,9 @@ class GrepSnapshotOutput(GrepOutput):
     spec_version: Literal["harnessix.grep-snapshot/v1"] = "harnessix.grep-snapshot/v1"
     matches: tuple[GrepSnapshotMatch, ...] = Field(max_length=200)
     stats: SnapshotSearchStats
+    # time_limit：读取时限到了还没搜完，只返回已找到的命中（ADR 0162，Beta Issue #24）。
+    # 只放宽这一输出，原字面量Grep与Glob的输出合同逐字节不变。
+    truncation_reason: Literal["result_limit", "output_limit", "time_limit"] | None  # type: ignore[assignment]
     # 正则模式完整扫描无命中、查询含正则元字符时，按同一查询的字面量重搜；命中均为字面量匹配。
     literal_fallback: bool = False
 

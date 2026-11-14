@@ -251,6 +251,8 @@ def test_sandbox_descriptor_states_limits_and_boundary_text_is_unchanged() -> No
     sandboxed = native_process_descriptor(native_profile(backend="bubblewrap"))
     assert "本机沙箱" in sandboxed.description and "没有网络" in sandboxed.description
     assert ".git只读" in sandboxed.description
+    # Beta Issue #29：私有TMPDIR每条命令前清空，模型要知道跨命令的文件放在工作区。
+    assert "TMPDIR在每条命令开始前清空" in sandboxed.description
     boundary = native_process_descriptor(native_profile())
     assert "Harnessix不另加沙箱" in boundary.description
 
