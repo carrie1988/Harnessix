@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -141,7 +142,13 @@ def _collect(
     args: SearchInput,
     operation: ReadOperation,
     scan: _Scan,
+    wanted: Callable[[str], bool],
 ) -> list[_Candidate]:
+    """遍历并观察候选文件；不符合模式（wanted，按相对搜索起点的路径）的文件只计入扫描条目、不打开。
+
+    Windows上观察一个文件就要打开它并取最终路径。此前不符合include的文件也逐个观察：真实的Dify检出
+    16,108个文件里只有2,866个.ts，整仓grep仍5秒超时（Beta Issue #24）。
+    """
     candidates: list[_Candidate] = []
     root = port.path(args.path)
     observed = port.observe(root, operation, include_content=False)
@@ -170,7 +177,7 @@ def _collect(
                 continue
             if kind == "directory":
                 directories.append(relative)
-            elif kind == "file":
+            elif kind == "file" and wanted(relative_path(relative, root)):
                 found = _candidate(port, relative, operation, scan)
                 if found is not None:
                     candidates.append(found)
@@ -257,7 +264,7 @@ def glob_files(
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths: list[str] = []
     root = port.path(args.path)
-    for candidate in _collect(port, args, operation, scan):
+    for candidate in _collect(port, args, operation, scan, pattern.matches):
         operation.checkpoint()
         if not pattern.matches(relative_path(candidate.path, root)):
             continue
@@ -412,7 +419,7 @@ def grep_files(
     scan, pattern, records = _scan_for(args), search.grep_include(args), _Records(args)
     matches: list[GrepMatch] = []
     root = port.path(args.path)
-    for candidate in _collect(port, args, operation, scan):
+    for candidate in _collect(port, args, operation, scan, pattern.matches):
         operation.checkpoint()
         if not pattern.matches(relative_path(candidate.path, root)):
             continue

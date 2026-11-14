@@ -365,3 +365,26 @@ def test_a_file_that_grows_past_the_limit_after_listing_is_a_change(
     root.observe = grow_after_listing  # type: ignore[method-assign]
     with pytest.raises(ReadToolError, match="workspace_changed"):
         runtime.grep(GrepInput(query="needle"), ReadOperation(), capture=None)
+
+
+def test_search_does_not_open_files_its_pattern_excludes(
+    tmp_path: Path, runtime: WindowsReadRuntime
+) -> None:
+    """Beta Issue #24：真实Dify检出16,108个文件只有2,866个.ts，此前每个文件都要打开一次。"""
+    (tmp_path / "web").mkdir()
+    (tmp_path / "web/a.ts").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "web/b.tsx").write_text("needle\n", encoding="utf-8")
+    (tmp_path / "api.py").write_text("needle\n", encoding="utf-8")
+    calls = _count_file_observations(runtime)
+
+    found = runtime.grep(
+        GrepInput(query="needle", include="**/*.ts"), ReadOperation(), capture=None
+    )
+    assert [item.path for item in found.matches] == ["web/a.ts"]
+    assert calls == {"web/a.ts": [False, True]}
+    assert found.stats.entries_scanned == 4  # 不打开的文件仍计入扫描条目
+
+    calls.clear()
+    listed = runtime.glob(GlobInput(pattern="**/*.py"), ReadOperation(), capture=None)
+    assert listed.paths == ("api.py",)
+    assert set(calls) == {"api.py"}

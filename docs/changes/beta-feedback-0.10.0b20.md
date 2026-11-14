@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 38
+version: 39
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -122,9 +122,10 @@ supersedes: []
 | 三十四 | 沙箱外命令没带上pnpm、Playwright等工具设置，测试前重装依赖、重新下载浏览器而超时（0.10.0b33，Issue #20） | 沙箱外命令继承这些工具的非机密设置 | 本文第48节 |
 | 三十五 | 大仓库里整仓搜索约5秒超时，没有任何结果（0.10.0b32/b33，Issue #21） | 一次读取操作只核对两次根 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)、本文第49节 |
 | 三十六 | Python 3.15上安装失败：google-re2没有3.15的预编译包（0.10.0b25/b32，Issue #10） | 3.15起正则搜索改用regex，许可证策略允许CNRI-Python | [ADR 0159](../adr/0159-regex-engine-on-python-315.md)、本文第50节 |
+| 三十七 | Windows上真实Dify检出整仓grep仍5秒超时（0.10.0b38，Issue #24，#21的后续） | 搜索只观察符合模式的文件 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)第4版、本文第51节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十六项在第26～50节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十七项在第26～51节。
 
 ## 2. 需求背景
 
@@ -1418,3 +1419,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ### 50.4 Windows上仍装不上：PyYAML（ADR 0161）
 
 0.10.0b35候选的三平台实测（uv 0.13.7，Python 3.15.2）：macOS、Linux能装，但PyYAML 6.0.3是现场编译的；Windows真机报`Microsoft Visual C++ 14.0 or greater is required`，仍装不上。0.10.0b35发布说明里#10写作“macOS、Linux能用Python 3.15安装（需要本机有C编译器），Windows仍不能”。六个平台上只用预编译包解析，缺3.15预编译包的只有PyYAML。按负责人对#10的决定（3.15上换引擎），3.15起Skill Frontmatter改用纯Python的ruamel.yaml（MIT），3.14及以下不变；边角写法的已知差异列在[ADR 0161](../adr/0161-skill-frontmatter-yaml-on-python-315.md)。SBOM、许可证证据与扫描重新生成（79个包、914个Archive）。验证见`tests/skills/test_frontmatter_yaml.py`；三个平台的实际安装由发布会话复测。
+
+## 51. 第三十七项：真实仓库上的Windows整仓搜索（Issue #24）
+
+0.10.0b37把#21标为已修复，依据是Windows 11上合成仓库（16,207个文件全是`.ts`）约3.3秒。报告人在0.10.0b38上用真实的Dify检出（提交05f3723c，16,108个文件）复测同一查询（`useWorkflowNodeStarted`，`include="*.ts"`，默认5秒时限）：干净检出4/4超时，原检出3/4超时，子目录对照都在0.02秒返回。合成仓库没有代表真实仓库：Dify里`.ts`只有2,866个，其余是`.py`、`.tsx`、`.json`等，目录3,664个（合成仓库约570个）。Windows的候选收集对每个文件都观察一次，不符合include的文件也要打开。见ADR 0160第4版：不符合模式的文件不再打开。本地Dify检出上观察次数由25,154降到11,927。超时提示原本就建议缩小path、收窄include；超时返回部分结果仍是已记录的新需求。发布会话在Windows真机上用同一提交的Dify检出复测（不再只用合成仓库）。
