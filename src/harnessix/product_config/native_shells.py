@@ -38,7 +38,13 @@ _LEGACY_POWERSHELL_ARGUMENTS = (*_POWERSHELL_OPTIONS, _UTF8_OUTPUT)
 # （Beta Issue #12）。用户命令之后另起一行补一段固定代码：最后一条语句失败时带出原生程序的真实
 # 退出码，没有原生退出码（cmdlet出错、命令不存在）时仍为1。另起一行，用户命令末尾的注释吞不掉它；
 # 用户命令自己exit时它不会执行。审批时显示的仍是用户命令本身。
-POWERSHELL_EXIT_TRAILER = "\nif (-not $?) { if ($LASTEXITCODE) { exit $LASTEXITCODE } exit 1 }"
+# 最后一条语句成功、而其间最后一个原生程序以非零退出时（例如测试之后再Write-Host），整条命令的
+# 退出码仍为0；补一行写到stderr末尾，模型与完成证据都能看到真实结果（Beta Issue #27）。
+NATIVE_EXIT_NOTE = "harnessix: the last native program exited with "
+POWERSHELL_EXIT_TRAILER = (
+    "\nif (-not $?) { if ($LASTEXITCODE) { exit $LASTEXITCODE } exit 1 }"
+    '\nif ($LASTEXITCODE) { [Console]::Error.WriteLine("' + NATIVE_EXIT_NOTE + '$LASTEXITCODE") }'
+)
 
 
 class _ShellProgram(Protocol):

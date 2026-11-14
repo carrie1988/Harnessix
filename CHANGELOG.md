@@ -4,6 +4,7 @@
 
 ### 修复
 
+- 测试失败后命令又打印了一行（如 PowerShell 里测试之后 `Write-Host "exit=$LASTEXITCODE"`），整条命令以 0 结束，`harnessix exec` 摘要里的 `verification` 却标成“修改后检查通过”。现在 Windows 上会在输出末尾注明最后一个外部程序的真实退出码，摘要据此记为“检查没有通过”并给出 `last_native_returncode`；命令工具的说明也要求检查命令以检查本身结尾，或用 `exit $?`（PowerShell 用 `exit $LASTEXITCODE`）带出退出码（#27）
 - macOS 上沙箱内运行 Java 测试时，`Files.createTempDirectory` 等创建临时文件的操作会因“Operation not permitted”失败：macOS 上的 Java 不使用 `$TMPDIR`，默认临时目录在沙箱写入范围之外。现在 Harnessix 会把沙箱内命令的 Java 临时目录指向沙箱自己的临时目录，不需要改项目配置，也不扩大沙箱权限；Java 启动时会多打印一行 `Picked up JAVA_TOOL_OPTIONS`（#25）
 - 沙箱里的临时目录（`$TMPDIR`）每条命令开始前都会清空，此前没有告诉 Agent，它会在下一条命令里去找上一条命令放在临时目录的文件（如编译好的程序），找不到再挪到工作区。现在命令工具的说明和用户手册都写明了这一点，跨命令要用的文件直接放在工作区（#29）
 - 一次网络中断恢复后，任务又正常进行了很久，最后却以“Provider 服务失败且该次请求用量未知；按计费安全规则不再发起付费请求”结束，让人以为是那次早已恢复的网络错误中断了任务。实际原因是本轮 Token 预算将用完（为那次用量未知的请求预留了一份用量）。现在如实报“本轮 Token 预算将用完”，并给出已用量、预留量和上限；提高预算后可在同一会话续做（#32）

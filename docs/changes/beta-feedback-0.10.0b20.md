@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 45
+version: 46
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -127,9 +127,10 @@ supersedes: []
 | 三十九 | 传输错误恢复后又成功请求几十次，最后仍以那次传输错误结束（0.10.0b38，Issue #32） | 预算将用完时如实报预算，并给出数字 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第4版、本文第53节 |
 | 四十 | 沙箱命令放在TMPDIR的文件下一条命令就不见了（0.10.0b38 macOS，Issue #29） | 命令工具说明与手册写明TMPDIR每条命令前清空 | 本文第54节 |
 | 四十一 | macOS沙箱里Java默认临时目录不可写，标准库测试失败（0.10.0b38，Issue #25） | Seatbelt下经JAVA_TOOL_OPTIONS把java.io.tmpdir指向私有TMPDIR | 本文第55节 |
+| 四十二 | 检查命令末尾的打印掩盖了测试失败，完成证据标成通过（0.10.0b38 Windows，Issue #27） | 工具说明约束检查命令写法；PowerShell注明最后一个原生程序的退出码，完成证据据此不记通过 | 本文第56节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十一项在第26～55节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十二项在第26～56节。
 
 ## 2. 需求背景
 
@@ -1449,3 +1450,13 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 55. 第四十一项：macOS沙箱里Java的临时目录（Issue #25）
 
 0.10.0b38 macOS Seatbelt，OpenJDK 21：`Files.createTempDirectory`报`Operation not permitted`（`/var/folders/…/T`），14个测试只过5个；显式`-Djava.io.tmpdir=$TMPDIR`时14/14。macOS上的JVM按系统给每个用户的临时目录取`java.io.tmpdir`，不读TMPDIR（本机JDK 17核对：TMPDIR指向别处时`java.io.tmpdir`仍是`/var/folders/…/T/`），那里在Seatbelt写入范围之外。Linux的bubblewrap在`/tmp`挂载tmpfs，JVM默认的`/tmp`可写；Windows上JVM读TMP/TEMP，都不受影响。负责人2026-11-14选方案A：Seatbelt下沙箱内命令的`JAVA_TOOL_OPTIONS`在预设值之后追加`-Djava.io.tmpdir=<私有TMPDIR>`（路径含空白时加引号，JDK 9起支持），不扩大写入范围（方案B为放行系统临时目录，未采用）。代价是每次启动JVM在stderr多一行“Picked up JAVA_TOOL_OPTIONS”。报告人补充的现场里，模型为绕开这个问题把不带引号的`JAVA_TOOL_OPTIONS`写进Makefile，工作区路径含空格时`make test`直接失败；由产品统一设置后不再需要这类写法。验证：`tests/sandbox/test_native_policy.py::test_the_jvm_temporary_directory_is_the_private_tmpdir_under_seatbelt`；本机JDK 17核对`JAVA_TOOL_OPTIONS`（含带引号的含空格路径）使`Files.createTempDirectory`落在指定目录；Seatbelt下的实测由发布会话在macOS上完成。
+
+## 56. 第四十二项：检查命令吞掉失败的退出码（Issue #27）
+
+0.10.0b38 Windows：模型写的检查命令在测试之后又`Write-Host "exit=$LASTEXITCODE"`，测试17过2败，整条命令退出0，`verification.status`记为`passed_after_last_edit`；Go、.NET项目里的管道过滤同样如此。Shell以最后一条语句的结果作为退出码，bash的`pytest; echo $?`也返回0，三个平台相同。负责人2026-11-14选方案A：
+
+- 命令工具说明（`native_process_text.CHECK_COMMAND_GUIDANCE`，三个平台）：作为检查运行的测试或构建命令要以检查本身结尾，或用`exit $?`（PowerShell用`exit $LASTEXITCODE`）带出退出码；之后再打印、过滤输出或接其他命令，失败会被记成成功。
+- Windows：PowerShell命令末尾固定的退出码段（Beta Issue #12）再加一行：最后一条语句成功、而最后一个原生程序非零退出时，在stderr末尾写`harnessix: the last native program exited with N`，不改变命令的退出码。完成证据（`product_ui.verification`）在最后一次检查的stderr预览里看到这一行时记为`failed_after_last_edit`，并给出`last_native_returncode`；模型也能从输出里看到测试其实失败了。
+- bash没有对应的“最后一个原生程序退出码”，只靠说明约束；方案B（任何原生程序失败即整条失败）会改变命令语义，未采用。
+
+验证：`tests/product_config/test_windows_host_command.py`用真实PowerShell 7（macOS上的pwsh）核对：测试之后Write-Host时退出0且stderr末尾注明42，`exit $LASTEXITCODE`、后一个原生程序成功、纯cmdlet时不注明；原有11种退出码情形不变。`tests/test_exec_cli.py`核对完成证据。

@@ -292,3 +292,30 @@ def test_prompts_go_to_stderr_even_when_quiet(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert captured.out == "" and captured.err == "需要你批准：x\n批准该操作？[y/N] "
     assert asked == [()]
+
+
+def test_a_check_whose_last_native_program_failed_is_not_a_pass():
+    """Beta Issue #27：测试失败后又打印了一行，整条命令退出0，此前标成“修改后检查通过”。"""
+    from harnessix.product_config.native_shells import NATIVE_EXIT_NOTE
+
+    patch, check = uuid4(), uuid4()
+    stderr = f"2 failed, 17 passed\n{NATIVE_EXIT_NOTE}1\n"
+    preview = {"stdout": {"text": "TESTEXIT=1\n"}, "stderr": {"text": stderr}}
+    items = [
+        _call(patch, "apply_patch_batch"),
+        _result(patch, "succeeded"),
+        _call(check, "host_command.host-shell", {"cmd": "npm test; Write-Host done"}),
+        _item(
+            {
+                "kind": "tool_result",
+                "call_id": check,
+                "outcome": "succeeded",
+                "output": {"returncode": 0, "diagnostic_preview": preview},
+            }
+        ),
+    ]
+    assert _verification(items) == {
+        "status": "failed_after_last_edit",
+        "last_check": "npm test; Write-Host done",
+        "last_native_returncode": 1,
+    }
