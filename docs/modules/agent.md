@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 63
+version: 64
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -1024,6 +1024,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 64 | `d6aa6c54` 增量 | 2026-11-14 | 为用量未知的失败请求预留后预算将用完时，`turn_budget_compaction.require_reserved_unknown_usage`以`budget_exceeded`结束并给出数字，不再借用早已恢复的服务方故障的错误码（ADR 0144第4版，Beta Issue #32） |
 | 63 | `8b07c214` 增量 | 2026-11-13 | 只显示过思考与生成进度的步骤接受新的尝试：`model_text.restart_attempt`、思考预览另起一段、进度清零并立即说明重试（ADR 0144第3版） |
 | 62 | `f24afce5` 增量 | 2026-11-13 | 生成进度在重试时带上尝试序号与失败类别（`ModelTextPublication.watch`、`GenerationProgress.attempt`），界面据此说明为什么还在等（Beta Issue #11） |
 | 61 | `a22e64ee` 增量 | 2026-11-13 | 模型请求进行中的生成进度：`generation_progress.py`按类别（思考、正文、工具参数）累计本步骤已生成的UTF-8字节数，每秒至多以临时`ItemDelta`发布一行累计值，条目身份确定、序号独立，不建Item、不进模型历史（ADR 0156） |

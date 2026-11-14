@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 42
+version: 43
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -124,9 +124,10 @@ supersedes: []
 | 三十六 | Python 3.15上安装失败：google-re2没有3.15的预编译包（0.10.0b25/b32，Issue #10） | 3.15起正则搜索改用regex，许可证策略允许CNRI-Python | [ADR 0159](../adr/0159-regex-engine-on-python-315.md)、本文第50节 |
 | 三十七 | Windows上真实Dify检出整仓grep仍5秒超时（0.10.0b38，Issue #24，#21的后续） | 搜索只观察符合模式的文件 | [ADR 0160](../adr/0160-read-operations-verify-the-root-once.md)第4版、本文第51节 |
 | 三十八 | `harnessix exec`的审批提示看不到要批准的命令（0.10.0b38，Issue #26） | 提示写明工具、完整命令与理由，写到标准错误 | 本文第52节 |
+| 三十九 | 传输错误恢复后又成功请求几十次，最后仍以那次传输错误结束（0.10.0b38，Issue #32） | 预算将用完时如实报预算，并给出数字 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第4版、本文第53节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十八项在第26～52节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至三十九项在第26～53节。
 
 ## 2. 需求背景
 
@@ -1434,3 +1435,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 修改：`agent_cli.approval_prompt`按审批对应的调用写出工具、完整命令（多行照原样缩进）、理由、Profile，修改类列出文件（不显示内容），其余参数以JSON给出（超过2000字符截断并指向事件记录）；模型给出的文本里的控制字符与双向排版字符转成可见的`\uXXXX`，不能借此隐藏或改写显示的命令。`HeadlessConsole.prompt`把提示写到标准错误，不受`--quiet`影响。`harnessix agent`照旧写标准输出。
 
 验证：`tests/test_exec_cli.py`（命令与理由完整显示、控制字符转义、修改只列文件、提示写到标准错误且标准输出为空）；真实进程（macOS，tmux，百炼qwen3.8-flash，`exec --quiet --approval-mode auto`，标准输出重定向到文件）：提示显示工具、命令、理由与Profile，批准后退出码0，摘要文件是完整的JSON。
+
+## 53. 第三十九项：预算将用完时的停止原因（Issue #32）
+
+见ADR 0144第4版。报告人的三次现场都是一次`provider_transport`恢复之后又成功请求了多次，最后在准备上下文时结束、没有新的失败请求，与“为用量未知的那次请求预留后，已用量加预留达到`--max-tokens`”一致：预留只让停止提前大约一次请求，但说明一直归到那次早已恢复的传输错误上。修改后以`budget_exceeded`结束，说明形如“本轮Token预算将用完：已用X，另为用量未知的失败请求预留Y，合计达到上限Z；提高预算后可在同一会话续做”。计费安全规则本身（预留、默认策略下故障后即停）不变。

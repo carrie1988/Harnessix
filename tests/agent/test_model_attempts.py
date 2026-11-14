@@ -370,8 +370,40 @@ def test_unknown_usage_is_reserved_at_the_largest_known_request() -> None:
     require_reserved_unknown_usage(turn)
 
     turn.budget = Budget(max_tokens=240)
-    with pytest.raises(KernelError):
+    with pytest.raises(KernelError) as stopped:
         require_reserved_unknown_usage(turn)
+    # 停止的原因是预算：如实给出数字，不借用那次早已恢复的失败的错误码（Beta Issue #32）。
+    assert stopped.value.code == "budget_exceeded"
+    assert "已用140" in stopped.value.message and "预留100" in stopped.value.message
+    assert "上限240" in stopped.value.message
+
+
+async def test_a_recovered_transport_failure_is_not_blamed_when_the_budget_runs_out(
+    tmp_path: Path,
+) -> None:
+    """Beta Issue #32：传输错误恢复后又成功请求几十次，预算将用完时此前仍报那次传输错误。"""
+    first, second = attempt_start(), attempt_start(index=2)
+    # 恢复后的这一步用了10万Token；为失败那次按同样的量预留，两者合计超过15万的预算。
+    recovered = [
+        second,
+        ResponseStarted(response_id="response-2"),
+        ToolCallCompleted(call_id="call-0", tool="test.read", arguments={}),
+        observed(second, completeness="complete", input_tokens=100_000, output_tokens=3),
+        ModelAttemptFinished(attempt_id=second.attempt_id, outcome="completed"),
+        ResponseCompleted(
+            finish_reason="tool_calls", usage=Usage(input_tokens=100_000, output_tokens=3)
+        ),
+    ]
+    turn, tools = await execute(
+        tmp_path,
+        [*_interrupted(first), *recovered],
+        budget=Budget(max_tokens=150_000, max_output_chars=1_024),
+        unknown_usage=RETRY_FIVE,
+    )
+    assert tools.calls and [a.status for a in turn.model_attempts] == ["failed", "completed"]
+    assert turn.status == "failed" and turn.error.code == "budget_exceeded"
+    assert "已用100003" in turn.error.message and "预留100003" in turn.error.message
+    assert "Provider服务失败" not in turn.error.message
 
 
 @pytest.mark.parametrize("with_observation", [False, True])
