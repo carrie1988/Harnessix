@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 3
+version: 4
 code_revision: pending
 owners: [product]
 modules: [product_ui, product_config]
@@ -111,3 +111,18 @@ supersedes: []
 验证：`tests/product_ui/test_wrap_up.py::test_wrap_up_rejects_an_approval_still_waiting_for_its_dialog`（修复前该轮一直停在等待审批）；
 真实终端界面（tmux，脚本模型立即提出一条需要审批的沙箱外命令，1秒后按`Ctrl+F`，窗口尚未弹出）：修复前停在“等待你审批”，
 修复后审批记为“已拒绝：你已要求收尾，这次操作不再执行”，第2次请求0个工具，以总结结束，命令没有执行。
+
+## 修订（第4版，2026-11-13）：收尾之后模型仍发出工具调用
+
+0.10.0b36正式测试（macOS，百炼qwen3.8-flash）：按`Ctrl+F`时等待中的审批被正确拒绝，但之后第3～6步模型在不带工具的请求里
+仍4次发出工具调用，每次只得到“工具未注册”（`unknown_tool`），第7步才给出总结；没有执行任何操作，但多了4次请求。本机复现：
+同一场景（沙箱不可用、模型先提出一条沙箱外命令、等待审批时按`Ctrl+F`）11次中2次出现，分别多出6次与4次请求（约半分钟）；DeepSeek没有出现。
+请求末尾的工具目录说明只写了“没有可调用的工具”，没有说明原因，拒绝结果“工具未注册”也不告诉模型该做什么。
+
+决定：`WrapUpToolView.select`在收尾之后返回空目录时附上说明`WRAP_UP_NOTICE`（“用户已要求收尾：这一步不提供任何工具，任何工具调用
+都不会执行。请直接用文字给出最终总结……”），经已有的`ModelToolSelection.notice`进入请求末尾的目录说明（“Why the catalog is restricted
+now”）。只是提示，不改变准入与拒绝；固定的拒绝结果合同不变。
+
+验证：`tests/product_config/test_wrap_up_stops_work.py::test_a_turn_started_with_the_checkpoint_wrap_up_offers_no_tools`（请求带上说明）；
+真实终端界面（tmux，百炼qwen3.8-flash，同一场景）：修改前11次中2次在收尾后多出4～6次被拒的调用，修改后24次都在收尾后的第一次请求
+直接给出总结。宿主在收尾后限制步数（连续被拒若干次即结束本轮）会让用户拿不到总结，暂不采用；再出现时另行评估。

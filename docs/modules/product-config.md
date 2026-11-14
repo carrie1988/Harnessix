@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 162
+version: 163
 code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
@@ -131,6 +131,7 @@ supersedes: []
 
 - [`wrap_up.WrapUpToolView`](../../src/harnessix/product_config/wrap_up.py)：本轮记入固定收尾说明之后，`select`返回空的工具集，`admit_call`以`tool_wrap_up_requested`拒绝尚未开始、经审批边界的调用；之前照原视图（通用执行时为全部工具）。
 - `server._model_tool_view`始终安装它；`WRAP_UP_STEER`、`WRAP_UP_PROMPT`由界面直接引用。回归见`tests/product_config/test_wrap_up_stops_work.py`。
+- 第4版：收尾之后的空目录带上`WRAP_UP_NOTICE`（`ModelToolSelection.notice`），进入请求末尾的目录说明；百炼qwen3.8-flash此前约五分之一的情况下在收尾后仍连续4～6次调用工具。
 
 ## 当前增量：按配置告诉模型它是谁（Beta Issue #17）
 
@@ -2419,14 +2420,15 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 162 | 第二轮合入 | 2026-11-14 | 文档版本155～161即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
-| 161 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
-| 160 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |
-| 159 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
-| 158 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
-| 157 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
-| 156 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
-| 155 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
+| 163 | 第二轮合入 | 2026-11-14 | 文档版本156～162即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
+| 162 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
+| 161 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |
+| 160 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
+| 159 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
+| 158 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
+| 157 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
+| 156 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
+| 155 | `bcc92e1c` 增量 | 2026-11-13 | 收尾之后的空工具目录附上说明`wrap_up.WRAP_UP_NOTICE`，告诉模型是用户要求收尾、调用不会执行、应直接总结（ADR 0148第4版，Beta Issue #4） |
 | 154 | `9dca9d42` 增量 | 2026-11-13 | `wrap_up.WRAP_UP_TEXTS`改为公开，终端界面据此拒绝收尾之后还在等的审批（ADR 0148第3版，Beta Issue #4） |
 | 153 | `76f7dfed` 增量 | 2026-11-13 | 收尾之后不再发起新的修改或检查：`wrap_up.WrapUpToolView`不准入尚未开始、经审批边界的调用，之后的步骤不提供工具（ADR 0148第2版，Beta Issue #4） |
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
