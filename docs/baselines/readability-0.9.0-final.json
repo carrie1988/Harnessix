@@ -17,8 +17,8 @@
   },
   "summary": {
     "source_files": 639,
-    "physical_lines": 133568,
-    "logical_lines": 116153,
+    "physical_lines": 133572,
+    "logical_lines": 116155,
     "documented_modules": 639,
     "classes": 1231,
     "documented_classes": 642,
@@ -1878,7 +1878,7 @@
       "path": "src/harnessix/tools/workspace.py",
       "qualname": "Workspace",
       "kind": "class",
-      "line": 167,
+      "line": 171,
       "lines": 136,
       "documented": true
     },

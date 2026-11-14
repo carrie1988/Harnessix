@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import stat
 import time
 from collections.abc import Callable, Iterator
@@ -38,6 +39,9 @@ _DENIED_NAMES = frozenset(
     }
 )
 _DENIED_SUFFIXES = (".pem", ".key", ".p12", ".pfx")
+# 路径里的控制字符。整仓搜索每个条目都要检查；逐字符的生成器
+# 在Dify检出上约占0.3秒（Beta Issue #24）。
+_CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def digest(value: object) -> str:
@@ -117,7 +121,7 @@ def _parts(path: str, *, max_bytes: int = 1024, max_parts: int = 64) -> tuple[st
         not encoded
         or len(encoded) > max_bytes
         or "\\" in path
-        or any(ord(char) < 32 or ord(char) == 127 for char in path)
+        or _CONTROL_CHARACTER.search(path) is not None
     ):
         raise ReadToolError("path_denied")
     if path == ".":

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 28
+version: 29
 code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
 owners:
   - core
@@ -1109,6 +1109,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 29 | `518cce3a` 增量 | 2026-11-14 | 逻辑路径的控制字符检查改用预编译正则（`workspace._CONTROL_CHARACTER`），判定不变；整仓搜索每个条目都要检查，Windows真机Dify检出上逐字符生成器约占0.3秒（Beta Issue #24） |
 | 28 | `591e0942` 增量 | 2026-11-14 | Windows搜索收集候选时只观察符合模式的文件（`windows_search._collect`的`wanted`），真实Dify检出上观察次数减半（ADR 0160第4版，Beta Issue #24） |
 | 27 | `6bc1757c` 增量 | 2026-11-13 | Windows grep读内容前不再为核对元数据多观察一次文件（`windows_search._candidate_content`），每个文件由三次观察降到两次（ADR 0160第3版，Beta Issue #21） |
 | 26 | `da4c70d7` 增量 | 2026-11-13 | Windows读取在一次操作内复用已核对的目录句柄（`windows_read_port.directory_scope`），整仓搜索每个文件只打开自身（ADR 0160第2版，Beta Issue #21） |
