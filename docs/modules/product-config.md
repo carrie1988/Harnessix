@@ -2420,7 +2420,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为20秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
+| 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为30秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
 | 167 | 第二轮合入 | 2026-11-14 | 文档版本160～166即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
 | 166 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
 | 165 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |

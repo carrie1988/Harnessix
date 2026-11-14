@@ -1,4 +1,4 @@
-"""工作区读取时限：配置优先，未配置时Windows默认20秒（Beta Issue #24，负责人2026-11-14选方案A）。"""
+"""工作区读取时限：配置优先，未配置时Windows默认30秒（Beta Issue #24，负责人2026-11-14选方案A）。"""
 
 from __future__ import annotations
 
@@ -12,13 +12,13 @@ from harnessix.product_config.read_time_limit import (
 from harnessix.tools.contracts import READ_TIMEOUT_SECONDS
 
 
-@pytest.mark.parametrize(("windows", "expected"), [(True, 20), (False, READ_TIMEOUT_SECONDS)])
+@pytest.mark.parametrize(("windows", "expected"), [(True, 30), (False, READ_TIMEOUT_SECONDS)])
 def test_unset_limit_follows_the_platform(
     config: ProductConfigV2, windows: bool, expected: int
 ) -> None:
     assert config.workspace_read_timeout_seconds is None
     assert workspace_read_timeout(config, windows=windows) == expected
-    assert WINDOWS_READ_TIMEOUT_SECONDS == 20 and READ_TIMEOUT_SECONDS == 5
+    assert WINDOWS_READ_TIMEOUT_SECONDS == 30 and READ_TIMEOUT_SECONDS == 5
 
 
 @pytest.mark.parametrize("windows", [True, False])

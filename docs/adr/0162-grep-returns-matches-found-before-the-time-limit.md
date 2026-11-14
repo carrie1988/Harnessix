@@ -17,7 +17,7 @@ supersedes: []
 # ADR 0162 读取时限到了而已有命中时，Grep返回这些命中
 
 - 状态：评审中
-- 日期：2026-11-14（第2版同日：边遍历边读；Windows默认读取时限20秒）
+- 日期：2026-11-14（第2版同日：边遍历边读；Windows默认读取时限30秒）
 - 修订：快照与正则Grep的输出合同（`truncation_reason`增加`time_limit`）与执行合同（v9、v10）
 
 ## 背景
@@ -43,13 +43,13 @@ GitHub Issue #21、#24：Windows上在大仓库根目录整仓grep超过5秒读�
    读取外层接住超时；判定与结果组装（`grep_result(..., timed_out=True)`）共用。已经读到的每条命中都来自一次完整、稳定
    的文件观察，与正常结果相同。
 
-## 第2版：边遍历边读，Windows默认20秒
+## 第2版：边遍历边读，Windows默认30秒
 
 0.10.0b40在Windows真机上：真实Dify检出热缓存约1.7秒，但搜索要先遍历完全部目录、观察完全部候选（约1.3秒）才开始读内容，时限落在遍历阶段时一条命中也没有；刚克隆或没读过的文件首次读取约18毫秒/文件（Defender扫描），无命中的整仓搜索第一次22秒、之后1.8秒。负责人2026-11-14选“A+B+C一起做”：
 
 1. **边遍历边读（B）。** `search._collect`与`windows_search._collect`改为生成器：每个目录的成员按名称排序（目录用“名称/”），深度优先逐个给出候选。给出的顺序与原来“收集完再按完整路径排序”完全相同（路径的字典序在每一层等价于“名称”或“名称/”的比较），所以`max_results`截断时返回的命中不变。快照与正则Grep边遍历边读：时限落在后面的目录时，前面目录里的命中照样返回；达到`max_results`后不再遍历剩余目录（`entries_scanned`相应变小）。原字面量Grep与Glob仍先遍历完再处理，扫描统计与此前相同。
    Windows每个目录在观察完自己的成员后立即核对目录未变，不再等整棵子树遍历完：核对的仍是这个目录的成员集合，窗口变短，子目录各自核对。
-2. **Windows默认读取时限20秒（A）。** `product_config.read_time_limit.workspace_read_timeout`：配置了`workspace_read_timeout_seconds`时照用；未配置时Windows为20秒（与同机自托管端点的默认相同），其他平台仍为5秒。读取可随时取消，时限只是上限。
+2. **Windows默认读取时限20秒（A）。** `product_config.read_time_limit.workspace_read_timeout`：配置了`workspace_read_timeout_seconds`时照用；未配置时Windows为30秒，其他平台仍为5秒。先定20秒；发布会话在Windows真机上用新克隆的Dify测得第一次整仓搜索20.02秒时只差24个文件（2,842/2,866）被标为time_limit，完整读完约需20.5～22秒，负责人同日改为30秒。读取可随时取消，时限只是上限。
 3. **文档（C）。** 用户手册17.4节说明读取时限、Windows第一次读文件慢的原因、Dev Drive与Defender排除项、以及`workspace_read_timeout_seconds`的写法。
 
 ## 没有改变的
