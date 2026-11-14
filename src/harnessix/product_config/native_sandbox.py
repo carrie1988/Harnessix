@@ -153,6 +153,7 @@ def attest_native_sandbox(
         private_cache=facts.private_cache,
         presets=profile.environment,
         secret_names=secret_names,
+        jvm_temporary_directory=seatbelt,
     )
     capabilities = build_capability_evidence_v2(
         platform="posix",

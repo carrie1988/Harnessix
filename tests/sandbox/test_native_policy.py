@@ -229,6 +229,26 @@ def test_sandbox_environment_inherits_allowlist_without_proxies_or_secrets() -> 
     assert "MODEL_API_KEY" not in host and "TMPDIR" not in host
 
 
+def test_the_jvm_temporary_directory_is_the_private_tmpdir_under_seatbelt() -> None:
+    """Beta Issue #25：macOS上的JVM不读TMPDIR，默认临时目录在Seatbelt写入范围之外。"""
+    tmp = CACHE / "tmp/owner"
+    plain = sandbox_environment({}, private_tmp=tmp, private_cache=CACHE / "cache")
+    assert "JAVA_TOOL_OPTIONS" not in plain  # 只在Seatbelt下设置
+    seatbelt = sandbox_environment(
+        {"JAVA_TOOL_OPTIONS": "-Xmx1g"},  # 用户环境里的值本来就不继承
+        private_tmp=tmp,
+        private_cache=CACHE / "cache",
+        presets=(("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8"),),
+        jvm_temporary_directory=True,
+    )
+    # 追加在预设值之后，后出现的-D生效。
+    assert seatbelt["JAVA_TOOL_OPTIONS"] == f"-Dfile.encoding=UTF-8 -Djava.io.tmpdir={tmp}"
+    spaced = sandbox_environment(
+        {}, private_tmp=Path("/Users/a b/tmp"), private_cache=CACHE, jvm_temporary_directory=True
+    )
+    assert spaced["JAVA_TOOL_OPTIONS"] == '-Djava.io.tmpdir="/Users/a b/tmp"'
+
+
 @pytest.mark.parametrize("name", ["HOME", "TMPDIR", "XDG_CACHE_HOME", "xdg_config_home", "GOCACHE"])
 def test_harnessix_managed_variables_are_reserved(name: str) -> None:
     assert sandbox_reserved_environment_problem(name) is not None

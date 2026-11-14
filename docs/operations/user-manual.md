@@ -551,7 +551,8 @@ harnessix code            # 不写目录时使用当前目录
 - **读不到凭据和隐私数据**，包括 `~/.ssh`、`~/.gnupg`、`~/.aws`、`~/.config/gcloud`、`~/.azure`、`~/.kube`、`~/.docker`、`~/.netrc`、`~/.git-credentials`、`~/.npmrc`、`~/.pypirc`、各类 shell 历史、`~/.harnessix`，以及钥匙串和浏览器数据；
 - 读不到工作区里的 `.env` 和 `.env.*` 文件，Agent 的读文件工具同样不能读取它们；
 - 只继承必要的环境变量，模型 API Key 等机密不会传给命令；
-- 临时目录（`$TMPDIR`）是沙箱私有的，**每条命令开始前都会清空**：上一条命令放在里面的文件，下一条命令看不到。需要跨命令使用的文件（编译产物、测试夹具等）应放在工作区里，Agent 的命令工具说明里也写明了这一点。
+- 临时目录（`$TMPDIR`）是沙箱私有的，**每条命令开始前都会清空**：上一条命令放在里面的文件，下一条命令看不到。需要跨命令使用的文件（编译产物、测试夹具等）应放在工作区里，Agent 的命令工具说明里也写明了这一点；
+- macOS 上 Java 不使用 `$TMPDIR`，默认的临时目录在沙箱写入范围之外。Harnessix 会在沙箱内命令的 `JAVA_TOOL_OPTIONS` 末尾加上 `-Djava.io.tmpdir=<沙箱临时目录>`，`Files.createTempDirectory` 等无需改项目配置即可使用；每次启动 Java 时标准错误会多一行 `Picked up JAVA_TOOL_OPTIONS: …`，属正常现象。
 
 需要联网（如安装依赖）或写 `.git` 时，Agent 会改为申请在沙箱外运行，由你逐条批准。
 

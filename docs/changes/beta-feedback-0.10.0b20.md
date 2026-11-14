@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 44
+version: 45
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -126,9 +126,10 @@ supersedes: []
 | 三十八 | `harnessix exec`的审批提示看不到要批准的命令（0.10.0b38，Issue #26） | 提示写明工具、完整命令与理由，写到标准错误 | 本文第52节 |
 | 三十九 | 传输错误恢复后又成功请求几十次，最后仍以那次传输错误结束（0.10.0b38，Issue #32） | 预算将用完时如实报预算，并给出数字 | [ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第4版、本文第53节 |
 | 四十 | 沙箱命令放在TMPDIR的文件下一条命令就不见了（0.10.0b38 macOS，Issue #29） | 命令工具说明与手册写明TMPDIR每条命令前清空 | 本文第54节 |
+| 四十一 | macOS沙箱里Java默认临时目录不可写，标准库测试失败（0.10.0b38，Issue #25） | Seatbelt下经JAVA_TOOL_OPTIONS把java.io.tmpdir指向私有TMPDIR | 本文第55节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十项在第26～54节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十一项在第26～55节。
 
 ## 2. 需求背景
 
@@ -1444,3 +1445,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 54. 第四十项：沙箱TMPDIR的生命周期（Issue #29）
 
 0.10.0b38 macOS：Agent在一条沙箱命令里把编译产物放到`$TMPDIR`，下一条命令找不到，只好挪到工作区。私有TMPDIR在每条命令开始前清空（`native_sandbox`调用`bubblewrap.prepare_private_directories`，Seatbelt与bubblewrap相同），这是隔离设计：一条命令留下的临时文件不影响下一条。问题在于命令工具的说明只写了“只能写工作区、TMPDIR与私有缓存目录”，没有说生命周期，模型只能试错。修改：沙箱内命令工具的说明写明“TMPDIR在每条命令开始前清空，后面的命令还要用的文件请放在工作区里”，用户手册8.5节同样写明。按轮或按会话保留TMPDIR会改变隔离设计，另作可选项，未采用。回归：`tests/product_config/test_native_sandbox_profile.py`断言说明里有这句。
+
+## 55. 第四十一项：macOS沙箱里Java的临时目录（Issue #25）
+
+0.10.0b38 macOS Seatbelt，OpenJDK 21：`Files.createTempDirectory`报`Operation not permitted`（`/var/folders/…/T`），14个测试只过5个；显式`-Djava.io.tmpdir=$TMPDIR`时14/14。macOS上的JVM按系统给每个用户的临时目录取`java.io.tmpdir`，不读TMPDIR（本机JDK 17核对：TMPDIR指向别处时`java.io.tmpdir`仍是`/var/folders/…/T/`），那里在Seatbelt写入范围之外。Linux的bubblewrap在`/tmp`挂载tmpfs，JVM默认的`/tmp`可写；Windows上JVM读TMP/TEMP，都不受影响。负责人2026-11-14选方案A：Seatbelt下沙箱内命令的`JAVA_TOOL_OPTIONS`在预设值之后追加`-Djava.io.tmpdir=<私有TMPDIR>`（路径含空白时加引号，JDK 9起支持），不扩大写入范围（方案B为放行系统临时目录，未采用）。代价是每次启动JVM在stderr多一行“Picked up JAVA_TOOL_OPTIONS”。报告人补充的现场里，模型为绕开这个问题把不带引号的`JAVA_TOOL_OPTIONS`写进Makefile，工作区路径含空格时`make test`直接失败；由产品统一设置后不再需要这类写法。验证：`tests/sandbox/test_native_policy.py::test_the_jvm_temporary_directory_is_the_private_tmpdir_under_seatbelt`；本机JDK 17核对`JAVA_TOOL_OPTIONS`（含带引号的含空格路径）使`Files.createTempDirectory`落在指定目录；Seatbelt下的实测由发布会话在macOS上完成。

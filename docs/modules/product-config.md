@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 156
+version: 157
 code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
 owners:
   - core
@@ -2361,6 +2361,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 157 | `0fe07db5` 增量 | 2026-11-14 | `native_sandbox`在Seatbelt下以`jvm_temporary_directory`构造沙箱环境，Java临时目录指向私有TMPDIR（Beta Issue #25，见Sandbox模块设计） |
 | 156 | `0604e776` 增量 | 2026-11-14 | 沙箱内命令工具的说明写明私有TMPDIR在每条命令开始前清空、跨命令的文件放在工作区（`native_process._boundary_description`，Beta Issue #29） |
 | 155 | `bcc92e1c` 增量 | 2026-11-13 | 收尾之后的空工具目录附上说明`wrap_up.WRAP_UP_NOTICE`，告诉模型是用户要求收尾、调用不会执行、应直接总结（ADR 0148第4版，Beta Issue #4） |
 | 154 | `9dca9d42` 增量 | 2026-11-13 | `wrap_up.WRAP_UP_TEXTS`改为公开，终端界面据此拒绝收尾之后还在等的审批（ADR 0148第3版，Beta Issue #4） |
