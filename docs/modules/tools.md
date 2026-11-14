@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 33
-code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
+version: 34
+code_revision: 5149cfe397bdebfd19583c2e4f118b444f2567f0
 owners:
   - core
 modules:
@@ -1135,6 +1135,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 34 | `5149cfe3` 增量 | 2026-11-14 | 提案修复的权限位观察在Windows上也成立：读取后端新增`file_mode`，POSIX取真实权限位，Windows对已有普通文件返回0644（与Windows工作区事务的约定相同，不模拟可执行位），不存在或不是普通文件时仍为空；此前Windows上replace漏写mode会被拒（`tool_invalid_arguments`），三个平台行为不一致 |
 | 33 | `48f5685f` 增量 | 2026-11-14 | `search._collect`与`windows_search._collect`改为按完整路径字典序逐个给出候选的生成器（目录名按“名称/”排序），快照与正则Grep边遍历边读（`patterns.included_while_walking`，Windows为`windows_search._included`；include规则与ADR 0129相同），原字面量Grep与Glob仍先遍历完；Windows目录在观察完成员后即核对未变（ADR 0162第2版，Beta Issue #24） |
 | 32 | 第二轮合入 | 2026-11-14 | 会话基线的工作区改动观察`workspace_changes`（ADR 0131）；读工具参数放宽、写给模型的英文失败说明与Grep的`include`语义（ADR 0129）；提案修复可读取现有文件的权限位（`workspace_file_mode`，没有权限位的平台返回空），整文件读取沿用主线的读取后端；Windows端的`include`筛选在收集候选时完成（主线第28版），单文件起点不筛选与“无一匹配即失败”的规则由`windows_search._included`保留 |
 | 31 | `10556cd8` 增量 | 2026-11-14 | 快照与正则Grep在读取时限到了而已有命中时返回这些命中（`truncation_reason=time_limit`，`search.timed_out_with_results`），执行合同v9/v10（ADR 0162，Beta Issue #24） |

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 65
-code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
+version: 66
+code_revision: 5149cfe397bdebfd19583c2e4f118b444f2567f0
 owners:
   - core
 modules:
@@ -276,7 +276,7 @@ Patch参数拒绝中，离线重放有32次在下列修复后通过参数校验�
   [`file_observations.py`](../../src/harnessix/agent/file_observations.py)从本步发给模型的历史（`ModelRequest.history`）
   取各文件最近一次完整内容SHA-256（`read_file`、带摘要的`grep`命中、Patch成功结果）。replace/delete缺SHA时补它
   ——是模型读到的摘要而不是当前文件的，文件此后变化照常因SHA不符被拒；缺`path`而SHA恰好对应历史中唯一一个文件时补路径。
-  replace缺mode时经`CodingToolRuntime.workspace_file_mode`沿用现有文件的可执行位。模型给出的SHA与mode不改写。
+  replace缺mode时经`CodingToolRuntime.workspace_file_mode`沿用现有文件的可执行位（Windows的普通文件按0644）。模型给出的SHA与mode不改写。
 - 改道新增：`read_file`带着grep的`query`且全部字段都属于本步grep合同时改为`grep`；`read_artifact`的`offset`/`limit`
   接受纯数字字符串并截到页上限。后者必须在调用形成前完成：存档分页核验按调用记录中的参数重算，执行时再修复会让
   已成功的读取在核验时被判为`artifact_corrupt`。
@@ -1137,6 +1137,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 66 | `5149cfe3` 增量 | 2026-11-14 | replace缺mode的补全在Windows上也生效：已有普通文件按0644补（工具模块第34版） |
 | 65 | 第二轮合入 | 2026-11-14 | 文档版本48～54随第二轮分支合入主线（第54版在分支上编为47，与主线第47版重号）。合入时的取舍：完成守卫的完整模式沿用第48版（按回复形态判定、补发2～6次、提示写明剩余调用次数），交互模式沿用第60版（只认宣布的下一步、至多2次、提示不附剩余次数），`leaves_a_step_undone`移到`reply_shape.py`；没有正文的摘要沿用第57版，第53版的“摘要输出不成立时跳过”不再保留；会话基线的完成前复核改为在本步不需要回复恢复时进行 |
 | 64 | `d6aa6c54` 增量 | 2026-11-14 | 为用量未知的失败请求预留后预算将用完时，`turn_budget_compaction.require_reserved_unknown_usage`以`budget_exceeded`结束并给出数字，不再借用早已恢复的服务方故障的错误码（ADR 0144第4版，Beta Issue #32） |
 | 63 | `8b07c214` 增量 | 2026-11-13 | 只显示过思考与生成进度的步骤接受新的尝试：`model_text.restart_attempt`、思考预览另起一段、进度清零并立即说明重试（ADR 0144第3版） |
