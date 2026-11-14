@@ -101,8 +101,11 @@ class HeadlessConsole:
     async def prompt(self, text: str) -> str:
         if not self._interactive:
             raise NeedsHumanInput(text)
+        # 提示写到stderr，不受--quiet影响：stdout只留给JSON摘要，`exec ... > summary.json`时
+        # 提示不能混进摘要；审批内容必须看得见（Beta Issue #26）。
+        print(text, end="", file=sys.stderr, flush=True)
         try:
-            return await asyncio.to_thread(input, text)
+            return await asyncio.to_thread(input)
         except EOFError:
             # 标准输入是终端却读到结尾（Windows控制台的某些启动方式，或在提示处按Ctrl+D/Ctrl+Z）：
             # 与非交互相同，以“需要人工输入”结束：退出码2并写出摘要，

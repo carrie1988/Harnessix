@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -10,7 +11,7 @@ from harnessix.tools import search
 from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.files import _decode
 from harnessix.tools.grep_matcher import LineMatcher, build_line_matcher
-from harnessix.tools.patterns import PathPattern, select_included
+from harnessix.tools.patterns import PathPattern, grep_include
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
     MAX_SEARCH_DEPTH,
@@ -141,7 +142,13 @@ def _collect(
     args: SearchInput,
     operation: ReadOperation,
     scan: _Scan,
+    wanted: Callable[[str], bool],
 ) -> list[_Candidate]:
+    """遍历并观察候选文件；不符合模式（wanted，按相对搜索起点的路径）的文件只计入扫描条目、不打开。
+
+    Windows上观察一个文件就要打开它并取最终路径。此前不符合include的文件也逐个观察：真实的Dify检出
+    16,108个文件里只有2,866个.ts，整仓grep仍5秒超时（Beta Issue #24）。
+    """
     candidates: list[_Candidate] = []
     root = port.path(args.path)
     observed = port.observe(root, operation, include_content=False)
@@ -170,7 +177,7 @@ def _collect(
                 continue
             if kind == "directory":
                 directories.append(relative)
-            elif kind == "file":
+            elif kind == "file" and wanted(relative_path(relative, root)):
                 found = _candidate(port, relative, operation, scan)
                 if found is not None:
                     candidates.append(found)
@@ -257,7 +264,7 @@ def glob_files(
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths: list[str] = []
     root = port.path(args.path)
-    for candidate in _collect(port, args, operation, scan):
+    for candidate in _collect(port, args, operation, scan, pattern.matches):
         operation.checkpoint()
         if not pattern.matches(relative_path(candidate.path, root)):
             continue
@@ -398,6 +405,27 @@ def _append_matches(
         )
 
 
+def _included(
+    port: WindowsReadPort, args: GrepInput, operation: ReadOperation, scan: _Scan
+) -> list[_Candidate]:
+    """要搜索的文件，规则与POSIX端的select_included相同（ADR 0129），筛选在收集时完成。
+
+    起点本身是文件时不按include筛选；起点下有文件却无一符合include时如实失败，
+    一个文件也没搜的空结果会被读成“文件里没有”。不符合include的文件不打开（Beta Issue #24）。
+    """
+    pattern, seen = grep_include(args), 0
+
+    def wanted(path: str) -> bool:
+        nonlocal seen
+        seen += 1
+        return pattern.matches(path)
+
+    candidates = _collect(port, args, operation, scan, wanted)
+    if seen and not candidates:
+        raise ReadToolError("no_files_searched")
+    return candidates
+
+
 def grep_files(
     port: WindowsReadPort,
     args: GrepInput,
@@ -411,8 +439,7 @@ def grep_files(
     fallback = search.LiteralFallback.start(args, operation, capture)
     scan, records = _scan_for(args), _Records(args)
     matches: list[GrepMatch] = []
-    root = port.path(args.path)
-    for candidate in select_included(_collect(port, args, operation, scan), args, root):
+    for candidate in _included(port, args, operation, scan):
         operation.checkpoint()
         loaded = _load_text(port, candidate, operation, scan)
         if loaded is not None:

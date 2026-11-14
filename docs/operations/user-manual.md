@@ -23,7 +23,7 @@ supersedes: []
 
 # Harnessix Code 用户手册
 
-适用版本：`0.10.0b38`（预览版）
+适用版本：`0.10.0b39`（预览版）
 
 > **当前是预览版，不是正式商用版本，不提供任何担保。** 请只在可以通过 Git 回退的仓库里使用，并且只处理你有权发送给模型服务商的代码。
 
@@ -134,8 +134,8 @@ uv tool install --python 3.12 harnessix
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
 - **国内网络：** 使用镜像，`uv tool install --python 3.12 harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
-- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b38`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
-- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b38-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
+- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b39`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
+- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b39-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
 
 **从源码构建（开发者）：**
 
@@ -742,7 +742,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 | `--max-output-chars`、`--max-tool-calls-per-step` | 单步输出与工具调用数量上限 |
 | `--summary-file` | 摘要写入文件，默认输出到标准输出 |
 | `--events-file` | 按发生顺序把事件逐行写成 JSONL |
-| `--quiet` | 不输出过程文本（过程文本默认写到标准错误；其中模型的思考内容每一行以“思考：”开头） |
+| `--quiet` | 不输出过程文本（过程文本默认写到标准错误；其中模型的思考内容每一行以“思考：”开头）。需要你审批时的提示照常显示在标准错误上，写明工具、完整命令和理由（修改文件时列出文件） |
 | `--resume-thread <ID>` | 进程中断后，恢复该会话并等待任务结束 |
 | `--config`、`--profile`、`--action-config`、`--state-directory`、`--git-executable` | 同 `harnessix code` |
 

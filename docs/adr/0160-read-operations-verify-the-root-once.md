@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 3
+version: 4
 code_revision: pending
 owners: [core]
 modules: [tools, workspace]
@@ -18,7 +18,7 @@ supersedes: []
 # ADR 0160 一次读取操作只在开头与结尾核对工作区根
 
 - 状态：评审中
-- 日期：2026-11-13（第2版同日：Windows一次读取操作内复用已核对的目录句柄；第3版同日：Windows grep每个文件少打开一次）
+- 日期：2026-11-13（第2版同日：Windows一次读取操作内复用已核对的目录句柄；第3版同日：Windows grep每个文件少打开一次；第4版2026-11-14：不符合模式的文件不打开）
 
 ## 背景
 
@@ -58,6 +58,13 @@ supersedes: []
    0.14秒，16,207个文件的整仓grep仍5秒超时（约0.26毫秒/文件）。`windows_search._load_text`此前在读内容之前还要再观察一次文件，
    只为核对身份与大小，而读内容那次观察本身就核对同样的内容：现在大小上限与总量预算用收集时记下的大小，读内容时核对身份与大小
    （`_candidate_content`），收集时未超上限、读时超了视为`workspace_changed`。glob在加入结果前的复查不变。
+5. **Windows搜索：不符合模式的文件不打开（第4版，Beta Issue #24）。** 第3版在合成仓库（16,207个文件全是`.ts`、3层目录）上
+   约3.4秒，但报告人在真实的Dify检出（16,108个文件、3,664个目录，其中`.ts`只有2,866个）上整仓grep
+   `include="*.ts"`仍有7/8次5秒超时。`windows_search._collect`收集候选时对每个文件都观察一次（打开并取最终路径），
+   不符合include的文件随后才被丢掉；POSIX的收集只用目录枚举里的`stat`，不打开文件。现在`_collect`接收模式判定
+   （grep的include、glob的pattern），不符合的文件只计入扫描条目，不打开、不观察。本地Dify检出上同一查询的观察次数由
+   25,154降到11,927（文件元数据观察16,093→2,866；目录观察7,348与读内容1,713不变）。不符合模式、又无法读取的文件
+   不再计入`unreadable_entries`（它本来就不在结果范围内）。
 
 ## 没有改变的
 
@@ -71,6 +78,7 @@ supersedes: []
 - 根目录在一次读取期间被替换时，这次读取不再中途失败，而是在结束时失败；读到的内容仍只来自原来的根目录。
 - Windows每个文件少打开“盘符到根”的那几级目录（第1版），并且不再重复打开工作区内的各级父目录（第2版）：每个文件只打开
   文件本身一次。实际收益与正确性由发布会话在Windows真机上用Issue的组件脚本验证。
+- 第4版：Windows搜索只观察符合模式的文件；真实仓库里文件类型越杂，节省越多。
 - 第3版：Windows grep每个文件的观察由3次降到2次；收集时已超过单文件上限的文件直接计入`oversized_files`，不再为确认它没变而打开一次。
 - 第2版的代价：一次读取操作期间（至多5秒），用到的目录不能被其他程序删除或改名；在其中新建、改名文件不受影响。此前这些目录
   在每个文件的读取期间同样被短暂持有，且不共享写入。
@@ -84,5 +92,6 @@ supersedes: []
   目录句柄共享读写；父目录是Junction、文件或最终路径在根外时如实拒绝；缺失、根本身、达到上限时退回完整句柄链；根在开头与
   结尾各核对一次，被替换即`workspace_changed`；缓存只属于一次操作，正常结束、失败结束都全部关闭。真实句柄语义（Junction、
   硬链接、长路径、根目录内改名）由`tests/tools/test_windows_native_runtime.py`在Windows上验证。
+- `tests/tools/test_windows_read_adapter.py::test_search_does_not_open_files_its_pattern_excludes`（第4版，修改前打开了全部3个文件）。
 - `tests/tools/test_windows_read_adapter.py`（第3版）：grep对每个文件只观察两次（收集一次、读内容一次，修改前三次）；收集之后
   文件变大超过上限报`workspace_changed`。

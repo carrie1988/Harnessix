@@ -60,7 +60,7 @@ def test_an_interactive_prompt_that_reads_end_of_input_needs_a_human_too(monkeyp
     此前EOFError冒出，进程退出码1且没有摘要。
     """
 
-    def end_of_input(_prompt: str) -> str:
+    def end_of_input(*_prompt: str) -> str:
         raise EOFError("EOF when reading a line")
 
     monkeypatch.setattr("builtins.input", end_of_input)
@@ -231,3 +231,64 @@ def test_verification_counts_only_checks_after_the_last_successful_edit():
         _result(check, "failed"),
     ]
     assert _verification(failing)["status"] == "failed_after_last_edit"
+
+
+def _items(*items: PublicItem) -> dict[object, PublicItem]:
+    return {item.item_id: item for item in items}
+
+
+def test_the_approval_prompt_shows_the_exact_command_and_reason():
+    """Beta Issue #26：此前提示只有“批准该操作？[y/N]”，--quiet下看不到将在沙箱外执行的命令。"""
+    from harnessix.agent_cli import approval_prompt
+
+    request = _request("process")
+    command = 'Write-Output "APPROVAL-FIXTURE-B38"\n' + "x" * 300
+    call = _call(
+        request.call_id,
+        "host_command.host-shell",
+        {"cmd": command, "reason": "按任务要求运行一次", "timeout_seconds": 30},
+    )
+    text = approval_prompt(_items(_call(uuid4(), "read_file", {"path": "a"}), call), request)
+    assert text.splitlines() == [
+        "需要你批准：host_command.host-shell",
+        '  命令：Write-Output "APPROVAL-FIXTURE-B38"',
+        "    " + "x" * 300,
+        "  理由：按任务要求运行一次",
+        '  参数：{"timeout_seconds": 30}',
+        "批准该操作？[y/N] ",
+    ]
+
+
+def test_the_approval_prompt_cannot_hide_the_command_behind_control_characters():
+    from harnessix.agent_cli import approval_prompt
+
+    request = _request("process")
+    call = _call(
+        request.call_id,
+        "host_command.host-shell",
+        {"cmd": "rm -rf x\r\x1b[2Kls\u202e", "reason": "r"},
+    )
+    assert "  命令：rm -rf x\\u000d\\u001b[2Kls\\u202e" in approval_prompt(_items(call), request)
+
+
+def test_the_approval_prompt_lists_the_files_of_an_edit_without_their_contents():
+    from harnessix.agent_cli import approval_prompt
+
+    request = _request("patch_batch")
+    files = [{"path": "src/a.py", "content": "secret body"}, {"path": "b.md", "content": "x"}]
+    text = approval_prompt(
+        _items(_call(request.call_id, "apply_patch_batch", {"files": files})), request
+    )
+    assert "  文件：src/a.py、b.md" in text and "secret body" not in text
+    assert approval_prompt({}, request).endswith("批准该操作？[y/N] ")
+
+
+def test_prompts_go_to_stderr_even_when_quiet(monkeypatch, capsys):
+    """stdout只留给JSON摘要；--quiet只省略过程输出，审批提示照常显示。"""
+    asked: list[tuple[object, ...]] = []
+    monkeypatch.setattr("builtins.input", lambda *prompt: asked.append(prompt) or "y")
+    console = HeadlessConsole(quiet=True, interactive=True)
+    assert asyncio.run(console.prompt("需要你批准：x\n批准该操作？[y/N] ")) == "y"
+    captured = capsys.readouterr()
+    assert captured.out == "" and captured.err == "需要你批准：x\n批准该操作？[y/N] "
+    assert asked == [()]

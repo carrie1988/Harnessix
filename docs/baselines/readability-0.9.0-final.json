@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 648,
-    "physical_lines": 136160,
-    "logical_lines": 118022,
+    "physical_lines": 136242,
+    "logical_lines": 118077,
     "documented_modules": 648,
     "classes": 1252,
     "documented_classes": 658,
-    "functions": 5441,
-    "documented_functions": 1920,
+    "functions": 5444,
+    "documented_functions": 1923,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -486,7 +486,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI",
       "kind": "class",
-      "line": 135,
+      "line": 183,
       "lines": 291,
       "documented": true
     },
@@ -496,7 +496,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._answer_pending",
       "kind": "function",
-      "line": 257,
+      "line": 305,
       "lines": 79,
       "documented": false,
       "decision_complexity": 24
@@ -507,7 +507,7 @@
       "path": "src/harnessix/agent_cli.py",
       "qualname": "ThinAgentCLI._record_event",
       "kind": "function",
-      "line": 191,
+      "line": 239,
       "lines": 42,
       "documented": false,
       "decision_complexity": 21
@@ -1868,7 +1868,7 @@
       "path": "src/harnessix/tools/workspace.py",
       "qualname": "Workspace",
       "kind": "class",
-      "line": 167,
+      "line": 171,
       "lines": 136,
       "documented": true
     },
