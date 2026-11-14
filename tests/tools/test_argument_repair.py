@@ -239,7 +239,8 @@ def test_negative_context_and_unknown_tools_are_untouched():
 
 
 async def test_runtime_executes_repaired_reads_and_keeps_raw_call_arguments(tmp_path):
-    (tmp_path / "app.py").write_text("one\ntwo\nthree\nfour\n")
+    # 按字节写：write_text在Windows上会把\n写成\r\n。
+    (tmp_path / "app.py").write_bytes(b"one\ntwo\nthree\nfour\n")
     async with CodingToolRuntime(tmp_path) as tools:
         request = call(tools, path="app.py", offset="1", limit="2")
         result = await tools.execute(request, CancelToken())

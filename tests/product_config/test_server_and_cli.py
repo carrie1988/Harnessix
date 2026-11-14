@@ -236,7 +236,8 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
         # 重新打开须与首次启动使用同一Action配置；产品拒绝在同一状态上静默切换。
         zero_config_actions=True,
     )
-    assert len(list((state / "process-owner/runs").iterdir())) == 3
+    # 重新打开只恢复旧事实，不启动新的Git进程：进程记录与首次运行时相同。
+    assert len(list((state / "process-owner/runs").iterdir())) == len(captures)
 
 
 def _credentials(monkeypatch: pytest.MonkeyPatch) -> None:

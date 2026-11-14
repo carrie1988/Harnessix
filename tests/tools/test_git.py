@@ -51,6 +51,9 @@ def _repository(root: Path, *, object_format: str | None = None) -> None:
     _command(root, "init", "-q", *arguments)
     _command(root, "config", "user.name", "Harnessix Test")
     _command(root, "config", "user.email", "test@harnessix.invalid")
+    # 产品的Git读取不读系统与全局配置，不做换行转换；测试自己的git命令也不能随机器配置转换
+    # （Git for Windows与Windows runner默认core.autocrlf=true，checkout会写回CRLF）。
+    _command(root, "config", "core.autocrlf", "false")
     (root / "tracked.py").write_text("before\n", encoding="utf-8")
     _command(root, "add", "tracked.py")
     _command(root, "commit", "-qm", "baseline")
