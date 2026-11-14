@@ -53,14 +53,12 @@ def _read(path: Path, recorder: PreflightRecorder) -> bytes | None:
         )
         return body
     except KernelError as error:
+        # 只有确实没有配置文件才是“还没有配置模型”；读不到（例如几个进程同时启动时的共享冲突）
+        # 另行说明，不让用户去重新配置（0.10.0b39 Windows，发布会话复测#15时约1/9出现）。
+        missing = error.code == "product_config_missing"
+        remediation = "run_configure" if missing else "retry_config_read"
         recorder.record(
-            "product_config_file",
-            "config",
-            "required",
-            "failed",
-            error.code,
-            "run_configure",
-            began,
+            "product_config_file", "config", "required", "failed", error.code, remediation, began
         )
     except Exception:
         recorder.record(
@@ -69,7 +67,7 @@ def _read(path: Path, recorder: PreflightRecorder) -> bytes | None:
             "required",
             "failed",
             "product_internal_failure",
-            "run_configure",
+            "retry_config_read",
             began,
         )
     return None

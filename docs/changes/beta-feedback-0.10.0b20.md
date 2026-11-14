@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 47
+version: 48
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -130,9 +130,10 @@ supersedes: []
 | 四十一 | macOS沙箱里Java默认临时目录不可写，标准库测试失败（0.10.0b38，Issue #25） | Seatbelt下经JAVA_TOOL_OPTIONS把java.io.tmpdir指向私有TMPDIR | 本文第55节 |
 | 四十二 | 检查命令末尾的打印掩盖了测试失败，完成证据标成通过（0.10.0b38 Windows，Issue #27） | 工具说明约束检查命令写法；PowerShell注明最后一个原生程序的退出码，完成证据据此不记通过 | 本文第56节 |
 | 四十三 | 第一次搜索刚克隆的大仓库仍超时、没有结果（0.10.0b39 Windows，Issue #24的剩余部分） | 读取时限到了而已有命中时返回这些命中 | [ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)、本文第57节 |
+| 四十四 | 几个进程同时首次启动，偶尔提示“还没有配置模型”（0.10.0b39 Windows，发布会话复测#15时约1/9） | 区分文件不存在与读取失败，读取失败短暂重试并如实提示 | 本文第58节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十三项在第26～57节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十四项在第26～58节。
 
 ## 2. 需求背景
 
@@ -1466,3 +1467,9 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 57. 第四十三项：超时时返回已找到的命中（Issue #24的剩余部分）
 
 见[ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)。0.10.0b39在Windows真机上热缓存约1.7秒，但刚克隆的Dify检出第一次整仓grep仍5秒超时：同一份新克隆上PowerShell的`Select-String`第一次要13.3秒，是第一次读文件内容的固有成本（Defender扫描）。负责人2026-11-14同意实施推荐方案：快照与正则Grep在时限到了而已有命中时返回这些命中，标为`time_limit`；用户手册的故障排查补充Dev Drive与Defender排除项的建议。
+
+## 58. 第四十四项：读不到配置文件不等于没有配置（发布会话发现）
+
+0.10.0b39 Windows正式测试复跑#15的场景（三个ConPTY共用一个HOME，同时首次确认信任）：b33～b39约9次里有1次，第三个进程确认信任后输出“Harnessix 无法启动：还没有配置模型”并退出2，另外两个正常进入，配置文件确实存在，重跑即好。`preflight_configuration._read`把读取配置的任何失败都记为`run_configure`；`codec.read_product_config_bytes`也把“文件不存在”和“这次读不到”都报成`product_config_unavailable`。同一目录里另一个进程正在替换信任记录等文件时，Windows上偶尔打不开该目录（共享冲突）或读到替换中的文件。
+
+修改：文件不存在报`product_config_missing`（只有这时提示去运行configure）；`product_config_unavailable`、`product_config_changed`在2秒内每50毫秒重试，仍失败才如实报出；预检对其余读取失败给`retry_config_read`，启动失败显示“这次没能读取配置文件……稍等片刻重新运行即可，不需要重新配置”。三个平台共用。验证：`tests/product_config/test_contracts_and_codec.py`（不存在与读取失败分开、两次失败后第三次读到、持续失败时为`retry_config_read`）、`tests/product_config/test_startup_failure.py`。Windows真机复测由发布会话完成。

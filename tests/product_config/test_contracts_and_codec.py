@@ -199,3 +199,43 @@ def test_rejects_multiple_secret_references_for_same_environment_variable(
                 primary.model_copy(update={"environment_variable": backup.environment_variable}),
             ),
         )
+
+
+def test_a_missing_file_and_a_failed_read_are_told_apart(
+    tmp_path: Path, config: ProductConfigV2, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """0.10.0b39 Windows：几个进程同时首次启动，读配置偶尔失败，却提示“还没有配置模型”。"""
+    from harnessix.product_config import codec
+    from harnessix.product_config.preflight_configuration import _read
+    from harnessix.product_config.preflight_support import PreflightRecorder
+
+    with pytest.raises(KernelError) as missing:
+        codec.read_product_config_bytes(tmp_path / "absent.json")
+    assert missing.value.code == "product_config_missing"
+
+    path = tmp_path / "config.json"
+    write_config(path, config)
+    attempts: list[int] = []
+    original = codec._read_once
+
+    def busy_twice(*args: object) -> bytes:
+        attempts.append(1)
+        if len(attempts) <= 2:  # 另一个进程正在替换同一目录里的文件
+            raise KernelError("product_config_unavailable", "busy")
+        return original(*args)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(codec, "_read_once", busy_twice)
+    assert codec.read_product_config_bytes(path) == path.read_bytes()
+    assert len(attempts) == 3
+
+    monkeypatch.setattr(codec, "_TRANSIENT_READ_SECONDS", 0.0)
+
+    def always_busy(*_: object) -> bytes:
+        raise KernelError("product_config_unavailable", "busy")
+
+    monkeypatch.setattr(codec, "_read_once", always_busy)
+    recorder = PreflightRecorder(lambda: 0.0)
+    assert _read(path, recorder) is None
+    (check,) = recorder.ordered()
+    assert check.code == "product_config_unavailable"
+    assert check.remediation_id == "retry_config_read"  # 不是run_configure

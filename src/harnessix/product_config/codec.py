@@ -7,6 +7,7 @@ import json
 import math
 import os
 import stat
+import time
 from pathlib import Path
 from typing import Any
 
@@ -139,10 +140,30 @@ def read_product_config_bytes(path: str | Path) -> bytes:
     except (OSError, RuntimeError):
         raise KernelError("product_config_unavailable", "产品配置目录不可用") from None
     target = parent / candidate.name
+    if not os.path.lexists(target):
+        # 与“读不到”分开：只有确实没有配置文件，启动失败才提示去运行configure。
+        raise KernelError("product_config_missing", "产品配置文件不存在")
+    deadline = time.monotonic() + _TRANSIENT_READ_SECONDS
+    while True:
+        try:
+            return _read_once(parent, candidate.name, target)
+        except KernelError as error:
+            if error.code not in _TRANSIENT_READ_CODES or time.monotonic() >= deadline:
+                raise
+        time.sleep(0.05)
+
+
+# 几个进程同时首次启动时（Beta Issue #15的场景），另一个进程正在同一目录里替换信任记录等文件，
+# Windows上偶尔打不开这个目录（共享冲突）或读到替换中的文件；短暂重试后再如实失败。
+_TRANSIENT_READ_CODES = frozenset({"product_config_unavailable", "product_config_changed"})
+_TRANSIENT_READ_SECONDS = 2.0
+
+
+def _read_once(parent: Path, name: str, target: Path) -> bytes:
     before = _private_file(target)
     try:
         with SecureWorkspaceReader(parent) as reader:
-            body = reader.read_file(candidate.name, max_bytes=MAX_PRODUCT_CONFIG_BYTES)
+            body = reader.read_file(name, max_bytes=MAX_PRODUCT_CONFIG_BYTES)
     except KernelError as error:
         if error.code == "workspace_snapshot_limit":
             raise KernelError("product_config_size", "产品配置超过字节上限") from None

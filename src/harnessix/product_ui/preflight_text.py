@@ -14,6 +14,10 @@ from harnessix.product_config.product_contracts import ProductPreflightReport
 _REMEDIATION_TEXT: Final[Mapping[str, str]] = {
     # 配置与Profile
     "run_configure": "运行 harnessix code configure 生成配置文件",
+    "retry_config_read": (
+        "配置文件存在，但这次没能读取（例如另一个 Harnessix 进程正在写入同一目录）；"
+        "稍等片刻重新运行即可，不需要重新配置。仍然失败时运行 harnessix code doctor 查看原因码"
+    ),
     "migrate_or_configure": "配置文件内容无效或版本过旧；重新运行 harnessix code configure",
     "select_profile": "用 --profile 选择配置文件里存在的Profile",
     "install_provider_extra": (

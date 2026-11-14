@@ -91,3 +91,13 @@ def test_the_persistent_key_hint_names_the_shell_file_each_platform_reads(
     monkeypatch.setattr(startup_failure.os, "name", "posix")
     monkeypatch.setattr(startup_failure.sys, "platform", platform)
     assert profile in startup_failure.api_key_setup_text(("DEEPSEEK_API_KEY",))
+
+
+def test_a_failed_config_read_does_not_say_the_model_is_not_configured() -> None:
+    """0.10.0b39 Windows：读配置偶尔失败时此前显示“还没有配置模型”，用户会去重新配置。"""
+    text = startup_failure_text(
+        _report(_check("product_config_unavailable", "retry_config_read", category="config")),
+        None,
+    )
+    assert "还没有配置模型" not in text
+    assert "这次没能读取配置文件" in text and "不需要重新配置" in text

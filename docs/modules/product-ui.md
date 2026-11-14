@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 64
+version: 65
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - product
@@ -1247,6 +1247,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 65 | `e9e5b0cd` 增量 | 2026-11-14 | 启动失败说明新增`retry_config_read`（“这次没能读取配置文件”，稍后重新运行，不需要重新配置）；只有配置文件不存在才显示“还没有配置模型” |
 | 64 | `40b90d3b` 增量 | 2026-11-14 | 完成证据：检查命令退出0、但stderr末尾注明最后一个原生程序非零退出时，记为`failed_after_last_edit`并给出`last_native_returncode`（`verification._native_exit_code`，Beta Issue #27） |
 | 63 | `9dca9d42` 增量 | 2026-11-13 | 收尾之后还在等的审批由界面直接拒绝、不再弹窗（`approval_automation.wrap_up_requested`，ADR 0148第3版，Beta Issue #4） |
 | 62 | `1d8132c3` 增量 | 2026-11-13 | 多行粘贴不再只剩第一行：任务输入框、补充说明与回答问题的输入框改用`paste_input.PasteAwareInput`（Beta Issue #19） |
