@@ -16,6 +16,7 @@ from harnessix.tools import grep_matcher, search
 from harnessix.tools.read_catalog import _build_definitions, _read_bindings
 from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.tools.search_contracts import GrepSnapshotMatch, GrepSnapshotOutput
+from harnessix.tools.search_execution_contract import execution_contract
 from harnessix.tools.workspace import digest
 from tests.agent.helpers import answer
 from tests.artifacts.helpers import results, step
@@ -52,12 +53,13 @@ def test_legacy_and_snapshot_descriptors_are_byte_identical_to_prechange_sha():
     )
     snapshots = definitions(enable_grep_snapshots=True)
     # 快照Grep：文件名include、整仓库上限、20行上下文（向后兼容的放宽）改变描述与合同摘要；
-    # 执行合同v7把整仓库上限放宽到四倍、不含查询的文件不再逐行扫描（ADR 0145）。
-    expected["grep"] = "bfa4cdd9f0563b68ec8ee60de204662589f141161204db3e5da0717651d84853"
+    # 执行合同v7把整仓库上限放宽到四倍、不含查询的文件不再逐行扫描（ADR 0145）；
+    # v9在读取时限到了而已有命中时返回这些命中（time_limit，ADR 0162）。原字面量Grep不变。
+    expected["grep"] = "c5683d7bc8150653d2a140b006c991d112d7b16a084d2d3532859bd805660256"
     for name, definition in snapshots.items():
         assert digest(definition.model_dump(mode="json")) == expected[name]
     assert hashlib.sha256(snapshots["grep"].model_dump_json().encode()).hexdigest() == (
-        "6a6cc07b7a7e7144a88cc60fcafa015248ab7b023a39b9227f28e46c751b4453"
+        "9d2d67735ba47593be1b5d80d54657d93443f9c3b6a6aeff50f7208cf6a9845b"
     )
 
 
@@ -70,7 +72,7 @@ def test_major4_only_replaces_grep_and_fingerprints_engine_semantics(monkeypatch
     assert schema["match_mode"]["default"] == "regex"
     assert schema["match_mode"]["enum"] == ["regex", "literal"]
     assert schema["context_lines"]["default"] == 2 and schema["max_results"]["default"] == 10
-    contract = search.execution_contract(enable_regex_search=True)["regex"]
+    contract = execution_contract(enable_regex_search=True)["regex"]
     assert contract["engine"] == "google-re2" and contract["version"] == "1.1.20251105"
     assert contract["engine_cache_max_mem"] == 128 * 1024 * 1024
     with monkeypatch.context() as changed:

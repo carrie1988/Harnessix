@@ -428,28 +428,38 @@ def grep_files(
     scan, pattern, records = _scan_for(args), search.grep_include(args), _Records(args)
     matches: list[GrepMatch] = []
     root = port.path(args.path)
-    for candidate in _collect(port, args, operation, scan, pattern.matches):
-        operation.checkpoint()
-        if not pattern.matches(relative_path(candidate.path, root)):
-            continue
-        loaded = _load_text(port, candidate, operation, scan)
-        if loaded is not None:
-            observed, text = loaded
-            _append_matches(
-                port,
-                candidate,
-                observed,
-                text,
-                args,
-                operation,
-                scan,
-                records,
-                matches,
-                capture,
-                matcher,
-                fallback,
-            )
-        if records.reason is not None and capture is None:
-            break
+    timed_out = False
+    try:
+        for candidate in _collect(port, args, operation, scan, pattern.matches):
+            operation.checkpoint()
+            if not pattern.matches(relative_path(candidate.path, root)):
+                continue
+            loaded = _load_text(port, candidate, operation, scan)
+            if loaded is not None:
+                observed, text = loaded
+                _append_matches(
+                    port,
+                    candidate,
+                    observed,
+                    text,
+                    args,
+                    operation,
+                    scan,
+                    records,
+                    matches,
+                    capture,
+                    matcher,
+                    fallback,
+                )
+            if records.reason is not None and capture is None:
+                break
+    except ReadToolError as error:
+        if not search.timed_out_with_results(error, args, matches, fallback):
+            raise
+        timed_out = True
     stats, _ = _capture_status(capture, scan, records)
-    return search.grep_result(args, stats, matches, records.reason, fallback, capture)
+    if capture is not None and timed_out:
+        capture.complete = False
+    return search.grep_result(
+        args, stats, matches, records.reason, fallback, capture, timed_out=timed_out
+    )

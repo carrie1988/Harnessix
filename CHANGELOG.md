@@ -4,6 +4,7 @@
 
 ### 修复
 
+- 搜索代码（grep）超过 5 秒读取时限时，如果已经找到了结果，现在会返回这些结果，并标明“没搜完”（`truncation_reason` 为 `time_limit`）；此前一律超时失败、什么也拿不到。Windows 上第一次搜索刚克隆的大仓库时，读取文件要先经 Windows Defender 扫描，最容易遇到这种情况；用户手册的故障排查里补充了 Dev Drive 与排除项的建议（#24）
 - 测试失败后命令又打印了一行（如 PowerShell 里测试之后 `Write-Host "exit=$LASTEXITCODE"`），整条命令以 0 结束，`harnessix exec` 摘要里的 `verification` 却标成“修改后检查通过”。现在 Windows 上会在输出末尾注明最后一个外部程序的真实退出码，摘要据此记为“检查没有通过”并给出 `last_native_returncode`；命令工具的说明也要求检查命令以检查本身结尾，或用 `exit $?`（PowerShell 用 `exit $LASTEXITCODE`）带出退出码（#27）
 - macOS 上沙箱内运行 Java 测试时，`Files.createTempDirectory` 等创建临时文件的操作会因“Operation not permitted”失败：macOS 上的 Java 不使用 `$TMPDIR`，默认临时目录在沙箱写入范围之外。现在 Harnessix 会把沙箱内命令的 Java 临时目录指向沙箱自己的临时目录，不需要改项目配置，也不扩大沙箱权限；Java 启动时会多打印一行 `Picked up JAVA_TOOL_OPTIONS`（#25）
 - 沙箱里的临时目录（`$TMPDIR`）每条命令开始前都会清空，此前没有告诉 Agent，它会在下一条命令里去找上一条命令放在临时目录的文件（如编译好的程序），找不到再挪到工作区。现在命令工具的说明和用户手册都写明了这一点，跨命令要用的文件直接放在工作区（#29）

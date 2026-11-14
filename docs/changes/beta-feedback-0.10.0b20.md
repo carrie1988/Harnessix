@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 46
+version: 47
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -36,6 +36,7 @@ related_tests:
   - tests/product_config/test_wrap_up_stops_work.py
   - tests/product_ui/test_paste_input.py
   - tests/test_exec_cli.py
+  - tests/tools/test_grep_time_limit.py
   - tests/sandbox/test_native_policy.py
   - tests/tools/test_pinned_root.py
   - tests/tools/test_windows_directory_cache.py
@@ -128,9 +129,10 @@ supersedes: []
 | 四十 | 沙箱命令放在TMPDIR的文件下一条命令就不见了（0.10.0b38 macOS，Issue #29） | 命令工具说明与手册写明TMPDIR每条命令前清空 | 本文第54节 |
 | 四十一 | macOS沙箱里Java默认临时目录不可写，标准库测试失败（0.10.0b38，Issue #25） | Seatbelt下经JAVA_TOOL_OPTIONS把java.io.tmpdir指向私有TMPDIR | 本文第55节 |
 | 四十二 | 检查命令末尾的打印掩盖了测试失败，完成证据标成通过（0.10.0b38 Windows，Issue #27） | 工具说明约束检查命令写法；PowerShell注明最后一个原生程序的退出码，完成证据据此不记通过 | 本文第56节 |
+| 四十三 | 第一次搜索刚克隆的大仓库仍超时、没有结果（0.10.0b39 Windows，Issue #24的剩余部分） | 读取时限到了而已有命中时返回这些命中 | [ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)、本文第57节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十二项在第26～56节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十三项在第26～57节。
 
 ## 2. 需求背景
 
@@ -1460,3 +1462,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 - bash没有对应的“最后一个原生程序退出码”，只靠说明约束；方案B（任何原生程序失败即整条失败）会改变命令语义，未采用。
 
 验证：`tests/product_config/test_windows_host_command.py`用真实PowerShell 7（macOS上的pwsh）核对：测试之后Write-Host时退出0且stderr末尾注明42，`exit $LASTEXITCODE`、后一个原生程序成功、纯cmdlet时不注明；原有11种退出码情形不变。`tests/test_exec_cli.py`核对完成证据。
+
+## 57. 第四十三项：超时时返回已找到的命中（Issue #24的剩余部分）
+
+见[ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)。0.10.0b39在Windows真机上热缓存约1.7秒，但刚克隆的Dify检出第一次整仓grep仍5秒超时：同一份新克隆上PowerShell的`Select-String`第一次要13.3秒，是第一次读文件内容的固有成本（Defender扫描）。负责人2026-11-14同意实施推荐方案：快照与正则Grep在时限到了而已有命中时返回这些命中，标为`time_limit`；用户手册的故障排查补充Dev Drive与Defender排除项的建议。

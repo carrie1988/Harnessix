@@ -852,6 +852,7 @@ uv tool uninstall harnessix
 
 | 现象 | 处理 |
 |---|---|
+| Windows 上第一次在刚克隆的大仓库里搜索代码很慢，结果标着“没搜完”（`time_limit`） | 第一次读取文件内容时 Windows Defender 会先扫描它们，任何搜索工具都要多花时间；第二次就快了。Agent 会先用已找到的结果，需要时缩小范围再搜。想让第一次也快，可以把开发目录放到 Dev Drive，或在 Windows 安全中心把它加入排除项（请自行评估安全影响） |
 | 提示找不到 `harnessix` 命令 | 运行 `uv tool update-shell` 后重新打开终端 |
 | 刚发布新版本时 `uv tool upgrade harnessix` 提示没有可升级的版本 | PyPI 索引同步需要几分钟，稍后重试即可 |
 | 安装时报 `Failed to build google-re2`、构建 `pyyaml` 失败或要求安装 Microsoft Visual C++ | 安装的是较早的版本，uv 又选中了 Python 3.15。改用 `uv tool install --python 3.12 harnessix`，或安装最新版本（3.15 上改用 `regex` 与 `ruamel.yaml`，都不需要编译） |

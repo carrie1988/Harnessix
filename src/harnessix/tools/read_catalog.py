@@ -8,7 +8,7 @@ from harnessix.agent.errors import KernelError
 from harnessix.artifacts.contracts import ArtifactPage, ReadArtifactInput
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.domain.models import EffectClass, RiskLevel, ToolDescriptor
-from harnessix.tools import git, search
+from harnessix.tools import git
 from harnessix.tools.contracts import (
     MAX_DIRECTORY_ENTRIES,
     MAX_LINE_BYTES,
@@ -46,6 +46,9 @@ from harnessix.tools.search_contracts import (
     GrepSnapshotOutput,
     RegexGrepInput,
     SearchInput,
+)
+from harnessix.tools.search_execution_contract import (
+    execution_contract as search_execution_contract,
 )
 from harnessix.tools.workspace import digest
 
@@ -106,12 +109,19 @@ _BINDINGS = (
     ),
 )
 
+# ADR 0162：读取时限到了而已有命中时返回这些命中（Beta Issue #24）。
+_TIME_LIMIT_NOTE = (
+    "读取时限内没搜完时返回已找到的命中，truncation_reason为time_limit："
+    "其余文件没有搜过，需要完整结果时缩小path或收窄include再搜"
+)
+
 _SNAPSHOT_GREP_BINDING = _ReadBinding(
     "grep",
     "按大小写敏感字面量搜索，不支持正则；默认前后各2行（最多20行）、最多10项。"
     "include不含“/”时按文件名匹配任意深度（如*.py），含“/”时按起点相对路径匹配。"
     "每项content_sha256来自同次完整原始文件读取，可作Patch expected_sha256；"
-    "revision不是内容SHA。片段截断与文件摘要完整性独立，证据不足仍用read_file扩读",
+    "revision不是内容SHA。片段截断与文件摘要完整性独立，证据不足仍用read_file扩读。"
+    + _TIME_LIMIT_NOTE,
     GrepSnapshotInput,
     GrepSnapshotOutput,
 )
@@ -126,7 +136,7 @@ _REGEX_GREP_BINDING = _ReadBinding(
     "默认前后各2行（最多20行）、最多10项；每行仅返回首个命中片段，不跨行、不归一化文本。"
     "include不含“/”时按文件名匹配任意深度（如*.py），含“/”时按起点相对路径匹配。"
     "每项content_sha256来自同次完整原始读取，可作Patch expected_sha256；"
-    "revision不是内容SHA，证据不足仍用read_file扩读",
+    "revision不是内容SHA，证据不足仍用read_file扩读。" + _TIME_LIMIT_NOTE,
     RegexGrepInput,
     GrepSnapshotOutput,
 )
@@ -261,7 +271,7 @@ def _binding_rules(
                 "omission": "explicit_leading_literal_docstring_range",
             }
     if issubclass(binding.input_model, SearchInput):
-        rules["search"] = search.execution_contract(
+        rules["search"] = search_execution_contract(
             enable_regex_search=binding.input_model is RegexGrepInput,
             snapshot_grep=binding.input_model is GrepSnapshotInput,
         )
