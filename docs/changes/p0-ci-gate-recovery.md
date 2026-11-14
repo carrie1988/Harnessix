@@ -2,7 +2,7 @@
 doc_type: change-design
 status: current
 version: 12
-code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
+code_revision: f55a206d5609867665323e554cfe89f929495556
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery, trusted_actions]
 related_adrs:
