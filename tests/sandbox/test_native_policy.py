@@ -243,10 +243,11 @@ def test_the_jvm_temporary_directory_is_the_private_tmpdir_under_seatbelt() -> N
     )
     # 追加在预设值之后，后出现的-D生效。
     assert seatbelt["JAVA_TOOL_OPTIONS"] == f"-Dfile.encoding=UTF-8 -Djava.io.tmpdir={tmp}"
+    spaced_tmp = Path("/Users/a b/tmp")  # Windows上跑这个用例时是反斜杠路径；产品只在macOS用
     spaced = sandbox_environment(
-        {}, private_tmp=Path("/Users/a b/tmp"), private_cache=CACHE, jvm_temporary_directory=True
+        {}, private_tmp=spaced_tmp, private_cache=CACHE, jvm_temporary_directory=True
     )
-    assert spaced["JAVA_TOOL_OPTIONS"] == '-Djava.io.tmpdir="/Users/a b/tmp"'
+    assert spaced["JAVA_TOOL_OPTIONS"] == f'-Djava.io.tmpdir="{spaced_tmp}"'
 
 
 @pytest.mark.parametrize("name", ["HOME", "TMPDIR", "XDG_CACHE_HOME", "xdg_config_home", "GOCACHE"])
