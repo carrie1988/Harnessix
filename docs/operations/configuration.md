@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 12
-code_revision: 2425c8b36244b5f81f8e9fc0867dbfd2b7a4eab3
+version: 13
+code_revision: b7c7eb01e7e75e8f94d90fa06aa9dbe5c9e973b2
 owners:
   - core
 modules:
@@ -171,6 +171,8 @@ export MODEL_API_KEY='<由Secret系统注入>'
 顶层`compaction`选择声明窗口时的压缩点：默认`half_window`（一半时压缩、压到四分之一，不序列化）；
 `third_window`在三分之一时压缩、压到六分之一，单次请求与累计输入更小，但有损压缩更频繁，每次都要等待摘要，
 只建议用于有累计Token预算的无人值守任务。链上任一Profile未声明`context_window_tokens`时该设置不生效。
+声明窗口后，压缩点在观测到真实输入用量时按上一请求的真实Token数校准（ADR 0132）：“一半”指整个请求的真实输入达到窗口的一半，
+不再是按每Token 3字节估算的一半；请求大小仍受出站请求保护扫描容量限制，262144 Token窗口通常在11万～13万Token之间触发。
 
 Safe Fallback只在首选候选没有暴露文本、Tool Call或未来未知事件，失败属于可重试的`transport`、`rate_limit`
 或`provider_internal`，并且Fallback审计成功时发生。配置Fallback不等于任何错误都会自动切换。

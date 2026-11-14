@@ -13,7 +13,8 @@ from harnessix.models._history import (
     current_tool_catalog_instruction,
     encode_json,
     messages_for,
-    tool_alias,
+    wire_aliases,
+    wire_directory,
 )
 from harnessix.models._tool_schema import provider_tool_schema
 from harnessix.models.config import OpenAIChatConfig
@@ -38,8 +39,6 @@ def _thinking_switch(
 def build_request(
     request: ModelRequest, config: OpenAIChatConfig, *, include_catalog_note: bool = True
 ) -> tuple[dict[str, Any], dict[str, str]]:
-    names: dict[str, str] = {}
-    tools: list[dict[str, Any]] = []
     if not config.capabilities.tool_calls and (
         request.tools
         or any(
@@ -48,26 +47,18 @@ def build_request(
         )
     ):
         raise InvalidModelRequest("当前 Provider 不支持工具调用")
-    for definition in request.wire_tools:
-        alias = tool_alias(definition.name)
-        if (
-            not definition.name
-            or len(definition.name) > 256
-            or alias in names
-            or definition.input_schema.get("type") != "object"
-        ):
-            raise InvalidModelRequest("工具名称或输入 Schema 无效")
-        names[alias] = definition.name
-        tools.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": alias,
-                    "description": definition.name + ": " + definition.description,
-                    "parameters": provider_tool_schema(definition.input_schema),
-                },
-            }
-        )
+    names = wire_directory(request)
+    tools: list[dict[str, Any]] = [
+        {
+            "type": "function",
+            "function": {
+                "name": alias,
+                "description": definition.name + ": " + definition.description,
+                "parameters": provider_tool_schema(definition.input_schema),
+            },
+        }
+        for alias, definition in zip(names, request.wire_tools, strict=True)
+    ]
     remaining = request.remaining_tokens or request.budget.max_tokens
     messages = messages_for(request, tool_result_format=config.tool_result_format)
     notes: list[str] = []
@@ -145,7 +136,8 @@ def _wire_tool_choice(
 ) -> str | dict[str, Any] | None:
     """自动缓存端点的指定函数选择会改写提示渲染、使缓存失效，改为required并由可执行集收窄约束。"""
     if request.forced_tool is not None and function_choice:
-        return {"type": "function", "function": {"name": tool_alias(request.forced_tool)}}
+        forced = wire_aliases(request)[request.forced_tool]
+        return {"type": "function", "function": {"name": forced}}
     return "required" if request.tool_choice == "required" else None
 
 

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 62
-code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
+version: 63
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0081-single-coding-agent-product-boundary.md
+  - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
   - docs/adr/0137-create-with-missing-parent-directories.md
   - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
@@ -1842,8 +1843,32 @@ Descriptor明确说明完整正文不是Diff；两类Adapter原样发布同一Sc
 调用组发布前，Agent的[提案阶段调用修复](../../src/harnessix/agent/call_repair.py)只做可唯一确定的改写：
 外层单文件字段并入`files`、只有edits时补`operation=edit`、去掉edit上的默认mode与null content、文本权限`"420"`/`"0644"`
 换算为整数。edit的`expected_sha256`缺失或过期、而每段`old_text`都在当前文件中唯一出现时，宿主读取当前文件补上其
-SHA-256：精确锚定已证明模型看到的是要改的当前内容，规划与执行前仍按该SHA核对（TOCTOU照旧拒绝）。replace与delete
-仍要求模型给出正确SHA，不由宿主补齐。修复后的规范参数才进入审批、审计与执行，对外Schema不变。
+SHA-256：精确锚定已证明模型看到的是要改的当前内容，规划与执行前仍按该SHA核对（TOCTOU照旧拒绝）。
+修复后的规范参数才进入审批、审计与执行，对外Schema不变。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。**
+replace与delete缺`expected_sha256`时，宿主补上本线程历史中模型最近一次读到的该文件摘要（不是当前文件的摘要），
+随后与模型给出的SHA走同一条核对路径；模型给出的SHA不改写。未执行拒绝的说明改为写给模型的英文，并指出出错项在
+`files`中的下标：[`workspace_patch_errors.py`](../../src/harnessix/delivery/workspace_patch_errors.py)的
+`locating_patch_file`在`_desired_files`与`_validate_transaction`逐文件处理时记下下标，
+[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)在公开边界用
+`located_patch_message`加上`files[i]`前缀——SHA不符与无变化仍重建固定正文，只附加经校验的下标。
+精确编辑的拒绝再带`edits[j]`与宿主核对到的行号（[`patches/planner.py`](../../src/harnessix/patches/planner.py)），
+整文件替换过短给出两边字节数。目标现状与操作不符的两类拒绝（`target_exists_error`、`target_missing_error`）同样是英文，
+按目标是文件、目录还是缺失给出不同的改法；判定沿用规划器的`_target_kind`，POSIX与Windows相同。
+事务原子性、来源标记、Route关闭顺序与恢复语义不变。
+
+**2026-11-12修订（[ADR 0141](../adr/0141-newline-aware-exact-edits.md)；第二轮分支上记为ADR 0129第2版，整批未应用的说明仍见ADR 0129）。** edit的锚点先逐字节匹配，一处也没有时忽略CRLF/LF差异再匹配并映射回原始字节区间；
+`new_text`里的换行按被替换处的风格写入，CRLF处保持CRLF，LF处保持LF（规则见[Patch模块设计](patches.md)的当前增量）。
+`expected_sha256`、事务前后像与结果里的`content_sha256`仍按文件的真实字节计算；create与replace写入的字节不变
+（用LF正文整文件替换CRLF文件，结果是整个文件变为LF）。`_validate_mutation`复核已保存的事务时把记录的后像摘要交给
+`apply_exact_edits(recorded_sha256=...)`：按此前语义（只逐字节匹配、`new_text`原样写入）算出该摘要的事务照旧通过，
+升级前保存或发布的修改仍可执行、对账与回滚；两种语义都算不出的后像仍被拒绝。
+已定位的拒绝由`located_patch_message`在正文后追加`unapplied_batch_notice`：批次是原子的，没有任何文件写入，
+同批的其余文件项也没有；未定位的拒绝（准备超时、权限位无法保留、路径只差大小写）正文已写明未执行，不变。
+回归见[Delivery路径测试](../../tests/delivery/test_trusted_action_patch.py)、
+[产品路径换行测试](../../tests/product_config/test_patch_newlines.py)与
+[回滚测试](../../tests/product_config/test_product_patch_rollback.py)。
 
 [操作Schema详设](../changes/m09-r3-workspace-patch-operation-schema.md)说明原真实失败、
 字段矩阵和身份兼容。Schema/描述改变Tool Fingerprint及Binding，但不改变字段导出、Tool版本或数据表。
@@ -1910,6 +1935,7 @@ v2另要求`changes`路径与冻结计划的Workspace写资源逐一对应（`{"
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 63 | 第二轮合入 | 2026-11-14 | replace与delete缺`expected_sha256`时补本线程历史里最近读到的摘要；未执行拒绝的说明改为写给模型的英文并带`files[i]`、`edits[j]`下标与整批未应用的事实，目标是目录或缺失时各有改法（ADR 0129）；规划前的路径冲突与目标种类判断沿用主线的Windows实现 |
 | 62 | `33f91ad7` 增量 | 2026-11-13 | Windows事务端口新建文件时补建缺失的父目录，失败与回滚时按句柄清理本次补建的空目录；Windows批次的文件与父目录冲突在规划期拒绝（ADR 0137第2版，Beta Issue #16） |
 | 61 | `ce5b7386` 增量 | 2026-11-12 | 审批期间工作区里出现或消失无关的文件、目录，不再使已批准的补丁过期：快照对父目录只绑定对象与权限（ADR 0143） |
 | 60 | `d387a5cd` 增量 | 2026-11-12 | 新建文件时由事务补建缺失的父目录，失败只清理自己建的空目录，回滚清理原补丁补建的空目录；Windows不补建（0.10.0b21，ADR 0137） |

@@ -30,9 +30,11 @@ class RegexSearchError(KernelError):
     """仅传播固定错误码及修正建议，不保存表达式或第三方异常。"""
 
 
+# 写给模型的英文说明；界面按错误码另行展示用户文案（product_ui.tool_summary）。
 _INVALID = (
-    "表达式不是受支持的RE2模式或超过编译内存上限；请修正语法、移除反向引用/"
-    "前后查找断言、简化表达式，或显式使用match_mode=literal查找字面量"
+    "query is not a valid RE2 pattern (or needs too much memory to compile). Escape "
+    "literal ( ) [ ] { } . * + ? | with a backslash, remove backreferences and "
+    "lookaround, or set match_mode=literal to search for the text as written"
 )
 
 

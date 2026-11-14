@@ -1,0 +1,18 @@
+<pr_description>
+Consider the following PR description:
+{{ instruction }}
+</pr_description>
+
+<instructions>
+Resolve the issue in the PR description by changing the repository in the current workspace.
+
+How your work is evaluated:
+- Your answer is the diff between the workspace as you found it and as you leave it, including
+  new files.
+- Only changes to regular, non-test source files count. The evaluation runs its own tests in the
+  workspace you leave, with the build, dependency and tool configuration already there (for
+  example pyproject.toml, package.json, go.mod, Cargo.toml, pom.xml or build.gradle). Those tests
+  read the test data that is already there, so tests, test data (fixtures, snapshots, expected
+  outputs) and that configuration must end up exactly as you found them, with nothing added.
+- The environment is offline: nothing can be downloaded or fetched from the network.
+</instructions>

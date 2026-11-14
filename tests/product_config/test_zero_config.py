@@ -86,8 +86,14 @@ async def _runtime_instruction(tmp_path: Path, **options: bool) -> dict[str, str
     )
     prepared = await context.context.prepare(request, CancelToken())
     fragments = json.loads(prepared.instructions or "")["fragments"]
-    (runtime,) = [item for item in fragments if item["kind"] == "runtime_instruction"]
-    return runtime
+    # 命令执行方式另带一份共用的工作习惯片段（ADR 0134）；这里取执行指令本身。
+    (execution,) = [
+        item
+        for item in fragments
+        if item["kind"] == "runtime_instruction"
+        and not item["source"].startswith("harnessix.working-habits/")
+    ]
+    return execution
 
 
 async def test_native_instructions_are_separate_from_generic_ones(tmp_path: Path) -> None:

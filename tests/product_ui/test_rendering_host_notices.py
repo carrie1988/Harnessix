@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 from harnessix.agent.completion_guard import completion_notice_item_id
+from harnessix.agent.step_notices import step_notice_item_id
 from harnessix.agent.truncation_recovery import recovery_notice_item_id
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem
 from harnessix.product_ui.rendering import transcript_lines
@@ -42,10 +43,16 @@ def test_host_notices_are_shown_as_hints_not_as_the_user():
                 "user_message",
                 HOST_NOTICE + "Your last response was empty",
             ),
+            _entry(
+                turn_id,
+                step_notice_item_id(turn_id, 3),
+                "user_message",
+                HOST_NOTICE + "`pytest -q` has now run 3 times",
+            ),
             _entry(turn_id, steering, "user_message", "顺便更新文档"),
             _entry(
                 turn_id,
-                completion_notice_item_id(turn_id, 5),
+                completion_notice_item_id(turn_id, 6),
                 "user_message",
                 HOST_NOTICE + "Your last response had no tool call",
             ),
@@ -60,6 +67,7 @@ def test_host_notices_are_shown_as_hints_not_as_the_user():
         ("你", "修复这个缺陷"),
         ("Harnessix", "我先看一下。"),
         ("提示", "模型的回复被截断或没有内容，已提示它继续"),
+        ("提示", "已把重复或前后结果不一致的命令、修改告知模型"),
         ("你", "顺便更新文档"),
         ("提示", "模型停下时任务还没有做完，已提示它继续"),
         ("你", "再跑一次测试"),

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 4
-code_revision: 5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1
+version: 5
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -27,6 +27,7 @@ related_adrs:
   - docs/adr/0063-windows-v1-platform-support.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0069-unified-coding-action-risk-route.md
+  - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
   - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
   - tests/patches/test_planner.py
@@ -57,7 +58,7 @@ supersedes: []
 
 - **匹配**（`_anchor_range`）：逐字节匹配仍是第一步，判定与区间不变。一处也没有时，把文件与`old_text`里的`\r\n`都折成`\n`再匹配一次，命中位置经`_FoldedNewlines.raw_offset`映射回原始字节区间，区间总是覆盖完整的`\r\n`。两步各自要求恰好一处，忽略换行后命中多处同样是`patch_ambiguous_context`。孤立的`\r`不算换行。以`\n`开头的`old_text`逐字节命中`\r\n`后半时，区间向前多取一个字节把`\r`纳入。
 - **写入**（`_written_text`、`_newline_style`）：`new_text`里的换行按被替换处的风格写入。区域内有换行时取占多数的一种，一样多取区域内第一个；区域内没有换行时取所在行的行尾，所在行是没有行尾的末行时取上一行的行尾；整个文件没有换行时原样写入。折叠换行后`old_text`与`new_text`相同的编辑是有意转换换行，原样写入。
-- **诊断**（`_missing_anchor_message`）：在折叠后的正文上比较。“可能已经应用”的判定忽略换行；首个非空行仍在文件中时陈述“old_text与该处内容不一致，且不只是CRLF/LF换行的差异”，不再断言“其后内容不一致”；行号按`\n`计数，与`read_file`一致。措辞仍是中文，三个分支不变。
+- **诊断**（`_missing_anchor_message`）：在折叠后的正文上比较。“可能已经应用”的判定忽略换行；首个非空行仍在文件中时陈述old_text在该处与文件的差异不只是换行，不再断言“其后内容不一致”；行号按`\n`计数，与`read_file`一致。三个分支不变，说明是写给模型的英文并以`edits[j]`开头（见下文“可定位的锚点拒绝”）。
 - **已保存的计划**（`_edit_ranges`的`recorded_sha256`）：`validate_prepared`与Diff传入计划记录的后像摘要。按此前语义（只逐字节匹配、`new_text`原样写入，即`_located_ranges(newline_aware=False)`）算出该摘要的计划沿用当时的区间，其余按当前语义重算并照常比较；两种语义都算不出的后像仍是`patch_plan_corrupt`。Delivery的Workspace Patch事务经`apply_exact_edits(recorded_sha256=...)`用同一规则，升级前发布的修改仍可回滚。
 - 摘要、大小上限、重叠检测与无变化判定都在真实字节上进行；`ExactEdit`、`PatchManifest`等合同与各拒绝的错误码不变。回归见[换行测试](../../tests/patches/test_planner_newlines.py)。
 
@@ -67,6 +68,11 @@ supersedes: []
   [Delivery事务](delivery.md)实现，只复用本模块的精确编辑算法（`planner.apply_exact_edits`）。
 - 自[ADR 0137](../adr/0137-create-with-missing-parent-directories.md)起，`apply_patch_batch`的`create`在父目录
   不存在时由同一笔事务补建目录；本模块的源码与行为没有变化，设计与边界见Delivery与Workspace模块文档。
+
+## 当前增量：可定位的锚点拒绝（ADR 0129）
+
+- 精确编辑的三类拒绝都以`edits[j]`下标开头，并给出模型下一步能用的事实：锚点未找到时指出首个非空行所在行号，或说明`new_text`已在文件中（该编辑看起来已应用）；锚点不唯一时列出各处行号（至多5处）；编辑重叠时指出两条编辑的下标与重叠所在行。
+- 判定条件、计划算法与全部上限不变，只改变拒绝文本；文本为英文，不回显文件内容。见[`planner.py`](../../src/harnessix/patches/planner.py)。
 
 ## 1. 文档摘要
 
@@ -1234,5 +1240,6 @@ ADR说明历史决策及当时分片状态；本文维护当前代码事实。�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 5 | 第二轮合入 | 2026-11-14 | 精确编辑的三类拒绝改为写给模型的英文，以`edits[j]`开头并带宿主核对到的行号（ADR 0129，预留的文档版本2）；换行处理即第4版的ADR 0141，第二轮分支上的同一实现（预留的文档版本3）不重复记录 |
 | 4 | ADR 0141增量 | 2026-11-12 | 精确编辑在逐字节匹配失败后忽略CRLF/LF差异再匹配；写入沿用被替换处的换行风格；此前保存的计划按保存时的语义复核（文档版本2、3由round-2与Beta反馈分支使用） |
 | 1 | `5db59f1ae4c5632ba6a9aec4b7ea3869fac1c0d1` | 2026-09-12 | 建立Managed Patch Runtime现行事实源，覆盖精确计划、受管副本、单文件/批次状态机、审批、落盘、崩溃恢复、Diff Artifact、持久化、安全和源码测试映射 |

@@ -1,0 +1,125 @@
+{
+  "run_name": "multilingual-round2-dev-baseline",
+  "dataset": {
+    "name": "swebench-multilingual-round2-dev",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 2,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "Round-2 development baseline on the new Multilingual dev set (30 tasks: Go 6, Java 6, JS/TS 6, PHP 3, C/C++ 3, Rust 3, Ruby 3; selection.json, dev.tasks.lock.json, harbor-datasets 37db1088). The set is the ten week-1 dev tasks plus twenty tasks drawn with seed 20261111 from the rest of SWE-bench Multilingual; it never overlaps the week-1 holdout30 or the round-2 test set. It is tuning material: results on it are not evidence of generalisation.",
+    "Purpose: the reference point for round-2 changes on both metrics, resolve rate and wall time. Arms run one after another (oracle, harnessix, R), 2 attempts per task, 4 concurrent trials, every agent phase without internet, exactly as in the holdout30 formal run 447fe024.",
+    "harnessix: the unchanged product bundle agent-efc184f0 with task template v3 and the settings of the holdout30 formal run (100 steps, 6M tokens and 3600 s per turn, Harbor agent cap 3900 s, 900 s per command, thinking off, compaction third_window).",
+    "R: mini-swe-agent 2.4.6 with arm-r-swebench.yaml, offline, as in the holdout30 formal run.",
+    "Primary metric: the official SWE-bench resolve of the exported whole-repository patch; wall time per trial is the agent execution phase recorded by Harbor.",
+    "Finish grading uses /data/harnessix/harbor/round2/multilingual-round2-dev-full.jsonl (sha256 a3f841b04349f783b362a91bf87c6369205a1058111f05f7cd17b44e857f88a6): the 30 rows of SWE-bench/SWE-bench_Multilingual (parquet sha256 92abca7cb527b41a9f66d03a26ce441ff7319e3a49f985998fd56be4bb9b08b2), equal to the Harbor tasks' tests/config.json on every shared field. tokio-rs__axum-1730 failed that check and was replaced by the first Rust reserve before any run (selection.json, substitutions).",
+    "A task whose gold patch does not pass in the oracle arm cannot be evaluated offline; it is excluded for every arm and reported, as apache__lucene-13494 was on holdout30."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/network-isolation.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-multilingual-round2",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py",
+    "HARNESSIX_MODEL_GATEWAY_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_MODEL_GATEWAY_CODE": "integrations/harbor/model_relay.py",
+    "HARNESSIX_TASK_DNS": "192.168.130.1"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.1.0-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    },
+    {
+      "arm_id": "harnessix",
+      "system": "harnessix",
+      "system_version": "1.0.0rc1",
+      "artifacts": [
+        "/data/harnessix/harbor/agent-efc184f0/harnessix-bundle.tar.gz",
+        "/data/harnessix/harbor/agent-efc184f0/product.json"
+      ],
+      "agent": {
+        "import_path": "integrations.harbor.harnessix_agent:HarnessixAgent",
+        "env": {
+          "MODEL_API_KEY": "local-replica-no-key"
+        },
+        "kwargs": {
+          "install_bundle": "/data/harnessix/harbor/agent-efc184f0/harnessix-bundle.tar.gz",
+          "bundle_root": "/opt",
+          "python_executable": "/opt/harnessix/bin/python",
+          "server_config_template": "/data/harnessix/harbor/agent-efc184f0/product.json",
+          "server_config": "/etc/harnessix-eval/product.json",
+          "action_config": "/etc/harnessix-eval/actions.json",
+          "task_command_environment": true,
+          "workspace": "/testbed",
+          "state_directory": "/tmp/harnessix-state",
+          "max_steps": 100,
+          "max_tokens": 6000000,
+          "timeout_seconds": 3600,
+          "approval_mode": "auto",
+          "external_boundary": true,
+          "model_relays": "127.0.0.1:18001=host.docker.internal:18100",
+          "normalize_workspace_modes": false,
+          "prompt_template_path": "benchmarks/harbor/harnessix/swebench-task-v3.j2",
+          "network_isolation": true
+        },
+        "override_timeout_sec": 3900
+      }
+    },
+    {
+      "arm_id": "R",
+      "system": "mini-swe-agent",
+      "system_version": "2.4.6",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:MiniSweAgentOffline",
+        "model_name": "openai/qwen3.8-flash-next",
+        "env": {
+          "OPENAI_API_KEY": "local-replica-no-key"
+        },
+        "override_timeout_sec": 3900,
+        "kwargs": {
+          "version": "2.4.6",
+          "config_file": "benchmarks/harbor/mini-swe-agent/arm-r-swebench.yaml",
+          "with_packages": [
+            "litellm==1.108.0",
+            "mcp==2.3.0",
+            "openai==3.46.0",
+            "orjson",
+            "fastapi"
+          ],
+          "network_isolation": true
+        }
+      }
+    }
+  ]
+}

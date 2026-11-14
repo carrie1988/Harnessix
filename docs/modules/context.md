@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 19
-code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
+version: 20
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -136,7 +136,7 @@ Provider生命周期，仍经过取消、deadline、凭据出站保护及完整�
 截断响应先核验尝试与用量，再拒绝窗口激活；不接受半截摘要、不重试，不改变原Turn上限。
 截断以独立代码`provider_summary_truncated`结束压缩记录（[ADR-0109](../adr/0109-recoverable-truncation-and-read-guidance.md)）：
 规划阶段判定无法压缩（保留部分超预算、无进展、来源超限）时不写压缩记录。主动压缩（历史阈值或预算压力触发）遇到摘要截断、摘要超出字节预留或上述规划失败时，本步保留原历史继续，并在该Turn历史UTF-8字节再增长1/4前不再规划压缩，
-避免同一步重复规划；Context Overflow触发的被动压缩仍按原错误终止。产品摘要输出上限为`min(max_output_tokens, 2048)`：上限过高时中文摘要会在中途超出12288字节预留，此时用量不完整、不能继续，见ADR-0109 v2修订。
+避免同一步重复规划；Context Overflow触发的被动压缩仍按原错误终止。正常结束却没有正文的摘要以`provider_summary_empty`结束，同样跳过（ADR-0109 v6修订，见上文“没有正文的摘要”）；摘要请求以`provider_invalid_provider_output`结束时仍按原错误终止。产品摘要输出上限为`min(max_output_tokens, 2048)`：上限过高时中文摘要会在中途超出12288字节预留，此时用量不完整、不能继续，见ADR-0109 v2修订。
 
 预付Context和实际Context使用相同的阶段工具目录及规范JSON编码，不把不可见注册项计入本步骤。
 `PreparedHistoryStep.budget_tool_selection`是深拷贝的单步临时快照，不新增持久字段；摘要后目录、
@@ -208,6 +208,13 @@ Context模块把该问题分成四层：纯规划器只处理受界文本；Sour
 `ContextBuildInput`最多8192份历史文档、256份Tool文档和8 MiB UTF-8总量。`ContextLimits`从Context
 Window减去Reserved Output、Provider Overhead和Safety Margin，至少保留一个输入单位。
 
+`ContextBuildInput.input_limit_tokens`（可选，ADR 0132）是调用方按真实输入用量校准的本步输入上限（估算器口径）：
+大于Planner固定上限时本步按它放宽窗口，输出预留与固定开销不变，检查记录里的`limits`与`available_input_tokens`
+是本步实际使用的数值；不大于固定上限或未给出时沿用固定上限。`CompactionTokenWindow`
+（[`compaction_runtime_contracts.py`](../../src/harnessix/context/compaction_runtime_contracts.py)）是声明的模型窗口的
+真实Token口径（窗口、输入上限、触发与目标分母、允许的最大输入字节数），只是数值载体；校准规则在Agent模块的
+`compaction_calibration`，`CompactionRuntimeConfig`合同与Schema不变。
+
 ## 5. 模块上下文与数据流
 
 ```mermaid
@@ -247,7 +254,7 @@ flowchart LR
 | `ContextEngine` | 固定/动态Fragment排序、预算、渲染、Inspection | 纯合同 | 文件、环境、Provider或Session I/O | 构造后值语义，可复用 |
 | `SourcedContextEngine` | 刷新1～16个Source、组合一致性、委托纯Engine | Source、CancelToken | 接受Runtime/User动态Kind；缓存旧观测跨Step | 每次prepare重新观测 |
 | `ProjectInstructionSource` | 根到工作目录发现首个`AGENTS.override.md`或`AGENTS.md` | 受控Workspace读 | 跟随不安全路径、跨Root、读取无限文件 | 每Step异步观测 |
-| `WorkspaceContextSource` | 根和工作目录一级有界布局 | List Tool | 全仓递归扫描 | 每Step双读目录Revision |
+| `WorkspaceContextSource` | 根和工作目录一级有界布局 | List Tool | 全仓递归扫描 | 每次观察双读目录Revision；产品装配经`TurnStableContextSource`每个Turn只观察一次（ADR 0153） |
 | `GitContextSource` | 固定Git只读Runtime的有界状态 | GitReadRuntime | 任意Git命令或泄漏Denied Path | 前后绑定校验 |
 | `EnvironmentContextSource` | 显式非Secret Allowlist、OS/Platform/工作目录 | 传入Mapping | 枚举`os.environ`、允许Secret名称 | 每Step读取Allowlist值 |
 | Tool Result View | 冻结Inline/Artifact Reference展示及Inspection | Session Item、Artifact合同 | 修改原结果、事后缩小旧历史、替换Patch/Process未知效果 | 每Step准备，决定持久复用 |
@@ -623,7 +630,11 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 20 | 第二轮合入 | 2026-11-14 | 文档版本15～17随第二轮分支合入主线；第16版的“摘要输出不成立时跳过”在合入时由第19版的空摘要处理取代（ADR 0109第6版），代码不再保留；工作区概览的ADR编号由0147改为0153 |
 | 19 | `e5141ec7` 增量 | 2026-11-12 | 没有正文的摘要：正常结束的用独立代码`provider_summary_empty`，用满上限的归为截断；主动压缩时都可跳过（0.10.0b20） |
+| 17 | `a33e5ace` 增量 | 2026-11-12 | 新增`TurnStableContextSource`：产品装配里工作区概览每个Turn只观察一次，系统指令不在Turn中途变化（ADR 0153） |
+| 16 | `2d8f5c92` 增量 | 2026-11-12 | 主动压缩的摘要输出不成立且用量完整时跳过本次压缩，不终止Turn（ADR 0109第4版；合入主线时由第19版取代，见第20版） |
+| 15 | `d5ad78a8` 增量 | 2026-11-11 | `ContextBuildInput.input_limit_tokens`只放宽本步输入上限；新增`CompactionTokenWindow`（ADR 0132） |
 | 2 | `71a479439edcdd29b863ec3a9bad7a52586dd1bf` | 2026-09-13 | 区分统一Action `action_review`与旧Batch `batch_effect`模型历史用途，保持授权与预算边界 |
 | 1 | `6c5f310346afa3fa176f51707722467f46811b35` | 2026-09-12 | DOC-1.3 Wave A Context模块设计初版 |
 

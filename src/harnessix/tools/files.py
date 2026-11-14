@@ -252,6 +252,13 @@ def read_complete_bytes(workspace: Workspace, path: str, operation: ReadOperatio
     return b"".join(chunks)
 
 
+def file_permission_mode(workspace: Workspace, path: str, operation: ReadOperation) -> int:
+    """经同一无链接跟随的打开路径返回普通文件的权限位，不读取内容。"""
+
+    with workspace.open(path, operation, directory=False) as fd:
+        return stat.S_IMODE(os.fstat(fd).st_mode)
+
+
 def read_file_snapshot(
     workspace: Workspace,
     args: ReadFileInput,

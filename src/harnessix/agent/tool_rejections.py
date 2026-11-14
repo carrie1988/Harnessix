@@ -27,6 +27,28 @@ _REJECTION_FAILURES: dict[str, tuple[str, str]] = {
 }
 
 
+# 模型线协议视图中替换固定结果message的英文反馈。只陈述调用未执行与下一步做法，不含调用名称、
+# 参数或当前目录内容：历史正文因此不随目录变化；可调用的名字由本次请求的工具定义与目录说明给出。
+_MODEL_FEEDBACK: dict[RejectionReason, str] = {
+    "unregistered_tool": (
+        "This call used a tool name that is not callable in the current request, so nothing "
+        "was executed. The original name and arguments are not kept in history. Send the call "
+        "again with the exact name of a tool offered in the current request and its full "
+        "arguments."
+    ),
+    "invalid_arguments_json": (
+        "The arguments of this call were not a valid JSON object, so nothing was executed. "
+        "The original arguments are not kept in history. Send the call again with complete, "
+        "correctly escaped JSON arguments."
+    ),
+}
+
+
+def rejection_feedback(reason: RejectionReason) -> str:
+    """该拒绝原因给模型的说明；持久结果仍是rejection_result的固定文本。"""
+    return _MODEL_FEEDBACK[reason]
+
+
 def rejection_result(
     call_id: UUID, reason: RejectionReason = "unregistered_tool"
 ) -> ToolResultContent:

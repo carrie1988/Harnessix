@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
+from harnessix.artifacts.contracts import ReadArtifactInput
+from harnessix.tools import search
 from harnessix.tools.argument_repair import repair_read_arguments
 from harnessix.tools.contracts import ListFilesInput, ReadFileInputV4
 from harnessix.tools.runtime import CodingToolRuntime
@@ -51,6 +55,18 @@ ARTIFACT_ID = "01a1b916-a6b7-7ca0-97c6-4ccbac662005"
         ),
         ({"path": "a.py", "max_lines": "30"}, {"path": "a.py", "max_lines": 30}),
         ({"path": "a.py", "max_lines": 5000}, {"path": "a.py", "max_lines": 2000}),
+        # 位置也接受纯数字字符串，但不截断。
+        ({"path": "a.py", "start_line": "38"}, {"path": "a.py", "start_line": 38}),
+        # grep的context_lines用在read_file上即定位点之前的行数（fluentd-3466、hugo-12204、
+        # terraform-35611 GQWePot）：0不改变读取，其余按lines_before处理。
+        (
+            {"path": "a.py", "context_lines": "0", "start_line": 1},
+            {"path": "a.py", "lines_before": 0, "start_line": 1},
+        ),
+        (
+            {"path": "a.py", "context_lines": "2", "max_lines": 120, "start_line": 4911},
+            {"path": "a.py", "max_lines": 120, "start_line": 4909},
+        ),
     ],
 )
 def test_read_file_repairs_common_model_conventions(arguments, repaired):
@@ -109,12 +125,85 @@ def test_read_file_leaves_misrouted_and_invalid_values_for_strict_rejection(argu
         (GrepSnapshotInput, {"query": "x", "max_results": 500}, {"query": "x", "max_results": 200}),
         (GlobInput, {"pattern": "*.py", "limit": "50"}, {"pattern": "*.py", "max_results": 50}),
         (ListFilesInput, {"path": ".", "limit": 300}, {"path": ".", "limit": 200}),
+        (ListFilesInput, {"path": ".", "offset": "0"}, {"path": ".", "offset": 0}),
     ],
 )
 def test_search_and_listing_repairs(model, arguments, repaired):
     tool = {GlobInput: "glob", ListFilesInput: "list_files"}.get(model, "grep")
     assert repair_read_arguments(tool, arguments, model) == repaired
     model.model_validate(repaired)
+
+
+def test_read_artifact_paging_accepts_numeric_text_and_caps_the_page():
+    # 回归（lucene-13494、javaparser-4538、preact-3567等5次）：存档分页参数是数字字符串。
+    arguments = {"artifact_id": ARTIFACT_ID, "offset": "0", "limit": "500"}
+    repaired = repair_read_arguments("read_artifact", arguments, ReadArtifactInput)
+    assert repaired == {"artifact_id": ARTIFACT_ID, "offset": 0, "limit": 200}
+    ReadArtifactInput.model_validate_json(json.dumps(repaired))
+    # 非数字文本与负数照常交严格校验拒绝。
+    for invalid in ({"limit": "many"}, {"offset": -1}):
+        unchanged = {"artifact_id": ARTIFACT_ID, **invalid}
+        assert repair_read_arguments("read_artifact", unchanged, ReadArtifactInput) == unchanged
+
+
+@pytest.mark.parametrize(
+    ("arguments", "repaired"),
+    [
+        # 回归（babel-14532 BGuCkgK、nushell-13831 kAnJL9M、laravel-53949 q3NqyRo）：从根遍历
+        # 整个仓库才筛到一个目录，条目数先触发了扫描上限。
+        (
+            {"pattern": "packages/generator/test/fixtures/parentheses/*"},
+            {"path": "packages/generator/test/fixtures/parentheses", "pattern": "*"},
+        ),
+        ({"pattern": "tests/**/*Once*"}, {"path": "tests", "pattern": "**/*Once*"}),
+        ({"pattern": "src/app.py", "path": "."}, {"path": "src", "pattern": "app.py"}),
+    ],
+)
+def test_glob_starts_at_the_literal_directory_of_the_pattern(arguments, repaired):
+    assert repair_read_arguments("glob", arguments, GlobInput) == repaired
+    GlobInput.model_validate(repaired)
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"pattern": "**/split_column*"},
+        {"pattern": "*.py"},
+        # path另有取值时pattern相对它解释。
+        {"pattern": "src/*.py", "path": "lib"},
+        # 从根遍历会跳过默认忽略的目录，移到path则会进入：结果不同，不换算。
+        {"pattern": "node_modules/pkg/*.js"},
+        # 不合法的pattern不借换算绕过严格校验。
+        {"pattern": "x/" * 33 + "y"},
+        {"pattern": "../a/*.py"},
+        {"pattern": "/tmp/a/*.py"},
+    ],
+)
+def test_glob_patterns_without_a_safe_literal_directory_are_untouched(arguments):
+    assert repair_read_arguments("glob", arguments, GlobInput) == arguments
+
+
+async def test_glob_under_a_literal_directory_is_not_stopped_by_the_rest_of_the_tree(
+    tmp_path, monkeypatch
+):
+    (tmp_path / "crates" / "split").mkdir(parents=True)
+    (tmp_path / "crates" / "split" / "column.rs").write_text("x\n")
+    (tmp_path / "crates" / "split" / "row.rs").write_text("x\n")
+    for index in range(8):
+        (tmp_path / f"other{index}.txt").write_text("x\n")
+    async with CodingToolRuntime(tmp_path) as tools:
+        whole = await execute(tools, "glob", pattern="crates/split/*", path=".")
+        expected = ["crates/split/column.rs", "crates/split/row.rs"]
+        assert whole.output["paths"] == expected
+        monkeypatch.setattr(search, "MAX_SEARCH_ENTRIES", 4)
+        narrowed = await execute(tools, "glob", pattern="crates/split/*")
+        assert narrowed.outcome == "succeeded" and narrowed.output["paths"] == expected
+        unbounded = await execute(tools, "glob", pattern="**/column.rs")
+        assert unbounded.error.code == "tool_limit_exceeded"
+        assert unbounded.error.message.startswith("The scan hit a tool limit")
+        # 字面目录不存在：原来是空结果，现在如实报告路径不存在。
+        absent = await execute(tools, "glob", pattern="crates/missing/*")
+        assert absent.error.code == "tool_not_found"
 
 
 def test_negative_context_and_unknown_tools_are_untouched():

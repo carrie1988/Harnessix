@@ -232,38 +232,57 @@ async def terminal_result(
     return _process_failure_feedback(route, result)
 
 
+# 超时终止的命令没有跑完：复合命令里排在后面的部分（恢复现场、清理）从未执行，
+# 模型若按“整条命令已结束”继续，会在中间状态上工作。只陈述这一通用事实，不识别具体命令。
+_PROCESS_TIMEOUT_FEEDBACK = (
+    "The command reached the time limit and was terminated, so it did not finish. Any part of "
+    "a compound command that had not started yet (for example after ';' or '&&') never ran. "
+    "Check the state the command left behind before you continue."
+)
+_PREVIEW_VERSIONS = frozenset(
+    {"trusted-process-output/v2", "trusted-process-output/v3", "trusted-process-output/v4"}
+)
+
+
 def _process_failure_feedback(
     route: ActionRouteSnapshot, result: ToolResultContent
 ) -> ToolResultContent:
-    """只消费刚通过Owner、审计Hash、Secret及DTO验证的投影；不复制日志正文。"""
-    output, error = result.output, result.error
-    if (
-        failure_family(route.plan) != "process"
-        or result.outcome != "failed"
-        or error is None
-        or error.code != "process_nonzero_exit"
-        or not isinstance(output, dict)
-        or output.get("version")
-        not in {
-            "trusted-process-output/v2",
-            "trusted-process-output/v3",
-            "trusted-process-output/v4",
-        }
-    ):
+    """把命令的超时与非零退出换成给模型的英文说明；界面按错误码显示固定文案，不读这段文字。
+
+    只消费刚通过Owner、审计Hash、Secret及DTO验证的投影；不复制日志正文。
+    """
+    error = result.error
+    if failure_family(route.plan) != "process" or result.outcome != "failed" or error is None:
         return result
+    message = (
+        _PROCESS_TIMEOUT_FEEDBACK
+        if error.code == "process_timeout"
+        else _nonzero_exit_feedback(result.output)
+        if error.code == "process_nonzero_exit"
+        else None
+    )
+    if message is None:
+        return result
+    return result.model_copy(update={"error": error.model_copy(update={"message": message})})
+
+
+def _nonzero_exit_feedback(output: JsonValue) -> str | None:
+    """说明命令确实运行过，以及预览是否已是全部输出；没有诊断预览的旧版本输出不给说明。"""
+    if not isinstance(output, dict) or output.get("version") not in _PREVIEW_VERSIONS:
+        return None
     preview = output["diagnostic_preview"]
     assert isinstance(preview, dict)
     visible = all(
         isinstance(stream, dict) and stream["text"] is not None and not stream["truncated"]
         for stream in (preview["stdout"], preview["stderr"])
     )
-    message = "检查已运行并以非零退出，不是启动失败。"
-    message += (
-        "diagnostic_preview已完整展示stdout/stderr诊断正文；无需仅为重复诊断读取Artifact。"
+    return "The command ran and exited with a non-zero status; this is not a launch failure. " + (
+        "diagnostic_preview shows the complete stdout and stderr, so do not read the artifact "
+        "for the same output."
         if output["complete"] and visible
-        else "diagnostic_preview不完整或不可显示；需要更多诊断时按原Artifact引用有界读取。"
+        else "diagnostic_preview is incomplete or cannot be displayed; read the referenced "
+        "artifact in bounded pages if you need more of the output."
     )
-    return result.model_copy(update={"error": error.model_copy(update={"message": message})})
 
 
 async def _inline_success(

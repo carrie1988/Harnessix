@@ -1,4 +1,7 @@
-"""从注册输入合同生成有界字段反馈，不回显调用值或校验异常正文。"""
+"""从注册输入合同生成有界字段反馈，不回显调用值或校验异常正文。
+
+反馈写给模型，使用英文；界面按错误码另行展示用户文案（product_ui.tool_summary）。
+"""
 
 from __future__ import annotations
 
@@ -15,13 +18,16 @@ _FIELD_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}", re.ASCII)
 _COMPOSED_KEYS = frozenset(
     {"$ref", "allOf", "anyOf", "oneOf", "not", "if", "then", "else", "dependentRequired"}
 )
-_INSTRUCTION = "请按已公布的input_schema修正类型、范围及必填字段。"
-_EXTRA_FIELD_MESSAGE = "合同未定义该字段，请删除"
+_INSTRUCTION = "Fix the listed fields to match the published input_schema and resend the call."
+_NO_EXTRA_FIELDS = " Fields outside the schema are rejected."
+_EXTRA_FIELD_MESSAGE = "not a field of this contract, remove it"
+_UNSPECIFIED_MESSAGE = "value does not satisfy the contract"
 _MAX_TYPE_MISMATCHES = 8
+_MAX_DETAIL_CHARS = 320
 _NUMERIC_BOUNDS = (
-    ("minimum", "≥"),
+    ("minimum", ">="),
     ("exclusiveMinimum", ">"),
-    ("maximum", "≤"),
+    ("maximum", "<="),
     ("exclusiveMaximum", "<"),
 )
 
@@ -136,7 +142,11 @@ def _type_mismatches(
         compatible = actual in expected or (actual == "integer" and "number" in expected)
         if compatible:
             continue
-        mismatches.append(f"{name} 应为 {' 或 '.join(expected)}，实际为 {actual}")
+        mismatch = f"{name} must be {' or '.join(expected)}, got {actual}"
+        if actual == "string" and {"array", "object"} & set(expected):
+            # 字符串化容器无法严格还原时走到这里：多半是字符串里的JSON本身不合法。
+            mismatch += " (send the JSON value itself, not a string that contains JSON)"
+        mismatches.append(mismatch)
         if len(mismatches) == _MAX_TYPE_MISMATCHES:
             break
     return mismatches
@@ -195,8 +205,8 @@ def _range_mismatches(
             for key, _, bound in bounds
         )
         if outside:
-            declared = "、".join(f"{symbol} {bound}" for _, symbol, bound in bounds)
-            mismatches.append(f"{name} 应满足 {declared}")
+            declared = " and ".join(f"{symbol} {bound}" for _, symbol, bound in bounds)
+            mismatches.append(f"{name} must be {declared}")
             if len(mismatches) == _MAX_TYPE_MISMATCHES:
                 break
     return mismatches
@@ -320,7 +330,16 @@ def _extra_field(loc: Sequence[Any], root: Mapping[str, JsonValue]) -> tuple[str
         or any(_FIELD_NAME.fullmatch(name) is None for name in allowed)
     ):
         return where, ""
-    return where, f"此处允许字段：{', '.join(allowed)}"
+    return where, f"allowed here: {', '.join(allowed)}"
+
+
+def _whitelisted_text(kind: Any, message: Any) -> str | None:
+    """只有内置结构错误与本项目固定措辞的harnessix_错误可原样公开；其余返回None。"""
+    if type(kind) is not str or type(message) is not str:
+        return None
+    if kind in _STRUCTURAL_ERROR_TYPES or kind.startswith("harnessix_"):
+        return message[:_MAX_DETAIL_CHARS]
+    return None
 
 
 def _validation_details(
@@ -336,32 +355,29 @@ def _validation_details(
     located: list[tuple[tuple[Any, ...], str, str, str]] = []
     for loc, error in zip(locations, errors, strict=True):
         kind = error.get("type")
-        message = error.get("msg")
         if kind == "extra_forbidden":
             extra = _extra_field(loc, schema)
             if extra is not None:
                 located.append((loc, extra[0], _EXTRA_FIELD_MESSAGE, extra[1]))
             continue
-        where = _schema_location(loc, schema)
-        if where is None:
+        text = _whitelisted_text(kind, error.get("msg"))
+        if not loc:
+            # 整个调用级的规则（如重复路径）没有字段位置，白名单正文自带所涉下标。
+            if text is not None:
+                located.append((loc, "", text, ""))
             continue
-        if (
-            type(kind) is str
-            and type(message) is str
-            and (kind in _STRUCTURAL_ERROR_TYPES or kind.startswith("harnessix_"))
-        ):
-            located.append((loc, where, message[:200], ""))
-        else:
-            located.append((loc, where, "取值不符合合同", ""))
+        where = _schema_location(loc, schema)
+        if where is not None:
+            located.append((loc, where, text or _UNSPECIFIED_MESSAGE, ""))
     details: list[str] = []
     hints: set[str] = set()
     for loc, where, message, hint in located:
         if any(len(other) > len(loc) and other[: len(loc)] == loc for other in locations):
             continue
-        line = f"{where}：{message}"
+        line = f"{where}: {message}" if where else message
         if hint and hint not in hints:
             hints.add(hint)
-            line = f"{line}（{hint}）"
+            line = f"{line} ({hint})"
         if line not in details:
             details.append(line)
         if len(details) == _MAX_TYPE_MISMATCHES:
@@ -378,30 +394,37 @@ def invalid_argument_message(
     validation_errors: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """只公开Schema事实及正式校验器的白名单规则；参数值及异常不能进入消息。"""
-    label = "Action参数不符合Trusted Tool契约" if trusted_action else "工具参数不符合契约"
-    fallback = f"{label}；{_INSTRUCTION}"
+    label = (
+        "Action arguments do not match the trusted tool contract"
+        if trusted_action
+        else "Tool arguments do not match the contract"
+    )
+    fallback = f"{label}. {_INSTRUCTION}"
     fields = _field_facts(schema)
     if fields is None:
         return fallback
     allowed, required, properties = fields
     missing = [name for name in required if name not in arguments]
-    instruction = (
-        _INSTRUCTION[:-1] + "，禁止额外字段。"
-        if schema.get("additionalProperties") is False
-        else _INSTRUCTION
+    instruction = _INSTRUCTION + (
+        _NO_EXTRA_FIELDS if schema.get("additionalProperties") is False else ""
     )
     field_feedback = (
-        f"{label}；必填字段：{', '.join(required) or '无'}；"
-        f"缺少必填字段：{', '.join(missing) or '无'}；允许字段：{', '.join(allowed) or '无'}。"
+        f"Required fields: {', '.join(required) or 'none'}; "
+        f"missing required fields: {', '.join(missing) or 'none'}; "
+        f"allowed fields: {', '.join(allowed) or 'none'}. "
     )
-    previous_message = f"{field_feedback}{instruction}"
-    mismatches = _type_mismatches(properties, arguments)
-    ranges = _range_mismatches(properties, arguments)
+    previous_message = f"{label}. {field_feedback}{instruction}"
+    # 具体问题排在字段清单之前：模型先读到要改哪一处，再读合同事实。
     details = []
+    located = _validation_details(validation_errors, schema)
+    if located:
+        details.append(f"Problems: {'; '.join(located)}. ")
+    mismatches = _type_mismatches(properties, arguments)
     if mismatches:
-        details.append(f"类型不匹配：{'；'.join(mismatches)}。")
+        details.append(f"Type mismatch: {'; '.join(mismatches)}. ")
+    ranges = _range_mismatches(properties, arguments)
     if ranges:
-        details.append(f"范围不匹配：{'；'.join(ranges)}。")
+        details.append(f"Out of range: {'; '.join(ranges)}. ")
     constraints = sorted(
         {
             READ_ARGUMENT_CONSTRAINT_HINTS[code]
@@ -410,11 +433,10 @@ def invalid_argument_message(
         }
     )
     if constraints:
-        details.append(f"约束不匹配：{'；'.join(constraints)}。")
-    located = _validation_details(validation_errors, schema)
-    if located:
-        details.append(f"校验位置：{'；'.join(located)}。")
-    message = f"{field_feedback}{''.join(details)}{instruction}" if details else previous_message
+        details.append(f"Constraint: {'; '.join(constraints)}. ")
+    if not details:
+        return previous_message if len(previous_message) <= 2000 else fallback
+    message = f"{label}. {''.join(details)}{field_feedback}{instruction}"
     if len(message) <= 2000:
         return message
     return previous_message if len(previous_message) <= 2000 else fallback

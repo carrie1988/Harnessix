@@ -1,10 +1,51 @@
-"""内置Coding Tool：校验Glob和Grep模式的长度及语法边界。"""
+"""内置Coding Tool：校验Glob和Grep模式的长度及语法边界，并按Grep的include筛选候选文件。"""
 
 from __future__ import annotations
 
 from fnmatch import fnmatchcase
+from typing import Protocol
 
-from harnessix.tools.search_contracts import validate_pattern
+from harnessix.tools.contracts import ReadToolError
+from harnessix.tools.search_contracts import GrepInput, GrepSnapshotInput, validate_pattern
+
+# 进入Grep合同摘要的include语义：与此前“静默返回空结果”的版本不是同一合同。
+GREP_INCLUDE_RULE = "not-applied-to-file-start-and-fails-when-no-file-matches"
+
+
+def relative_to_start(path: str, start: str) -> str:
+    """候选路径相对搜索起点的写法；起点本身是文件时取文件名。"""
+    if start == ".":
+        return path
+    if path == start:
+        return path.rsplit("/", 1)[-1]
+    return path[len(start) + 1 :]
+
+
+def grep_include(args: GrepInput) -> PathPattern | BasenamePattern:
+    """快照与正则Grep的include按文件名匹配任意深度；原字面量合同保持逐段路径语义。"""
+    if isinstance(args, GrepSnapshotInput):
+        return include_pattern(args.include)
+    return PathPattern(args.include)
+
+
+class _Located(Protocol):
+    @property
+    def path(self) -> str: ...
+
+
+def select_included[C: _Located](candidates: list[C], args: GrepInput, start: str) -> list[C]:
+    """按include筛选要搜索的文件；POSIX与原生读取端共用。
+
+    起点本身是文件时不筛选：模型已点名要搜的文件，include若写成相对仓库根的通配会把它筛掉。
+    起点下有文件却无一匹配include时如实失败：一个文件也没搜的空结果会被读成“文件里没有”。
+    """
+    if len(candidates) == 1 and candidates[0].path == start:
+        return candidates
+    pattern = grep_include(args)
+    selected = [node for node in candidates if pattern.matches(relative_to_start(node.path, start))]
+    if candidates and not selected:
+        raise ReadToolError("no_files_searched")
+    return selected
 
 
 def include_pattern(pattern: str) -> PathPattern | BasenamePattern:

@@ -52,38 +52,35 @@ def test_the_harbor_arm_turns_on_the_completion_guard():
 
 def test_eval_overrides_are_the_documented_eval_product_differences():
     """评测只覆盖已登记、有文档记录的差异；新增覆盖项必须先在这里登记。"""
-    assert EVAL_ALLOWED_OVERRIDES == {"completion_guard", "compaction"}
+    assert EVAL_ALLOWED_OVERRIDES == {"completion_guard"}
 
 
-def test_the_harbor_arm_keeps_the_eval_budget_compaction_point(tmp_path: Path) -> None:
-    """评测预算口径：262144 Token窗口在262144字节处压缩、压到131072字节，与改为可配置前完全一致。
+def test_the_harbor_arm_compacts_at_the_product_default_point(tmp_path: Path) -> None:
+    """评测测到的就是产品默认的压缩点（ADR 0132）：不再为累计Token预算提前到窗口三分之一。
 
-    产品默认在窗口一半处压缩、压到四分之一；评测的累计Token预算要求更早压缩（已知差异）。
+    Multilingual正式评测中三分之一档实际在约5.3万Token（窗口的20%）触发，48次压缩约占全场12%的时间。
     """
-    config = ProductConfigV2.model_validate_json(product_config(18001))
-    assert config.compaction == "third_window"
+    serialized = product_config(18001)
+    assert "compaction" not in json.loads(serialized)
+    config = ProductConfigV2.model_validate_json(serialized)
+    assert config.compaction == "half_window"
     profile = config.profiles[0]
-    assert profile.context_window_tokens == 262_144
-    context = build_product_agent_context(
+    assert profile.context_window_tokens == 262_144 and profile.max_output_tokens == 16_384
+    evaluated = build_product_agent_context(
         tmp_path,
         max_output_tokens=profile.max_output_tokens,
         context_window_tokens=profile.context_window_tokens,
         context_compaction=config.compaction,
     )
-    # 评测每步输出上限16384（EVAL_PROFILE_OVERRIDES）只缩小摘要请求的最大输入，压缩点不变。
-    assert profile.max_output_tokens == 16_384
-    assert context.compaction.trigger_history_tokens == 262_144
-    assert context.compaction.policy.target_history_tokens == 131_072
-    assert context.compaction.policy.summary_reserve_tokens == 20_480
-    assert context.compaction.policy.max_summary_input_tokens == (262_144 - 16_384 - 1536) * 3
-    assert context.compaction.max_summary_output_tokens == 4096
     product_default = build_product_agent_context(
         tmp_path,
         max_output_tokens=profile.max_output_tokens,
         context_window_tokens=profile.context_window_tokens,
     )
-    assert product_default.compaction.trigger_history_tokens == 393_216
-    assert product_default.compaction.policy.target_history_tokens == 196_608
+    assert evaluated.compaction == product_default.compaction
+    assert evaluated.compaction_window == product_default.compaction_window
+    assert evaluated.compaction.trigger_history_tokens == 393_216
+    assert evaluated.compaction.policy.target_history_tokens == 196_608
 
 
 def test_eval_overrides_reject_fields_outside_the_whitelist():
@@ -91,9 +88,9 @@ def test_eval_overrides_reject_fields_outside_the_whitelist():
     assert apply_eval_overrides(config, {"completion_guard": False}).completion_guard is False
     with pytest.raises(SystemExit, match="workspace_read_timeout_seconds"):
         apply_eval_overrides(config, {"workspace_read_timeout_seconds": 60})
-    # 白名单内的字段仍按产品合同重新校验，非法压缩点不能借覆盖进入配置。
-    with pytest.raises(ValueError):
-        apply_eval_overrides(config, {"compaction": "quarter_window"})
+    # 压缩点不再是登记的差异：评测不能再悄悄换回更早的压缩点。
+    with pytest.raises(SystemExit, match="compaction"):
+        apply_eval_overrides(config, {"compaction": "third_window"})
 
 
 def test_harnessix_arms_only_use_known_agent_options():
@@ -104,6 +101,8 @@ def test_harnessix_arms_only_use_known_agent_options():
         "approval_mode",
         "bundle_root",
         "external_boundary",
+        # 让评测组别获得用户默认就有的Git读工具与会话基线（ADR 0131）。
+        "git_read_tools",
         "install_bundle",
         "max_steps",
         "max_tokens",

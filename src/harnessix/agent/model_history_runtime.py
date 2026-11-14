@@ -10,6 +10,10 @@ from typing import Protocol
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
+from harnessix.agent.compaction_calibration import (
+    SKIPPED_COMPACTION_GROWTH,
+    calibrated_compaction,
+)
 from harnessix.agent.compaction_input_budget import (
     CompactionInputBudget,
     prepare_compaction_input_budget,
@@ -42,7 +46,10 @@ from harnessix.agent.turn_budget_compaction import (
 from harnessix.artifacts.ports import BatchDiffPublisher
 from harnessix.context.compaction import PreparedCompaction, plan_compaction
 from harnessix.context.compaction_contracts import CompactionPolicy
-from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
+from harnessix.context.compaction_runtime_contracts import (
+    CompactionRuntimeConfig,
+    CompactionTokenWindow,
+)
 from harnessix.context.contracts import PreparedContext
 from harnessix.context.tool_result_contracts import ToolResultViewPolicy
 from harnessix.context.tool_result_view import PreparedModelHistory, history_document
@@ -65,7 +72,7 @@ _PLANNING_INFEASIBLE = frozenset(
 # 主动压缩遇到以下失败时，不压缩的原请求仍在窗口内：本步保留原历史继续，
 # 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
 _PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED, SUMMARY_EMPTY}
-_BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = 5, 4
+_BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = SKIPPED_COMPACTION_GROWTH
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +92,7 @@ class ModelHistoryHost(Protocol):
     _tool_result_view_policy: ToolResultViewPolicy
     _working_set_result_groups: int | None
     _compaction: CompactionRuntimeConfig | None
+    _token_window: CompactionTokenWindow | None
     _budget_pressure_compaction: bool
     _compaction_backoff: dict[UUID, int]
     _fault: Callable[[str], None]
@@ -120,14 +128,17 @@ class ModelHistoryHost(Protocol):
 
 def _requires_compaction(
     host: ModelHistoryHost,
+    thread: Thread,
     prepared: PreparedModelHistory,
     reactive_compaction_required: bool,
 ) -> bool:
+    """超窗后的被动压缩，或历史超过触发点；声明窗口且已有真实用量时触发点按真实Token校准。"""
     if host._compaction is None:
         return False
+    compaction = calibrated_compaction(host._compaction, host._token_window, thread)
     return (
         reactive_compaction_required
-        or _history_utf8_bytes(prepared) > host._compaction.trigger_history_tokens
+        or _history_utf8_bytes(prepared) > compaction.trigger_history_tokens
     )
 
 
@@ -336,7 +347,7 @@ async def prepare_and_commit_model_history(
             host, turn_id, prepared
         )
         required = not backed_off and _requires_compaction(
-            host, prepared, reactive_compaction_required
+            host, thread, prepared, reactive_compaction_required
         )
         if (
             not required
@@ -354,7 +365,7 @@ async def prepare_and_commit_model_history(
             except KernelError as error:
                 if reactive_compaction_required or error.code not in _PROACTIVE_SKIPPABLE:
                     raise
-                # 规划失败不留记录；摘要截断的记录已按失败关闭且用量已记账。
+                # 规划失败不留记录；摘要截断或没有正文的记录已按失败关闭且用量已记账。
                 # 本步保留原历史继续，不重复规划同一步。
                 host._compaction_backoff[turn_id] = _history_utf8_bytes(prepared)
                 thread = await host.store.get_thread(thread_id)

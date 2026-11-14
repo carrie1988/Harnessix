@@ -22,8 +22,10 @@ async def test_generic_context_preserves_task_rules_without_forced_repair_stages
     prepared = await context.context.prepare(request, CancelToken())
     fragments = json.loads(prepared.instructions or "")["fragments"]
     runtime = [item for item in fragments if item["kind"] == "runtime_instruction"]
-    assert len(runtime) == 1
-    assert runtime[0]["source"] == "harnessix.generic-execution-instructions/v6"
+    assert [item["source"] for item in runtime] == [
+        "harnessix.generic-execution-instructions/v6",
+        "harnessix.working-habits/v2",
+    ]
     instructions = runtime[0]["content"]
     assert "exec_command.<profile>" in instructions
     assert "Exit zero alone does not prove business" in instructions
@@ -57,8 +59,12 @@ async def _runtime_fragment(root: Path, **options: bool) -> dict[str, str]:
     )
     prepared = await context.context.prepare(request, CancelToken())
     fragments = json.loads(prepared.instructions or "")["fragments"]
-    (runtime,) = [item for item in fragments if item["kind"] == "runtime_instruction"]
-    return runtime
+    (execution,) = [
+        item
+        for item in fragments
+        if item["kind"] == "runtime_instruction" and "execution-instructions" in item["source"]
+    ]
+    return execution
 
 
 async def test_external_boundary_instructions_state_only_what_holds_there(tmp_path: Path):
@@ -71,7 +77,7 @@ async def test_external_boundary_instructions_state_only_what_holds_there(tmp_pa
         tmp_path, generic_execution=True, external_boundary_execution=True
     )
     assert generic["source"] == "harnessix.generic-execution-instructions/v6"
-    assert external["source"] == "harnessix.external-boundary-execution-instructions/v2"
+    assert external["source"] == "harnessix.external-boundary-execution-instructions/v3"
     text = external["content"]
     for required in (
         "Commands run directly in the task environment, starting at the workspace root",
@@ -94,6 +100,7 @@ async def test_external_boundary_instructions_state_only_what_holds_there(tmp_pa
         "temporary per invocation",
         "Do not assume that packages",
         "scratch work in one",
+        "keep scratch files",
         "/harnessix/deps",
         "local sandbox",
         "host_command",

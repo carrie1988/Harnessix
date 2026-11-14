@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 36
-code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
+version: 37
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -20,6 +20,7 @@ related_adrs:
   - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
+  - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
 related_tests:
   - tests/models/test_current_tool_catalog.py
   - tests/context/test_compaction_wire_prepay.py
@@ -34,6 +35,7 @@ related_tests:
   - tests/models/test_chat_mapping.py
   - tests/models/test_anthropic_mapping.py
   - tests/models/test_tool_alias_identity.py
+  - tests/models/test_rejection_feedback.py
   - tests/models/test_attempt_usage.py
   - tests/agent/test_retry_after_thinking_break.py
   - tests/models/test_attempt_crash_recovery.py
@@ -71,6 +73,20 @@ supersedes: []
   工具调用本身仍在整段到齐并通过校验后才给出，行为不变。
 - 多候选回退（`product_config/runtime.py`）把未登记的新事件视为“已有输出”，进度事件出现后不再切换候选，与正文增量一致。
 - 回归见`tests/agent/test_generation_progress.py`。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
+
+## 当前增量：可读工具别名与目录拒绝的英文反馈（ADR 0136）
+
+- **别名。** [`tool_alias`](../../src/harnessix/models/_history.py)只把`[A-Za-z0-9_-]`以外的字符换成下划线并截到64字符
+  （`exec_command.testbed`→`exec_command_testbed`）；[`tool_aliases`](../../src/harnessix/models/_history.py)对一份目录给出
+  一一映射，多个原名替换后相同时，合法原名保留自己的名字，其余加`_`与SHA-256(原名UTF-8)前8位。原先带32位摘要的56字符别名
+  在一次评测的58个试次里被抄错45次，并让1,358个Shell步骤每步多输出约35个Token。
+- **共用一份映射。** 工具定义与反向目录（`wire_directory`，两个映射共用，冲突或重名整体拒绝）、强制工具选择与目录说明里的
+  强制别名（`wire_aliases`）、历史重放（目录外的旧工具若与本次别名相同则加后缀）都取自同一份目录映射。响应仍只匹配本次
+  反向目录：注册原名、大小写变体、旧摘要别名与拒绝哨兵都成为目录拒绝。会话只保存注册原名，旧会话直接以新别名重放。
+- **目录拒绝的反馈。** 持久结果仍是每个原因一份的固定文本；`messages_for`在模型线协议上把已配对拒绝结果的`error.message`
+  换成[`rejection_feedback`](../../src/harnessix/agent/tool_rejections.py)的英文说明（调用未执行、原名称与参数不保留、
+  用本次提供的工具的准确名字重发）。说明只由拒绝原因决定，不含目录内容，历史正文不随目录变化。
+- 回归见[别名测试](../../tests/models/test_tool_alias_identity.py)与[拒绝反馈测试](../../tests/models/test_rejection_feedback.py)。
 
 ## 当前增量：思考内容转发（0.10.0b9）
 
@@ -138,6 +154,13 @@ Provider私有分词器。Chat Provider逐位置比较本次与上一视图的�
 目录与预算说明移到标记之后。只改变内容块形态与顺序，不改变文本；未配置时字段不序列化，旧配置指纹不变。
 DashScope兼容端点以`prompt_tokens_details.cache_creation_input_tokens`报告显式缓存创建，[流解析](../../src/harnessix/models/_chat_stream.py)
 仅在OpenAI字段缺失时接受该非负整数，使分区价格可计。回归见[前缀缓存测试](../../tests/models/test_prompt_cache.py)。
+
+### 守卫判为不是答复的回复不原样回放
+
+[`messages_for`](../../src/harnessix/models/_history.py)先经完成守卫的`without_non_answers`处理历史：紧跟“不是答复”类宿主提示的结构化乱码（JSON对象、截断片段、写成文本的工具调用）换成固定短占位，防止模型照抄
+（[Agent模块§13.4](agent.md#134-完成守卫显式开启)，ADR 0124第2版）。Chat与Anthropic两个mapper共用这一视图；
+消息条数、工具调用配对与`ModelRequest.history`不变，占位不长于原文，输入估算保持保守。
+回归见[守卫测试](../../tests/agent/test_completion_guard.py)。
 
 ### 累计预算反馈
 
@@ -352,7 +375,7 @@ connect/read/write/proxy/protocol failure及核验状态码408/409；SDK连接�
 flowchart TD
     H[Completed Agent Items] --> Pair[Validate tool call and result pairing]
     Pair --> Canon[Provider neutral messages]
-    Canon --> Alias[Stable hx tool aliases]
+    Canon --> Alias[Readable tool aliases]
     Alias --> OAI[OpenAI messages and tools]
     Alias --> ANT[Anthropic messages blocks and tools]
     I[Prepared instructions] --> OAI
@@ -367,12 +390,13 @@ flowchart TD
 2. Tool Call ID在历史中唯一，Result必须唯一配对，连续Result组不能被其他消息打断；
 3. Assistant文本与同轮Tool Call聚合为一条中立Assistant消息；
 4. Tool Result正文只包含`outcome/output/error/diff_artifact`的规范JSON；
-5. 工具名按`hx_ + ASCII语义片段前27字符 + _ + SHA-256(原名UTF-8)前32位`形成稳定可读别名；
-6. Tool Schema顶层必须为Object；别名不能冲突；请求JSON UTF-8字节不得超过配置上限。
+5. 工具名只把ASCII字母、数字、下划线和连字符以外的字符替换为下划线并截到64字符；合法原名不变（ADR 0136）；
+6. Tool Schema顶层必须为Object；目录内别名一一对应；请求JSON UTF-8字节不得超过配置上限。
 
-语义片段只保留ASCII字母、数字、下划线和连字符，其他字符替换为下划线；摘要不做Unicode规范化。
-持久`ToolCallContent.tool`仍是原内部名称，历史和当前目录使用同一纯函数投影，不重写旧事件。
-响应只能匹配当前反向目录，不回退旧别名、大小写或正文工具标记；碰撞仍在发送前整体拒绝。
+同一目录内多个原名替换后相同时，合法原名保留自己的名字，其余改为“可读片段前55字符 + `_` + SHA-256(原名UTF-8)前8位”；
+摘要不做Unicode规范化，映射只由目录内的名字集合决定。加后缀后仍相同或原名重复的目录在发送前整体拒绝。
+持久`ToolCallContent.tool`仍是原内部名称，历史和当前目录使用同一份目录映射投影，不重写旧事件。
+响应只能匹配当前反向目录，不回退注册原名、旧别名、大小写或正文工具标记。
 别名不是隐私屏障或授权凭据，Descriptor描述本来就包含原工具名。
 完整流程、字段、伪代码及失败边界见[原生工具身份与执行详设](../changes/m09-r3-native-tool-invocation.md)。
 
@@ -780,6 +804,7 @@ estimate_cost(attempt, price, verified_context):
 |---|---|---|---|---|---|
 | Provider端口与事件 | [`contracts.py`](../../src/harnessix/models/contracts.py) | `ModelRequest`、`ProviderEvent`、`ModelProvider` | [`provider.py`](../../tests/contracts/provider.py) | `ProviderContract.test_text_and_usage`、`test_tool_fragments` | 双Adapter统一语义 |
 | History配对 | [`_history.py`](../../src/harnessix/models/_history.py) | `messages_for`、`tool_alias` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_parallel_history_and_stable_aliases`、`test_invalid_history_fails_explicitly` | 配对、并行组和稳定别名 |
+| 目录别名映射 | [`_history.py`](../../src/harnessix/models/_history.py) | `tool_aliases`、`wire_directory`、`wire_aliases` | [`test_tool_alias_identity.py`](../../tests/models/test_tool_alias_identity.py) | `test_names_that_collide_after_replacement_get_a_short_exact_suffix`、`test_catalog_without_a_one_to_one_alias_mapping_is_rejected` | 可读别名、冲突后缀和一一对应 |
 | OpenAI请求映射 | [`_chat_mapping.py`](../../src/harnessix/models/_chat_mapping.py) | `build_request` | [`test_chat_mapping.py`](../../tests/models/test_chat_mapping.py) | `test_instructions_are_a_separate_leading_system_message`、`test_explicit_thinking_mode_is_forwarded_as_provider_extra_body`、`test_invalid_request_is_rejected_before_network` | System、Tool、显式思考开关和请求预算 |
 | Anthropic请求映射 | [`_anthropic_mapping.py`](../../src/harnessix/models/_anthropic_mapping.py) | `build_request` | [`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_parallel_results_form_one_user_message`、`test_instructions_use_anthropic_system_field` | Block结构和消息角色 |
 | HTTP配置 | [`config.py`](../../src/harnessix/models/config.py) | `ModelHTTPConfig`、`ChatCapabilities` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`test_anthropic_mapping.py`](../../tests/models/test_anthropic_mapping.py) | `test_endpoint_constraints`、`test_https_endpoint_constraints` | HTTPS、能力和数值边界 |
@@ -853,6 +878,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 37 | 第二轮合入 | 2026-11-14 | 文档版本27～29随第二轮分支合入主线，与第30～36版并存：可读工具别名、目录拒绝在模型线协议上的英文反馈、说明随历史持久化（ADR 0136、0132）；序号空缺按到达的调用成组（第29版）保留，没有正文的响应沿用第31版，第二轮不另作处理 |
 | 36 | `8b07c214` 增量 | 2026-11-13 | 断开前只交付过响应开始、思考增量、工具参数进度与用量的请求照常有界重试，两个适配器共用`_provider_io.persistent_output`（ADR 0144第3版） |
 | 35 | `f24afce5` 增量 | 2026-11-13 | 名称缺失、为空或超长的工具调用只拒绝该次调用，不再使整个请求以`tool_name_unknown`失败；两个流式适配器一致，超长名称不保留原文（`_tool_names.py`，ADR 0157） |
 | 34 | `a22e64ee` 增量 | 2026-11-13 | 新增Provider事件`ToolArgumentsProgress`（累计UTF-8字节数与工具名，没有内容）；OpenAI Chat与Anthropic两个流式适配器在收到工具参数片段时经`_progress.ArgumentProgress`上报，第一批立即、之后每满256字节（ADR 0156） |
@@ -860,6 +886,9 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 | 32 | `151ab594` 增量 | 2026-11-12 | `ModelHTTPConfig.max_attempts`上界由5放宽到6，配合向导的“首次请求加至多5次重试”（ADR 0144）；重试逻辑不变 |
 | 31 | `e5141ec7` 增量 | 2026-11-12 | 正常结束的空响应不再由适配器判为协议错误，改由Runtime一处判定并可补发提示继续；删除`semantic_output_missing`（ADR 0109第6版） |
 | 30 | `cf52cadc` 增量 | 2026-11-12 | 畸形或截断的工具参数对所有端点都只拒绝该次调用，不再使整个Turn失败（ADR 0109第5版）；文档版本27～29由round-2分支使用 |
+| 29 | `2d8f5c92` 增量 | 2026-11-12 | 开启`repair_tool_arguments`时工具调用序号空缺按到达的调用成组（ADR 0109第4版） |
+| 28 | `57dd7d7f` 增量 | 2026-11-11 | `notes_in_history`：说明随历史持久化时各映射不再逐请求附加；持久目录说明正文`tool_catalog_update`（ADR 0132） |
+| 27 | `feat/r2-guard` | 2026-11-11 | 出站历史映射把完成守卫判为不是答复的结构化乱码换成短占位（ADR 0124第2版） |
 | 26 | `1d857b39` 增量 | 2026-11-10 | 兼容端点的`reasoning_content`转为`ReasoningDelta`事件，只供界面预览 |
 | 25 | `bd5224e8a5c3cb1e63ee0de61df86d2205cb9f77` | 2026-11-10 | 同步主线：工具结果文本支持命令输出预览v4，去除了终端转义序列时注明“terminal escape sequences removed”，内容为空且未截断的流不再显示；纯文本回复在输出上限处截断改由运行时的截断恢复处理（ADR 0109第3版） |
 | 22 | `feat/p0-beta-readiness` | 2026-11-09 | HTTP错误响应或连接未建立的尝试报告完整零用量；重试遵循`Retry-After`，上限60秒 |
@@ -946,16 +975,27 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   （DeepSeek）；`explicit_tail`另在前缀末端打标记。
 - 参数不是JSON对象的调用（开启`repair_tool_arguments`时指修复后仍不是）不使整个响应以协议失败结束，而是产生
   `ToolCallRejected(reason="invalid_arguments_json")`：与未注册工具相同的无名称、无参数、无执行能力拒绝，配对固定结果
-  `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”），模型在原预算内重发。
+  `tool_arguments_invalid_json`（“工具参数不是合法JSON对象，调用未执行；请重发完整、正确转义的JSON参数”；模型线协议上显示为
+  ADR 0136的英文反馈），模型在原预算内重发。
 - 以`length`结束时若已有流式工具调用，同样按上述规则形成调用组（截断的调用成为
   `invalid_arguments_json`拒绝，完整调用照常提交），终态记为`tool_calls`，由目录拒绝重入；无工具调用的纯文本截断仍以
   `max_output_tokens`失败。本地vLLM在输出用满上限时常把半截调用以`tool_calls`/`stop`结束，两条路径结果一致（ADR-0109）。
+- 开启`repair_tool_arguments`时，流式工具调用的`index`出现空缺不再使响应失败：到达的调用按序号先后成组，每个调用
+  仍逐项校验（本地vLLM实测偶有空缺）。未开启时仍以`tool_index_gap`失败（ADR-0109 v4修订）。
 - `thinking_format="thinking_type"`且开启思考时，每条历史助手消息带`reasoning_content`（未存储推理内容时为空串）：DeepSeek思考模式
   要求带工具历史中的助手消息携带该字段，否则400；空串即满足协议。
 - 同一思考模式只支持`tool_choice: auto`：映射不发送`tool_choice`，强制/required由可执行集收窄与目录说明约束。
 - `stable_tail`布局下逐请求说明以末尾`user`消息（`[Harness note] `前缀）呈现：DeepSeek会把所有system消息并入开头，末尾system说明使
   前缀在指令后即分叉（实测命中0%～22%，改为user后接近100%）；指定函数的`tool_choice`会改写其提示渲染（Pro命中归零），
   该布局下改发`required`，由可执行集收窄与目录说明约束。
+- `ModelRequest.notes_in_history`（默认`false`，ADR 0132）：Runtime已把预算与目录说明写进历史时为真，`budget_instruction`与
+  `current_tool_catalog_instruction`返回空，OpenAI Chat的三种布局与Anthropic都不再逐请求附加说明，相邻请求的消息逐条是前缀关系；
+  `explicit_tail`的第二个缓存标记落在历史最后一条文本消息上。持久目录说明的正文由`tool_catalog_update`生成，与逐请求说明共用
+  拒绝哨兵、受限原因与选择约束的措辞，只把“本请求”换成“自本条起，直到更新的宿主说明替换它”。逐请求的末尾说明每次不同、
+  下一请求又被去掉，使服务端缓存只能复用到上一条说明之前（产品路径上只有目录说明，约150个Token；预算说明只在Provider实现
+  输入估算端口时生成，产品的`SafeFallbackProvider`不实现）。
+- 历史里的工具调用参数以紧凑JSON重发：键顺序、取值与非ASCII字符同模型的输出，原文里的空白不保留（保留原文需要变更
+  `ToolCallCompleted`与`ToolCallContent`合同）。回归见[`test_notes_in_history.py`](../../tests/models/test_notes_in_history.py)。
 
 ## 当前增量：百炼部署的DeepSeek（隐式缓存用量口径）
 

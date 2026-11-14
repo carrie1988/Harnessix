@@ -1,7 +1,7 @@
 ---
 doc_type: governance-index
 status: current
-version: 34
+version: 39
 code_revision: ffdc6415dbc4d648b730556e06ad3ebc4d5bcedd
 owners:
   - core
@@ -253,7 +253,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 
 - [ADR 0107：评测认证宿主与同读完整历史](0107-authenticated-eval-host-and-history-read.md)：复用唯一产品Owner/Key/Scope，原历史完整验真先于恢复；精确新增`evals->secrets`而不扩大治理阈值。
 
-- [ADR 0109：单次坏输出可恢复与读工具失败引导](0109-recoverable-truncation-and-read-guidance.md)：截断工具调用走既有目录拒绝重入、主动压缩摘要截断不终止，读工具失败给出下一步并换算容器路径；不新增事件版本。
+- [ADR 0109：单次坏输出可恢复与读工具失败引导](0109-recoverable-truncation-and-read-guidance.md)：截断工具调用走既有目录拒绝重入、主动压缩摘要截断不终止，读工具失败给出下一步并换算容器路径；v4起调用序号空缺按到达的调用成组、摘要空响应跳过本次压缩；不新增事件版本。
 
 - [ADR 0109（已改号为0110）：Langfuse只读导出与Harbor协议适配](0109-evaluation-integrations.md)：保留原编号链接，供绑定摘要的历史验收证据使用。
 
@@ -263,11 +263,17 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 
 - [ADR 0121：外部边界原生进程Profile](0121-external-boundary-native-process-profile.md)：不经容器在启动方提供的隔离边界内执行命令，须显式配置并由环境断言，执行计划如实记为host_guarded，工作区可写且改动保留；第2版起使用只写外部边界事实的独立系统指令。
 - [ADR 0123：服务方故障的如实归因](0123-provider-service-failure-attribution.md)：用量未知时仍停止付费请求，但服务方故障以原Provider错误码结束；评测记为基础设施失败，可重跑。
-- [ADR 0124：无人值守任务的完成守卫](0124-completion-guard-for-unattended-turns.md)：显式开启时，不像完成的纯文本回复（空、JSON、照抄摘要或尚未改过代码）改为宿主补发继续提示，每Turn至多两次；压缩保留当前Turn全部用户消息。
+- [ADR 0124：无人值守任务的完成守卫](0124-completion-guard-for-unattended-turns.md)：显式开启时，不像完成的纯文本回复（空、JSON、截断或写成文本的工具调用、照抄摘要、宣布下一步或尚未改过代码）改为宿主补发继续提示；第2版起次数随未完成迹象在2～6次间变化、提示写明剩余模型调用次数、结构化乱码在出站历史里换成占位；压缩保留当前Turn全部用户消息。
 - [ADR 0125：Skill的产品装配](0125-skill-product-wiring.md)：模型只给名称，宿主补齐摘要；目录快照只在进程内，工具合同不随Skill内容变化；没有Skill时产品行为不变。
 - [ADR 0126：会话历史的增量校验](0126-incremental-session-history-verification.md)：进程内缓存已验证的链前缀，游标读取只校验本次返回的事件，交付的数据仍全部经过认证；全量读取行为不变。
 - [ADR 0127：本机stdio MCP与逐个信任](0127-host-stdio-mcp-with-per-server-trust.md)：修订ADR 0073第2条；只读用户级`mcp.json`，逐个显式信任并绑定定义指纹，每次工具调用审批，仓库级配置与远端MCP不在1.0。
 - [ADR 0128：沙箱外命令的免询问规则](0128-host-command-approval-rules.md)：修订ADR 0113第2.2节；服务端策略不变，交互客户端对内置只读命令和用户保存的命令前缀自动批准并留痕，规则按工作区保存在本机，可查看和撤销。
+- [ADR 0131：会话基线](0131-session-baseline-for-pre-existing-workspace-changes.md)：会话开始前工作区已有的未提交改动经Git只读端口记录为一条宿主说明并告知模型，`git_status`、`git_review`结果标记`pre_existing`，完成前复核，被还原或删除的提示一次；不写Git对象库，不新增事件类型或配置字段。
+- [ADR 0132：请求只追加，压缩点按真实Token校准](0132-append-only-requests-and-token-calibrated-compaction.md)：稳定前缀的Provider上预算与目录说明落为历史Item、只在关口或可执行集合变化时发；评测沿用产品默认压缩点（修订ADR 0120的评测压缩点）；声明窗口时压缩点按上一请求的真实输入Token校准，受出站请求容量约束。
+- [ADR 0133：Thread投影的解析复用与Reducer结构共享](0133-parsed-projection-reuse-and-reducer-sharing.md)：每次读取的摘要、MAC与SQL校验不变，原字节摘要相同时复用已解析的Thread；Reducer不再逐事件深拷贝整个Thread；共享对象不得原地修改。
+- [ADR 0134：默认工作习惯指令与只含评测事实的任务模板](0134-default-working-habits-and-thin-eval-template.md)：复现、前后对照测试、与代码库已有做法一致、通过即完成、只清理自己创建的文件等习惯成为三种命令执行方式共用的产品默认指令；评测任务模板只留题目与评测自身的事实。
+- [ADR 0135：命令账本与工具步骤说明](0135-command-ledger-step-notices.md)：同一条Shell命令在补丁之前通过、之后失败，同一份补丁第二次被回滚，或同一条命令原地重复第三次时，宿主在该步工具结果之后补发一条事实说明；从持久Item推导，每类事实只说明一次，不改写工具结果。
+- [ADR 0136：可读工具别名、给模型的英文反馈与计划调用位置](0136-readable-tool-aliases-and-model-facing-feedback.md)：别名只替换非法字符，目录内冲突才加8位后缀；目录拒绝、计划校验、命令非零退出与超时给模型英文说明，持久结果与界面文案不变；`update_plan`可写在响应任意位置，宿主把它排到调用组末尾。
 - [ADR 0137：新建文件时由事务补建缺失的父目录](0137-create-with-missing-parent-directories.md)：`apply_patch_batch`的create在父目录不存在时于同一次审批、同一笔事务内补建目录；失败只清理自己建的空目录，回滚删除原Patch补建且为空的目录，审批Diff以`new directory`行列出；不跟随符号链接，合同与Schema不变，Windows暂不补建。
 - [ADR 0141：CRLF与混合换行文件上的精确编辑](0141-newline-aware-exact-edits.md)：edit的锚点先逐字节匹配，找不到时忽略CRLF/LF差异再匹配并映射回原始字节区间；`new_text`的换行按被替换处的风格写入；升级前保存的计划按当时的语义复核，仍可执行与回滚。
 - [ADR 0142：批准后过期的计划以确定失败结束](0142-stale-approved-plan-fails-without-effect.md)：修订ADR 0069的Route状态机；执行前复核发现批准时绑定的工作区事实已变化时，Route由ready直接进入failed，操作不执行并如实反馈，本轮继续，不再报告为未知效果。
@@ -278,6 +284,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0147：交互模式下只宣布下一步的回复](0147-interactive-prompt-for-announced-steps.md)：修订ADR 0124；终端界面里模型只说接下来要做什么却没有动作时，宿主提示一次并继续，向用户提问的回复不算；宿主说明在界面上显示为“提示”。
 - [ADR 0148：交互模式的运行时间检查点与一键收尾](0148-interactive-run-time-checkpoint-and-wrap-up.md)：终端界面不再由内核墙钟预算在第60分钟终止任务；界面累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；`Ctrl+F`一键发送收尾说明。无人值守不变。
 - [ADR 0149：本机模式指令的完成规则](0149-completion-rule-in-native-instructions.md)：本机命令的系统指令升为v5，写明只做被要求的事、用已有检查验证一次、无法验证的写进最终回答、做完立即结束；容器与外部边界指令不变。
+- [ADR 0153：工作区概览在Turn内固定，系统指令不在中途变化](0153-turn-stable-workspace-overview.md)：一级目录概览每个Turn只在首个模型步骤观察一次，模型在根目录新建或删除条目不再改变系统指令、使整段历史的前缀缓存失效。
 - [ADR 0156：请求进行中的生成进度与用量估算](0156-generation-progress-and-live-usage-estimate.md)：适配器上报工具参数的累计字节数，运行时按思考、正文、工具参数三类每秒至多发布一行累计值（只有数字），复用Delta通道并由新能力位`generation_progress`控制；终端界面据此显示生成阶段、估算的Token与费用，请求结束后换回实际用量。0150～0155由第二轮开发占用。
 - [ADR 0157：名称缺失或超长的工具调用只拒绝该次调用](0157-nameless-tool-calls-are-rejected-individually.md)：模型给出的工具调用没有可用名称（缺失、为空或超过256个字符）时，与目录外名称同样只拒绝这一次调用，同组其他调用照常放行，超长名称不保留原文；此前整个请求以`tool_name_unknown`失败、任务中断（Beta Issue #1）。
 - [ADR 0158：历史Artifact的正文在同一存储对象里只完整核对一次](0158-history-artifact-bodies-verified-once-per-store.md)：每次请求模型之前的历史核对，对已完整核对过的引用只再确认记录、认证、清单、过期与正文SHA-256，不再每一步重新解析与扫描正文；此前耗时随会话里累计的输出线性增长，长会话超过5秒时限而中断（Beta Issue #8）。
@@ -290,3 +297,5 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0112：原生命令的工作区模式](0112-native-workspace-modes.md)：`read_only`与`read_write`（默认，改动保留）两种模式；`.git`只读、工作区`.env*`拒读；不做快照、撤销、改动记录与命令前清单，补丁前镜像核对兜底并发改动。
 
 - [ADR 0113：沙箱内命令免审批与沙箱外命令](0113-sandboxed-command-approval-and-host-escalation.md)：策略v2把`host_sandboxed`命令标记为由宿主以系统身份自动批准（Agent内核要求写调用先有批准记录）；联网等越界操作走必须逐条批准的`host_command`；零配置下沙箱不可用时只提供逐条批准且标注未隔离的沙箱外命令。
+
+- [ADR 0129：文件工具的宽容与可改正的拒绝](0129-file-tool-leniency-and-correctable-rejections.md)：Patch提案阶段修复可唯一确定的写法，replace/delete缺SHA时补模型最近一次读到的摘要；拒绝说明改为英文并指出`files[i].edits[j]`与宿主核对到的事实；Grep单文件起点不应用`include`、无文件匹配时失败；界面按错误码保留原中文原因。第2版：编辑在逐字节匹配失败后忽略CRLF/LF差异再匹配，写入沿用被替换处的换行风格；被拒批次写明整批未写入。事务、SHA前置条件、审批绑定与公共Schema不变。

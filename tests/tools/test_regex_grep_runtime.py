@@ -39,25 +39,28 @@ def definitions(**flags):
 
 
 def test_legacy_and_snapshot_descriptors_are_byte_identical_to_prechange_sha():
+    # Grep的include语义（单文件起点不筛选、无文件匹配时失败，ADR 0129）进入各Grep合同摘要；
+    # 其余只读工具的Descriptor逐字节不变。
     expected = {
         "list_files": "5cd1d18262754dd6bd27459d0ccad43a59125e43dc78ecaba934202e851e0e00",
         "read_file": "3b2692d74f2f4754a86605412656678906867cdf6e4f168dbad3b7d6b591e7ad",
         "glob": "f7b1f577311cb06997a1ef208d6490f199401263df3014d711a4f6e7e4a78622",
-        "grep": "5bfdbee1cc598bc23846fe6f3e11ad012b2eafad603d989b47e7394839556fd7",
+        "grep": "b7d4afe16adc6ccffacfb565e0bc549e7805473d7c8211997810d95955efc05a",
     }
     for name, definition in definitions().items():
         assert digest(definition.model_dump(mode="json")) == expected[name]
     assert hashlib.sha256(definitions()["grep"].model_dump_json().encode()).hexdigest() == (
-        "5af624c512e44f02f79a16585f5144841cf501b8688cb26dd1350b4146f55acf"
+        "8c67bd481eb91b60bc134e05c26e6dd046c1937d36efd741d2717a3016170fd5"
     )
     snapshots = definitions(enable_grep_snapshots=True)
     # 快照Grep：文件名include、整仓库上限、20行上下文（向后兼容的放宽）改变描述与合同摘要；
-    # 执行合同v7把整仓库上限放宽到四倍、不含查询的文件不再逐行扫描（ADR 0145）。
-    expected["grep"] = "bfa4cdd9f0563b68ec8ee60de204662589f141161204db3e5da0717651d84853"
+    # 执行合同v7把整仓库上限放宽到四倍、不含查询的文件不再逐行扫描（ADR 0145），
+    # 并与其余Grep合同一样带有include的语义（ADR 0129）。
+    expected["grep"] = "39ea35058581c8d551bba8af434b819c4483e97d2064d4301ef5e79183144dfb"
     for name, definition in snapshots.items():
         assert digest(definition.model_dump(mode="json")) == expected[name]
     assert hashlib.sha256(snapshots["grep"].model_dump_json().encode()).hexdigest() == (
-        "6a6cc07b7a7e7144a88cc60fcafa015248ab7b023a39b9227f28e46c751b4453"
+        "bde1ae8c57cf685d0339937297bafefa3504f5be1f7d6e350eda08ae9177cda8"
     )
 
 

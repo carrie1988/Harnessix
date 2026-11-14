@@ -29,6 +29,7 @@ from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
+from harnessix.agent.compaction_calibration import calibrated_compaction, calibrated_limit
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.completion_guard import (
     CompletionGuardMode,
@@ -95,6 +96,7 @@ from harnessix.agent.patching import execution_approval, inspection_scope, resul
 from harnessix.agent.planning import (
     UPDATE_PLAN_TOOL,
     execute_plan_update,
+    plan_calls_last,
     planning_history_anchors,
     planning_tool_descriptor,
 )
@@ -107,6 +109,7 @@ from harnessix.agent.ports import (
     PatchRuntime,
     ScopedToolRuntime,
     ToolRuntime,
+    ToolStepNoticeSource,
     TrustedActionGateway,
 )
 from harnessix.agent.provider_stop import service_failure_stop, unknown_usage_stop
@@ -120,6 +123,7 @@ from harnessix.agent.publication import (
 )
 from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
+from harnessix.agent.request_notes import append_request_notes, without_request_notes
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
     select_artifact_verifier,
@@ -133,6 +137,16 @@ from harnessix.agent.runtime_recovery import (
     result_resume_safe,
 )
 from harnessix.agent.runtime_thread_lock import RuntimeThreadLock
+from harnessix.agent.session_baseline import (
+    MARKED_GIT_TOOLS,
+    BaselineNotice,
+    WorkspaceChangeObserver,
+    baseline_announcement,
+    baseline_loss_notice,
+    mark_pre_existing,
+    recorded_baseline,
+)
+from harnessix.agent.step_notices import append_step_notice
 from harnessix.agent.telemetry import KernelTelemetry
 from harnessix.agent.tool_call_groups import (
     require_exclusive_tool_calls,
@@ -206,7 +220,10 @@ from harnessix.context.compaction_ledger_contracts import (
     CompactionUsageObserved,
 )
 from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
-from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
+from harnessix.context.compaction_runtime_contracts import (
+    CompactionRuntimeConfig,
+    CompactionTokenWindow,
+)
 from harnessix.context.compaction_window import build_compaction_window
 from harnessix.context.contracts import (
     ContextBuildInput,
@@ -330,6 +347,10 @@ class AgentRuntime:
         unknown_usage: UnknownUsagePolicy = STOP_ON_UNKNOWN_USAGE,
         approval_responder: ApprovalResponder | None = None,
         recover_truncated_replies: bool = False,
+        step_notices: ToolStepNoticeSource | None = None,
+        session_baseline: WorkspaceChangeObserver | None = None,
+        history_notes: bool = False,
+        compaction_window: CompactionTokenWindow | None = None,
     ) -> None:
         validate_runtime_switches(
             max_parallel_tools,
@@ -379,6 +400,11 @@ class AgentRuntime:
         # 开启时，不像完成的纯文本回复改为补发继续提示（completion_guard的两种模式）；默认照常完成。
         self._completion_guard = completion_guard_mode(completion_guard)
         self._recover_truncated_replies = recovery_switch(recover_truncated_replies)
+        # 提供观察端口即启用会话基线（session_baseline模块）：记录并保护会话开始前已有的未提交改动。
+        self._session_baseline = session_baseline
+        # ADR 0132：宿主说明落为历史Item；压缩点按真实输入Token校准。
+        self._history_notes = history_notes is True
+        self._token_window = compaction_window
         # 用量未知的失败尝试是否按预留额计入后继续；默认停止，避免在费用不明时继续花钱。
         self._unknown_usage = unknown_usage
         if artifacts is not None and (artifacts.session is not store or scoped_tools is None):
@@ -480,6 +506,8 @@ class AgentRuntime:
             tool_result_view_policy or ToolResultViewPolicy()
         ).model_copy(deep=True)
         self._model_tool_view = model_tool_view
+        # 注入时，每步工具结果落账后补发来源推导出的宿主说明（step_notices模块）；默认不补发。
+        self._step_notices = step_notices
         self._compaction = compaction.model_copy(deep=True) if compaction is not None else None
         self._summary_provider = summary_provider
 
@@ -1228,6 +1256,10 @@ class AgentRuntime:
             if turn.status == TurnStatus.ACCEPTED:
                 self._fault("runtime.after_turn_started")
             async with asyncio.timeout(remaining):
+                if turn.status == TurnStatus.ACCEPTED:
+                    await self._session_baseline_notice(
+                        baseline_announcement, thread_id, turn_id, token
+                    )
                 result = await self._drive(thread_id, turn_id, token)
                 token.checkpoint()
                 return result
@@ -1266,6 +1298,20 @@ class AgentRuntime:
                 )
             )
             return await self._finish(thread_id, turn_id, TurnStatus.FAILED, failure)
+
+    async def _session_baseline_notice(
+        self, notice: BaselineNotice, thread_id: UUID, turn_id: UUID, token: CancelToken
+    ) -> None:
+        """会话基线的宿主说明有内容才落为用户消息，未启用时不做任何事。
+
+        完成前的复核先于终结判定落账：补发的说明与运行中Steering一样使本步重入，而不是完成Turn。
+        """
+        if self._session_baseline is None:
+            return
+        thread = await self.store.get_thread(thread_id)
+        events = await notice(self._session_baseline, thread, turn_id, token)
+        if events:
+            await self._commit(thread_id, turn_id, [event.payload for event in events])
 
     async def _record_cancel(self, thread_id: UUID, turn_id: UUID) -> Turn:
         async with self._lock(thread_id):
@@ -1970,6 +2016,7 @@ class AgentRuntime:
             turn_id=thread.active_turn_id,
             model_step=prepared.inspection.model_step,
             workspace=thread.workspace,
+            input_limit_tokens=calibrated_limit(self._token_window, thread),
             history_documents=tuple(history_document(item) for item in prepared.history),
             tool_documents=tuple(
                 json.dumps(
@@ -2019,7 +2066,7 @@ class AgentRuntime:
                     thread,
                     model_step,
                     self._tool_result_view_policy,
-                    self._compaction.policy,
+                    calibrated_compaction(self._compaction, self._token_window, thread).policy,
                     token,
                     compaction_id=compaction_id,
                     anchors=planning_history_anchors(thread),
@@ -2252,7 +2299,7 @@ class AgentRuntime:
         if self._model_tool_view is None:
             return ModelToolSelection(available)
         selected_view = self._model_tool_view.select(
-            turn.model_copy(deep=True),
+            without_request_notes(turn),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
         if type(selected_view) is tuple:
@@ -2309,6 +2356,7 @@ class AgentRuntime:
                 if self._compaction is not None:
                     self._require_request_slots(turn)
                 model_step = turn.model_steps + 1
+                await append_request_notes(self, thread_id, turn)
                 with self._telemetry.operation(
                     "history",
                     thread_id=thread_id,
@@ -2358,6 +2406,7 @@ class AgentRuntime:
                                 turn_id=turn_id,
                                 model_step=model_step,
                                 workspace=thread.workspace,
+                                input_limit_tokens=calibrated_limit(self._token_window, thread),
                                 history_documents=tuple(history_document(item) for item in history),
                                 tool_documents=tuple(
                                     json.dumps(
@@ -2445,6 +2494,7 @@ class AgentRuntime:
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                     tool_notice=tool_selection.notice,
+                    notes_in_history=self._history_notes,
                 )
                 estimated_input_tokens = estimate_request_input_tokens(
                     self.provider, candidate, turn, estimated_input_tokens
@@ -2490,6 +2540,7 @@ class AgentRuntime:
                     tool_choice=tool_selection.choice,
                     forced_tool=tool_selection.forced_tool,
                     tool_notice=tool_selection.notice,
+                    notes_in_history=self._history_notes,
                 )
                 try:
                     recovery = await self._sample(
@@ -2534,6 +2585,10 @@ class AgentRuntime:
                     raise KernelError("budget_exceeded", "Provider 报告的 Token 用量超过预算")
                 if not calls:
                     token.checkpoint()
+                    if recovery is None:
+                        await self._session_baseline_notice(
+                            baseline_loss_notice, thread_id, turn_id, token
+                        )
                     target = await self._close_model_step(request, recovery=recovery)
                     if target == TurnStatus.PREPARING_CONTEXT:
                         continue
@@ -2545,6 +2600,7 @@ class AgentRuntime:
             waiting = await self._execute_calls(thread_id, turn_id, token)
             if waiting is not None:
                 return waiting
+            await append_step_notice(self, thread_id, turn_id)
 
     async def _execute_calls(
         self,
@@ -2911,6 +2967,9 @@ class AgentRuntime:
                 checked = self._validate_result(result.result, call, max_output_chars)
                 operation.finish(checked.outcome, checked.error)
                 return replace(result, result=checked)
+            if self._session_baseline is not None and call.tool in MARKED_GIT_TOOLS:
+                baseline = recorded_baseline(await self.store.get_thread(thread_id))
+                result = mark_pre_existing(call.tool, result, baseline, max_chars=max_output_chars)
             result = self._validate_result(result, call, max_output_chars)
             operation.finish(result.outcome, result.error)
             return result
@@ -2939,11 +2998,7 @@ class AgentRuntime:
     ) -> ToolResultContent | ArtifactToolResult:
         definition = self._definitions.get(call.tool)
         if definition is None:
-            return ToolResultContent(
-                call_id=call.call_id,
-                outcome="failed",
-                error=AgentFailure(code="unknown_tool", message="工具未注册"),
-            )
+            return rejection_result(call.call_id)
         if action_owned(self._trusted_actions, call):
             self._validate_tool_contract(call)
             return await execute_trusted_action(
@@ -3224,8 +3279,8 @@ class AgentRuntime:
             proposals = [normalize_proposal(p, offered) for p in proposals]
         proposals = [repair_proposal(p, offered, reroute=reroute) for p in proposals]
         if isinstance(self._scoped_tools, CodingToolRuntime):
-            read = self._scoped_tools.read_workspace_file
-            proposals = [await fill_patch_preconditions(p, offered, read) for p in proposals]
+            files, seen = self._scoped_tools, request.history
+            proposals = [await fill_patch_preconditions(p, offered, files, seen) for p in proposals]
         completed_calls = tuple(
             proposal for proposal in proposals if isinstance(proposal, ToolCallCompleted)
         )
@@ -3263,7 +3318,7 @@ class AgentRuntime:
         # 原用量路径独立保留；调用组仅在流正常关闭后原子形成，拒绝无执行权。
         payloads: list[EventPayload] = []
         rejected_results: list[ToolResultContent] = []
-        for proposal in proposals:
+        for proposal in plan_calls_last(proposals, self._planning_enabled):
             definition = (
                 proposal_definitions.get(proposal.tool)
                 if isinstance(proposal, ToolCallCompleted)

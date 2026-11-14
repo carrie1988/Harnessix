@@ -117,6 +117,17 @@ def test_template_v3_is_language_neutral_and_asks_for_a_clean_diff() -> None:
     assert "builds and installed packages may point at the workspace" in rendered
 
 
+def test_template_v4_renders_the_issue_verbatim_before_the_evaluation_facts() -> None:
+    """v4（ADR 0134）只剩题目与评测自身的事实；固定文字见test_swebench_task_template。"""
+    issue = "Callable storage {{ not a template }} fails\nwith `default_storage` <b>"
+    rendered = render_prompt_template(
+        ROOT / "benchmarks/harbor/harnessix/swebench-task-v4.j2", issue
+    )
+    assert rendered.startswith("<pr_description>\nConsider the following PR description:\n")
+    assert f"\n{issue}\n</pr_description>\n\n<instructions>\nResolve the issue" in rendered
+    assert rendered.rstrip().endswith("must end up as you found them.\n</instructions>")
+
+
 @pytest.mark.parametrize(
     "spec",
     [

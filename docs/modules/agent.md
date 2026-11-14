@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 63
-code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
+version: 64
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -21,6 +21,9 @@ related_adrs:
   - docs/adr/0013-kernel-contracts-and-telemetry.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0135-command-ledger-step-notices.md
+  - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
+  - docs/adr/0131-session-baseline-for-pre-existing-workspace-changes.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -41,6 +44,8 @@ related_tests:
   - tests/agent/test_approval_crash_recovery.py
   - tests/agent/test_interactions.py
   - tests/agent/test_cancelled_turn_notice.py
+  - tests/agent/test_session_baseline.py
+  - tests/agent/test_session_baseline_git.py
   - tests/agent/test_trusted_action_runtime.py
   - tests/agent/test_trusted_action_locked_sync.py
   - tests/agent/test_legacy_process_compatibility.py
@@ -48,6 +53,7 @@ related_tests:
   - tests/context/test_turn_budget_compaction.py
   - tests/context/test_compaction_runtime.py
   - tests/product_config/test_native_sandbox_profile.py
+  - tests/agent/test_step_notices.py
 supersedes: []
 ---
 
@@ -95,6 +101,42 @@ supersedes: []
 - `latest_counts`供客户端读出最近一行；格式不符时返回空，客户端不显示估算。
 - 回归见`tests/agent/test_generation_progress.py`。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
+## 当前增量：计划调用位置与给模型的英文反馈（ADR 0136）
+
+- **计划调用位置。** 一次评测里`update_plan`被拒28次，其中24次是“先`update_plan`、再一个其他调用”：计划Item只能在整组调用
+  结算后进入准备阶段时与结果同事务发布，旧规则因此要求模型把它写在最后。现在模型可以写在任意位置：
+  [`plan_calls_last`](../../src/harnessix/agent/planning.py)在`_sample_events`形成持久调用组时把计划调用稳定移到其余调用之后，
+  其余调用保持模型给出的相对顺序；事件、Reducer与计划结果合同不变。同一响应有多个计划调用时只记录最后一个，较早的以
+  `tool_invalid_arguments`说明原因；未启用内置规划时同名工具不重排。
+- **计划的说明与错误。** 工具说明与全部校验错误改为英文，形状与字段错误仍附完整合法调用示例；界面对
+  `tool_invalid_arguments`显示固定文案，不受影响。工具说明变化使`update_plan`的工具指纹变化：升级前的会话在模型再次更新计划
+  之前，压缩不再固定旧的计划调用组。
+- **目录拒绝的反馈。** [`tool_rejections.rejection_feedback`](../../src/harnessix/agent/tool_rejections.py)给出每个拒绝原因的
+  英文说明，只在模型线协议视图中替换固定结果的`message`（见[Model Runtime](models.md)）；持久固定结果、追加与重放校验、界面
+  显示不变。执行时已无定义的已登记调用复用同一份固定未注册结果。
+- 回归见[计划工具测试](../../tests/agent/test_planning_tool.py)与[拒绝反馈测试](../../tests/models/test_rejection_feedback.py)。
+
+## 当前增量：会话基线（ADR 0131）
+
+- **缺陷**：会话开始时工作区已有的未提交改动（用户的在途修改、任务环境预置的文件），模型在`git status`里看到后无从判断来历，曾在收尾清理时还原（`projectlombok__lombok-3009__jGA3Cpp`第38步，源码修复正确却整题失败）。此前只有评测适配器的补丁导出知道开始前的工作区。
+- **启用**：`AgentRuntime(session_baseline=<WorkspaceChangeObserver>)`，默认`None`时行为不变。端口只有一个方法`workspace_changes(cancel, paths=())`，返回与`git_status`相同的`GitStatusOutput`；产品传入`CodingToolRuntime`。逻辑全部在[`session_baseline`](../../src/harnessix/agent/session_baseline.py)，Runtime只有三处接线。
+- **记录与告知**（`_continue`，Turn为`accepted`时）：Thread还没有运行过模型步骤、不是Fork、也没有记录时观察一次；有改动则追加一条已完成的`user_message`宿主说明，身份`uuid5(turn_id, "harnessix.session-baseline/v1")`。正文是英文说明加末行JSON记录（`changes`逐条为`git status --short`写法，至多64条、4 KiB，`truncated`标明是否完整）。宿主此后只读这一行（`recorded_baseline`），不新增事件类型或存储。改动多到状态读取超限时，说明改为“多到无法列出”。
+- **标记**（`_execute`）：`git_status`、`git_review`的成功结果里，属于基线的条目加`pre_existing: true`，状态对象加`pre_existing_note`；标记后超出结果上限时返回原结果。
+- **完成前复核**（`_drive`，本步无工具调用且不需要回复恢复——既未截断也不是空回复，先于`_close_model_step`）：只对基线路径观察一次。路径不再出现在状态里，或开始前不是删除状态而现在是，记为丢失；HEAD已移动时不判断。有未提示过的丢失路径时追加一条`user_message`（身份`uuid5(turn_id, "harnessix.session-baseline-loss/v1")`，末行JSON列出路径），`_close_model_step`随即按既有Steering语义重入，本函数未改动。每个Turn至多一条，提示过的路径在整个Thread里不再提示，预算用尽时不补发。
+- **与完成守卫的先后**：复核说明先落账，该步完成守卫不再判定；模型回应后的下一次无工具调用回复照常经过完成守卫。
+- **失败与恢复**：观察失败（不是仓库、Git不可用、超时）按没有观察处理，不影响Turn；取消照常传播。说明落账后崩溃，恢复时按Item身份识别，不重复记录。
+- **界面**：Product UI按`is_session_baseline_notice`不显示这两条说明。
+- **测试**：[`tests/agent/test_session_baseline.py`](../../tests/agent/test_session_baseline.py)、[`tests/agent/test_session_baseline_git.py`](../../tests/agent/test_session_baseline_git.py)（真实Git仓库端到端）。局限见ADR 0131。
+
+## 当前增量：请求只追加与压缩点校准（ADR 0132）
+
+- **请求只追加（`history_notes`，默认关闭）**：[`request_notes`](../../src/harnessix/agent/request_notes.py)在每步准备模型历史之前判断是否有到期的宿主说明，有则在线程CAS内追加为已完成的`user_message` Item（与完成守卫同一机制，正文以`[Harnessix host notice]`开头），并让`ModelRequest.notes_in_history`为真，Provider映射不再逐请求附加预算与目录说明。说明写在本步`ModelHistoryPrepared`之前，属于本步消费的历史，不是待处理的Steering；之后一直留在历史里，请求等于“上一请求＋新内容”。
+  - 预算说明每个关口一次：剩余调用数、剩余累计Token或Turn剩余时间≤1/2、≤1/4，以及过了四分之一关口后剩余调用数≤10、按上一请求实际尺寸只够再发≤10次或剩余时间≤1/10。只读Turn的持久事实（`budget`、`model_steps`、`model_attempts`、`usage`、`created_at`）与当前时刻，不依赖Provider是否实现输入估算端口，产品路径同样生效。身份`uuid5(turn_id, "harnessix.request-notes/v1:budget:<half|quarter|final>")`；较紧的关口发过后不补发较松的。
+  - 目录说明只在配置了`model_tool_view`时发：每个Turn首个请求一条，此后正文（可执行别名、受限原因、选择约束）与本Turn上一条不同才再发，身份`uuid5(turn_id, "harnessix.request-notes/v1:catalog:<序号>")`。没有工具视图时不发。
+  - 工具视图拿到的Turn副本不含这些说明（`without_request_notes`）；Product UI按身份隐藏。大多数步骤没有到期的说明，判断只用调用方手里的Turn快照，不加锁、不读Session。
+- **压缩点校准（`compaction_window`，默认不校准）**：[`compaction_calibration`](../../src/harnessix/agent/compaction_calibration.py)取Thread内最近一次已完成主请求的Context检查（估算字节）与Provider报告的真实输入Token，把触发点、目标与输入上限换算到真实窗口的同一比例：触发时整个请求的真实输入约为窗口的一半。只放宽固定比例换算的数值；输入上限不超过出站请求容量，触发点另在其下留出一次退避（历史增长四分之一后重试）的余量。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)用校准后的触发点判断，`_run_compaction`用校准后的策略规划，校准的输入上限经`ContextBuildInput.input_limit_tokens`交给Planner。没有声明窗口、没有Context Planner或没有完整用量时配置原样返回。
+- **回放**：不新增事件类型或版本；说明是普通Item事件，压缩计划记录它实际使用的策略，Reducer重放与历史哈希按既有规则覆盖。回归见[`test_request_notes.py`](../../tests/agent/test_request_notes.py)与[`test_compaction_calibration.py`](../../tests/agent/test_compaction_calibration.py)。
+
 ## 当前增量：思考预览（0.10.0b9）
 
 - [`reasoning_preview.ReasoningPreview`](../../src/harnessix/agent/reasoning_preview.py)由`ModelTextPublication.preview`按需创建：思考增量经公开文本保护后以临时`ItemDelta`发布，条目身份为`uuid5(turn_id, "harnessix.reasoning-preview/v1:<step>")`，使用独立序号，不占用正文增量序号（否则界面会把正文判为缺口）。单步最多发布64 KiB。公开保护会扣住末尾可能构成密钥的字节，思考转入正文、工具调用或结束时收尾放出；收尾后本步骤再有思考只是不再预览。思考不建Item、不进模型历史、不计入输出上限。上下文摘要请求忽略思考增量。
@@ -130,11 +172,12 @@ ModelRequest、Provider Wire或Session公共合同。Kernel验证规则只能引
 ## 可选原生规划控制（默认关闭）
 
 [`planning.py`](../../src/harnessix/agent/planning.py)复用Plan契约，一次受保护CAS发布短结果、
-准备状态和模型自报计划；末尾规则、取消／期限、输出上限和崩溃恢复不授予Workspace权限。
+准备状态和模型自报计划；取消／期限、输出上限和崩溃恢复不授予Workspace权限。
+计划调用由宿主排到持久调用组末尾（ADR 0136），模型可把它写在响应的任意位置。
 缺少`step_id`的步骤按位置补齐（不改已给出的ID、不制造重复；回放时同样补齐，压缩Pin仍能识别最新计划），
-被拒时失败说明指出具体违反的规则（步骤数、重复ID、多个进行中、字节上限、字段或位置），不回显参数值；
-参数形状或步骤字段错误（常见为只发单个步骤或漏写`description`）另附一份固定的完整合法调用示例，
-并说明每次调用都发送整份计划；工具合同、Schema与版本不变。
+被拒时英文失败说明指出具体违反的规则（步骤数、重复ID、多个进行中、字节上限、字段，或同一响应里有更晚的计划调用），
+不回显参数值；参数形状或步骤字段错误（常见为只发单个步骤或漏写`description`）另附一份固定的完整合法调用示例，
+并说明每次调用都发送整份计划；Schema与版本不变。
 完整契约及源码／测试映射统一见[规划候选设计](../changes/swebench-adapter-verified-25-pilot.md#原生规划控制候选默认关闭真实质量未验收)。
 [`test_planning_tool.py`](../../tests/agent/test_planning_tool.py)的离线绿灯不构成真实编码验收。
 
@@ -219,9 +262,28 @@ Session、不缓存未知效果、不变更协议、迁移、期限或 Token 上
 同一阶段修复Workspace Patch（标准与紧凑Schema解码到同一模型）：外层单文件字段并入`files`，补齐只有edits时的edit操作，
 去掉edit上的默认mode与null content，`content_sha256`并入`expected_sha256`；多文件、字段冲突、edit同时给出content或
 可执行权限等意图不明的写法原样保留。edit的SHA缺失或过期、而每段`old_text`都在当前文件中唯一出现时，经
-`CodingToolRuntime.read_workspace_file`读取当前文件（同一工作区边界与扫描上限）补上SHA-256；replace与delete不补。
+`CodingToolRuntime.read_workspace_file`读取当前文件（同一工作区边界与扫描上限）补上SHA-256。
 2026-11-08 holdout的65次补丁失败中，结构修复可解8次，另有6次缺SHA与15次SHA过期可由锚定补齐。回归见
 [调用修复测试](../../tests/agent/test_call_repair.py)与[产品路径补丁修复测试](../../tests/product_config/test_patch_call_repair.py)。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。** Multilingual评测的57次
+Patch参数拒绝中，离线重放有32次在下列修复后通过参数校验：
+
+- 结构修复新增：值为null的未知字段与文本`"null"`的mode视为未给出；create缺mode取420，delete去掉默认mode；文件项上的
+  `old_text`/`new_text`包成`edits`；`operation: replace`带`edits`而无`content`时取edit；同一路径的多个edit项
+  （SHA相同或只有部分给出）合并为一项。带值的未知字段、`old_text`与`new_text`相同的编辑不改，照常被拒并指出位置。
+- 前置条件补全新增两类事实，入口仍是`fill_patch_preconditions`：
+  [`file_observations.py`](../../src/harnessix/agent/file_observations.py)从本步发给模型的历史（`ModelRequest.history`）
+  取各文件最近一次完整内容SHA-256（`read_file`、带摘要的`grep`命中、Patch成功结果）。replace/delete缺SHA时补它
+  ——是模型读到的摘要而不是当前文件的，文件此后变化照常因SHA不符被拒；缺`path`而SHA恰好对应历史中唯一一个文件时补路径。
+  replace缺mode时经`CodingToolRuntime.workspace_file_mode`沿用现有文件的可执行位。模型给出的SHA与mode不改写。
+- 改道新增：`read_file`带着grep的`query`且全部字段都属于本步grep合同时改为`grep`；`read_artifact`的`offset`/`limit`
+  接受纯数字字符串并截到页上限。后者必须在调用形成前完成：存档分页核验按调用记录中的参数重算，执行时再修复会让
+  已成功的读取在核验时被判为`artifact_corrupt`。
+
+**2026-11-12修订（ADR 0129第2版）。** “每段`old_text`都在当前文件中唯一出现”的判定（`_anchors_once`）与编辑规划同一顺序：
+先逐字匹配，一处也没有时忽略CRLF/LF差异再匹配。CRLF文件上模型发回的多行`old_text`常是LF换行，此前这类编辑得不到SHA补全。
+只补摘要，记录与审批的仍是模型发来的文本；换行风格在规划时按文件决定（见[Patch模块设计](patches.md)）。
 
 ## 当前增量：稳定线上工具目录（默认关闭）
 
@@ -463,6 +525,12 @@ Thread创建、活动Turn之外的修改、归档活动Thread和终态重开。`
 Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并更新Snapshot；调用方通过
 `expected_sequence`进行CAS。进程重启后可从Event Log重建并校验Snapshot，不信任单独的缓存投影。
 
+`apply_event`返回的Thread与输入的Thread、事件共享未变化的子对象，不再逐事件深拷贝整个聚合
+（[ADR 0133](../adr/0133-parsed-projection-reuse-and-reducer-sharing.md)）：深拷贝的代价与历史长度成正比，
+60步的会话里一次追加约12毫秒。聚合内全部是冻结模型，共享不改变取值；调用方不得原地修改其中的JSON容器。
+Store边界仍把调用方的Draft经JSON往返冻结。回归见
+[结构共享测试](../../tests/agent/test_reducer_structural_sharing.py)。
+
 ## 10. 公共端口与方法合同
 
 | 接口/方法 | 调用者与实现者 | 输入/输出 | 前置与后置 | 错误、取消、超时 | 幂等与顺序 | 权限边界 |
@@ -477,6 +545,7 @@ Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并�
 | `reply_approval` | Client → Runtime | Approval ID、请求指纹、决定 | ID与原请求指纹匹配 | 过期、关闭、错配拒绝 | 相同决定幂等；不同决定冲突 | 授权仅限绑定Call |
 | `ModelProvider.stream` | Runtime → Adapter | `ModelRequest` → 事件流 | 历史已归一化 | 关闭流响应取消/超时；Provider错误分类 | Attempt身份稳定 | Provider无Workspace权限 |
 | `ScopedToolRuntime.execute_scoped` | Runtime → Tool | Call、Scope、Token → Result | Call已持久且状态为执行中 | 输出有界；异常转稳定Tool失败 | Scope绑定请求指纹；结果按Call关联 | Scope不是FS能力或Secret |
+| `ToolStepNoticeSource.step_notice` | Runtime → 产品来源 | Thread、当前Turn → 说明正文或`None` | 该步工具结果已全部落账 | 来源异常按Runtime错误结束Turn；不涉及IO | 只读持久事实，重放结论相同；每步至多调用一次 | 只是模型提示，不授予执行权限、不改写工具结果 |
 | `SessionStore.append` | Runtime → Store | EventDraft批次、期望序号 → Thread | Thread存在且序号一致 | 存储/投影错误关闭 | 单事务、严格顺序 | Store不替Runtime授权 |
 
 ## 11. 正常Agent Loop
@@ -614,22 +683,65 @@ sequenceDiagram
 
 ### 13.4 完成守卫（显式开启）
 
-模型一步没有工具调用即被视为最终答复。无人值守任务里，小模型偶尔只写一句进展、照抄上下文摘要JSON
-或编造错误JSON就停下，任务以空补丁结束。[`completion_guard`](../../src/harnessix/agent/completion_guard.py)
-在`_close_model_step`的同一Thread CAS内判定（仅当本步既无Steering也无目录拒绝）：
+模型一步没有工具调用即被视为最终答复。无人值守任务里，小模型偶尔只写一句进展、照抄上下文摘要、
+输出一段截断的JSON或把工具调用写进正文就停下，任务以空补丁结束。
+[`completion_guard`](../../src/harnessix/agent/completion_guard.py)在`_close_model_step`的同一Thread CAS内判定
+（仅当本步既无Steering也无目录拒绝）。回复形态由纯文本模块[`reply_shape`](../../src/harnessix/agent/reply_shape.py)
+给出，它不读Turn状态，也不解析或执行正文里的调用。自上而下取第一条成立的规则：
 
 | 本步回复 | 处理 |
 |---|---|
-| 空正文、JSON对象或含上下文摘要标记 | 补发“不是答复，继续用工具”提示 |
+| 整条回复是只包着文本的线上外壳（`{"type":"text","text":…}`、内容块数组、助手消息外壳） | 去壳，按壳内正文继续判定；持久化的回复不变 |
+| 空正文；照抄宿主记录（上下文摘要、占位）；整条回复是一个JSON对象 | 补发“不是答复，继续用工具”提示 |
+| 以JSON记录开头却无法解析（截断或写坏）；行首工具调用标记（`<tool_call>`等）后没有完整JSON | 补发“回复被截断、什么都没执行，请改小后经工具接口重发”提示 |
+| 整条回复是带工具调用的线上外壳；行首工具调用标记后跟着完整JSON | 补发“工具调用被写成了文本，请改用真正的工具调用”提示；宿主不执行正文里的调用 |
 | 上一步是对补发的回应 | 照常完成（以下两行不再判定） |
-| 回复宣布还要继续：去掉行首Markdown标记后以“next step”“let me”“I'll”“下一步”“让我”“我将”等开头，或以半角/全角冒号结尾 | 补发“刚才宣布了下一步却没有工具调用”提示；与是否已有补丁无关 |
+| 回复宣布还要继续：去掉行首Markdown标记后以“next step”“let me”“I'll”“下一步”“让我”“我将”等开头，以半角/全角冒号结尾，或结尾句说了自己的下一步（“my next step”“let me”“I'll”“I need”“让我”“我将”等；“Let me know…”与泛指的“next step”不算） | 补发“刚才宣布了下一步却没有工具调用”提示；与是否已有补丁无关 |
 | 本Turn尚无成功补丁（Trusted Action `patch_batch`或旧补丁效果） | 补发“尚未修改代码”提示；模型再次给出纯文本结论即照常完成 |
 | 其他 | 照常完成 |
 
+前四行是结构判定，每次都补发；后两行靠措辞与状态推断，问一次即止。补发次数随可观察状态变化：看不出未完成迹象时
+每Turn至多2次（`BASE_COMPLETION_NOTICES`）；本Turn尚无成功补丁、最新计划有未完成步骤，或最近一次工具结果不是成功，
+任一成立即放宽到硬上限6次（`MAX_COMPLETION_NOTICES`）。硬上限与状态无关，守卫必然终止；步骤或Token预算已用尽时不补发。
+每条提示末尾写明剩余模型调用次数（“Model calls left in this task: at most N.”）：产品路径的Provider包装
+（`SafeFallbackProvider`）不实现输入估算端口，逐请求的预算说明不会发送，守卫因此在自己的提示里给出这一宿主已知的事实。
+
+以上是完整模式（`full`，无人值守）。交互模式（`interactive`，产品终端界面的默认值，[ADR 0147](../adr/0147-interactive-prompt-for-announced-steps.md)）
+只保留“回复宣布还要继续”一行，判定用[`reply_shape.leaves_a_step_undone`](../../src/harnessix/agent/reply_shape.py)：认开头的说法与结尾的冒号，
+另认首句破折号之后以宣布的说法开头的分句；结尾句的意图不认（给用户的答复常以建议收尾），以问号结尾的回复是在等用户回答，不算。
+结构判定与“尚无补丁”两类在交互模式下不补发（空回复与截断由回复恢复处理，问答本来就没有补丁）；补发次数取基础值2次，
+提示不附剩余调用次数。`completion_guard_mode`把运行时开关（布尔值或模式名）归一为`off`、`interactive`、`full`。
+
 补发提示以用户消息Item持久化（身份`uuid5(turn_id, "harnessix.completion-guard/v1:<step>")`，正文以
 `[Harnessix host notice]`开头），并以`TurnStateChanged(reason="steering")`重入，沿用§13.3的Event v19
-语义，事件版本不变。每个Turn最多补发两次；步骤或Token预算已用尽时不补发。产品配置`completion_guard`
-默认关闭（ADR 0124），`harnessix exec`默认开启；Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+语义，事件版本不变。产品配置`completion_guard`开启或`harnessix exec`时为完整模式（ADR 0124第2版），否则终端界面用交互模式；
+Context压缩把当前Turn的全部用户消息（含Steering与补发提示）作为锚点保留。
+
+**历史占位。** 判为不是答复的结构化乱码留在历史里会被模型照抄。`without_non_answers`在出站映射处
+（[`messages_for`](../../src/harnessix/models/_history.py)）把它换成固定短占位：只替换紧跟“不是答复”类提示、
+形态仍是JSON对象、截断片段或写成文本的调用、且比占位长的助手消息；照抄宿主记录的回复不替换（与宿主投影的
+上下文摘要无法区分）。持久Item、模型历史检查记录与重放不变，出站输入只减不增。判定只看相邻的两条历史消息，因此对较早Turn与
+Fork继承的历史同样生效；由多条助手消息拼成的回复不替换。回归见[守卫测试](../../tests/agent/test_completion_guard.py)
+与[形态测试](../../tests/agent/test_reply_shape.py)。
+
+### 13.5 工具步骤说明（注入来源时）
+
+模型改坏了原本通过的检查时，常把失败归咎于环境；“哪条命令在哪次补丁之前通过、之后失败”宿主早已落账。
+`AgentRuntime(step_notices=...)`注入[`ToolStepNoticeSource`](../../src/harnessix/agent/ports.py)后，
+`_drive`在一步的全部工具结果落账（`_execute_calls`返回）之后调用
+[`append_step_notice`](../../src/harnessix/agent/step_notices.py)一次：
+
+| 项 | 规则 |
+|---|---|
+| 内容 | 来源的`step_notice(thread, turn)`只读Thread持久事实给出，没有事实为`None`；内核不解释内容 |
+| 落账 | 一条用户消息Item，正文以`[Harnessix host notice] `开头，身份`uuid5(turn_id, "harnessix.tool-step-notice/v1:<step>")`；经`_commit`提交，公开输出保护照常生效 |
+| 位置 | 该步全部工具结果之后、下一次模型请求之前；与§13.3的Steering同一通道（Event v19），不新增事件类型 |
+| 上限 | 每个Turn至多6条、每条至多2000字符；同一步已发布则不再询问来源，恢复重入不重复 |
+| 状态 | 只在`EXECUTING_TOOLS`或`PREPARING_CONTEXT`（计划更新已提前切换）发布；取消中的Turn不发布 |
+
+说明不写进工具结果：命令结果的`output`与输出Artifact逐字段绑定，补丁结果与审计摘要绑定，追加字段会使
+既有校验失败（ADR 0135第2.3节）。当前Turn的用户消息在压缩时整组保留，所以说明在压缩后仍对模型可见。
+默认不注入；产品实现是[`product_config/command_ledger.py`](../../src/harnessix/product_config/command_ledger.py)。
 
 ## 14. 取消、超时和关闭
 
@@ -861,6 +973,7 @@ recover(thread):
 | Retry | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `retry_turn` | [`test_runtime.py`](../../tests/agent/test_runtime.py) | `test_terminal_turn_retry_creates_new_turn_and_is_idempotent`、`test_retry_rejects_completed_and_non_latest_turns` | 新Turn与安全限制 |
 | 审批 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `reply_approval` | [`test_approval_crash_recovery.py`](../../tests/agent/test_approval_crash_recovery.py) | `test_approval_crash_boundaries` | 各提交边界恢复 |
 | 交互与历史并发 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`model_history_runtime.py`](../../src/harnessix/agent/model_history_runtime.py) | `steer_turn`、`prepare_and_commit_model_history` | [`test_interactions.py`](../../tests/agent/test_interactions.py) | `test_steering_during_history_verification_restarts_preparation`及Steering、Question、错配与恢复用例 | Steering在历史验证竞态中不会提交过期检查或误失败 |
+| 工具步骤说明 | [`step_notices.py`](../../src/harnessix/agent/step_notices.py) | `step_notice_text`、`append_step_notice` | [`test_step_notices.py`](../../tests/agent/test_step_notices.py) | `test_runtime_appends_the_notice_after_the_tool_results`、`test_a_step_is_noticed_at_most_once`、`test_notices_stop_at_the_per_turn_cap` | 说明落在结果组之后、每步一次、有界 |
 | Trusted Action恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py)、[`trusted_action_runtime.py`](../../src/harnessix/agent/trusted_action_runtime.py) | `_recover`、`resume_recovery` | [`test_trusted_action_runtime.py`](../../tests/agent/test_trusted_action_runtime.py) | 终态响应丢失、决定同步与UNKNOWN核对用例 | 不重复当前Patch或Process效果 |
 | 历史Process兼容 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover`、`resume_turn`、`_reply_approval` | [`test_legacy_process_compatibility.py`](../../tests/agent/test_legacy_process_compatibility.py) | `test_historical_process_state_is_readable_but_never_mutated_or_replayed` | 旧等待事实可读、启动零改写、命令稳定拒绝 |
 | Patch恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_recover_patch`、`_recover_patch_batch` | [`test_kernel_patch_crash.py`](../../tests/patches/test_kernel_patch_crash.py) | Patch崩溃边界参数化用例 | 稳定计划对账 |
@@ -1024,6 +1137,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 64 | 第二轮合入 | 2026-11-14 | 文档版本48～54随第二轮分支合入主线（第54版在分支上编为47，与主线第47版重号）。合入时的取舍：完成守卫的完整模式沿用第48版（按回复形态判定、补发2～6次、提示写明剩余调用次数），交互模式沿用第60版（只认宣布的下一步、至多2次、提示不附剩余次数），`leaves_a_step_undone`移到`reply_shape.py`；没有正文的摘要沿用第57版，第53版的“摘要输出不成立时跳过”不再保留；会话基线的完成前复核改为在本步不需要回复恢复时进行 |
 | 63 | `8b07c214` 增量 | 2026-11-13 | 只显示过思考与生成进度的步骤接受新的尝试：`model_text.restart_attempt`、思考预览另起一段、进度清零并立即说明重试（ADR 0144第3版） |
 | 62 | `f24afce5` 增量 | 2026-11-13 | 生成进度在重试时带上尝试序号与失败类别（`ModelTextPublication.watch`、`GenerationProgress.attempt`），界面据此说明为什么还在等（Beta Issue #11） |
 | 61 | `a22e64ee` 增量 | 2026-11-13 | 模型请求进行中的生成进度：`generation_progress.py`按类别（思考、正文、工具参数）累计本步骤已生成的UTF-8字节数，每秒至多以临时`ItemDelta`发布一行累计值，条目身份确定、序号独立，不建Item、不进模型历史（ADR 0156） |
@@ -1031,6 +1145,13 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 | 59 | `151ab594` 增量 | 2026-11-12 | `continue_after_unknown_usage`开关改为`UnknownUsagePolicy`：交互模式下服务方故障（连接与超时、429、5xx）造成的用量未知连续至多自动重试5次，其他原因照旧停止；判定在`provider_stop.service_failures_within`（ADR 0144，Beta 0.10.0b20复测） |
 | 58 | `d387a5cd` 增量 | 2026-11-12 | 补SHA的锚点唯一性判定忽略CRLF/LF差异，与编辑规划一致（0.10.0b21，ADR 0141） |
 | 57 | `e5141ec7` 增量 | 2026-11-12 | 空回复与无正文截断由宿主补发提示继续；步骤终态判定集中到`settle_reply`；空摘要用独立代码并可跳过（0.10.0b20，ADR 0109第6版） |
+| 54 | `feat/r2-regress` 增量 | 2026-11-11 | 新增工具步骤说明端口：一步的工具结果落账后，注入的来源可补发一条宿主事实说明（ADR 0135） |
+| 53 | `944361a3` 增量 | 2026-11-12 | 预算关口加入Turn时间预算这一维（ADR 0132）；主动压缩的摘要输出不成立且用量完整时跳过本次压缩（ADR 0109第4版；合入主线时由第57版的空摘要处理取代，见第64版） |
+| 52 | ADR 0133增量 | 2026-11-11 | Reducer结构共享：`apply_event`不再逐事件深拷贝整个Thread，取值不变，共享对象不得原地修改 |
+| 51 | `b7c7eb01` 增量 | 2026-11-11 | 预算与目录说明落为历史Item、请求只追加；压缩点按上一请求的真实输入Token校准（ADR 0132） |
+| 50 | `feat/r2-baseline` | 2026-11-11 | 会话基线：线程开始时记录工作区里已有的未提交改动并告知模型，收尾前检查是否被还原或删除（ADR 0131） |
+| 49 | `feat/r2-protocol` | 2026-11-11 | 计划调用可写在一次响应的任意位置，由宿主排到持久调用组末尾；计划校验错误与被拒调用的反馈改为英文（ADR 0136） |
+| 48 | `feat/r2-guard` | 2026-11-11 | 完成守卫第2版（ADR 0124）：截断或写成文本的工具调用不算完成，只包着文本的外壳去壳判定，继续意图检测扩展到结尾句，补发次数随状态在2～6次间变化，提示写明剩余模型调用次数，结构化乱码在出站历史里换成占位 |
 | 47 | `dad55d32` 增量 | 2026-11-11 | 恢复任务在开始执行前被取消时，尚未开始的Turn提交取消终态；等待中的Turn不动（0.10.0b14） |
 | 46 | `1d857b39` 增量 | 2026-11-10 | 模型思考内容经公开保护作为临时增量实时预览（0.10.0b9） |
 | 45 | `abd7b48e` 增量 | 2026-11-10 | 上一轮被用户取消时，新一轮在用户输入后补一条宿主说明（0.10.0b8） |

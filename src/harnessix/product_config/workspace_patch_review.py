@@ -91,13 +91,13 @@ class WorkspacePatchReviewProvider(OfficialWorkspacePatchReview):
         except WorkspacePatchNoChangeError as error:
             if is_workspace_patch_no_change(error):
                 matching = tuple(
-                    item
-                    for item in proposal.files
+                    (index, item)
+                    for index, item in enumerate(proposal.files)
                     if normalize_workspace_path(item.path, route.plan.execution.workspace.platform)
                     == error.unchanged_path
                 )
                 if len(matching) == 1:
-                    item = matching[0]
+                    index, item = matching[0]
                     if (
                         item.operation == "replace"
                         and item.expected_sha256 == error.unchanged_sha256
@@ -107,6 +107,7 @@ class WorkspacePatchReviewProvider(OfficialWorkspacePatchReview):
                     ):
                         # 只绑定原Mutation已拒绝的唯一replace，不推断批内其他项也无变化。
                         error.review_plan_id = route.plan.execution.plan_id
+                        error.file_index = index
             raise
         except WorkspacePatchPreparationError as error:
             if is_workspace_patch_preparation_error(error):

@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 154
-code_revision: 80fb499ab1ca821e275ba19a5cc85a63d0ad47de
+version: 162
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -17,6 +17,8 @@ related_adrs:
   - docs/adr/0121-external-boundary-native-process-profile.md
   - docs/adr/0111-native-process-sandbox-backends.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0134-default-working-habits-and-thin-eval-template.md
+  - docs/adr/0135-command-ledger-step-notices.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
   - tests/product_config/test_optional_pre_edit_profile.py
@@ -96,6 +98,7 @@ related_tests:
   - tests/product_config/test_provider_credentials.py
   - tests/product_config/test_runtime.py
   - tests/product_config/test_server_and_cli.py
+  - tests/product_config/test_session_baseline_wiring.py
   - tests/product_config/test_agent_context.py
   - tests/integration/test_product_process_profile.py
   - tests/evals/test_task_pack_execution.py
@@ -118,6 +121,9 @@ related_tests:
   - tests/product_config/test_retry_limit.py
   - tests/product_config/test_bailian_workspace_endpoint.py
   - tests/product_config/test_default_thinking_effort.py
+  - tests/product_config/test_generic_execution_context.py
+  - tests/product_config/test_working_habits.py
+  - tests/product_config/test_command_ledger.py
 supersedes: []
 ---
 
@@ -202,6 +208,50 @@ supersedes: []
 
 - 宿主与原生进程执行器在Lease确认不存在时，把`execution_environment_denied`、`process_spec_invalid`归为确定未执行（`process_preflight_failed`）：二者都发生在建立Lease、创建进程之前。此前被报成效果未知并中止整轮，Windows上每条命令都如此。详见[进程模块设计](processes.md)。
 
+## 当前增量：默认工作习惯指令（ADR 0134）
+
+- **内容**：[`agent_context.py`](../../src/harnessix/product_config/agent_context.py)的`_WORKING_HABITS`是运行时指令片段
+  `harnessix.working-habits/v2`（2026-11-12，ADR 0134第2版），约1.6 KiB，六条习惯各带适用场合：
+  1. 带工具调用的回复先用一句话写出当前判断或下一步；独立的只读查询合并发出（一次回复多个调用，或一条Shell命令多条命令）；
+  2. 原因从代码与报告已能看清时先改后验；看不清时先复现，方式取代价最低且在项目默认配置下走到真实代码的那种（项目自己的测试运行器里的临时测试，或小脚本，仓库内外均可），代价高时先改后验；
+  3. 改动之后重跑报告的情况与离改动最近的已有测试；这些测试失败即视为本次改动造成的回归（除非见过它在没有本次改动时也失败），改的是改动而不是测试；
+  4. 优先采用与代码库里同类情况（兄弟选项、函数或命令，已有约定）一致的改法并完整照做，修根因而不是只修报告的例子，不加无关内容；
+  5. 报告的情况与这些测试通过即完成，不为没人提出的情况扩展或重写，发现的其他问题写进最终答复；自己最近一次检查仍显示问题时不结束；
+  6. 结束前复查整份改动（如`git status`与`git diff`），去掉只为排查留下的临时文件、调试输出与试验性修改，不动、不还原开始前就有的内容。
+- **装配**：`generic_execution=True`（容器、本机沙箱、外部边界三种命令执行方式）时附带同一片段；它与命令在哪里执行无关，
+  所以不复制进三份执行指令，单独升版本。Context按来源名排序，片段排在执行指令之后。
+  没有命令工具的固定阶段编码工作流不附带，其指令与版本不变。
+- **协调**：外部边界指令升为`harnessix.external-boundary-execution-instructions/v3`，删除“临时文件只放/tmp”一句
+  （它禁止在仓库内用项目自己的测试方式复现）；通用指令v6不变，本机指令在主线另升为v5（ADR 0149的完成规则），与工作习惯并存。
+- **评测与产品**：这些习惯此前只写在评测任务模板里，用户得不到。现在模型的做法只由产品默认指令决定，
+  评测任务模板`swebench-task-v4.j2`只含题目与评测自身的事实，不再是评测与产品的差异来源；评测对产品配置的覆盖见§10。
+- **回归**：[片段装配与文字](../../tests/product_config/test_working_habits.py)、
+  [外部边界指令](../../tests/product_config/test_generic_execution_context.py)、
+  [评测模板](../../tests/integrations/test_swebench_task_template.py)。离线测试只证明指令按设计送达，不证明模型遵循；
+  效果由评测对照确认。
+
+## 当前增量：命令账本（ADR 0135）
+
+- **问题**：模型改坏了原本通过的检查后把失败归咎于环境，或把同一份补丁应用又回滚、原地重复同一条验证命令直到步数用尽；每条命令的结果和每次补丁事务宿主都已落账，却从不说明。
+- **行为**：[`command_ledger.CommandLedgerNotices`](../../src/harnessix/product_config/command_ledger.py)实现Agent内核的`ToolStepNoticeSource`，每步工具结果落账后从本Thread各Turn的原始Item推导，只为刚结束的这一步给出事实：
+
+  | 事实 | 判定 | 说明内容 |
+  |---|---|---|
+  | 回归 | 同一工具、同一规范化命令文本的上一次有退出码的运行以0退出，其后至少一次补丁或回滚成功，本次非零退出 | 通过发生在第几步（或更早的Turn）、其间最近3次补丁的`transaction_id`与路径；回滚工具通过验证时提示最近一次可回滚或收窄 |
+  | 补丁反复 | 成功回滚所指向的补丁，其`diff_sha256`已被回滚过一次 | 同一份补丁已应用并回滚2次及其路径 |
+  | 原地重复 | 同一条命令第3次得到相同退出码与相同stdout/stderr观察摘要，其间没有补丁或回滚成功 | 该命令已得到3次逐字节相同的结果 |
+
+- **只说明一次**：回归只看紧邻的上一次运行，命令重新通过之前不重复，从未通过的命令永远不说明，失败早于补丁的不归到补丁上；另两类只在次数恰好到阈值的那一步给出。
+- **范围**：只含`exec_command.*`与`host_command.*`；`command_ledger_notices(verified)`在没有通过验证的命令工具时返回`None`，固定Profile流程不启用。超时或被终止的运行不算退出；失败或结果未知的补丁不算工作区变化；Fork继承的历史不进账本。
+- **边界**：不读取输出正文。检查的退出码被`| tail`、`; echo exit=$?`掩盖时没有“通过变失败”的事实可说；Shell命令自己对工作区的修改不被观察。
+- **装配**：[`server.py`](../../src/harnessix/product_config/server.py)以`step_notices=command_ledger_notices(verified)`注入，没有新增配置字段。
+
+## 当前增量：产品运行时启用会话基线（ADR 0131）
+
+- [`_serve_product_stdio`](../../src/harnessix/product_config/server.py)构造`AgentRuntime`时传入`session_baseline=tools`：会话基线的观察端口就是本进程的`CodingToolRuntime`，与模型所用`git_status`、`git_review`共用同一个Git只读运行时。会话开始前工作区已有的未提交改动由此被记录、告知模型并在完成前复核（见[Agent模块设计](agent.md)“会话基线”）。
+- 产品配置与Action配置的Schema不变，没有新增开关。入口没有git可执行文件（`--git-executable`未给出，或`harnessix code`、`harnessix exec`探测不到）时端口返回`None`，行为与此前相同。
+- 测试：[`tests/product_config/test_session_baseline_wiring.py`](../../tests/product_config/test_session_baseline_wiring.py)以真实Git仓库核对接线，以及没有git时不生效。
+
 ## 当前增量：状态宿主锁不再阻止客户端状态改名（0.10.0b12）
 
 - Windows上服务端运行期间，[`state_owner_windows.open_state_owner`](../../src/harnessix/product_config/state_owner_windows.py)一直固定状态父目录（即工作区状态目录）；此前该句柄只共享读，TUI以“临时文件再改名”保存客户端状态时WinError 32，每次提交任务都报`client_state_write_failed`（2026-11-11实机）。现以`allow_renames_inside=True`固定：允许目录内改名，目录本身、锚点与锁文件的身份复核不变。
@@ -245,7 +295,7 @@ supersedes: []
 - **零配置**：
   - [`zero_config.py`](../../src/harnessix/product_config/zero_config.py) 在用户入口显式请求时（预检请求的 `zero_config_actions`，App Server 的 `--zero-config-actions`），按本机探测生成命令工具：沙箱可用时为 `exec_command.shell` 加 `host_command.host-shell`，不可用时只有后者，并在说明中写明原因；
   - `load_product_action_config(None, zero_config=True)` 才使用它；不传时仍是原内建配置。
-- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v5`（v4起要求工具调用之间的进度说明也使用用户的语言；提交时缺少Git作者身份就询问用户，不得沿用历史里其他人的身份；v5加入完成规则：只做被要求的事，用项目已有的检查验证一次，无法用现有工具验证的要求写进最终回答而不另造检查手段，做完立即给出最终回答，ADR 0149）；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。
+- **系统指令**：存在本机沙箱或沙箱外命令时，使用 `harnessix.native-execution-instructions/v5`（v4起要求工具调用之间的进度说明也使用用户的语言；提交时缺少Git作者身份就询问用户，不得沿用历史里其他人的身份；v5加入完成规则：只做被要求的事，用项目已有的检查验证一次，无法用现有工具验证的要求写进最终回答而不另造检查手段，做完立即给出最终回答，ADR 0149）；只有外部边界命令时使用 `harnessix.external-boundary-execution-instructions/v3`（ADR 0121第2版：命令直接在任务环境运行、改动保留，不断言网络，执行环境一段以外与通用指令逐字相同；v3按ADR 0134删除“临时文件只放/tmp”）；容器使用通用指令（`harnessix.generic-execution-instructions/v6`）。三者自2026-11-09起允许把同一文件最近一次成功`apply_patch_batch`结果中的`changes[].content_sha256`直接用作下一次修改的前置摘要，不必为取摘要重读（v1/v3只认完整read_file结果）。三者之后都附带同一份工作习惯片段`harnessix.working-habits/v2`（ADR 0134）。
 - **诊断**：Doctor 为沙箱原因码给出修复动作标识，例如 `install_bubblewrap`、`enable_unprivileged_user_namespaces`、`run_outside_sandboxed_parent`。
   - 零配置时 [`preflight_actions.py`](../../src/harnessix/product_config/preflight_actions.py) 用一次探测同时生成命令工具和建议性检查 `product_native_sandbox`（可用：`native_sandbox_<后端>`；不可用：原因码与修复标识），不影响能否启动；`run_product_preflight(sandbox_probe=...)` 可注入探测。可读说明在 `product_ui` 渲染时查表，报告合同不变。
 - 进度见[原生进程沙箱变更设计](../changes/native-process-sandbox.md)。
@@ -401,7 +451,11 @@ Binding、指纹、目录、审批与恢复一致派生，参数仍由同一`Wor
 
 默认产品在认证Session、Provider、Tools和Action Owner均就绪后，通过
 [`agent_context.py`](../../src/harnessix/product_config/agent_context.py)统一安装编码指令和三类动态Source，
-输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），压缩点由顶层`compaction`选择：默认`half_window`在历史达到窗口一半时压缩、压到四分之一；`third_window`在三分之一时压缩、压到六分之一（单次请求与累计输入更小，但有损压缩更频繁、每次都要等摘要，只用于有累计Token预算的无人值守任务，Harbor评测组别显式选择）。摘要预留至多为压缩目标的四分之一（上限20480字节，`half_window`下即窗口的十六分之一），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（`half_window`触发393216字节、目标196608字节；`third_window`触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要，`compaction`不生效。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+输入上限与压缩阈值由[`context_budget.py`](../../src/harnessix/product_config/context_budget.py)换算。输出预留取当前Fallback链的最大`max_output_tokens`，不从未选用Profile扩大预留。输入估算按UTF-8字节计（一个字节至多一个Token）：链上Profile都声明`context_window_tokens`时取最小窗口，按每Token 3字节换算输入上限（窗口扣除输出预留与1536开销），压缩点由顶层`compaction`选择：默认`half_window`在历史达到窗口一半时压缩、压到四分之一；`third_window`在三分之一时压缩、压到六分之一（单次请求与累计输入更小，但有损压缩更频繁、每次都要等摘要，只用于有累计Token预算的无人值守任务；Harbor评测组别自ADR 0132起不再选择它，沿用产品默认）。摘要预留至多为压缩目标的四分之一（上限20480字节，`half_window`下即窗口的十六分之一），摘要输出至多4096 Token；出站请求整体须通过公开输出保护扫描（规范JSON至多`MAX_SCAN_BYTES`即1 MiB），换算后的窗口与输入上限因此不超过扫描容量的四分之三（786432字节，其余留给稳定线上目录与信封字段），262144 Token窗口恰在此上限（`half_window`触发393216字节、目标196608字节；`third_window`触发262144字节、目标131072字节），声明更大窗口不再提高阈值；任一Profile未声明窗口时沿用固定上限262144、触发131072、目标65536及2048 Token摘要，`compaction`不生效。实测代码与英文约3.5～4字节/Token，偶发超窗由Provider超限后的被动压缩兜底。
+
+固定的每Token 3字节只在还没有真实用量时使用（ADR 0132）。工具结果以紧凑文本发送时，估算字节与真实输入Token之比实测为4.3～6.7（Multilingual正式评测，中位5.35），按3换算的“窗口一半”实际在真实窗口的30%左右触发。声明窗口时`product_context_budget`另给出真实Token口径的窗口（`ProductAgentContext.compaction_window`），产品Server把它交给`AgentRuntime(compaction_window=...)`：Runtime用上一请求的Context检查与Provider报告的输入Token校准触发点、目标与输入上限，使触发时整个请求的真实输入约为窗口的一半。校准只放宽上述数值；输入上限仍不超过786432字节，触发点另在其下留出一次退避的余量（约为输入上限扣除工具定义与指令后的五分之四），观测比例按每Token 8字节封顶。262144 Token窗口按固定比例换算已等于该容量，所以比例高于约4.8时触发点落在窗口一半之前（中位比例下约11.8万Token，45%）。未声明窗口时不校准。
+
+产品Server在当前Profile链含`stable_prompt_prefix`的Provider时另开启`AgentRuntime(history_notes=True)`：预算与目录说明落为历史Item，请求只在末尾追加，服务端前缀缓存可以复用到上一请求末尾（见Agent模块“请求只追加与压缩点校准”）。
 Runtime同时接收`async_context`、`compaction`及`summary_provider=bundle`，不创建第二HTTP Client。
 
 正式Task Pack复用同一Factory而非专用解题Prompt；持久Context Inspection、压缩账本、活动窗口、取消、
@@ -732,7 +786,7 @@ classDiagram
 | `output_token_parameter` | `max_completion_tokens`、`max_tokens`或空 | OpenAI-compatible输出参数差异 |
 | `thinking_protocol` | `dashscope_enable_thinking`、`deepseek_thinking_type`、`vllm_chat_template`或空（默认空、不序列化） | 端点已求证的思考开关格式；空表示不发送任何思考参数，声明后要求`output_token_parameter=max_tokens`；`vllm_chat_template`经`chat_template_kwargs.enable_thinking`交给模型对话模板 |
 | `omit_tool_choice` | 布尔，默认`false`、不序列化 | 端点强制工具选择不可靠时不发送`tool_choice`，由可执行集收窄、目录说明与Runtime校验约束 |
-| `normalize_tool_arguments` | 布尔，默认`false`、不序列化 | 端点把数组/对象工具参数编码成JSON字符串时（如vLLM上的Qwen系），按工具Schema还原后再校验 |
+| `normalize_tool_arguments` | 布尔，默认`false`、不序列化；向导对所有端点预设`true` | 模型把数组/对象工具参数编码成JSON字符串时，按工具Schema还原后再校验；只在Schema声明该位置为容器且字符串能严格解析成同类容器时还原 |
 | `repair_tool_arguments` | 布尔，默认`false`、不序列化 | 映射Model层同名开关：畸形工具参数先做两类保意图修复，仍非法则只拒绝该次调用、回合继续；回环端点预设开启 |
 | `compact_tool_results` | 布尔，默认`false`、不序列化；仅`openai_chat` | 映射Model层`tool_result_format="text"`：搜索、读取与命令结果以紧凑文本发给模型，其余结果与持久历史不变；向导不预设，Harbor评测组别显式开启 |
 | `stable_prompt_prefix` | 布尔，默认`false`、不序列化 | 开头只放固定指令，逐请求说明（预算、工具目录）以`[Harness note]`末尾user消息发送：前缀跨请求不变以命中自动前缀缓存，也满足只接受开头一条system消息的模板 |
@@ -787,8 +841,13 @@ Profile既是模型选择，也是Provider I/O和重试预算。改变任一字�
 | `secret_sources` | 1～32 | 按Secret名称排序，名称唯一，环境变量唯一 |
 | `providers` | 1～16 | 按Provider ID排序且唯一；Secret名称和版本精确存在 |
 | `profiles` | 1～32 | 按Profile ID排序且唯一；Provider和Fallback引用完整 |
-| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示（见Agent模块§13.4），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
-| `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设，Harbor评测组别为累计Token预算显式选择`third_window`（已知评测与产品差异） |
+| `completion_guard` | 0～1 | 布尔，默认`false`、不序列化；开启后不像完成的纯文本回复改为宿主补发继续提示，每Turn的补发次数随未完成迹象在2～6次间变化、有硬上限（见Agent模块§13.4，ADR 0124第2版），用于无人值守任务；向导不预设，Harbor评测组别显式开启 |
+| `compaction` | 0～1 | `half_window`或`third_window`，默认`half_window`、不序列化；当前Profile链都声明`context_window_tokens`时选择压缩点（见§1.1），未声明窗口时不生效；向导不预设；Harbor评测组别不再覆盖它（ADR 0132），已登记的评测与产品差异只剩`completion_guard`、任务模板与每步输出上限 |
+
+评测对产品配置的覆盖只有上表的`completion_guard`与`compaction`，以及评测Profile放宽的单步输出上限
+（[`harnessix_configs.py`](../../integrations/harbor/harnessix_configs.py)的`EVAL_PROFILE_OVERRIDES`）；
+运行器一侧的差异（自动审批、预算、任务命令环境）见[评测接入](../operations/evaluation-integrations.md)。
+模型的做法不在差异之列：工作习惯是产品默认指令（ADR 0134），评测任务模板只含题目与评测自身的事实。
 
 每个Profile都独立展开整条Fallback链并验证：
 
@@ -2360,6 +2419,14 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 162 | 第二轮合入 | 2026-11-14 | 文档版本155～161即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
+| 161 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
+| 160 | `57dabb53` 增量 | 2026-11-12 | 配置向导对所有端点预设`normalize_tool_arguments`（原先只对自托管端点），依据Beta真实使用回放 |
+| 159 | `b7c7eb01` 增量 | 2026-11-11 | 声明窗口时给出真实Token口径的窗口供Runtime校准压缩点；稳定前缀的Provider开启请求只追加；Harbor评测不再覆盖压缩点（ADR 0132） |
+| 158 | `feat/r2-baseline` | 2026-11-11 | 产品服务把读工具运行时作为会话基线的观察端口注入Agent运行时（ADR 0131） |
+| 157 | `feat/r2-guard` | 2026-11-11 | `completion_guard`的说明同步完成守卫第2版：补发次数不再固定为2次；字段、默认值与配置摘要不变 |
+| 156 | `feat/r2-regress` 增量 | 2026-11-11 | 命令账本：Shell命令通过后又失败、同一补丁反复回滚、同一命令原地重复时补发宿主事实说明（ADR 0135） |
+| 155 | `69e1ee03` 增量 | 2026-11-11 | 默认工作习惯指令`harnessix.working-habits/v1`随三种命令执行指令装配；外部边界指令v3删除“临时文件只放/tmp”；评测任务模板v4只含评测事实（ADR 0134） |
 | 154 | `9dca9d42` 增量 | 2026-11-13 | `wrap_up.WRAP_UP_TEXTS`改为公开，终端界面据此拒绝收尾之后还在等的审批（ADR 0148第3版，Beta Issue #4） |
 | 153 | `76f7dfed` 增量 | 2026-11-13 | 收尾之后不再发起新的修改或检查：`wrap_up.WrapUpToolView`不准入尚未开始、经审批边界的调用，之后的步骤不提供工具（ADR 0148第2版，Beta Issue #4） |
 | 147 | `49cf3d92` 增量 | 2026-11-13 | `make_private_directories`向上查找到文件系统根就停止：Windows上不存在的盘符或共享报错而不是无限循环（0.10.0b25） |
@@ -3336,6 +3403,6 @@ Sandbox Profile摘要不变；配置后路径进入两级摘要，变化需新�
 `omit_tool_choice`。[配置向导](../../src/harnessix/product_config/wizard.py)的`thinking_preset`只对已求证端点与模型族预设，其余端点
 保持不发送思考参数；预设Profile带v40实测的传输上限。验证见[思考配置测试](../../tests/product_config/test_thinking_config.py)。
 
-回环地址端点（同机vLLM自托管）预设`vllm_chat_template`，并开启`normalize_tool_arguments`、`stable_prompt_prefix`与
-`pricing=free`。`stable_prompt_prefix`映射为Model层`prompt_cache=stable_tail`：未开启时逐请求说明作为system消息插在开头，
+回环地址端点（同机vLLM自托管）预设`vllm_chat_template`，并开启`stable_prompt_prefix`与`pricing=free`；
+`normalize_tool_arguments`对所有端点预设开启（Beta实测云端同族模型在两轮25次参数拒绝里有9次是把`files`写成JSON字符串）。`stable_prompt_prefix`映射为Model层`prompt_cache=stable_tail`：未开启时逐请求说明作为system消息插在开头，
 Qwen系模板以“System message must be at the beginning”拒绝，且开头每步变化使自动前缀缓存无法命中。其余端点行为不变。

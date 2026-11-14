@@ -330,8 +330,8 @@ async def test_existing_parent_that_is_a_regular_file_is_a_correctable_failure(
     error = await rejected_create(tmp_path, closure, path)
 
     assert error.code == "workspace_wrong_file_type"
-    assert error.message.startswith("路径中已有的父级不是目录，无法在其下创建文件。")
-    assert "缺失的父目录会自动创建" in error.message
+    assert "is not a directory" in error.message and error.message.isascii()
+    assert "missing parent directories are created for you" in error.message
 
 
 @POSIX_ONLY
@@ -344,6 +344,7 @@ async def test_existing_parent_that_is_a_symlink_is_never_followed_or_created_th
     error = await rejected_create(tmp_path, closure, path)
 
     assert error.code == "workspace_path_denied"
+    assert "symbolic link" in error.message and error.message.isascii()
 
 
 @GENERATIONS
@@ -361,9 +362,9 @@ async def test_one_path_used_as_file_and_as_new_directory_is_rejected_whole(tmp_
 
 
 def test_platform_that_cannot_create_parents_says_what_to_do_next():
-    """没有补建能力的端口（例如自定义根）仍以workspace_parent_missing结束：说明是原因加可行的下一步。"""
-    # 该投影只用到调用身份；其余调用字段与本断言无关。
-    call = SimpleNamespace(call_id=uuid4())
+    """没有补建能力的端口（例如自定义根）仍以workspace_parent_missing结束：写给模型的是英文，给出原因和可行的下一步。"""
+    # 该投影只用到调用身份与文件项数；其余调用字段与本断言无关。
+    call = SimpleNamespace(call_id=uuid4(), arguments={"files": [{"path": "tests/__init__.py"}]})
     rejected = workspace_patch_planning_rejection(
         workspace_patch_binding(),
         call,
@@ -372,6 +373,8 @@ def test_platform_that_cannot_create_parents_says_what_to_do_next():
 
     assert rejected is not None and rejected.outcome == "failed"
     assert rejected.error.code == "workspace_parent_missing"
-    assert rejected.error.message.startswith("缺失资源的父目录不存在。本平台不会自动创建目录")
-    assert "命令工具" in rejected.error.message and "mkdir" in rejected.error.message
-    assert rejected.error.message.endswith("再原样重发本次调用")
+    assert rejected.error.message.isascii()
+    assert "does not create directories" in rejected.error.message
+    assert "command tool" in rejected.error.message and "mkdir" in rejected.error.message
+    # 与其余被拒批次一致：写明这一批什么都没有写入（ADR 0129第2版）。
+    assert rejected.error.message.endswith("Nothing was written.")

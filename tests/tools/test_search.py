@@ -133,4 +133,4 @@ async def test_scan_limit_failure_tells_the_model_how_to_narrow(tmp_path, monkey
         result = await execute(tools, "grep", query="x")
     assert result.outcome == "failed" and result.error.code == "tool_limit_exceeded"
     assert "path" in result.error.message and "glob" in result.error.message
-    assert "不要原样重试" in result.error.message
+    assert "Do not retry unchanged" in result.error.message

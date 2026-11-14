@@ -94,33 +94,62 @@ class _FoldedNewlines:
         return offset + bisect_left(self._breaks, offset)
 
 
+def _line_number(before: bytes, offset: int) -> int:
+    return before.count(_LF, 0, offset) + 1
+
+
 def _missing_anchor_message(folded: bytes, old: bytes, new: bytes) -> str:
     """锚点缺失时给出可行动的定位事实：改动是否已在文件中、首个锚点行是否仍存在及其行号。
 
     调用前已确认忽略CRLF/LF差异也找不到old_text；这里同样在折叠正文上比较，
     不把换行风格的差异说成内容不一致。行号按LF计数，与read_file的分页一致。
     """
-    message = "精确编辑锚点不存在"
-    if new.strip() and folded.find(new.replace(_CRLF, _LF)) >= 0:
+    message = "old_text was not found in the file"
+    applied = folded.find(new.replace(_CRLF, _LF)) if new.strip() else -1
+    if applied >= 0:
         return (
-            f"{message}；new_text已存在于当前文件（不计CRLF/LF换行差异），"
-            "此编辑可能已经应用，请先read_file核对"
+            f"{message}, but its new_text is already there at line "
+            f"{_line_number(folded, applied)}: this edit looks already applied, so remove it "
+            "and resend the other edits"
         )
     first = next((line.strip() for line in old.splitlines() if line.strip()), b"")
     lines = [line.strip() for line in folded.split(_LF)]
     numbers = [index + 1 for index, line in enumerate(lines) if first and line == first]
     if not numbers:
-        return f"{message}；old_text首个非空行不在当前文件中，请先read_file取得当前内容"
+        return (
+            f"{message}, and neither was its first non-blank line; read_file the part you "
+            "want to change and copy old_text from the current text"
+        )
     shown = ", ".join(str(number) for number in numbers[:5])
     return (
-        f"{message}；old_text首个非空行（不计首尾空白）出现在当前文件第{shown}行，"
-        "但old_text与该处内容不一致，且不只是CRLF/LF换行的差异（可能已被此前的Patch修改），"
-        "请read_file该区域后按当前文本重写old_text"
+        f"{message}: its first non-blank line (whitespace aside) is at line {shown}, but "
+        "old_text differs from the file there in more than line endings (an earlier patch may "
+        "have changed these lines); read_file from that line and copy old_text from the "
+        "current text"
+    )
+
+
+def _ambiguous_anchor_message(before: bytes, old: bytes) -> str:
+    """锚点不唯一时给出各处行号：模型按行号补上相邻行即可唯一定位。"""
+    numbers: list[str] = []
+    start = before.find(old)
+    while start >= 0 and len(numbers) < 5:
+        numbers.append(str(_line_number(before, start)))
+        start = before.find(old, start + 1)
+    more = " and more" if start >= 0 else ""
+    return (
+        f"old_text matches more than one place (lines {', '.join(numbers)}{more}); add the "
+        "line before or after the place you mean to old_text and new_text until it matches once"
     )
 
 
 def _anchor_range(
-    before: bytes, folded: _FoldedNewlines, edit: tuple[bytes, bytes], *, newline_aware: bool
+    before: bytes,
+    folded: _FoldedNewlines,
+    index: int,
+    edit: tuple[bytes, bytes],
+    *,
+    newline_aware: bool,
 ) -> tuple[int, int]:
     """一条编辑要替换的原始字节区间：先逐字节匹配；一处也没有时忽略CRLF/LF差异再匹配一次。
 
@@ -130,7 +159,10 @@ def _anchor_range(
     start = before.find(old)
     if start >= 0:
         if before.find(old, start + 1) >= 0:
-            raise KernelError("patch_ambiguous_context", "编辑锚点不唯一，请提供更完整上下文")
+            raise KernelError(
+                "patch_ambiguous_context",
+                f"edits[{index}]: {_ambiguous_anchor_message(before, old)}",
+            )
         # 以LF开头的old_text命中CRLF的后半时把\r一并纳入：区间不拆开换行，改写后不会留下孤立的\r。
         if newline_aware and old.startswith(_LF) and before[start - 1 : start] == b"\r":
             return start - 1, start + len(old)
@@ -138,9 +170,15 @@ def _anchor_range(
     needle = old.replace(_CRLF, _LF)
     start = folded.text.find(needle) if newline_aware else -1
     if start < 0:
-        raise KernelError("patch_context_not_found", _missing_anchor_message(folded.text, old, new))
+        raise KernelError(
+            "patch_context_not_found",
+            f"edits[{index}]: {_missing_anchor_message(folded.text, old, new)}",
+        )
     if folded.text.find(needle, start + 1) >= 0:
-        raise KernelError("patch_ambiguous_context", "编辑锚点不唯一，请提供更完整上下文")
+        raise KernelError(
+            "patch_ambiguous_context",
+            f"edits[{index}]: {_ambiguous_anchor_message(folded.text, needle)}",
+        )
     return folded.raw_offset(start), folded.raw_offset(start + len(needle))
 
 
@@ -183,29 +221,37 @@ def _located_ranges(
     *,
     newline_aware: bool,
 ) -> list[tuple[int, int, bytes]]:
-    """各条编辑的原始字节区间与写入文本，按起点排序；重叠与大小上限都按真实字节判定。
+    """每条拒绝以edits下标开头：模型只需改正这一处，其余编辑原样重发。
 
-    newline_aware为False时是ADR 0141之前的语义（只逐字节匹配、new_text原样写入），
-    只用于复核此前保存的计划。
+    重叠与大小上限都按真实字节判定。newline_aware为False时是ADR 0141之前的语义
+    （只逐字节匹配、new_text原样写入），只用于复核此前保存的计划。
     """
-    ranges: list[tuple[int, int, bytes]] = []
+    located: list[tuple[int, int, bytes, int]] = []
     folded = _FoldedNewlines(before)
-    for edit in edits:
+    for index, edit in enumerate(edits):
         _checkpoint(operation)
         texts = edit.old_text.encode(), edit.new_text.encode()
-        start, stop = _anchor_range(before, folded, texts, newline_aware=newline_aware)
+        start, stop = _anchor_range(before, folded, index, texts, newline_aware=newline_aware)
         new = _written_text(before, start, stop, texts) if newline_aware else texts[1]
-        ranges.append((start, stop, new))
-    ranges.sort(key=lambda item: item[0])
-    end, size = 0, len(before)
-    for start, stop, new in ranges:
+        located.append((start, stop, new, index))
+    located.sort(key=lambda item: item[0])
+    end, previous, size = 0, 0, len(before)
+    for start, stop, new, index in located:
         if start < end:
-            raise KernelError("patch_overlapping_edits", "编辑区间重叠")
-        end = stop
+            raise KernelError(
+                "patch_overlapping_edits",
+                f"edits[{previous}] and edits[{index}] overlap: both old_text cover line "
+                f"{_line_number(before, start)}; merge them into one edit",
+            )
+        end, previous = stop, index
         size += len(new) - (stop - start)
     if size > max_bytes:
-        raise KernelError("patch_limit_exceeded", "Patch 完整后镜像超限")
-    return ranges
+        raise KernelError(
+            "patch_limit_exceeded",
+            "the file would exceed the patch size limit after these edits; make the change "
+            "smaller or use the command tool",
+        )
+    return [(start, stop, new) for start, stop, new, _ in located]
 
 
 def _spliced(
@@ -260,7 +306,10 @@ def apply_exact_edits(
     ranges = _edit_ranges(before, edits, operation, limit, recorded_sha256)
     after = _spliced(before, ranges, operation)
     if before == after:
-        raise KernelError("patch_no_change", "Patch 未产生内容变化")
+        raise KernelError(
+            "patch_no_change",
+            "these edits leave the file exactly as it is; remove this entry or change new_text",
+        )
     return after
 
 

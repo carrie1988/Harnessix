@@ -178,9 +178,8 @@ async def test_crlf_preimage_does_not_receive_lf_patch_approval(tmp_path):
         assert output.outcome == "failed"
         assert output.error is not None
         assert output.error.code == "workspace_patch_precondition_failed"
-        assert output.error.message == (
-            "expected_sha256不匹配；请重新调用目标文件的read_file，"
-            "仅使用digest_status=complete时的content_sha256，禁止猜测摘要"
+        assert output.error.message.startswith(
+            "files[0]: expected_sha256 does not match the current file"
         )
         assert (root / "src/modified.py").read_bytes() == b"old\r\n"
         assert (root / "tests/deleted.txt").read_bytes() == b"remove\r\n"

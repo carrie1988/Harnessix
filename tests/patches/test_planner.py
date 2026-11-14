@@ -211,14 +211,20 @@ def test_operation_stopped_before_io(tmp_path, monkeypatch, kind):
             "class A:\n    flag = True\n    x = 1\n",
             "class A:\n    x = 1\n",
             "    flag = True\n",
-            "可能已经应用",
+            "new_text is already there at line 2: this edit looks already applied",
         ),
-        ("class A:\n    y = 2\n", "class A:\n    x = 1\n", "class A:\n    x = 3\n", "第1行"),
+        (
+            "class A:\n    y = 2\n",
+            "class A:\n    x = 1\n",
+            "class A:\n    x = 3\n",
+            "its first non-blank line (whitespace aside) is at line 1, but old_text differs "
+            "from the file there in more than line endings",
+        ),
         (
             "class A:\n    y = 2\n",
             "class B:\n    x = 1\n",
             "class B:\n    x = 3\n",
-            "不在当前文件中",
+            "neither was its first non-blank line",
         ),
     ],
 )
@@ -230,4 +236,5 @@ def test_missing_anchor_reports_where_the_current_text_differs(tmp_path, source,
         with pytest.raises(KernelError) as error:
             prepare_patch(workspace, args, ReadOperation())
     assert error.value.code == "patch_context_not_found"
+    assert error.value.message.startswith("edits[0]: old_text was not found in the file")
     assert hint in error.value.message and path.read_text(encoding="utf-8") == source

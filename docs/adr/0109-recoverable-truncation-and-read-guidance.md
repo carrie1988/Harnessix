@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 6
-code_revision: e5141ec73e6c3b6b94123fc1b8f9bba7474c4496
+version: 7
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners: [core]
 modules: [agent, models, context, tools, product_config]
 related_adrs:
@@ -20,6 +20,7 @@ related_tests:
   - tests/agent/test_truncation_recovery.py
   - tests/models/test_tool_rejection.py
   - tests/contracts/provider.py
+  - tests/models/test_tool_argument_repair.py
 supersedes: []
 ---
 
@@ -111,7 +112,7 @@ week-1本地模型holdout中期分析（Verified A2x4前41次尝试）显示：7
 
 ## 5. v5修订（2026-11-12）：畸形工具参数对所有端点都只拒绝该次调用
 
-第4版修订由round-2分支提出，随该分支合入；本修订与它相互独立。
+第4版修订由第二轮分支提出，随该分支合入后记在第7节；本修订与它相互独立。
 
 **背景。** 第2节第1条只对开启`repair_tool_arguments`的端点（回环自托管预设）生效。云端端点收到参数不是合法JSON
 对象的调用时，整个响应仍以`chat_protocol/v1:tool_arguments_invalid`失败，Turn结束且不可重试。
@@ -183,3 +184,31 @@ C：维持现状，由用户发送“继续”——已完成的修改都保留�
 “工具调用→只推理不作答→补发提示→给出总结、任务完成”“连续三次空回复后失败”“无正文截断后继续”三种过程。
 
 **未覆盖。** Anthropic端点以`max_tokens`结束且带半截工具调用时仍按原规则失败。
+
+## 7. v4修订（2026-11-12，随第二轮分支于2026-11-14合入）：工具调用序号空缺按到达的调用成组
+
+本修订写在第二轮分支上，早于第5、6版合入主线的时间，编号沿用分支上的“第4版”。
+
+**背景。** 第二轮开发集基线（Multilingual 30题×2轮，本地vLLM）60个试次里有3个不是因为预算而整题终止：
+- 2次是流式响应里工具调用的`index`不从0连续（`chat_protocol/v1:tool_index_gap`），其中一次发生在第3次模型调用、
+  任务开始30秒时；
+- 1次是主动压缩的摘要请求返回了没有正文的响应（`chat_protocol/v1:semantic_output_missing`），当时补丁已经写好。
+
+上一次正式对照的60个试次里没有出现，两次合计约为每2,000次模型调用1次。
+
+**决策。**
+1. **调用序号空缺按到达的调用成组。** `index`只是流内区分调用的键。开启`repair_tool_arguments`时，到达的调用
+   按序号先后成组，每个调用的ID、类型与参数仍逐项校验，校验不过的仍按第5版与ADR 0157的规则处理。未开启时仍以
+   `tool_index_gap`整组失败。负序号、超过每步调用上限的序号仍失败。第5版所说“分片不连续仍使整个响应失败”，
+   在开启修复的端点上由本条放宽。
+   空缺的成因是推断：服务端的流式解析器为模型写坏的一个调用占了序号却没有发出分片。原始分片不持久化，
+   两次都无法直接确认；无论成因如何，到达的调用各自完整，按上述校验后执行不会运行半个调用。
+2. **没有正文的摘要：由第6版处理，分支上的做法不保留。** 分支上曾规定摘要请求以
+   `provider_invalid_provider_output`结束且该次用量完整时跳过本次压缩。第6版此后让适配器不再把空响应判为协议错误，
+   没有正文的摘要以独立代码`provider_summary_empty`结束并同样跳过，这种情形不再以`provider_invalid_provider_output`
+   出现；合入时删除了分支上的判定，畸形流造成的`provider_invalid_provider_output`仍按原错误终止。
+
+**边界。**
+- 被跳过的那个调用不会执行，也不出现在历史里；模型看到的是实际成组的调用与它们的结果。
+- 主循环里没有任何正文和调用的响应由第6版处理（补发提示继续）。
+- 不新增事件类型、拒绝原因或配置字段。回归见`tests/models/test_tool_argument_repair.py`。

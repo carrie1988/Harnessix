@@ -23,7 +23,7 @@ from harnessix.tools.grep_matcher import (
     whole_text_decides,
 )
 from harnessix.tools.grep_matcher import execution_contract as regex_execution_contract
-from harnessix.tools.patterns import BasenamePattern, PathPattern, include_pattern
+from harnessix.tools.patterns import PathPattern, relative_to_start, select_included
 from harnessix.tools.search_contracts import (
     IGNORED_DIRECTORIES,
     MAX_GREP_CONTEXT_LINES,
@@ -138,13 +138,6 @@ class _Scan:
         return self.stats_type.model_validate(
             {name: getattr(self, name) for name in SearchStats.model_fields}
         )
-
-
-def grep_include(args: GrepInput) -> PathPattern | BasenamePattern:
-    """快照与正则Grep的include按文件名匹配任意深度；原字面量合同保持逐段路径语义。"""
-    if isinstance(args, GrepSnapshotInput):
-        return include_pattern(args.include)
-    return PathPattern(args.include)
 
 
 def _scan_for(args: SearchInput) -> _Scan:
@@ -277,14 +270,6 @@ class _Records:
         return True
 
 
-def _relative(path: str, root: str) -> str:
-    if root == ".":
-        return path
-    if path == root:
-        return path.rsplit("/", 1)[-1]
-    return path[len(root) + 1 :]
-
-
 def glob(
     workspace: Workspace,
     args: GlobInput,
@@ -296,7 +281,7 @@ def glob(
     paths = []
     for node in _collect(workspace, args, operation, scan):
         operation.checkpoint()
-        if not pattern.matches(_relative(node.path, args.path)):
+        if not pattern.matches(relative_to_start(node.path, args.path)):
             continue
         try:
             with _open_candidate(workspace, node, operation, directory=False):
@@ -549,12 +534,10 @@ def grep(
 ) -> GrepOutput:
     matcher = build_line_matcher(args, operation)
     fallback = LiteralFallback.start(args, operation, capture)
-    scan, pattern, records = _scan_for(args), grep_include(args), _Records(args)
+    scan, records = _scan_for(args), _Records(args)
     matches: list[GrepMatch] = []
-    for node in _collect(workspace, args, operation, scan):
+    for node in select_included(_collect(workspace, args, operation, scan), args, args.path):
         operation.checkpoint()
-        if not pattern.matches(_relative(node.path, args.path)):
-            continue
         try:
             with _open_candidate(workspace, node, operation, directory=False) as fd:
                 state = revision_state(os.fstat(fd))

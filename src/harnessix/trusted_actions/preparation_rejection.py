@@ -11,23 +11,44 @@ from harnessix.delivery.workspace_patch_errors import (
     is_workspace_patch_no_change,
     is_workspace_patch_preparation_error,
     is_workspace_patch_sha_mismatch,
+    located_patch_message,
+    unapplied_batch_notice,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
-from harnessix.trusted_actions.public_errors import sanitize_plan_exception
 from harnessix.trusted_actions.router import TrustedActionRouter
 
-# 父路径拒绝由规划时的快照观察抛出，不经过解析阶段的固定码表，实例上只有内部说明
-# （“Workspace资源观察失败”）；投影时按同一码表换成说明原因和下一步的固定说明（ADR 0137）。
-# create会补建缺失的父目录（POSIX自ADR 0137，Windows自其第2版）；
-# workspace_parent_missing只剩没有补建能力的端口会出现。
-_PARENT_PATH_REJECTIONS = frozenset({"workspace_parent_missing", "workspace_wrong_file_type"})
-_WORKSPACE_PATCH_PLANNING_FAILURES = _PARENT_PATH_REJECTIONS | {
-    "delivery_metadata_unsupported",
-    "delivery_path_denied",
-    "workspace_patch_cwd_unsupported",
-    "workspace_path_denied",
-    "workspace_platform_unsupported",
+# 规划期的确定性边界拒绝及其写给模型的英文说明；Router已按固定码表归一，这里不读取内部消息。
+_WORKSPACE_PATCH_PLANNING_FAILURES = {
+    "delivery_metadata_unsupported": (
+        "A file mode in files is not supported on this platform (Windows has no executable "
+        "mode); use mode 420"
+    ),
+    "delivery_path_denied": (
+        "A path in files cannot be written by a patch: it is the workspace root, repeats "
+        "another entry, or is protected (for example .git or .env files). Fix that path and "
+        "resend"
+    ),
+    "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
+    # create会补建缺失的父目录（POSIX自ADR 0137，Windows自其第2版）；
+    # 这个码只剩没有补建能力的端口会出现。
+    "workspace_parent_missing": (
+        "A parent directory of a path in files does not exist, and on this platform "
+        "apply_patch_batch does not create directories. Create the directory with the command "
+        "tool (for example mkdir), then resend this call unchanged"
+    ),
+    "workspace_wrong_file_type": (
+        "A path in files passes through an existing entry that is not a directory (for example "
+        "a.txt/b.py where a.txt is a file), so nothing can be created below it. Use a path "
+        "whose existing parents are directories; missing parent directories are created for you"
+    ),
+    "workspace_path_denied": (
+        "A path in files is not a workspace path. apply_patch_batch only writes files inside "
+        "the workspace, addressed relative to its root (for example src/app.py, never an "
+        "absolute path, one containing .., or one that goes through a symbolic link); write "
+        "files elsewhere, such as temporary directories, with the command tool"
+    ),
+    "workspace_platform_unsupported": "apply_patch_batch is not supported on this platform",
 }
 
 
@@ -49,13 +70,20 @@ def workspace_patch_planning_rejection(
         "product.workspace-patch",
     ) or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
         return None
-    if rejection.code in _PARENT_PATH_REJECTIONS:
-        rejection = sanitize_plan_exception(rejection, stage="resolve")
+    # 码表不含出错的是哪一项（见上），但整批未应用是确定的事实，一并告诉模型。
+    message = _WORKSPACE_PATCH_PLANNING_FAILURES[rejection.code]
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",
-        error=AgentFailure(code=rejection.code, message=rejection.message),
+        error=AgentFailure(
+            code=rejection.code, message=f"{message}. {unapplied_batch_notice(_file_count(call))}"
+        ),
     )
+
+
+def _file_count(call: ToolCallContent) -> int:
+    files = call.arguments.get("files")
+    return len(files) if isinstance(files, list) else 1
 
 
 def workspace_patch_preparation_rejection(
@@ -96,12 +124,17 @@ def workspace_patch_preparation_rejection(
         or router.approval(plan_id) is not None
     ):
         return None
+    # SHA不符与无变化重建固定正文，不沿用实例上的消息；三类拒绝都只附加已校验的files下标
+    # 与整批未应用的说明。
+    reported: KernelError = rejection
     if is_workspace_patch_sha_mismatch(rejection):
-        failure = WorkspacePatchPreconditionError().to_failure()
+        reported = WorkspacePatchPreconditionError()
     elif is_workspace_patch_no_change(rejection):
-        failure = WorkspacePatchNoChangeError().to_failure()
-    else:
-        failure = AgentFailure(code=rejection.code, message=rejection.message)
+        reported = WorkspacePatchNoChangeError()
+    failure = AgentFailure(
+        code=reported.code,
+        message=located_patch_message(reported.message, rejection.file_index, _file_count(call)),
+    )
     closed = router.decide(
         plan_id,
         ApprovalDecision(

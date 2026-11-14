@@ -29,6 +29,80 @@ _ERRORS = {
     "approval_rejected": "已拒绝",
     "tool_invalid_arguments": "参数无效，Agent 会调整后重试",
 }
+# 读取、搜索与修改文件的失败说明已改为写给模型的英文（ADR 0129）；这里保留用户此前看到的原因，
+# 界面只在收到英文说明时改用它，仍是中文的说明照原样截取首句。
+_USER_REASONS = {
+    "tool_anchor_not_found": "文件中没有该字面锚点；核对文件或改用窄范围grep定位",
+    "tool_anchor_ambiguous": "字面锚点不唯一；使用更具体的锚点或grep返回的行号",
+    "tool_anchor_outside_page": "文本页未覆盖锚点；减小lines_before或增大页容量",
+    "tool_definition_unavailable": (
+        "定义视图仅支持有界Python实际声明；请用text查看原文或核对anchor"
+    ),
+    "tool_limit_exceeded": (
+        "扫描超过工具上限（条目、字节或深度），未返回结果；不要原样重试，请把path缩小到更具体的"
+        "子目录，或先用glob定位候选文件再grep"
+    ),
+    "tool_path_denied": (
+        "路径不可读：读工具只读工作区内的文件，路径相对工作区根（如src/app.py）；工作区以外的"
+        "路径（如临时目录）只能用命令工具访问；部分敏感路径始终不可读"
+    ),
+    "tool_not_found": "路径不存在：先用glob或list_files确认相对工作区根的路径",
+    "tool_timeout": (
+        "读取或搜索超时，未返回结果；不要原样重试，请把path缩小到具体子目录、收窄include，"
+        "或先用glob定位候选文件"
+    ),
+    "tool_expected_revision_required": (
+        "list_files后续页必须携带上一成功结果的revision作为expected_revision"
+    ),
+    "tool_regex_invalid": (
+        "表达式不是受支持的RE2模式或超过编译内存上限；请修正语法、移除反向引用/"
+        "前后查找断言、简化表达式，或显式使用match_mode=literal查找字面量"
+    ),
+    "tool_no_files_searched": "没有文件匹配include，未搜索任何文件",
+    **dict.fromkeys(
+        (
+            "tool_wrong_file_type",
+            "tool_invalid_utf8",
+            "tool_binary_file",
+            "tool_offset_out_of_range",
+            "tool_page_changed",
+            "tool_workspace_changed",
+            "tool_io_failed",
+        ),
+        "工作区读取未完成",
+    ),
+    **dict.fromkeys(
+        ("artifact_not_found", "artifact_expired", "artifact_invalid_cursor"),
+        "Artifact 读取未完成",
+    ),
+    "patch_context_not_found": "精确编辑锚点不存在",
+    "patch_ambiguous_context": "编辑锚点不唯一，请提供更完整上下文",
+    "patch_overlapping_edits": "编辑区间重叠",
+    "patch_limit_exceeded": "Patch 完整后镜像超限",
+    "patch_no_change": "Patch 未产生内容变化",
+    "delivery_no_change": "Workspace事务包含无变化文件",
+    "delivery_metadata_unsupported": "Windows事务不模拟POSIX可执行模式",
+    "delivery_path_denied": "Workspace Patch路径不允许写入",
+    "workspace_path_denied": "Workspace路径不允许访问",
+    "workspace_parent_missing": "缺失资源的父目录不存在",
+    "workspace_wrong_file_type": "路径中已有的父级不是目录，无法在其下创建文件",
+    "workspace_patch_cwd_unsupported": "Workspace Patch只支持根级cwd",
+    "workspace_platform_unsupported": "Workspace平台不受支持",
+    "workspace_patch_precondition_failed": (
+        "expected_sha256不匹配；请重新调用目标文件的read_file，"
+        "仅使用digest_status=complete时的content_sha256，禁止猜测摘要"
+    ),
+    "workspace_patch_target_exists": "create目标已存在；请read_file后用edit或replace，或先delete",
+    "workspace_patch_target_missing": "目标不是现有普通文件；新文件请用create",
+    "workspace_patch_unsafe_full_replace": (
+        "完整替换会删除现有文件超过四分之一；请改用唯一锚定的edit或显式delete"
+    ),
+    "workspace_patch_edit_source_invalid": "edit目标不是受支持的UTF-8文本",
+    "workspace_patch_preparation_timeout": (
+        "审批预览准备超时（工作区较大或磁盘繁忙）；本次Patch未执行，工作区没有变化，"
+        "可重试或拆成更小的修改"
+    ),
+}
 
 
 def tool_call_text(content: PublicToolCallContent) -> str | None:
@@ -79,8 +153,10 @@ def tool_result_text(content: PublicToolResultContent) -> str:
         return f"失败（退出码 {returncode}）"
     if code in _ERRORS:
         return f"失败：{_ERRORS[code]}"
-    first = content.error.message.split("。", 1)[0]
-    return f"失败：{_short(first)}（{code}）"
+    reason = _USER_REASONS.get(code)
+    if reason is None or not content.error.message.isascii():
+        reason = content.error.message.split("。", 1)[0]
+    return f"失败：{_short(reason)}（{code}）"
 
 
 def approval_text(content: PublicApprovalRequestContent) -> str | None:

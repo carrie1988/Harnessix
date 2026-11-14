@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 import errno
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from functools import partial
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Self
@@ -37,6 +38,7 @@ from harnessix.tools.git_contracts import (
     GitDiffInput,
     GitReviewInput,
     GitStatusInput,
+    GitStatusOutput,
 )
 from harnessix.tools.grep_matcher import RegexSearchError
 from harnessix.tools.read_backend import build_read_backend
@@ -56,31 +58,86 @@ if TYPE_CHECKING:
     from harnessix.processes.owner_protocol import OutputRedactionSource
 
 
+# 写给模型的失败说明（英文）：说明发生了什么与下一步，不回显路径或查询值；
+# 界面按错误码另行展示用户文案（product_ui.tool_summary）。
 _READ_ERROR_MESSAGES = {
-    "anchor_not_found": "文件中没有该字面锚点；核对文件或改用窄范围grep定位",
-    "anchor_ambiguous": "字面锚点不唯一；使用更具体的锚点或grep返回的行号",
-    "anchor_outside_page": "文本页未覆盖锚点；减小lines_before或增大页容量",
-    "definition_unavailable": ("定义视图仅支持有界Python实际声明；请用text查看原文或核对anchor"),
+    "anchor_not_found": (
+        "No line of the file contains anchor. anchor is literal text inside one line (not a "
+        "regex, no line breaks); copy it from a line you have seen in this file, or locate the "
+        "line with grep on this path and read by start_line"
+    ),
+    "anchor_ambiguous": (
+        "More than one line contains anchor. Use a longer piece of the line that occurs once, "
+        "or grep this path for it and read by start_line"
+    ),
+    "anchor_outside_page": (
+        "The page ended before the anchor line. Use a smaller lines_before or a larger max_lines"
+    ),
+    "definition_unavailable": (
+        "view=definition works only for a real def/class header in a Python file within the "
+        "size limit. Use view=text, or check that anchor is the def/class line"
+    ),
     "limit_exceeded": (
-        "扫描超过工具上限（条目、字节或深度），未返回结果；不要原样重试，请把path缩小到更具体的"
-        "子目录，或先用glob定位候选文件再grep"
+        "The scan hit a tool limit (entries, bytes or depth) and returned nothing. Do not "
+        "retry unchanged: set path to a more specific subdirectory, or find candidate files "
+        "with glob first and grep those"
     ),
     # 只说明可操作的下一步，不区分“越界”与“敏感路径拒绝”，不回显路径。
     "path_denied": (
-        "路径不可读：读工具只读工作区内的文件，路径相对工作区根（如src/app.py）；工作区以外的"
-        "路径（如临时目录）只能用命令工具访问；部分敏感路径始终不可读"
+        "This path cannot be read. Read tools only read files inside the workspace, addressed "
+        "relative to the workspace root (for example src/app.py). Use the command tool for "
+        "paths outside it such as temporary directories; some sensitive paths are never readable"
     ),
-    "not_found": "路径不存在：先用glob或list_files确认相对工作区根的路径",
+    "not_found": (
+        "Path not found. Paths are relative to the workspace root; confirm the path with glob "
+        "or list_files before retrying"
+    ),
+    "wrong_file_type": (
+        "The path is a directory where a file is needed, or a file where a directory is "
+        "needed. Use list_files or glob for directories and read_file for files"
+    ),
+    "invalid_utf8": "The file is not valid UTF-8 text. Inspect it with the command tool",
+    "binary_file": "The file contains binary data. Inspect it with the command tool",
+    "offset_out_of_range": (
+        "The start position is past the end. Read from line 1, or use the next_line or "
+        "next_offset value of the previous page"
+    ),
+    "page_changed": (
+        "The file or directory changed since expected_revision was issued. Read again without "
+        "expected_revision"
+    ),
+    "workspace_changed": "The workspace changed during the read. Retry the call",
+    "no_files_searched": (
+        "No files were searched: no file under path matches include. include filters by file "
+        "name (for example *.py) or by a path relative to path; to search one known file pass "
+        "it as path, and check names with glob"
+    ),
+    "io_failed": "Reading failed with an I/O error. Retry, or use the command tool",
     "timeout": (
-        "读取或搜索超时，未返回结果；不要原样重试，请把path缩小到具体子目录、收窄include，"
-        "或先用glob定位候选文件"
+        "The read or search timed out and returned nothing. Do not retry unchanged: set path "
+        "to a specific subdirectory, narrow include, or find candidate files with glob first"
     ),
 }
+# 上表覆盖全部ReadErrorCode；兜底只在出现表外错误码时使用，保持原说明（界面照旧显示）。
+_READ_ERROR_FALLBACK = "工作区读取未完成"
 # 模型常把命令输出存档编号当作read_file路径，或沿用read_artifact的分页参数。
 _ARTIFACT_READ_HINT = (
-    "read_file只读取工作区文件，按行分页用start_line与max_lines；"
-    "命令输出等存档请用read_artifact(artifact_id, offset, limit)"
+    "read_file reads workspace files only and pages by start_line and max_lines; for stored "
+    "command output use read_artifact(artifact_id, offset, limit)"
 )
+_ARTIFACT_ERROR_MESSAGES = {
+    "artifact_not_found": (
+        "No stored output has this artifact_id in this session. Copy the id from the artifact "
+        "field of a tool result of this session, or rerun the command"
+    ),
+    "artifact_expired": "This stored output has expired. Rerun the command that produced it",
+    "artifact_invalid_cursor": (
+        "offset is past the end of the stored output. Use next_offset from the previous page, "
+        "or start at offset 0"
+    ),
+}
+# 存档损坏、发布器不匹配等不是模型能改正的调用错误：保持原说明（界面照旧显示）。
+_ARTIFACT_ERROR_FALLBACK = "Artifact 读取未完成"
 
 
 def _misrouted_artifact_read(binding: _ReadBinding, arguments: Mapping[str, Any]) -> bool:
@@ -93,8 +150,8 @@ def _misrouted_artifact_read(binding: _ReadBinding, arguments: Mapping[str, Any]
 
 
 _OUTPUT_LIMIT_MESSAGE = (
-    "工具结果超过输出上限，未返回结果；不要原样重试，请缩小path、减少context_lines或max_results，"
-    "读取文件时改用start_line分页"
+    "The result exceeds the output limit and was not returned. Do not retry unchanged: narrow "
+    "path, lower context_lines or max_results, or page a file with start_line and max_lines"
 )
 
 
@@ -159,9 +216,9 @@ def _workspace_relative(
 
 
 def _read_error_message(binding: _ReadBinding, code: str, call: ToolCallContent) -> str:
-    message = _READ_ERROR_MESSAGES.get(code, "工作区读取未完成")
+    message = _READ_ERROR_MESSAGES.get(code, _READ_ERROR_FALLBACK)
     if code in {"not_found", "path_denied"} and _misrouted_artifact_read(binding, call.arguments):
-        return f"{_ARTIFACT_READ_HINT}。{message}"
+        return f"{_ARTIFACT_READ_HINT}. {message}"
     return message
 
 
@@ -172,7 +229,7 @@ def _argument_failure(
     codes = tuple(detail["type"] for detail in details)
     invalid = _invalid_arguments(binding.input_model, arguments, codes, details)
     if _misrouted_artifact_read(binding, arguments):
-        return invalid[0], f"{_ARTIFACT_READ_HINT}。{invalid[1]}"
+        return invalid[0], f"{_ARTIFACT_READ_HINT}. {invalid[1]}"
     if binding.input_model is ListFilesInput:
         position = arguments.get("offset", 0)
         first_position = 0
@@ -190,8 +247,22 @@ def _argument_failure(
         return invalid
     return (
         "tool_expected_revision_required",
-        f"{binding.name}后续页必须携带上一成功结果的revision作为expected_revision",
+        f"Later pages of {binding.name} need expected_revision set to the revision of the "
+        "previous successful page",
     )
+
+
+async def _observe_for_repair[T](
+    tools: CodingToolRuntime, observe: Callable[[ReadOperation], T]
+) -> T | None:
+    """提案修复的观察与模型读取同边界、同并发上限；任何失败只表示“无法补全”，不成为结果。"""
+    async with tools._lock:
+        if tools._closed:
+            return None
+        try:
+            return await run_read_operation(observe, timeout_seconds=tools._read_timeout_seconds)
+        except (ReadToolError, OSError, ValueError):
+            return None
 
 
 def _read_semaphore(limit: int) -> asyncio.BoundedSemaphore:
@@ -278,16 +349,13 @@ class CodingToolRuntime:
 
     async def read_workspace_file(self, path: str) -> bytes | None:
         """完整读取一个不超过扫描上限的工作区文件，供提案修复核对；不可读时返回None。"""
-        async with self._lock:
-            if self._closed:
-                return None
-            try:
-                return await run_read_operation(
-                    lambda operation: self._read_complete_bytes(path, operation),
-                    timeout_seconds=self._read_timeout_seconds,
-                )
-            except (ReadToolError, OSError, ValueError):
-                return None
+        return await _observe_for_repair(self, partial(self._read_complete_bytes, path))
+
+    async def workspace_file_mode(self, path: str) -> int | None:
+        """返回工作区普通文件的权限位，供提案修复沿用现有权限；不可读或平台没有权限位时返回None。"""
+        if (workspace := self._workspace) is None:
+            return None
+        return await _observe_for_repair(self, partial(files.file_permission_mode, workspace, path))
 
     async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
         if workspace != str(self.workspace_root):
@@ -327,10 +395,14 @@ class CodingToolRuntime:
             try:
                 args = ReadArtifactInput.model_validate_json(json.dumps(call.arguments))
                 page = await cancel.run(self._read_artifact(scope, args))
-            except ValidationError:
-                return self._failure(call, *_invalid_arguments(ReadArtifactInput, call.arguments))
+            except ValidationError as error:
+                details = error.errors(include_url=False, include_input=False)
+                return self._failure(
+                    call, *_invalid_arguments(ReadArtifactInput, call.arguments, (), details)
+                )
             except KernelError as error:
-                return self._failure(call, error.code, "Artifact 读取未完成")
+                message = _ARTIFACT_ERROR_MESSAGES.get(error.code, _ARTIFACT_ERROR_FALLBACK)
+                return self._failure(call, error.code, message)
             return ToolResultContent(
                 call_id=call.call_id, outcome="succeeded", output=page.model_dump(mode="json")
             )
@@ -452,6 +524,20 @@ class CodingToolRuntime:
             if self._git is None:
                 raise KernelError("tool_contract_changed", "Git只读能力未绑定")
             return await self._git.execute(args, cancel)
+
+    async def workspace_changes(
+        self, cancel: CancelToken, *, paths: tuple[str, ...] = ()
+    ) -> GitStatusOutput | None:
+        """会话基线端口：经git_status所用的同一Git只读端口观察未提交改动；未绑定Git时为None。
+
+        paths非空时只看这些路径。读取失败沿用读工具的错误上抛，是否忽略由调用方决定。
+        """
+        if self._git is None:
+            return None
+        async with self._lock:
+            if self._closed:
+                raise KernelError("tool_runtime_closed", "工具运行时已关闭")
+            return await cancel.run(self._git.workspace_changes(cancel, paths=paths))
 
     @staticmethod
     def _failure(call: ToolCallContent, code: str, message: str) -> ToolResultContent:

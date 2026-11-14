@@ -232,7 +232,7 @@ def test_every_correctable_patch_planning_rejection_survives_the_resolve_stage()
     （Windows上带可执行权限位的Patch在0.10.0b15前就是这样）。
     """
 
-    assert _WORKSPACE_PATCH_PLANNING_FAILURES <= _RESOLVER_ERRORS.keys()
+    assert _WORKSPACE_PATCH_PLANNING_FAILURES.keys() <= _RESOLVER_ERRORS.keys()
 
 
 def test_windows_executable_mode_keeps_its_code_through_the_resolve_stage() -> None:

@@ -1,0 +1,59 @@
+{
+  "run_name": "multilingual-round2-test-oracle",
+  "dataset": {
+    "name": "swebench-multilingual-round2-test",
+    "version": "harbor-datasets-37db1088"
+  },
+  "attempts": 1,
+  "n_concurrent_trials": 4,
+  "content_policy": "full",
+  "primary_outcome": "grader",
+  "notes": [
+    "Environment check of the round-2 Multilingual test set (30 tasks, test.tasks.lock.json): only the oracle arm, which applies the gold patch and runs the task's own tests offline. No agent and no model runs on the test set here, and no trajectory exists to look at.",
+    "A task whose gold patch does not pass cannot be evaluated offline. Before any agent run it is replaced by the first unused reserve of its language with the recorded substitute command (selection.json); the test set is then re-locked."
+  ],
+  "environment": {
+    "extra_docker_compose": [
+      "integrations/harbor/compose/raw-github-mirror.yaml",
+      "integrations/harbor/compose/network-isolation.yaml"
+    ]
+  },
+  "compose_env": {
+    "HARNESSIX_RAW_MIRROR_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_RAW_MIRROR_DIR": "/data/harnessix/harbor/raw-mirror-multilingual-round2",
+    "HARNESSIX_RAW_MIRROR_CODE": "integrations/harbor/raw_mirror.py",
+    "HARNESSIX_MODEL_GATEWAY_IMAGE": "harnessix-harbor/raw-mirror-python:78976a69c067",
+    "HARNESSIX_MODEL_GATEWAY_CODE": "integrations/harbor/model_relay.py",
+    "HARNESSIX_TASK_DNS": "192.168.130.1"
+  },
+  "pinned_images": {
+    "harnessix-harbor/raw-mirror-python:78976a69c067": {
+      "source": "docker.io/library/python:3.12-slim",
+      "linux_amd64_manifest": "sha256:05a994d2344eb364cc186910f4fc8786a38215f39f00d0acc25bff33a08f4177",
+      "image_id": "sha256:78976a69c067520ef8be34cde307ef9f6fea6dcefa50edb57039773d241ca0db"
+    }
+  },
+  "graders": [
+    {
+      "grader_id": "swebench-official",
+      "version": "swebench-5.0.2",
+      "pass_score": "resolved"
+    },
+    {
+      "grader_id": "harbor-reward",
+      "version": "harbor-0.25.0+swebench-4.1.0-parser+report-check",
+      "pass_score": "reward_passed"
+    }
+  ],
+  "primary_grader": "swebench-official",
+  "arms": [
+    {
+      "arm_id": "oracle",
+      "system": "oracle",
+      "system_version": "harbor-0.25.0",
+      "agent": {
+        "import_path": "integrations.harbor.evidence_agents:OracleWithPatch"
+      }
+    }
+  ]
+}

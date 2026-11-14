@@ -1,4 +1,4 @@
-"""同次SQLite原字节复用；不减少认证、解析或跨读取复用结论。"""
+"""同次SQLite原字节复用；不减少认证，解析结果只在原字节摘要相同时复用（ADR 0133）。"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def noncanonical_json(encoded):
 
 @pytest.mark.parametrize("noncanonical", [False, True])
 @pytest.mark.parametrize("surface", ["history", "get", "recovery"])
-async def test_same_row_encodes_once_but_keeps_both_snapshot_hashes_and_parses(
+async def test_same_row_encodes_once_keeps_both_snapshot_hashes_and_parses_the_bytes_once(
     tmp_path, monkeypatch, noncanonical, surface
 ):
     with binding() as proof:
@@ -132,9 +132,11 @@ async def test_same_row_encodes_once_but_keeps_both_snapshot_hashes_and_parses(
         finally:
             sys.setprofile(previous_profile)
         assert encodes == {event_text: int(surface == "history"), snapshot_text: 1}
-        assert order == ["auth", "parse", "storage", "parse"]
-        assert [text for text, _ in parses] == [snapshot_text, snapshot_text]
-        assert parses[0][1] is not parses[1][1]
+        # 全库恢复扫描不经过解析缓存，两个校验器各自解析；单条读取由第二个校验器复用首次解析。
+        scan = surface == "recovery"
+        assert order == ["auth", "parse", "storage", *(["parse"] if scan else [])]
+        assert [text for text, _ in parses] == [snapshot_text] * (2 if scan else 1)
+        assert not scan or parses[0][1] is not parses[1][1]
         assert hashes[0][1] is hashes[1][1]
         assert hashes[0][1] == snapshot_body
         assert len(macs) == (5 if surface == "history" else 3)

@@ -211,7 +211,7 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
         if protocol is not None or urlsplit(checked.base_url).hostname in _MAX_TOKENS_HOSTS
         else None
     )
-    # 自托管端点（本机回环或已声明的内网）：还原被字符串化的工具参数，并按0元计价。
+    # 自托管端点（本机回环或已声明的内网）：畸形工具参数只拒绝该次调用，并按0元计价。
     self_hosted = checked.self_hosted or urlsplit(checked.base_url).hostname in LOOPBACK_HOSTS
     return ProductConfigV2(
         active_profile=checked.profile_id,
@@ -233,7 +233,9 @@ def build_product_config(draft: ConfigurationDraft) -> ProductConfigV2:
                 output_token_parameter=output_token_parameter,
                 thinking_protocol=protocol,
                 omit_tool_choice=checked.omit_tool_choice,
-                normalize_tool_arguments=self_hosted,
+                # 云端与自托管的模型都会偶尔把数组、对象参数写成JSON字符串；还原只在Schema声明
+                # 该位置为容器、且字符串能严格解析成同类容器时发生，对写对了的调用没有影响。
+                normalize_tool_arguments=True,
                 repair_tool_arguments=self_hosted,
                 stable_prompt_prefix=self_hosted,
                 compact_tool_results=checked.provider_kind == "openai_chat",

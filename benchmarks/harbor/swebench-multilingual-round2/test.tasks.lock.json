@@ -1,0 +1,425 @@
+{
+  "spec_version": "harnessix.harbor-task-lock/v1",
+  "tasks": [
+    {
+      "name": "apache__druid-13704",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/apache__druid-13704",
+      "files": {
+        "environment/Dockerfile": "ced0c66a9e99d5c8c117d0e330ba7b7ebd8869290dcea47bb89d17ebb78a3e07",
+        "instruction.md": "3eeaaf07e6aac1dd8fad34c73bd2ad8fb4e13470750effa4bffd8097c94ee18a",
+        "solution/solve.sh": "a75f3297116e9af7bad26ba325c909fc0de813d6c663bd9326206e9689d59281",
+        "task.toml": "519152a047301666fb81fec6e0c380e1d82534c42ebefd9c5ce2171a3eef5625",
+        "tests/config.json": "b61b6ad946e68cde80960cc3bfa040f632831c2664d0ae770229e9c356f38568",
+        "tests/test.sh": "436336480d7f450f0fbfe63509ada14c6f3bb23d0c74493118ba5ffc4c344078"
+      }
+    },
+    {
+      "name": "axios__axios-4738",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/axios__axios-4738",
+      "files": {
+        "environment/Dockerfile": "6a5aeecffd131dc916d7c1806878e111abd7d3d472ab505d7244785695ce6ac0",
+        "instruction.md": "f91bbff6ebdf3d2b49351cf9ad664adf1afcb7dc5806629d9c7d1e397c9bd7ca",
+        "solution/solve.sh": "998e7f0d41331e992dc635bb6d20c64392f3dab8a77ee702a9cd3ee64aeb8b7a",
+        "task.toml": "8d19c076b4bd9aad449943c05d86260693cf20f03768d7184bfe4b20f9a0d3f4",
+        "tests/config.json": "c82ed971512e4cc974c5c72fab72561306f377ca8892ace172f1e55fc2b960c2",
+        "tests/test.sh": "c3bcb88f1ca704e93ef24a8d1905f0cfaf1031e2862a91c904fc9db2624bad8e"
+      }
+    },
+    {
+      "name": "caddyserver__caddy-6051",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/caddyserver__caddy-6051",
+      "files": {
+        "environment/Dockerfile": "afb280e4eff113b0cd93ac87e074d823acaf693d0c9d7b43b54e204db59bec13",
+        "instruction.md": "8a7546eec620daff21cead364de01d0a3fd58b195999e0a5a2e9bc73496cf422",
+        "solution/solve.sh": "777d2e1db56a9ec2e8ed5567482069b0a6665c4bfcdc01fc89b8501a83bdf079",
+        "task.toml": "fdf3c3fd26bf603ade26706b1a0398dc59e4dd0d188f714b7f95abf81f8271e9",
+        "tests/config.json": "c6b8aa44a7cf409f1561ea623f885f311fc38372ddb2680d9349fd304d31e9fb",
+        "tests/test.sh": "e56064597325b7c52f6aec79107319e5f93e0777e312d9823015e63abdee5207"
+      }
+    },
+    {
+      "name": "caddyserver__caddy-6288",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/caddyserver__caddy-6288",
+      "files": {
+        "environment/Dockerfile": "d583567892895ee04c1542f772a4967be20eb5847df3816578f4711147f0fd3a",
+        "instruction.md": "08850fa7c100210e5579cd7dc5abb84788c62e5ae515739c4d08e86be9dcb743",
+        "solution/solve.sh": "d044a22dbc6510453bcf731ee40b6d3b8fafa7399c12461ba2093ff272c88bc8",
+        "task.toml": "fdf3c3fd26bf603ade26706b1a0398dc59e4dd0d188f714b7f95abf81f8271e9",
+        "tests/config.json": "cca62cf42e13390dd965c8569ad971189cb384e8decb4241ae233c36016f35dc",
+        "tests/test.sh": "4aff8015cd361fe615280a0aebb33786f2a011b2cc3e4d72f5396c43dd24c1bd"
+      }
+    },
+    {
+      "name": "facebook__docusaurus-9183",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/facebook__docusaurus-9183",
+      "files": {
+        "environment/Dockerfile": "da1cade8eb7d7e8c71159ef146dc5865814259483fb06178d7286637342408c5",
+        "instruction.md": "f5e00902c351301d2c3e57f0b21e5869d6cf2bffab713765b82f45281940b6fd",
+        "solution/solve.sh": "2ab8ba352613d83a799140fad9eb57d10d4aa2ca5f5097b4894da014789239e2",
+        "task.toml": "8d19c076b4bd9aad449943c05d86260693cf20f03768d7184bfe4b20f9a0d3f4",
+        "tests/config.json": "7922c9f4f9f297725b935225dcc60d0af7ea62dfdbc6699f51a424b079568526",
+        "tests/test.sh": "6465cba52bfca01d9a6da06a7c655a880b121abc120085246563e8a0c87160b6"
+      }
+    },
+    {
+      "name": "fluent__fluentd-3328",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/fluent__fluentd-3328",
+      "files": {
+        "environment/Dockerfile": "1030c4dc49eaa135ac2a54aaeee3bd0e20d416fbef775da6c2cee05f67b62734",
+        "instruction.md": "c81582b6715fb97a70cdc00ce12371af52ec8abd7681062a0dfe62a577172c3a",
+        "solution/solve.sh": "2f0e5865e8a8e4ef3b151e6b9d69912c5aeb2fe910bc5fbdcec230dee0598faf",
+        "task.toml": "5a59e875e1d8d89148b696d17d3e13b5e743cce2e48c92f1923544001eecc63a",
+        "tests/config.json": "14212910f8c67c148ca82c2b2dc9d74e6d670247d9a597f505c1aa2c7215de19",
+        "tests/test.sh": "4c923aa7f629aa3526c7ce6c0784788abc6ee8546782b61aa23f3b5a8b128a6a"
+      }
+    },
+    {
+      "name": "fluent__fluentd-3641",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/fluent__fluentd-3641",
+      "files": {
+        "environment/Dockerfile": "ccae81f2d2304c2ccc777f391daad0e7bb33d67d3115087a650864adb850cf17",
+        "instruction.md": "fcb1dc302c4c468a1b95e7a77683a4fe16a8d0566759ccd6ec7bbdf8590b8379",
+        "solution/solve.sh": "7d5d67be128330eca1ce417c2a44577caae45b9e005f32455a2ebd8e61a315b9",
+        "task.toml": "5a59e875e1d8d89148b696d17d3e13b5e743cce2e48c92f1923544001eecc63a",
+        "tests/config.json": "810c2437e685651c0bcbe43b41255fc9bba944c8f34187c0cdfe0d6408a24671",
+        "tests/test.sh": "411b646af72cadf6423d167d3428a924ee9724118e5a6858bf5145f52af88f31"
+      }
+    },
+    {
+      "name": "fmtlib__fmt-3158",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/fmtlib__fmt-3158",
+      "files": {
+        "environment/Dockerfile": "bd7ef28dd33fd1483258d250121ade5e611992623593d7a7ac9705285dbd04ae",
+        "instruction.md": "2157756309495b2c9faf7851b0fa86abcebff9f87fb65186aa60b5434d664926",
+        "solution/solve.sh": "f80f471953a4f11d0119a776c59347077f767c2d3785898bd8d22205067d5df4",
+        "task.toml": "16c4d2f7c83aac7fc9c28cf7b5f64c24cd72196eaececf6cceff8c7039584f6e",
+        "tests/config.json": "610ec376cd7a06e2d00299bffac65b817dfd1dc70795375f07e9467167ddb379",
+        "tests/test.sh": "b11c4ff405d1369a9dac3375f5cb9093485e5486c01af17bc1a46a5266b4516f"
+      }
+    },
+    {
+      "name": "google__gson-1100",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/google__gson-1100",
+      "files": {
+        "environment/Dockerfile": "8722058044a86bb7e12a3e7e428c39b9475a6cb961e1972ba589c04c37ba5244",
+        "instruction.md": "df38e4c9a87c19f1f6f81dfb5e6624afba9e13f5c3eb1a0db526bdf9784758c1",
+        "solution/solve.sh": "98fd1a1e202575bdfdd1ece0e3495e15ecde97af87a0f716a988387ac08d545c",
+        "task.toml": "519152a047301666fb81fec6e0c380e1d82534c42ebefd9c5ce2171a3eef5625",
+        "tests/config.json": "035d3182697e577cf54fc8327e4cf3ead966aa6aaa7613bd506e6cef367ab5f1",
+        "tests/test.sh": "c3e5255a91c1686824da8e10f2702a5ee7d577dbac2f80fd23846fc69a704ae2"
+      }
+    },
+    {
+      "name": "hashicorp__terraform-34814",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/hashicorp__terraform-34814",
+      "files": {
+        "environment/Dockerfile": "5e88bd3d5e4848e77007f2b4312dd50b40485e1c193f01bc752fc2f3c0e2e515",
+        "instruction.md": "528c817ef3b0133c39f09f7ffbf95bedaa8cf2a32a4a872a3e97f4d19842acbc",
+        "solution/solve.sh": "7b3e4270e999181c08e7e185540b2dfeef91143fcf13751f69e4705d161a58ef",
+        "task.toml": "fdf3c3fd26bf603ade26706b1a0398dc59e4dd0d188f714b7f95abf81f8271e9",
+        "tests/config.json": "457bd0b8fcf23016a4f5a0071dc235eeb0658c68abd4597dce8f820deb20a659",
+        "tests/test.sh": "a0f68401cce7179be5b4541fba4b13562646e84ba22d819a657d2181d03a7dd1"
+      }
+    },
+    {
+      "name": "hashicorp__terraform-34900",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/hashicorp__terraform-34900",
+      "files": {
+        "environment/Dockerfile": "58862f42a3101943e1a5df70c2443c7024ef88da0f44a8c93ec8fb8218b805e8",
+        "instruction.md": "dba4e31a9df6dfbc7fbfd64b75d1e10be7fbe88ceddc0b841d57a646183170b9",
+        "solution/solve.sh": "63f24b81d5024e07d0fca7d4541ac990492c2acec3193f1a342a7aa4369e5fd2",
+        "task.toml": "fdf3c3fd26bf603ade26706b1a0398dc59e4dd0d188f714b7f95abf81f8271e9",
+        "tests/config.json": "4059108fcdd2af2258a3a48ddceb47afc411e7ab3ee98d4b25927f22d3d925e6",
+        "tests/test.sh": "0dd84b5c57061fcbf6ba99f77e8575276dfc630a0e2cb257bdd949ef8c1f8c1f"
+      }
+    },
+    {
+      "name": "immutable-js__immutable-js-2005",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/immutable-js__immutable-js-2005",
+      "files": {
+        "environment/Dockerfile": "52822c059276772f2224f4f16e32e1f936e65fed6fac3a19be045966b4ef24f7",
+        "instruction.md": "68ad15e1f331d3ff358ece6a747fde3aa7ddad1162c5191cad83ba166841d5b7",
+        "solution/solve.sh": "7b6a91fbd3cd8622d9915fb33d003be50e0daff10a7083fb878dfbbc1dd71443",
+        "task.toml": "8d19c076b4bd9aad449943c05d86260693cf20f03768d7184bfe4b20f9a0d3f4",
+        "tests/config.json": "d7f533d0444d4ae41e91e494c8ff9b6e897541825579a569c787cb7379093e94",
+        "tests/test.sh": "8b94f99cb84983812a1adaa003075b442559b83cea2f6ed5f0545efb34e5597a"
+      }
+    },
+    {
+      "name": "javaparser__javaparser-4561",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/javaparser__javaparser-4561",
+      "files": {
+        "environment/Dockerfile": "d2f6c7a35688bf53d1989800e72aecd59f24c35d3a8bc311c8f51ba67727c198",
+        "instruction.md": "d76c2ed4acbc73a121867487cf9873268c76a7bda3c8d46eb2511387340d18fd",
+        "solution/solve.sh": "1df37b461ffc580ca52637bfe643a27c06ff378996bd543b029863a3d5bf826f",
+        "task.toml": "519152a047301666fb81fec6e0c380e1d82534c42ebefd9c5ce2171a3eef5625",
+        "tests/config.json": "adc6a3ee5229cc3ef1639a393b5f356a47b34fd2b84e8d649301c216a0d93810",
+        "tests/test.sh": "94fe542604dcd1f0aca4d42647a8c124a80ee98adce18d9bb7caec09848190ac"
+      }
+    },
+    {
+      "name": "jqlang__jq-2919",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/jqlang__jq-2919",
+      "files": {
+        "environment/Dockerfile": "0852534169d06974e63d8c697cc1c17ef03836c652d3963e516c3cb2519ea3e3",
+        "instruction.md": "46502b0aef789e197b4ef4a3e6a4eac69200cfa0871f746640b6fcf1d56b1169",
+        "solution/solve.sh": "a58834d34af6accec7b9aec84b9064307499927333a909b1ed109cc13fe88fba",
+        "task.toml": "aaa5730388b5d2c306535e22f613606144c2c479fe071376dcb5f3d39a4b798b",
+        "tests/config.json": "a0cee8d8f0892efe97dd7f4a6e0914a49cff21ab79505fccaac1292b79e88ae2",
+        "tests/test.sh": "1a174699d37dc87db3a91c1eb140cf8e003a4b5ca66bedd0af4adf37ece42ee2"
+      }
+    },
+    {
+      "name": "php-cs-fixer__php-cs-fixer-7663",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/php-cs-fixer__php-cs-fixer-7663",
+      "files": {
+        "environment/Dockerfile": "c0acdd7478c3b81cee75e30e5ea34201e5e6cc570afc68c87476ff3c98cf8385",
+        "instruction.md": "d50b3639982829988b6c43cde4ad33dfd6567cfbc32a767c17cba2bd0534cc6e",
+        "solution/solve.sh": "de76fb266380726f3f755a1f8b788895daa6b4b6a5914f9367d7dc5da018eaa0",
+        "task.toml": "13d61d1a3ad672dba9a7ba5334cb7faa4a2dca77bfb2b235fa3161b13d841ffc",
+        "tests/config.json": "c2f43442a6eac8ff46ebf20fda79dca7d80719c758891d33831ee604738c6e0b",
+        "tests/test.sh": "c0ae4388ac07724b42c37298a40bb872a381db8cbb2eba04cf6042863adcfd53"
+      }
+    },
+    {
+      "name": "php-cs-fixer__php-cs-fixer-8256",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/php-cs-fixer__php-cs-fixer-8256",
+      "files": {
+        "environment/Dockerfile": "ba415afe1d5343f3fc7c6db84e85e2694d642eec31d057aba3fb244eed909812",
+        "instruction.md": "798489b19f436f998c35219834263f9aa7f1e9d36d38c63c1338164c196f5fb9",
+        "solution/solve.sh": "018b93f5f3fc65682e59202818618e975c4440504f3e191b0b6cd2dd34fe8d7d",
+        "task.toml": "13d61d1a3ad672dba9a7ba5334cb7faa4a2dca77bfb2b235fa3161b13d841ffc",
+        "tests/config.json": "3e8e4c48ba90551fd0e3a406b3a631f3ad3d9b5a126f600d5e0796c12178d761",
+        "tests/test.sh": "3b0173cdc18fa48be8bd1394b74831348e98b5ef7e7fe05cf57cfaeb4adba731"
+      }
+    },
+    {
+      "name": "phpoffice__phpspreadsheet-3940",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/phpoffice__phpspreadsheet-3940",
+      "files": {
+        "environment/Dockerfile": "b24f0d2144e9df24af508f28411fe215b86a0a837427af9bc5b9406c6118d896",
+        "instruction.md": "ea7f2e5cdd3809e4899fb653d7e524eb1df1655e0de8bd0d11cdc51ff98e88dd",
+        "solution/solve.sh": "4107ae48e4e28283bd500e9a8f961bbcf276dc2694528ba317360fb154013adf",
+        "task.toml": "13d61d1a3ad672dba9a7ba5334cb7faa4a2dca77bfb2b235fa3161b13d841ffc",
+        "tests/config.json": "9772a76e2b24509b779470723b67c2338a7e2359ca3877d3d05d99fabd18d967",
+        "tests/test.sh": "1e93268495180b1bf57cdda22483485b1ea4ce07ab9c4fe3dbc7ba3d0d978a30"
+      }
+    },
+    {
+      "name": "preactjs__preact-2757",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/preactjs__preact-2757",
+      "files": {
+        "environment/Dockerfile": "e887a2402db6c6a075dcf68ca710802ab49fbd414d36ea6675706d8539731f12",
+        "instruction.md": "380aca49dd6c741adaab83be135a1817a6cfd64db0ec6f6e71474745ec8cdb15",
+        "solution/solve.sh": "bea40efdb13d6e391589931e2daa4c06ad7c374f45ac44751ab878b23ac23ad6",
+        "task.toml": "8d19c076b4bd9aad449943c05d86260693cf20f03768d7184bfe4b20f9a0d3f4",
+        "tests/config.json": "dbb66990ba0eaa7f8c6f5747ea7c48407c8ecd18760aeedebdee2a650fb4eb19",
+        "tests/test.sh": "3e35b3b78ebd3b6c824e0fa2d60b9bd45fea66c96e5fb2ec053854be3ddff97d"
+      }
+    },
+    {
+      "name": "preactjs__preact-3763",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/preactjs__preact-3763",
+      "files": {
+        "environment/Dockerfile": "f966d35c1d760a3e8d8b2ad8182afbb421753d5c5841017ce3b57236730dc1eb",
+        "instruction.md": "33567f0dae7f9cf5a77502ffda967f8cd6bcebcbc827fb06f8d4d06b8ad94cb5",
+        "solution/solve.sh": "572a582c018201319acdc69b1b525334dbb588d73a395adb3e718902b3912d43",
+        "task.toml": "8d19c076b4bd9aad449943c05d86260693cf20f03768d7184bfe4b20f9a0d3f4",
+        "tests/config.json": "62c1c632154de4047bf510c08cf62d374c197b4cadf81f26877eb3c8abbb4498",
+        "tests/test.sh": "1d89cc8f34d0f86d0b3ba747ec8f70db4fa603f9b4aebec8b54d1cb01bc33c89"
+      }
+    },
+    {
+      "name": "projectlombok__lombok-3326",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/projectlombok__lombok-3326",
+      "files": {
+        "environment/Dockerfile": "3a69269b572dc2859f6f5560234d0111d32352e970cdea012a06cc0c4dd0461d",
+        "instruction.md": "e5294ed01ddc5b300ede1c4e6b0410692966eee604f12577f2fdc84d070b6546",
+        "solution/solve.sh": "9aee773cd5ca9bf3999536f80de44e27cc60f63db1ca50dfc7c2970bfbffaf76",
+        "task.toml": "519152a047301666fb81fec6e0c380e1d82534c42ebefd9c5ce2171a3eef5625",
+        "tests/config.json": "6e26c7ff895ac02a0f9d5eacfe510d24db9e32891c85e62707fe63190227dcec",
+        "tests/test.sh": "cc715bda7ad4c74c4a5a8d848c39c7858ffee220c14df84e9adc2d08c902c9c2"
+      }
+    },
+    {
+      "name": "projectlombok__lombok-3479",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/projectlombok__lombok-3479",
+      "files": {
+        "environment/Dockerfile": "934544f282cade1ab9427e15a435d303d04d67fe359618a32cf3ed65a46d9f91",
+        "instruction.md": "85457ae58119f02207fab84745eb29352e8613853b8cc5e888ef987748be11df",
+        "solution/solve.sh": "0193dcd0efc3b05f0436af6767b4ca7a031aca02af611015058366eeb640d309",
+        "task.toml": "519152a047301666fb81fec6e0c380e1d82534c42ebefd9c5ce2171a3eef5625",
+        "tests/config.json": "245db93e51c7ea5f9b3da8e7f26c1158a1235b708bbfdfbb3a54d44d636c63fb",
+        "tests/test.sh": "e543f62e040e2ed9d81f74a369491f8c6391dd980bef7a61af47079cfbcabfa9"
+      }
+    },
+    {
+      "name": "projectlombok__lombok-3674",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/projectlombok__lombok-3674",
+      "files": {
+        "environment/Dockerfile": "24c0c6485b5528578a971219efecded2776d675f83ebd4a1d0b9b511943dac37",
+        "instruction.md": "2a6d36552eb4d58bdc7259b29183dc5d8df779c8784c82baab4511f2fae30622",
+        "solution/solve.sh": "0f2e451a824eba98efceac4a5afd2c878b0f7e2d8505aaf665df22bcabe1491f",
+        "task.toml": "519152a047301666fb81fec6e0c380e1d82534c42ebefd9c5ce2171a3eef5625",
+        "tests/config.json": "3beff8c7b3362c01e489d0ef889eea440bd9e43271fe315bb43aa3b71e7ee3a4",
+        "tests/test.sh": "d8184b21ed693357fa7cba8bd99a9d64efdf6765b977351937ae7a981a9a35dd"
+      }
+    },
+    {
+      "name": "prometheus__prometheus-12874",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/prometheus__prometheus-12874",
+      "files": {
+        "environment/Dockerfile": "026a4b8ae0f5302f8a0918abbc975381d62a037a6b8a8de1f0ba1e7a4d4d79b1",
+        "instruction.md": "5f3a6cbc61531d56cd005a9a2c6571bf57c54cf8cfbbff9dd149deceb994bad6",
+        "solution/solve.sh": "6f99c22898385de0eb65ac45221c0fdb7c2c8cdb3cf4090f7625774cf5e1a0df",
+        "task.toml": "fdf3c3fd26bf603ade26706b1a0398dc59e4dd0d188f714b7f95abf81f8271e9",
+        "tests/config.json": "d63df47773e203deec5250f4561688382b82d0de97446ef711800b9c9bd5e1e5",
+        "tests/test.sh": "4fd8532d4ade003130a1e7bf818272a936ab41e0fa2303d6c88681d04b937796"
+      }
+    },
+    {
+      "name": "prometheus__prometheus-14861",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/prometheus__prometheus-14861",
+      "files": {
+        "environment/Dockerfile": "158ad44519ebbb8f7eb7c067926578b60e647b781db44d797d9521a33f17db25",
+        "instruction.md": "bc39cb842d37328be3252fc229da05472c6c0b90b24a516dcc3d533842551ebb",
+        "solution/solve.sh": "9267be403bb5f3721e95fb31e4cf7e3af146fc3c6cb749c5371b43c712b93691",
+        "task.toml": "fdf3c3fd26bf603ade26706b1a0398dc59e4dd0d188f714b7f95abf81f8271e9",
+        "tests/config.json": "f5cce5010959c059815cefa1d615cadf87e4eb81d4d8c0e8dd13234bc9d75cb8",
+        "tests/test.sh": "50f0e74a024ede845c38fcab2ab9f43cd405a8e3c7d5f110ef001b4154c00dfc"
+      }
+    },
+    {
+      "name": "rubocop__rubocop-13375",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/rubocop__rubocop-13375",
+      "files": {
+        "environment/Dockerfile": "ccd0ee346a04f8c83d257b06bb25807953f414c5011d84c02ffdd48444752ddc",
+        "instruction.md": "b8ada79db5123cc834e9a1ef50e2b79e93ea55a3c4e723ac28064f5372e3616e",
+        "solution/solve.sh": "8f1daea5b629f35516478a33da6670b9680fd605d7e5e7588c98390f647851db",
+        "task.toml": "5a59e875e1d8d89148b696d17d3e13b5e743cce2e48c92f1923544001eecc63a",
+        "tests/config.json": "d21e256ef6d4be57b7d8dffcec19bc69db82fdfea133949cc1ec23ff965bde4d",
+        "tests/test.sh": "e5d7b968834ccabc148770e59a8337366f0fc16893e8ff2dbd6bc640c265fa3e"
+      }
+    },
+    {
+      "name": "sharkdp__bat-3108",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/sharkdp__bat-3108",
+      "files": {
+        "environment/Dockerfile": "157d071069288f37710455ee982ac0c898741371946022bf339658e3c02563b4",
+        "instruction.md": "40562fa9a487b4b5e08ee46590472c4824bc3db615fcfcfd77a7362466524e4a",
+        "solution/solve.sh": "bc279dbe1d67ed8edf3065f99993c4dac0019f54f341964e5b1cc5aeafd47b6c",
+        "task.toml": "04e11ad08d2a633d73ad4d1302162ec44053fb6885ffe40c49261b6213823ce0",
+        "tests/config.json": "536d92e4b17a975210db92706ed6d221d996cf2b67031f964b19c1f781aecfa4",
+        "tests/test.sh": "9803328be0f6e6a2a1d478e020b9d6a0523b6143027e2ab2256d2dadad96673b"
+      }
+    },
+    {
+      "name": "tokio-rs__tokio-4867",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/tokio-rs__tokio-4867",
+      "files": {
+        "environment/Dockerfile": "1341b554413fdb67e70b0dcbe98260dd65b64d67e3fd410637e3ac63c85d1441",
+        "instruction.md": "6a0221a905d57e1ec5ad68104a59e4be5a66b1a5d089351544d1b50afc8fcaba",
+        "solution/solve.sh": "e2fa064bb03c312777aeda767a40df0c65b9efda169c722d5922d75c3cacadc8",
+        "task.toml": "04e11ad08d2a633d73ad4d1302162ec44053fb6885ffe40c49261b6213823ce0",
+        "tests/config.json": "861866b7d7969718690812f6bb1858d6b5a370a59d59a31d055b6facfa967790",
+        "tests/test.sh": "4b4e2a24d957a034a040407e8767f75b50eff5c5c1b117b63296e6044d816c85"
+      }
+    },
+    {
+      "name": "uutils__coreutils-6731",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/uutils__coreutils-6731",
+      "files": {
+        "environment/Dockerfile": "9c2274101d26f3305cebd18c7a306220a40fe92e4c6534970faff05c44b36c60",
+        "instruction.md": "77630d93ca8ed6462855f5a6a033b0950a374159f7fb154542b230a74a3a1b8d",
+        "solution/solve.sh": "ad99972949659516c77e3f5ff648d5371ea882aa1444d33647d62b524c879d6b",
+        "task.toml": "04e11ad08d2a633d73ad4d1302162ec44053fb6885ffe40c49261b6213823ce0",
+        "tests/config.json": "b3fdb7b9ceb0ff6d3c3bf3c5d0b029447cfbc035a049fbbf978fa618e8c64b51",
+        "tests/test.sh": "8aa23ffc53bab4353badd2ff1effb42855f097c5a4c614638dc3b7c00b6a6171"
+      }
+    },
+    {
+      "name": "valkey-io__valkey-790",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/valkey-io__valkey-790",
+      "files": {
+        "environment/Dockerfile": "83403f22dadab75423f28fbe8f797cc8f31d5d0a8aaf0ac99dce5c192bf92243",
+        "instruction.md": "bf551aa2ace447ee0c961c27d5f64634b0da3c671cc75dddafc4a516a7d21d7d",
+        "solution/solve.sh": "4d7cf182190ec214fa54076dc251ff454b499cc6ec042cc805d8a6d95f75dcff",
+        "task.toml": "aaa5730388b5d2c306535e22f613606144c2c479fe071376dcb5f3d39a4b798b",
+        "tests/config.json": "fa562a1a25360ecad9013495f577f0fba3e918f23f30995f8b049e66f207315f",
+        "tests/test.sh": "3bea09d2cde73e70ff5032f9deb7485a995e52fd01643b17aace5ad2d3529e2d"
+      }
+    },
+    {
+      "name": "vuejs__core-11739",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "path": "datasets/swebench_multilingual/vuejs__core-11739",
+      "files": {
+        "environment/Dockerfile": "61b1630a4a1c61e89c7e49d47998cd1209bb6a22f8aeda9308e2d7eb1bc72b27",
+        "instruction.md": "ad169e608f43f78e93cf163c1dee01b8420a0de56fd4962f7829aa9d497f0686",
+        "solution/solve.sh": "923c8f82db1fc623f802798c35441528308707daa5ab649f2e75322aa713dc9d",
+        "task.toml": "8d19c076b4bd9aad449943c05d86260693cf20f03768d7184bfe4b20f9a0d3f4",
+        "tests/config.json": "1f4c1279ed24985829769a710645d55032211983a5c92f360684a66617b13075",
+        "tests/test.sh": "ff6521dd38d00b03ca00f32ac8432374723f196bc60ad26038638ce59ec370fc"
+      }
+    }
+  ]
+}

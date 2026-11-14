@@ -1,8 +1,8 @@
 ---
 doc_type: change-design
 status: current
-version: 11
-code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
+version: 12
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners: [core]
 modules: [governance, documentation, evals, product_config, product_ui, models, processes, agent, sdk, tools, delivery, trusted_actions]
 related_adrs:
@@ -139,6 +139,8 @@ ADR 0076要求增长预算前先说明原因，禁止把重新生成策略当作
 恢复门禁后，P0-10又让`ProductController`增加36行、`ProductApp`增加4行，用于本会话审批规则。相关判断已拆到
 [`approval_automation.py`](../../src/harnessix/product_ui/approval_automation.py)，留在类内的只有串行入口。
 P1-3又为交互预算增加2行。
+第二轮耗时与解决率改进（见[变更设计](round2-time-and-resolve-rate.md)）把四项可选能力接入Agent运行时：工具步骤说明（ADR 0135）、会话基线（ADR 0131）、说明进历史与压缩校准（ADR 0132）、计划调用重排与补丁前置条件补全（ADR 0136、ADR 0129）。判断与文本都在各自的新模块里（`step_notices.py`、`session_baseline.py`、`request_notes.py`、`compaction_calibration.py`），留在`agent/runtime.py`的只有接线：导入16行、构造参数与赋值11行、会话基线说明的提交方法13行（它要读Thread并经`_commit`发布，放在运行时之外需要再开一个端口）、其余为各调用点。文件3480→3535行，`AgentRuntime`3195→3233行，`__init__`192→203行，`_drive`261→264行（复杂度不变）。`CodingToolRuntime`302→312行：新增`workspace_changes`与`workspace_file_mode`两个薄转发，实现分别在`tools/git.py`与`tools/files.py`。同一轮里`runtime.py`的未注册工具分支复用固定拒绝结果减少3行，`messages_for`与两个适配器的`build_request`各减少5～10行。
+第二轮合入主线（2026-11-14）时，上述增长与主线0.10.0b13～b37各自已说明的增长相加：`agent/runtime.py`3550行、`AgentRuntime`3242行、`_serve_product_stdio`143行，合并没有新增逻辑；`tools/runtime.py`（598行）与`product_config/agent_context.py`（600行）收回到600行以内，前者把两个提案修复观察改为共用`_observe_for_repair`，后者删去两行版本沿革注释（沿革见ADR 0134）。
 0.10.0b5在247实测时发现F1使用说明在“Agent”后断行（终端按空格折行），段落改为中文与英文之间不留空格。0.10.0b5让状态栏显示当前模型：`ProductController`构造参数增加`model`一行（377→378），读取逻辑在`cost_estimate.chain_model_name`。只有产品入口一处传入展示参数，为省一行另建展示数据类反而增加间接层。
 0.10.0b17发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 

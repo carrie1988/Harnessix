@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 27
-code_revision: 152c9c28316d13f6db5ab9e242fb767a37d06aa4
+version: 28
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -36,6 +36,7 @@ related_tests:
   - tests/tools/test_git.py
   - tests/tools/test_git_platform_contracts.py
   - tests/tools/test_git_delivery_reader.py
+  - tests/tools/test_workspace_changes.py
   - tests/product_config/test_git_baseline.py
   - tests/processes/test_git_raw_observation.py
   - tests/processes/test_raw_receipt_supervision.py
@@ -51,6 +52,14 @@ related_tests:
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
+
+## 当前增量：会话基线的工作区改动观察（ADR 0131）
+
+- **用途**：Agent的会话基线需要在会话开始时和Turn完成前知道工作区的未提交改动。它复用模型所见`git_status`背后的同一观察，不另建读取路径、解析器或快照。
+- **`GitReadRuntime.workspace_changes(cancel, paths=())`**：先做与`git_status`相同的仓库根校验和配置守卫，再经[`_read_status`](../../src/harnessix/tools/git.py)执行状态查询。`_read_status`现在是状态查询唯一的命令行，`git_status`也走它，不带路径时命令行与原来逐字相同。`paths`非空时追加`-- <路径…>`，只报告这些路径；Git只读端口的环境固定`GIT_LITERAL_PATHSPECS=1`，路径按字面匹配。路径只来自宿主先前的状态观察，不接受模型输入；这个入口不是模型工具，工具目录与合同不变。
+- **`CodingToolRuntime.workspace_changes(cancel, paths=())`**：未绑定Git时返回`None`；否则在读并发信号量内调用上述入口，返回`GitStatusOutput`（至多200条，超出时`truncated`）。读取失败沿用读工具错误上抛（不是仓库`not_found`，工作区不是仓库根`path_denied`，状态输出超过1 MiB`limit_exceeded`，运行时已关闭`tool_runtime_closed`），是否忽略由调用方决定。
+- **边界**：限定路径后的输出与工作区其他改动的数量无关，复核不会因为会话产生大量未跟踪文件而失效。会话基线至多传入64个路径，连同固定参数不超过`ProcessRequest`的128个参数上限。
+- **测试**：[`tests/tools/test_workspace_changes.py`](../../tests/tools/test_workspace_changes.py)：与`git_status`结果一致、路径按字面限定、未绑定Git、各类读取失败的错误码。
 
 ## 显式有界正则搜索（候选默认关闭）
 
@@ -470,6 +479,22 @@ Harnessix/Codex状态目录、SSH/AWS/GnuPG目录、`.env`变体、常见私钥�
 截到上限；低于下限、浮点、未知字段和发错工具的参数照常拒绝。存档编号读取在提案阶段改道`read_artifact`（见Agent模块），
 无法改道时保留原有`read_artifact`提示。修复只影响返回多少，
 不改变路径、工作区边界或权限；Call Item保留模型原始参数，对外公布的input_schema不变。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。** 新增：`start_line`、`offset`
+接受纯数字字符串（位置不截断）；`read_file`上的`context_lines`按`lines_before`处理；`anchor`允许制表符（以制表符缩进的
+源码行原样作锚点曾被当作控制字符拒绝）；`glob`从工作区根出发、`pattern`以字面目录开头时把字面目录移到`path`
+（如`crates/split/*`改为从`crates/split`起找`*`），结果相同但不再因仓库其余部分的条目数触发扫描上限——默认忽略的目录、
+不合法的pattern不移，字面目录不存在时由空结果变为`tool_not_found`。`read_artifact`的数字字符串分页在提案阶段修复（见Agent模块）。
+
+失败说明改为写给模型的英文，仍不回显路径、查询值或文件内容：`ReadErrorCode`全部有对应说明（`wrong_file_type`、
+`invalid_utf8`、`binary_file`、`offset_out_of_range`、`page_changed`、`workspace_changed`、`io_failed`原来只有
+“工作区读取未完成”），`read_artifact`区分不存在、过期与偏移越界。界面按错误码另行展示用户文案（见Product UI模块）。
+
+Grep的`include`（[`patterns.select_included`](../../src/harnessix/tools/patterns.py)，POSIX与原生读取端共用）：
+`path`是单个文件时不应用`include`；起点下有文件却没有一个匹配`include`时返回`tool_no_files_searched`，
+不再返回`scan_complete: true`的空结果。评测中990次成功搜索有30次一个文件也没读，模型把空结果读成了“文件里没有”。
+两条语义以`grep_include`规则进入各Grep合同摘要；`glob`、`read_file`、`list_files`的Descriptor不变。
+回归见[include测试](../../tests/tools/test_grep_include.py)与[参数修复测试](../../tests/tools/test_argument_repair.py)。
 
 ### 9.2 打开与竞态检查
 
@@ -1108,6 +1133,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 28 | 第二轮合入 | 2026-11-14 | 会话基线的工作区改动观察`workspace_changes`（ADR 0131）；读工具参数放宽、写给模型的英文失败说明与Grep的`include`语义（ADR 0129）；提案修复可读取现有文件的权限位（`workspace_file_mode`，没有权限位的平台返回空），整文件读取沿用主线的读取后端 |
 | 27 | `6bc1757c` 增量 | 2026-11-13 | Windows grep读内容前不再为核对元数据多观察一次文件（`windows_search._candidate_content`），每个文件由三次观察降到两次（ADR 0160第3版，Beta Issue #21） |
 | 26 | `da4c70d7` 增量 | 2026-11-13 | Windows读取在一次操作内复用已核对的目录句柄（`windows_read_port.directory_scope`），整仓搜索每个文件只打开自身（ADR 0160第2版，Beta Issue #21） |
 | 25 | `d6595eef` 增量 | 2026-11-13 | Python 3.15起正则搜索改用regex：按RE2语法拒绝回溯写法、每行限时，执行合同按引擎给出（ADR 0159，Beta Issue #10） |
@@ -1239,6 +1265,14 @@ POSIX沿同一FD，Windows沿同一稳定观察；其他语言、伪声明或无
 数组元素、本地`$defs`引用），不在公开合同内的位置整条不报告；文本只取内置结构错误（缺失、多余字段、字面量、类型、长度、范围）
 及`harnessix_`前缀的固定措辞自定义错误，其余只报“取值不符合合同”；被子位置覆盖的父级汇总错误不重复，最多8条，不含调用值。
 Workspace Patch按操作给出固定字段要求（如“create需要path、content、mode（420或493），不得提供expected_sha256、edits”）。
+
+**2026-11-11修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)）。** 反馈改为英文，下文引用的
+中文措辞是修订前的原文。消息形如
+`… Problems: files[0].edits[1]: old_text and new_text are identical, …. Required fields: files; missing required fields: none; allowed fields: files, spec_version. Fix the listed fields …`：
+具体问题（`Problems`、`Type mismatch`、`Out of range`、`Constraint`）排在字段清单之前。新增三点：没有字段位置的调用级规则
+（同一路径出现两次、正文总量超限）改为`harnessix_`固定措辞并自带`files[i]`下标，原来整条被丢弃、模型只得到字段清单；
+Workspace Patch的操作形状按实际缺少与多余的字段生成（如`this replace entry is missing expected_sha256`），
+判定条件不变；数组或对象字段收到字符串时提示发送JSON值本身。仍不回显任何调用值。
 
 2026-11-09修订（holdout步数分析）：模型在`files[0]`多带`"content_sha256": null`时，旧消息只报
 “files：Tuple should have at least 1 item after validation, not 0”。原因不是联合/判别校验：Pydantic在全部元素无效后

@@ -129,6 +129,34 @@ async def test_a_turn_started_with_the_checkpoint_wrap_up_offers_no_tools(tmp_pa
     assert [len(request.tools) for request in provider.requests] == [0]
 
 
+@pytest.mark.parametrize("wrap_up", [False, True], ids=["working", "wrapping-up"])
+async def test_with_notes_in_history_only_a_wrap_up_adds_a_catalog_note(
+    tmp_path: Path, wrap_up: bool
+) -> None:
+    """说明随历史持久化的端点（稳定前缀，ADR 0132）：收尾视图始终安装，没有收尾时不给每一轮开头
+    添一条目录说明（模型输入与没有视图时相同）；收尾之后的说明告诉模型不再有工具可用。"""
+    provider = ScriptedProvider([answer("总结")])
+    async with AgentRuntime(
+        SQLiteSessionStore(tmp_path / "s.db"),
+        provider,
+        RecordingTools(),
+        model_tool_view=WrapUpToolView(),
+        history_notes=True,
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        prompt = WRAP_UP_PROMPT if wrap_up else "检查并汇报"
+        await runtime.run_turn(thread.thread_id, prompt, request_id="r")
+    notes = [
+        item.content.text
+        for item in provider.requests[0].history
+        if isinstance(item.content, TextContent)
+        and "Callable tools from now on" in item.content.text
+    ]
+    assert len(notes) == (1 if wrap_up else 0)
+    if wrap_up:
+        assert "No tools are callable." in notes[0]
+
+
 @pytest.mark.parametrize(
     ("ui_text", "shared"),
     [(WRAP_UP_MESSAGE, WRAP_UP_STEER), (CHECKPOINT_WRAP_UP, WRAP_UP_PROMPT)],

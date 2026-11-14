@@ -206,8 +206,8 @@ class ProductConfigV2(ProductConfigContract):
     providers: tuple[ProviderDefinition, ...] = Field(min_length=1, max_length=16)
     profiles: tuple[ModelProfile, ...] = Field(min_length=1, max_length=32)
     workspace_read_timeout_seconds: WorkspaceReadTimeout = None
-    # 无人值守任务：不像完成的纯文本回复（空、JSON、照抄摘要，或尚未改过代码）不结束Turn，
-    # 由宿主补发继续提示，每Turn至多两次（agent/completion_guard.py）。交互使用保持关闭。
+    # 无人值守任务：不像完成的纯文本回复（不是答复、宣布了下一步，或尚未改过代码）不结束Turn，
+    # 由宿主补发继续提示，次数有硬上限（agent/completion_guard.py）。交互使用保持关闭。
     completion_guard: bool = Field(
         default=False, strict=True, exclude_if=lambda value: value is False
     )

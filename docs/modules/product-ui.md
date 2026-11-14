@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 63
-code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
+version: 65
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - product
 modules:
@@ -196,6 +196,20 @@ supersedes: []
 
 - [`data_cli.delete_workspace_state`](../../src/harnessix/product_ui/data_cli.py)此前在持有状态宿主锁期间整树删除工作区目录；锁文件与被固定的目录就在这棵树里，POSIX可删除仍打开的文件，Windows不能，`harnessix data delete`对用过的工作区一律失败（2026-11-11 Windows实机测试）。现在持锁期间删除锁目录以外的全部数据（确认没有运行中的宿主），释放锁后再删除锁目录与工作区目录本身。
 
+## 当前增量：宿主补发的说明显示为“提示”（ADR 0147、0109、0135）
+
+- 完成守卫、回复恢复（截断或空回复）与工具步骤说明（命令账本）是宿主在Turn中途写给模型的英文`user_message` Item。此前它们按用户消息显示，
+  界面上成了“你：[Harnessix host notice] …”，像是用户自己说的话。
+- [`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)现在按Item身份识别这三类说明
+  （`completion_notice_item_id`、`recovery_notice_item_id`、`step_notice_item_id`，由Turn与步骤派生），各显示为一行弱化的“提示”
+  加一句中文（“模型停下时任务还没有做完，已提示它继续”“模型的回复被截断或没有内容，已提示它继续”“已把重复或前后结果不一致的命令、修改告知模型”），不显示英文正文。判定只按身份、不按正文前缀：用户自己输入同样的文字仍显示为“你”。
+- 会话基线与预算、目录说明保持不显示（见下两节）。只有用户自己那一条输入的Turn不做身份派生；派生结果按Turn与步骤缓存。
+  回归见[`test_rendering_host_notices.py`](../../tests/product_ui/test_rendering_host_notices.py)。
+
+## 当前增量：不显示会话基线的宿主说明（ADR 0131）
+
+- Agent在会话开始时记录工作区已有的未提交改动，并在这些改动被还原或删除时提示模型一次（见[Agent模块设计](agent.md)“会话基线”）。两条说明都是给模型看的英文`user_message`。[`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)按`is_session_baseline_notice(turn_id, item_id)`跳过它们，对话里不出现用户没有说过的话；界面既有文字不变。回归见`tests/agent/test_session_baseline.py`。
+
 ## 当前增量：按平台给出Shell配置文件（0.10.0b12）
 
 - 三平台对照测试发现：缺少API Key时[`startup_failure.api_key_setup_text`](../../src/harnessix/product_ui/startup_failure.py)在Linux上也提示`~/.bash_profile`，而Linux的bash交互Shell读`~/.bashrc`。现按`sys.platform`区分：macOS终端开登录Shell，提示`~/.zshrc`或`~/.bash_profile`；Linux提示`~/.bashrc`或`~/.zshrc`；Windows仍为PowerShell的`$env:`与`setx`。配置向导成功提示复用同一函数。
@@ -238,6 +252,10 @@ supersedes: []
 ## 当前增量：改配置后启动时的切换前提（0.10.0b8）
 
 - `_server_command`经[`activation.activation_arguments`](../../src/harnessix/product_ui/activation.py)附加`--expected-active-*`：用户未显式给出时，只读工作区`product-config.db`的当前活动指针原样交出，使用户用`configure`改过的配置在下次打开时生效。此前Server以`product_config_conflict`退出，TUI只显示“连接中断……server_closed”，`exec`同样失败。详见[产品配置模块设计](product-config.md)。
+
+## 当前增量：不显示预算与目录说明（ADR 0132）
+
+- 开启请求只追加后，Agent会把预算关口与目录变化的说明写成给模型看的`user_message` Item（见[Agent模块设计](agent.md)“请求只追加与压缩点校准”）。[`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)按Turn收集Item身份，用`request_note_ids(turn_id, item_ids)`识别并跳过它们，与取消后的宿主说明同一处处理：这些说明不是用户输入，不显示为“你”。目录说明按序号递增识别，视图里该Turn的Item不完整时可能显示出个别说明，不影响功能。
 
 ## 当前增量：不显示取消后的宿主说明（0.10.0b8）
 
@@ -284,7 +302,7 @@ supersedes: []
 
 ## 当前增量：对话记录用人话描述工具调用（0.10.0b2）
 
-[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)把工具调用、结果和审批转成一行说明，`rendering.py`改用它：命令显示“运行（沙箱内/沙箱外）：<命令首行>”，Patch显示涉及的文件，读写搜索显示目标；`update_plan`由计划行展示，不再重复。结果只显示“完成（退出码N）”或简短失败原因（常见错误码有中文说明，其余取错误信息首句并附错误码），不转述写给模型的诊断提示。审批行显示“等待你审批（Ctrl+A）”“已批准”“已拒绝：原因”，决定者以`harnessix:`开头的系统审批（沙箱策略自动放行）不展示。回归见`test_tool_summary.py`、`test_rendering.py`与`test_rejection_rendering.py`。
+[`tool_summary.py`](../../src/harnessix/product_ui/tool_summary.py)把工具调用、结果和审批转成一行说明，`rendering.py`改用它：命令显示“运行（沙箱内/沙箱外）：<命令首行>”，Patch显示涉及的文件，读写搜索显示目标；`update_plan`由计划行展示，不再重复。结果只显示“完成（退出码N）”或简短失败原因（常见错误码有中文说明，其余取错误信息首句并附错误码），不转述写给模型的诊断提示。读取、搜索与修改文件的失败说明自[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)起是写给模型的英文：`_USER_REASONS`按错误码保留用户此前看到的中文原因，只在收到英文说明时使用，同一错误码其他来源的中文说明照原样截取首句。审批行显示“等待你审批（Ctrl+A）”“已批准”“已拒绝：原因”，决定者以`harnessix:`开头的系统审批（沙箱策略自动放行）不展示。回归见`test_tool_summary.py`、`test_rendering.py`与`test_rejection_rendering.py`。
 
 ## 当前增量：首次输入即开始会话与输入框焦点
 
@@ -1247,6 +1265,8 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 65 | 第二轮合入 | 2026-11-14 | 工具步骤说明（命令账本）同样显示为“提示”行，完成守卫与回复恢复两行沿用第46版的文案；不显示会话基线的两条宿主说明（ADR 0131、0135）。分支上的另外两条（原文档版本38“审批窗口列出将新建的目录”、39“宿主说明显示为提示”）与第44、46版是同一改动，不另列 |
+| 64 | `57dd7d7f` 增量 | 2026-11-11 | 对话记录不显示预算与目录说明（ADR 0132）；分支上的文档版本37 |
 | 63 | `9dca9d42` 增量 | 2026-11-13 | 收尾之后还在等的审批由界面直接拒绝、不再弹窗（`approval_automation.wrap_up_requested`，ADR 0148第3版，Beta Issue #4） |
 | 62 | `1d8132c3` 增量 | 2026-11-13 | 多行粘贴不再只剩第一行：任务输入框、补充说明与回答问题的输入框改用`paste_input.PasteAwareInput`（Beta Issue #19） |
 | 61 | `76f7dfed` 增量 | 2026-11-13 | 一键收尾与检查点“收尾”的说明文本改为引用`product_config/wrap_up.py`的常量，宿主据此保证收尾（ADR 0148第2版，Beta Issue #4） |

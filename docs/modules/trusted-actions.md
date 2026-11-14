@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 50
-code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
+version: 51
+code_revision: 9d5253cc83c08c206712df91e5a5f3d857980043
 owners:
   - core
 modules:
@@ -19,9 +19,11 @@ related_adrs:
   - docs/adr/0081-single-coding-agent-product-boundary.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
+  - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
 related_tests:
   - tests/product_config/test_stale_approved_plan.py
+  - tests/trusted_actions/test_process_preview_projection.py
   - tests/product_config/test_git_review_fresh_owner.py
   - tests/product_config/test_git_fresh_owner_reader.py
   - tests/trusted_actions/test_runtime_owner_observer.py
@@ -58,22 +60,32 @@ supersedes: []
 ## 当前增量：Patch父路径拒绝的可改正说明（ADR 0137）
 
 - [`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)的内置Patch规划期
-  可修正拒绝增加两个错误码（`_PARENT_PATH_REJECTIONS`），都发生在只读观察、尚无Route的阶段：
-  `workspace_wrong_file_type`（父路径上已有的段不是目录；原来不在可回传清单里，Turn以未知效果中断）与
-  `workspace_parent_missing`（POSIX上create会补建父目录，只剩不补建的平台即Windows会出现；原来经Agent的
-  `_PREPARE_FAILURES`以内部说明回传）。
-- 这两个码由规划时的快照观察抛出，不经过解析阶段，实例上只有内部说明（“Workspace资源观察失败”）。投影时
-  按[`public_errors._RESOLVER_ERRORS`](../../src/harnessix/trusted_actions/public_errors.py)登记的固定说明重建：
-  首句是原因（界面显示这一句），其后是下一步——前者“请改用已有父级都是目录的路径，缺失的父目录会自动创建”，
-  后者“请先用命令工具创建该目录（例如mkdir），再原样重发本次调用”。两张表的一致性测试照旧约束登记。
-- 其余错误码的说明、其余工具、码表归一与Route关闭顺序不变；`workspace_path_denied`（父路径上是符号链接）
-  仍沿用原说明。
+  拒绝表（`_WORKSPACE_PATCH_PLANNING_FAILURES`，错误码到写给模型的英文说明）增加两个错误码，都发生在只读观察、
+  尚无Route的阶段：`workspace_wrong_file_type`（父路径上已有的段不是目录；原来不在可回传清单里，Turn以未知效果中断）与
+  `workspace_parent_missing`（create会补建缺失的父目录——POSIX自ADR 0137，Windows自其第2版——只剩没有补建能力的端口
+  会出现；原来经Agent的`_PREPARE_FAILURES`以内部说明回传）。
+- 说明直接取自这张表：前者指出路径经过了一个不是目录的已有条目、缺失的父目录会自动创建，后者给出“先用命令工具创建
+  目录（例如mkdir），再原样重发本次调用”；两者之后都附整批未应用的事实（见下文ADR 0129第2版修订）。投影不再经
+  `public_errors.sanitize_plan_exception`重建；[`_RESOLVER_ERRORS`](../../src/harnessix/trusted_actions/public_errors.py)
+  仍登记这两个码，两张表的一致性测试照旧约束登记，界面按错误码显示各自的中文原因。
+- `workspace_path_denied`的说明补上“或经过符号链接的路径”；其余工具、码表归一与Route关闭顺序不变。
 
 ## 当前增量：解析阶段保留“文件权限不支持”的原码（0.10.0b15）
 
 - 内置Patch把一组规划期拒绝投影为可修正的失败结果（[`workspace_patch_planning_rejection`](../../src/harnessix/trusted_actions/preparation_rejection.py)），其中包括`delivery_metadata_unsupported`。但解析阶段的公开错误码表（[`public_errors._RESOLVER_ERRORS`](../../src/harnessix/trusted_actions/public_errors.py)）没有登记它，原码在到达投影前就被换成`action_plan_failed`，投影从不生效。
 - 实际触发点只有Windows：Patch带可执行权限位（`mode`为493）时解析器拒绝，整轮按未知效果中断（2026-11-11在Windows实机发现）。现在登记该码并给出固定消息“本平台不支持请求的文件权限；Windows上请省略mode或用420”，模型改正后可以继续。
 - 测试：[规划期可修正拒绝的码必须全部登记在解析阶段码表](../../tests/trusted_actions/test_plan_error_boundaries.py)（两张表的一致性，任何宿主都运行）；[真实产品路径](../../tests/product_config/test_patch_precondition_rejection.py)在Windows实机通过。
+
+## 当前增量：命令非零退出与超时的英文说明（ADR 0136）
+
+- [`_process_failure_feedback`](../../src/harnessix/trusted_actions/agent_gateway_output.py)只处理Process族（`run_profile.*`、
+  `exec_command.*`、`host_command.*`）经Owner验证投影后的失败结果，把`error.message`换成给模型的英文说明：
+  - `process_nonzero_exit`：命令已运行并以非零状态退出、不是启动失败；预览完整时不必再读Artifact，否则按引用分页读取。
+  - `process_timeout`：命令到达时限被终止、没有跑完；复合命令里尚未开始的部分没有执行；继续之前先检查命令留下的状态。
+    只陈述这一通用事实，不识别具体命令。一次评测里测试命令挂到时限被终止，同一命令中排在后面的恢复步骤没有执行，
+    原说明只有“Trusted Action未成功”，模型两步后才发现修改不在工作区。
+- 错误码、输出、效果证据与审计不变。两个错误码在界面有固定文案，界面不读这段文字；其他失败仍用通用说明。
+- 回归见[预览投影测试](../../tests/trusted_actions/test_process_preview_projection.py)。
 
 ## 当前增量：策略 v2 与沙箱外命令身份（ADR 0113）
 
@@ -1655,6 +1667,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 51 | 第二轮合入 | 2026-11-14 | 命令非零退出与超时给模型英文说明（ADR 0136）；内置Patch规划期拒绝的说明改为写给模型的英文表并附整批未应用的事实（ADR 0129），父路径两类拒绝不再经`sanitize_plan_exception`重建；预留的文档版本47未另行使用 |
 | 50 | `33f91ad7` 增量 | 2026-11-13 | `workspace_parent_missing`的规划期说明只剩没有补建能力的端口会出现：Windows事务端口自ADR 0137第2版起同样补建父目录（Beta Issue #16），码表与说明文字不变 |
 | 49 | `d387a5cd` 增量 | 2026-11-12 | 批准后、执行前工作区变化的计划以确定失败结束（`execution_plan_stale`，ready→failed），不再中断整轮（0.10.0b21，ADR 0142） |
 | 48 | `d387a5cd` 增量 | 2026-11-12 | Patch父路径拒绝（父目录不存在、父级不是目录）登记进解析阶段码表，作为可修正的失败回传，不再中断整轮（0.10.0b21，ADR 0137） |
@@ -1889,6 +1902,13 @@ Audit 的完整父历史沿[成对 Blob 读端口](../changes/m09-r4-git-checkpo
 ### 当前增量：原准备拒绝的窄结算
 
 `workspace_patch_preparation_rejection`仅接受原内置Review绑定的SHA／no-op原生来源标记；核对当前相同Plan／Binding仍未批准，原Router CAS确认为denied后才给固定failed反馈。直接同code／自建类型、外部Review、过期Plan、已批准／执行状态和Executor异常保留原边界；不重放unknown。字段与顺序、拒绝后恢复及真实变化审批见[共享整改详设第14.2节](../changes/m09-r3-coding-workflow-instructions.md)。
+
+**2026-11-12修订（[ADR 0129](../adr/0129-file-tool-leniency-and-correctable-rejections.md)第2版）。**
+[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)给模型的失败说明补上整批未应用的事实
+（[`unapplied_batch_notice`](../../src/harnessix/delivery/workspace_patch_errors.py)，按调用里的文件项数措辞）：
+已定位的拒绝在`files[i]`前缀与原正文之后追加；规划期的边界拒绝（`workspace_path_denied`、`delivery_path_denied`等固定码表）
+没有下标，同样追加。未定位的准备拒绝正文已写明未执行，不变。接受条件、Route关闭顺序与结果结构不变；
+这些错误码在界面上仍显示原有的用户文案。
 
 ### 当前增量：批准后过期的计划以确定失败结束
 

@@ -9,6 +9,9 @@ from uuid import UUID, uuid5
 
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_item_id
 from harnessix.agent.completion_guard import completion_notice_item_id
+from harnessix.agent.request_notes import request_note_ids
+from harnessix.agent.session_baseline import is_session_baseline_notice
+from harnessix.agent.step_notices import step_notice_item_id
 from harnessix.agent.truncation_recovery import recovery_notice_item_id
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem, TransientItemStream
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
@@ -41,6 +44,7 @@ _PLAN_MARKS: Final = {"completed": "✓", "in_progress": "▸", "pending": "○"
 _HOST_NOTICE_TEXT: Final = (
     (completion_notice_item_id, "模型停下时任务还没有做完，已提示它继续"),
     (recovery_notice_item_id, "模型的回复被截断或没有内容，已提示它继续"),
+    (step_notice_item_id, "已把重复或前后结果不一致的命令、修改告知模型"),
 )
 # 常见失败的白话说明与处理办法；其余失败显示原始说明并附错误码。
 _FAILURE_TEXT: Final = {
@@ -222,6 +226,7 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
         for entry in view.items
         if isinstance(entry.item.content, PublicToolResultContent)
     }
+    model_only = _model_only_item_ids(view)
     host_notices = _host_notice_texts(view)
     lines = [
         line
@@ -230,8 +235,9 @@ def transcript_lines(view: ProductViewState | None) -> tuple[TranscriptLine, ...
             isinstance(entry.item.content, PublicToolResultContent)
             and entry.item.content.call_id in calls
         )
-        # 取消后的宿主说明只给模型看；对话里上一轮已显示“任务已取消”。
-        and entry.item.item_id != cancelled_turn_notice_item_id(entry.turn_id)
+        and entry.item.item_id not in model_only
+        # 会话基线的两条英文说明同样只给模型看，不当作用户发言显示。
+        and not is_session_baseline_notice(entry.turn_id, entry.item.item_id)
         for line in _shown_lines(entry, results, host_notices)
     ]
     final_ids = {entry.item.item_id for entry in view.items if entry.final}
@@ -261,6 +267,19 @@ def _completion_notice(view: ProductViewState) -> tuple[TranscriptLine, ...]:
         return ()
     item_id = uuid5(turn.turn_id, _COMPLETION_NOTICE_VERSION)
     return (TranscriptLine(item_id, "提示", notice, final=False),)
+
+
+def _model_only_item_ids(view: ProductViewState) -> set[UUID]:
+    """只给模型看的宿主说明：取消后的说明（对话里上一轮已显示“任务已取消”），以及预算与目录说明。"""
+
+    by_turn: dict[UUID, list[UUID]] = {}
+    for entry in view.items:
+        by_turn.setdefault(entry.turn_id, []).append(entry.item.item_id)
+    hidden: set[UUID] = set()
+    for turn_id, item_ids in by_turn.items():
+        hidden.add(cancelled_turn_notice_item_id(turn_id))
+        hidden |= request_note_ids(turn_id, item_ids)
+    return hidden
 
 
 def _shown_lines(

@@ -703,8 +703,9 @@ async def test_authenticated_history_is_read_before_and_after_and_collected_once
             return result
 
         def observed_source(thread, *args, **kwargs):
+            # 采集用的是认证历史读回的Thread。它可以与外传的Thread是同一个对象：原字节未变时
+            # 解析结果复用（ADR 0133）；外传Thread被伪造时的拒绝由上一条用例覆盖。
             assert thread is histories[0].thread
-            assert thread is not scenario.thread
             result = source(thread, *args, **kwargs)
             sources.append(result)
             return result

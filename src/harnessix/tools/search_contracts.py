@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import ClassVar, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from harnessix.artifacts.contracts import ArtifactRef
 from harnessix.tools.contracts import ReadContract, Revision
@@ -43,7 +44,11 @@ IGNORED_DIRECTORIES = (
 
 def _bounded_text(value: str) -> str:
     if len(value.encode("utf-8")) > 256 or any(ord(c) < 32 or ord(c) == 127 for c in value):
-        raise ValueError("查询或模式超过 UTF-8 上限或含控制字符")
+        # 固定措辞的harnessix_错误可原样反馈给模型（参数反馈白名单），不含输入值。
+        raise PydanticCustomError(
+            "harnessix_search_text_invalid",
+            "must be at most 256 UTF-8 bytes on one line without control characters",
+        )
     return value
 
 
@@ -55,7 +60,12 @@ def validate_pattern(value: str) -> str:
         or any(p in {"", ".", ".."} for p in parts)
         or any(c in value for c in "\\{}")
     ):
-        raise ValueError("模式必须是受支持的相对路径通配")
+        raise PydanticCustomError(
+            "harnessix_search_pattern_unsupported",
+            "supported syntax is * ? [] within a name and ** for any directories, as a relative "
+            "path with / separators; brace alternation such as {a,b}, backslashes, a leading /, "
+            "and . or .. segments are not supported, so run one call per alternative",
+        )
     return value
 
 

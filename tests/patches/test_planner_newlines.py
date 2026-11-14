@@ -191,20 +191,22 @@ def test_converting_line_endings_that_the_file_already_has_changes_nothing():
 
 
 @pytest.mark.parametrize(
-    ("before", "old"),
+    ("before", "old", "lines"),
     [
         # 两处都只在忽略换行时命中：不按“更像哪一处”挑选。
-        (b"x = 1\r\ny = 2\nz\r\nx = 1\ny = 2\r\n", "x = 1\ny = 2\n"),
-        (b"x = 1\r\ny = 2\r\nz\r\nx = 1\r\ny = 2\r\n", "x = 1\ny = 2\n"),
-        (b"x = 1\ny = 2\nz\nx = 1\ny = 2\n", "x = 1\r\ny = 2\r\n"),
+        (b"x = 1\r\ny = 2\nz\r\nx = 1\ny = 2\r\n", "x = 1\ny = 2\n", "1, 4"),
+        (b"x = 1\r\ny = 2\r\nz\r\nx = 1\r\ny = 2\r\n", "x = 1\ny = 2\n", "1, 4"),
+        (b"x = 1\ny = 2\nz\nx = 1\ny = 2\n", "x = 1\r\ny = 2\r\n", "1, 4"),
     ],
 )
-def test_an_anchor_must_be_unique_with_newline_style_ignored(before, old):
+def test_an_anchor_must_be_unique_with_newline_style_ignored(before, old, lines):
     assert before.count(old.encode()) == 0
     with pytest.raises(KernelError) as error:
         apply(before, (old, "x = 9\n"))
     assert error.value.code == "patch_ambiguous_context"
-    assert error.value.message == "编辑锚点不唯一，请提供更完整上下文"
+    assert error.value.message.startswith(
+        f"edits[0]: old_text matches more than one place (lines {lines})"
+    )
 
 
 def test_a_lone_carriage_return_is_not_a_line_break():
@@ -214,7 +216,7 @@ def test_a_lone_carriage_return_is_not_a_line_break():
     assert error.value.code == "patch_context_not_found"
     with pytest.raises(KernelError) as error:
         apply(b"first\rstill first\n  x = 1\n", ("x = 1\ny = 2", "x = 3"))
-    assert "出现在当前文件第2行" in error.value.message
+    assert "is at line 2" in error.value.message
 
 
 def test_newline_tolerant_edits_still_may_not_overlap():
@@ -225,6 +227,9 @@ def test_newline_tolerant_edits_still_may_not_overlap():
             ("    b = 2\n    return a", "    b = 2\n    return b"),
         )
     assert error.value.code == "patch_overlapping_edits"
+    assert error.value.message.startswith(
+        "edits[0] and edits[1] overlap: both old_text cover line 3"
+    )
 
 
 @pytest.mark.parametrize(
@@ -235,29 +240,29 @@ def test_newline_tolerant_edits_still_may_not_overlap():
             b"class A:\r\n    y = 2\r\n",
             "class A:\n    x = 1\n",
             "class A:\n    x = 3\n",
-            "old_text首个非空行（不计首尾空白）出现在当前文件第1行，"
-            "但old_text与该处内容不一致，且不只是CRLF/LF换行的差异",
+            "its first non-blank line (whitespace aside) is at line 1, but old_text differs "
+            "from the file there in more than line endings",
         ),
         # 只差缩进的单行锚点：原说明称“其后的行不一致”，而它根本没有后续行。
         (
             b"class A:\r\n  x = 1\r\n",
             "    x = 1",
             "    x = 3",
-            "old_text首个非空行（不计首尾空白）出现在当前文件第2行，"
-            "但old_text与该处内容不一致，且不只是CRLF/LF换行的差异",
+            "its first non-blank line (whitespace aside) is at line 2, but old_text differs "
+            "from the file there in more than line endings",
         ),
         # 已应用的判定同样忽略换行：新文本以CRLF躺在文件里，重发时带的是LF。
         (
             b"class A:\r\n    flag = True\r\n    x = 1\r\n",
             "class A:\n    x = 1\n",
             "class A:\n    flag = True\n    x = 1\n",
-            "new_text已存在于当前文件（不计CRLF/LF换行差异），此编辑可能已经应用",
+            "new_text is already there at line 1: this edit looks already applied",
         ),
         (
             b"class A:\r\n    y = 2\r\n",
             "class B:\n    x = 1\n",
             "class B:\n    x = 3\n",
-            "old_text首个非空行不在当前文件中",
+            "neither was its first non-blank line",
         ),
     ],
 )
@@ -265,8 +270,8 @@ def test_a_missing_anchor_is_never_blamed_on_line_endings(before, old, new, hint
     with pytest.raises(KernelError) as error:
         apply(before, (old, new))
     assert error.value.code == "patch_context_not_found"
-    assert error.value.message.startswith("精确编辑锚点不存在；")
-    assert hint in error.value.message
+    assert error.value.message.startswith("edits[0]: old_text was not found in the file")
+    assert hint in error.value.message and error.value.message.isascii()
 
 
 def test_the_prepared_plan_binds_the_real_bytes_of_a_crlf_file(tmp_path):

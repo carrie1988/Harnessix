@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 6
+version: 8
 code_revision: 25f482e9dee8e1ef4ad7ec715626f4d17f18dbe9
 owners: [core]
 modules: [evals, observability, sdk]
@@ -9,6 +9,7 @@ related_adrs:
   - docs/adr/0110-evaluation-integrations.md
   - docs/adr/0120-system-neutral-evaluation-platform.md
   - docs/adr/0121-external-boundary-native-process-profile.md
+  - docs/adr/0134-default-working-habits-and-thin-eval-template.md
 related_tests:
   - tests/evalkit/test_langfuse.py
   - tests/evalkit/test_harbor.py
@@ -23,6 +24,7 @@ related_tests:
   - tests/integrations/test_patch_export.py
   - tests/integrations/test_mini_steps.py
   - tests/integrations/test_harnessix_steps.py
+  - tests/integrations/test_swebench_task_template.py
 supersedes: []
 ---
 
@@ -312,6 +314,11 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    适配器`external_boundary`只为App Server进程断言`HARNESSIX_EXTERNAL_BOUNDARY=1`，审批模式auto。
    - 权限规整：`normalize_workspace_modes: true`时，安装阶段以root把工作区普通文件权限规整为Git风格的0644/0755
      （`integrations/harbor/workspace_modes.py`），Git看不到变化；元数据记录`workspace_modes_normalized`。
+   - Git只读能力：`git_read_tools: true`（默认`false`）时，适配器向协议驱动传`--git-read-tools`，驱动用
+     `harnessix code`、`harnessix exec`的同一探测（工作区在Git仓库内且git可运行）找到git，并以`--git-executable`
+     启动App Server；探测不到按未配置启动。开启后模型多出`git_status`、`git_diff`、`git_review`三个只读工具，
+     产品记录并保护会话开始前工作区已有的未提交改动（ADR 0131）；元数据记录`git_read_tools`。
+     此前的评测运行不带git，两者都没有；是否开启由运行规格显式决定。
    - 安装包：`build_bundle.py --python-dir`在派生任务镜像容器内复制uv托管的Python（uv按其内置摘要核对），
      按带哈希的依赖清单（`uv export --frozen --no-dev --no-emit-project --extra openai`，含所选Provider的可选依赖，
      缺失时App Server启动预检报`product_dependency_missing`）与产品wheel安装，收据记录摘要。
@@ -325,11 +332,12 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      （被重试吸收的次数），二者进入运行报告的`system_refs`。产品侧只认证新增事件的根治另行决策。
    - 配置：`harnessix_configs.py`按第一阶段本地组别生成Provider与命令Profile配置（同一模型、关闭思考、
      同一环境预设与900秒命令期限），模型经容器回环端口转发。命令走外部边界Profile，系统指令为
-     `harnessix.external-boundary-execution-instructions/v2`（ADR 0121第2版）。
+     `harnessix.external-boundary-execution-instructions/v3`（ADR 0121第2版），其后附带产品默认的工作习惯片段
+     `harnessix.working-habits/v2`（ADR 0134第2版）。
    - 产品配置覆盖：product.json由产品向导生成，只允许`EVAL_ALLOWED_OVERRIDES`登记的字段，每项都是已知的评测与产品差异：
-     `completion_guard`开启（无人值守）；`compaction`为`third_window`（2026-11-09用户决定：产品默认改回窗口一半处压缩、
-     压到四分之一，评测为100步约600万Token的累计预算保留三分之一处压缩、压到六分之一，262144 Token窗口下触发262144字节、
-     目标131072字节，与改为可配置前一致）。
+     只有`completion_guard`开启（无人值守）。压缩点自ADR 0132起沿用产品默认（`half_window`，有真实用量后按真实输入Token校准）：
+     此前的`third_window`覆盖在Multilingual正式评测中实际于约5.3万Token（窗口的20%）触发，48次压缩约占全场12%的时间。
+     压缩变少后累计输入Token变多，运行规格里的`max_tokens`需要相应放宽。
    - 命令环境：外部边界命令只得到Profile声明的变量（基础环境`LANG=C`、`LC_ALL=C`、`PATH=/usr/bin:/bin`
      加预设），不继承容器环境，所以固定的Python `actions.json`只适用于Verified。多语言任务开启
      `task_command_environment`：安装阶段用容器内的集成包读取容器自身环境（生成器这一`docker exec`进程的
@@ -349,6 +357,12 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
      跑一次相关的现有测试文件，二者通过即结束、不重写已通过的修复；不加题目未要求的校验或行为；
      把测试失败归于自身改动前先核对它在原代码上是否已失败；每次回复先用一句话说明当前判断或下一步。
      `freeze`与mini的`config_file`一样把仓库相对路径解析到代码目录，并按内容计入组别配置摘要。
+   - 任务说明模板v4（ADR 0134，取代上一条2026-11-09的做法）：复现、前后对照测试、与代码库已有做法一致、通过即完成、
+     只清理自己创建的文件等做法已是产品默认指令，对所有用户生效。新的运行使用
+     [`swebench-task-v4.j2`](../../benchmarks/harbor/harnessix/swebench-task-v4.j2)：题目的嵌入方式与v3相同，说明只剩任务句和
+     评测自身的事实——答案是工作区从开始到结束的差异（含新文件）；只有非测试源码的改动计分；评测在结束时的工作区里
+     运行它自己的测试并使用已有的构建、依赖与工具配置，所以测试与这些配置结束时须与开始时一致。不含流程、验证或风格规则；
+     对照结果变差时改产品指令，不往模板里加规则。v1～v3保持不变，供已冻结的运行和同题对照使用。
 
 内置智能体使用`evidence_agents.py`中的同名增强版：结束时导出相对运行前HEAD的补丁供官方判分，
 mini-swe-agent离线安装并锁定随附依赖。Harbor运行mini-swe-agent使用其内置mini.yaml模板与公网模式，
