@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 651,
-    "physical_lines": 136484,
-    "logical_lines": 118238,
+    "physical_lines": 136502,
+    "logical_lines": 118251,
     "documented_modules": 651,
     "classes": 1252,
     "documented_classes": 658,
-    "functions": 5449,
-    "documented_functions": 1929,
+    "functions": 5452,
+    "documented_functions": 1931,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1855,7 +1855,7 @@
       "qualname": "CodingToolRuntime",
       "kind": "class",
       "line": 274,
-      "lines": 310,
+      "lines": 309,
       "documented": true
     },
     {

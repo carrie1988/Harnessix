@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 
 import pytest
 
@@ -167,28 +168,47 @@ def replace_without_sha(**extra):
     return {"operation": "replace", "path": "src/modified.py", "content": "new\n", **extra}
 
 
-async def test_replace_without_a_sha_uses_the_digest_of_the_models_last_read(tmp_path):
+async def replace_after_read(runtime, provider, root, **extra):
+    """模型先读文件，再整文件替换且没写expected_sha256；返回等待审批的那一轮。"""
+    provider.steps = (
+        tool_step("read_file", "read", path="src/modified.py"),
+        tool_step("apply_patch_batch", "patch", files=[replace_without_sha(**extra)]),
+        answer("已处理"),
+    )
+    thread = await runtime.create_thread(str(root))
+    return thread, await runtime.run_turn(thread.thread_id, "重写文件", request_id="replace")
+
+
+@pytest.mark.parametrize("missing_mode", [{}, {"mode": None}])
+async def test_replace_without_a_sha_uses_the_digest_of_the_models_last_read(
+    tmp_path, missing_mode
+):
     # 回归（babel-15649 AyJ2RqG、preact-3567 gKqcYKS、rubocop-13705 w64GyQh等10次）：模型读过文件后
-    # 整文件替换，漏了expected_sha256与mode。宿主补上它读到的摘要与现有权限，仍需审批。
+    # 整文件替换，漏了expected_sha256与mode。宿主补上它读到的摘要与现有权限，仍需审批；
+    # 三个平台相同（Windows的普通文件按0644记）。
     async with product(tmp_path) as (root, runtime, provider, *_):
-        (root / "src/modified.py").chmod(0o755)
-        provider.steps = (
-            tool_step("read_file", "read", path="src/modified.py"),
-            tool_step("apply_patch_batch", "patch", files=[replace_without_sha(mode=None)]),
-            answer("已处理"),
-        )
-        thread = await runtime.create_thread(str(root))
-        waiting = await runtime.run_turn(thread.thread_id, "重写文件", request_id="replace")
+        thread, waiting = await replace_after_read(runtime, provider, root, **missing_mode)
 
         assert waiting.status is TurnStatus.WAITING_APPROVAL
         assert patch_call(waiting).arguments == {
             "files": [
-                replace_without_sha(expected_sha256=hashlib.sha256(b"old\n").hexdigest(), mode=493)
+                replace_without_sha(expected_sha256=hashlib.sha256(b"old\n").hexdigest(), mode=420)
             ]
         }
         completed = await approve(runtime, thread.thread_id, waiting)
         assert patch_result(completed).outcome == "succeeded"
         assert (root / "src/modified.py").read_bytes() == b"new\n"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows工作区事务不模拟POSIX可执行位")
+async def test_replace_without_a_mode_keeps_the_executable_bit(tmp_path):
+    async with product(tmp_path) as (root, runtime, provider, *_):
+        (root / "src/modified.py").chmod(0o755)
+        thread, waiting = await replace_after_read(runtime, provider, root, mode=None)
+
+        assert patch_call(waiting).arguments["files"][0]["mode"] == 493
+        completed = await approve(runtime, thread.thread_id, waiting)
+        assert patch_result(completed).outcome == "succeeded"
         assert (root / "src/modified.py").stat().st_mode & 0o777 == 0o755
 
 

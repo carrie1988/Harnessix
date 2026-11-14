@@ -30,6 +30,13 @@ class _ReadBackend:
         assert self.windows is not None
         return self.windows.read_complete_bytes(path, operation)
 
+    def file_mode(self, path: str, operation: ReadOperation) -> int:
+        """普通文件的权限位：POSIX取真实权限，Windows按事务约定的0644；不是普通文件时失败。"""
+        if self.workspace is not None:
+            return files.file_permission_mode(self.workspace, path, operation)
+        assert self.windows is not None
+        return self.windows.file_mode(path, operation)
+
 
 def build_read_backend(
     root: Path,

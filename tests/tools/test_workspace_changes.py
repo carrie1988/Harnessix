@@ -15,11 +15,23 @@ from tests.tools.test_files import execute
 from tests.tools.test_git import _command, _git, _repository
 
 
+def bound_tools(workspace: Path, state: Path) -> CodingToolRuntime:
+    """带Git绑定的读工具；Windows的Git读取要求工作区之外的私有状态目录，POSIX忽略它。"""
+    return CodingToolRuntime(workspace, git_executable=_git(), git_state_directory=state)
+
+
+def repository(tmp_path: Path) -> Path:
+    root = tmp_path / "repo"
+    root.mkdir()
+    _repository(root)
+    return root
+
+
 async def test_changes_match_the_git_status_tool(tmp_path: Path) -> None:
-    _repository(tmp_path)
-    (tmp_path / "tracked.py").write_text("after\n", encoding="utf-8")
-    (tmp_path / "notes.txt").write_text("scratch\n", encoding="utf-8")
-    async with CodingToolRuntime(tmp_path, git_executable=_git()) as tools:
+    root = repository(tmp_path)
+    (root / "tracked.py").write_text("after\n", encoding="utf-8")
+    (root / "notes.txt").write_text("scratch\n", encoding="utf-8")
+    async with bound_tools(root, tmp_path / "state") as tools:
         observed = await tools.workspace_changes(CancelToken())
         shown = await execute(tools, "git_status", limit=200)
     assert observed is not None
@@ -31,20 +43,20 @@ async def test_changes_match_the_git_status_tool(tmp_path: Path) -> None:
 
 
 async def test_paths_limit_the_observation_to_literal_paths(tmp_path: Path) -> None:
-    _repository(tmp_path)
-    (tmp_path / "tracked.py").write_text("after\n", encoding="utf-8")
+    root = repository(tmp_path)
+    (root / "tracked.py").write_text("after\n", encoding="utf-8")
     # 通配字符按字面匹配：只报告同名文件，不扩展成模式。
-    (tmp_path / "data[1].txt").write_text("literal\n", encoding="utf-8")
-    (tmp_path / "data1.txt").write_text("not matched\n", encoding="utf-8")
+    (root / "data[1].txt").write_text("literal\n", encoding="utf-8")
+    (root / "data1.txt").write_text("not matched\n", encoding="utf-8")
     for index in range(250):
-        (tmp_path / f"build_{index:03}.o").write_bytes(b"\0")
-    async with CodingToolRuntime(tmp_path, git_executable=_git()) as tools:
+        (root / f"build_{index:03}.o").write_bytes(b"\0")
+    async with bound_tools(root, tmp_path / "state") as tools:
         everything = await tools.workspace_changes(CancelToken())
         selected = await tools.workspace_changes(
             CancelToken(), paths=("tracked.py", "data[1].txt", "gone.txt")
         )
-        _command(tmp_path, "checkout", "--", "tracked.py")
-        (tmp_path / "data[1].txt").unlink()
+        _command(root, "checkout", "--", "tracked.py")
+        (root / "data[1].txt").unlink()
         reverted = await tools.workspace_changes(CancelToken(), paths=("tracked.py", "data[1].txt"))
     assert everything is not None and everything.truncated and everything.total_entries == 253
     assert selected is not None and not selected.truncated
@@ -67,11 +79,11 @@ async def test_read_failures_keep_the_read_tool_error_codes(
     plain.mkdir()
     nested.mkdir(parents=True)
     _repository(tmp_path / "repo")
-    async with CodingToolRuntime(plain, git_executable=_git()) as tools:
+    async with bound_tools(plain, tmp_path / "state-plain") as tools:
         with pytest.raises(ReadToolError) as not_a_repository:
             await tools.workspace_changes(CancelToken())
     # 工作区是仓库的子目录时，固定Git端口不读取上层仓库。
-    async with CodingToolRuntime(nested, git_executable=_git()) as tools:
+    async with bound_tools(nested, tmp_path / "state-nested") as tools:
         with pytest.raises(ReadToolError) as parent_repository:
             await tools.workspace_changes(CancelToken())
     assert not_a_repository.value.code == "not_found"
@@ -81,7 +93,7 @@ async def test_read_failures_keep_the_read_tool_error_codes(
         raise ReadToolError("limit_exceeded")
 
     monkeypatch.setattr(git_tools, "_status", too_many)
-    async with CodingToolRuntime(tmp_path / "repo", git_executable=_git()) as tools:
+    async with bound_tools(tmp_path / "repo", tmp_path / "state-repo") as tools:
         with pytest.raises(ReadToolError) as unlistable:
             await tools.workspace_changes(CancelToken())
     assert unlistable.value.code == "limit_exceeded"

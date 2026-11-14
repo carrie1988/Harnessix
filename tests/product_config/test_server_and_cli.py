@@ -171,7 +171,9 @@ async def test_windows_product_sdk_git_diff_uses_private_redacted_owner(
     )
     assert (state / "process-owner/process-leases.db").is_file()
     captures = list((state / "process-owner/runs").glob("*/stdout.bin"))
-    assert len(captures) == 3
+    # 每次Git读取是三个进程（仓库根、helper检查、读取本身）。main.py开局已有未提交改动，
+    # 会话基线（ADR 0131）在首步前观察一次、Turn完成前只就main.py复核一次，加上git_diff共三次读取。
+    assert len(captures) == 3 * 3
     assert all(CANARY.encode() not in capture.read_bytes() for capture in captures)
     from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
     from tests.product_config.windows_backup_diagnostics import install_backup_diagnostics

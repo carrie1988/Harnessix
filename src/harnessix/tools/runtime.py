@@ -308,6 +308,7 @@ class CodingToolRuntime:
         self._workspace = backend.workspace
         self._windows = backend.windows
         self._read_complete_bytes = backend.read_complete_bytes
+        self._file_mode = backend.file_mode
         self._max_concurrent_reads = max_concurrent_reads
         self._closed = False
         self._artifacts = artifacts
@@ -352,10 +353,8 @@ class CodingToolRuntime:
         return await _observe_for_repair(self, partial(self._read_complete_bytes, path))
 
     async def workspace_file_mode(self, path: str) -> int | None:
-        """返回工作区普通文件的权限位，供提案修复沿用现有权限；不可读或平台没有权限位时返回None。"""
-        if (workspace := self._workspace) is None:
-            return None
-        return await _observe_for_repair(self, partial(files.file_permission_mode, workspace, path))
+        """返回工作区普通文件的权限位，供提案修复沿用现有权限；不存在或不可读时返回None。"""
+        return await _observe_for_repair(self, partial(self._file_mode, path))
 
     async def artifact_workspace_scope(self, workspace: str, cancel: CancelToken) -> str:
         if workspace != str(self.workspace_root):

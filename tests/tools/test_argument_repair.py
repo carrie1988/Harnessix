@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 import json
+from typing import Any, cast
 
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
 from harnessix.artifacts.contracts import ReadArtifactInput
-from harnessix.tools import search
+from harnessix.tools import runtime as tool_runtime
+from harnessix.tools import search, windows_search
 from harnessix.tools.argument_repair import repair_read_arguments
 from harnessix.tools.contracts import ListFilesInput, ReadFileInputV4
+from harnessix.tools.read_backend import _ReadBackend
 from harnessix.tools.runtime import CodingToolRuntime
 from harnessix.tools.search_contracts import GlobInput, GrepSnapshotInput, RegexGrepInput
+from harnessix.tools.windows_read import WindowsReadRuntime
 from tests.tools.test_files import call, execute
+from tests.tools.test_windows_read_adapter import _FakeWindowsRoot
 
 ARTIFACT_ID = "01a1b916-a6b7-7ca0-97c6-4ccbac662005"
 
@@ -183,9 +188,23 @@ def test_glob_patterns_without_a_safe_literal_directory_are_untouched(arguments)
     assert repair_read_arguments("glob", arguments, GlobInput) == arguments
 
 
+def use_windows_backend(monkeypatch, root):
+    """在任何平台上走Windows搜索实现（伪造的原生根），验证两个平台的glob行为相同。"""
+    backend = _ReadBackend(
+        workspace=None,
+        windows=WindowsReadRuntime(root, root_factory=cast(Any, _FakeWindowsRoot)),
+        implementation="coding-read/windows-v1",
+        git_runtime=None,
+    )
+    monkeypatch.setattr(tool_runtime, "build_read_backend", lambda *_arguments: backend)
+
+
+@pytest.mark.parametrize("backend", ["native", "windows"])
 async def test_glob_under_a_literal_directory_is_not_stopped_by_the_rest_of_the_tree(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, backend
 ):
+    if backend == "windows":
+        use_windows_backend(monkeypatch, tmp_path)
     (tmp_path / "crates" / "split").mkdir(parents=True)
     (tmp_path / "crates" / "split" / "column.rs").write_text("x\n")
     (tmp_path / "crates" / "split" / "row.rs").write_text("x\n")
@@ -195,7 +214,9 @@ async def test_glob_under_a_literal_directory_is_not_stopped_by_the_rest_of_the_
         whole = await execute(tools, "glob", pattern="crates/split/*", path=".")
         expected = ["crates/split/column.rs", "crates/split/row.rs"]
         assert whole.output["paths"] == expected
+        # 两个平台的搜索实现各自导入上限，都要调低；只调POSIX时Windows的整仓glob不会超限。
         monkeypatch.setattr(search, "MAX_SEARCH_ENTRIES", 4)
+        monkeypatch.setattr(windows_search, "MAX_SEARCH_ENTRIES", 4)
         narrowed = await execute(tools, "glob", pattern="crates/split/*")
         assert narrowed.outcome == "succeeded" and narrowed.output["paths"] == expected
         unbounded = await execute(tools, "glob", pattern="**/column.rs")

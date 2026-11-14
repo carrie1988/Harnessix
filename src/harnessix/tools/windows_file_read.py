@@ -170,6 +170,14 @@ def _read_file_page(
     return page
 
 
+def regular_file_mode(port: WindowsReadPort, path: str, operation: ReadOperation) -> int:
+    """Windows没有POSIX权限位：普通文件按0644记，与Windows工作区事务的约定相同（不模拟可执行位）。"""
+
+    observed = port.observe(port.path(path), operation, include_content=False)
+    require_kind(observed, "file")
+    return 0o644
+
+
 def read_complete_bytes(port: WindowsReadPort, path: str, operation: ReadOperation) -> bytes:
     """同一原生稳定观察中的完整原始字节；超过扫描上限按limit_exceeded失败。"""
 

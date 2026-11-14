@@ -166,9 +166,13 @@ def test_windows_complete_bytes_are_exact_and_fail_closed(
 async def test_proposal_repair_reads_whole_files_through_the_windows_backend(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """提案修复要读整个文件来补edit的SHA；Windows后端以前恒返回None，修复在Windows上从不生效。"""
+    """提案修复要读整个文件来补edit的SHA、补replace漏写的mode；Windows后端以前恒返回None，
+    修复在Windows上从不生效。Windows的普通文件按0644记（与Windows工作区事务相同），
+    即使真实文件带可执行位也不变。"""
 
     (tmp_path / "app.py").write_bytes(b"old\n")
+    (tmp_path / "app.py").chmod(0o755)
+    (tmp_path / "package").mkdir()
     backend = _ReadBackend(
         workspace=None,
         windows=WindowsReadRuntime(tmp_path, root_factory=cast(Any, _FakeWindowsRoot)),
@@ -179,6 +183,9 @@ async def test_proposal_repair_reads_whole_files_through_the_windows_backend(
     async with CodingToolRuntime(tmp_path) as tools:
         assert await tools.read_workspace_file("app.py") == b"old\n"
         assert await tools.read_workspace_file("missing.py") is None
+        assert await tools.workspace_file_mode("app.py") == 0o644
+        assert await tools.workspace_file_mode("missing.py") is None
+        assert await tools.workspace_file_mode("package") is None
 
 
 def test_windows_adapter_honors_explicit_utf8_page_budget(tmp_path, runtime):

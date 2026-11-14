@@ -20,6 +20,7 @@ from harnessix.tools.windows_file_read import (
     read_complete_bytes,
     read_file,
     read_file_snapshot,
+    regular_file_mode,
 )
 from harnessix.tools.windows_read_port import (
     WindowsReadPort,
@@ -82,6 +83,9 @@ class WindowsReadRuntime:
 
     def read_complete_bytes(self, path: str, operation: ReadOperation) -> bytes:
         return read_complete_bytes(self._port, path, operation)
+
+    def file_mode(self, path: str, operation: ReadOperation) -> int:
+        return regular_file_mode(self._port, path, operation)
 
     def glob(
         self,
