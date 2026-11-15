@@ -742,7 +742,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 | `--max-cost` | 费用上限，单位为人民币（元），按输入单价折算为 Token 上限 |
 | `--max-steps`、`--max-tokens`、`--timeout-seconds` | 覆盖默认上限 |
 | `--max-output-chars`、`--max-tool-calls-per-step` | 单步输出与工具调用数量上限 |
-| `--summary-file` | 摘要写入文件，默认输出到标准输出 |
+| `--summary-file` | 摘要按 UTF-8 写入文件，默认输出到标准输出。标准输出被重定向或接管道时，摘要里的中文写成 `\uXXXX`，JSON 解析结果不变，Windows PowerShell 5.1 的 `>` 也不会破坏它 |
 | `--events-file` | 按发生顺序把事件逐行写成 JSONL |
 | `--quiet` | 不输出过程文本（过程文本默认写到标准错误；其中模型的思考内容每一行以“思考：”开头）。需要你审批时的提示照常显示在标准错误上，写明工具、完整命令和理由（修改文件时列出文件） |
 | `--resume-thread <ID>` | 进程中断后，恢复该会话并等待任务结束 |
