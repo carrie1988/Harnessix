@@ -392,12 +392,79 @@ async def test_truncated_proactive_summary_backs_off_until_history_grows(tmp_pat
     assert replay(await store.events(thread.thread_id)) == restored
 
 
+class SizedTools(RecordingTools):
+    """按调用参数size返回对应字节数的结果，用来控制每一步历史的增长。"""
+
+    async def execute(self, call, cancel: CancelToken):
+        result = await super().execute(call, cancel)
+        return result.model_copy(update={"output": "x" * int(call.arguments["size"])})
+
+
+def sized_read(size: int, *, step: int) -> list[ProviderEvent]:
+    events = accounted_text("读取下一部分", step=step)
+    events.insert(
+        -1, ToolCallCompleted(call_id=f"read-{step}", tool="test.read", arguments={"size": size})
+    )
+    events[-1] = ResponseCompleted(
+        finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=3)
+    )
+    return events
+
+
+async def test_a_successful_compaction_clears_the_backoff_of_an_earlier_skip(tmp_path: Path):
+    """#33：一次规划失败留下的退避在后来的压缩成功后作废，新窗口上的历史越过触发点就再压缩。"""
+    # ScriptedProvider按请求的模型步骤取脚本：摘要只发生在第4步和第6步。
+    summary = ScriptedProvider(
+        [
+            [],
+            [],
+            [],
+            accounted_text("已读取的事实与待办。", step=4),
+            [],
+            accounted_text("后续读取的事实。", step=6),
+        ]
+    )
+    normal = SequenceProvider(
+        [
+            accounted_text("已了解结构。"),
+            # 大结果自成最近一组：下一步（第2步）规划因近期完整组超过放宽上限而失败，记下退避。
+            sized_read(8000, step=1),
+            # 第3步：历史还没增长四分之一，退避生效。
+            sized_read(1000, step=2),
+            # 第4步：增长够了，最近一组已经很小，第一次压缩成功。
+            sized_read(200, step=3),
+            sized_read(2500, step=4),
+            # 第6步：新窗口上的历史越过触发点，仍低于旧退避点的四分之五，必须再次压缩；最近一组
+            # 超过原目标，放宽目标后成立。
+            sized_read(1500, step=5),
+            accounted_text("已完成后续修复。", step=6),
+        ]
+    )
+    store = SQLiteSessionStore(tmp_path / "backoff.sqlite")
+    async with AgentRuntime(
+        store,
+        normal,
+        SizedTools(),
+        compaction=config(trigger_history_tokens=6000),
+        summary_provider=summary,
+    ) as runtime:
+        thread = await runtime.create_thread(str(tmp_path))
+        await runtime.run_turn(thread.thread_id, "调查解析器", request_id="seed")
+        turn = await runtime.run_turn(thread.thread_id, "继续修复", request_id="continue")
+
+    assert turn.status == "completed", turn.error
+    assert [record.plan.model_step for record in turn.compactions] == [4, 6]
+    assert [record.status for record in turn.compactions] == ["summarized", "summarized"]
+    restored = await store.get_thread(thread.thread_id)
+    assert replay(await store.events(thread.thread_id)) == restored
+
+
 @pytest.mark.parametrize("reactive", [False, True])
 async def test_proactive_planning_overflow_continues_but_reactive_still_fails(
     tmp_path: Path, reactive: bool
 ):
-    # 当前用户消息固定保留且超过保留预算：规划失败，尚未写入任何压缩记录。
-    # 主动压缩时本步保留原历史继续；超窗触发的被动压缩仍终止。
+    # 当前用户消息固定保留，且超过放宽后的上限（目标与触发点的中点）：规划失败，尚未写入任何
+    # 压缩记录。主动压缩时本步保留原历史继续；超窗触发的被动压缩仍终止。
     summary = ScriptedProvider([])
     second = context_overflow_events(step=1) if reactive else accounted_text("已完成后续修复。")
     normal = SequenceProvider([accounted_text("解析器调查事实与失败恢复约束。\n" * 600), second])
@@ -411,7 +478,9 @@ async def test_proactive_planning_overflow_continues_but_reactive_still_fails(
         thread = await runtime.create_thread(str(tmp_path))
         await runtime.run_turn(thread.thread_id, "调查解析器", request_id="seed")
         turn = await runtime.run_turn(
-            thread.thread_id, "继续修复并保持public接口。\n" * 200, request_id="continue"
+            thread.thread_id,
+            "继续修复并保持public接口。\n" * (800 if reactive else 200),
+            request_id="continue",
         )
 
     assert not turn.compactions and summary.requests == []

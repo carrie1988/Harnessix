@@ -3,21 +3,35 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
 from harnessix.agent.compaction_calibration import (
+    backoff_ceiling,
     calibrated_compaction,
     calibrated_limit,
     observed_input,
+    relaxed_target_limit,
 )
-from harnessix.agent.models import Budget, Thread, Turn, TurnStatus, Usage
+from harnessix.agent.model_history_runtime import _compaction_backed_off
+from harnessix.agent.models import (
+    Budget,
+    Item,
+    ItemStatus,
+    TextContent,
+    Thread,
+    Turn,
+    TurnStatus,
+    Usage,
+)
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttempt, ModelAttemptFinished, UsageObservation
 from harnessix.context.compaction_runtime_contracts import CompactionTokenWindow
 from harnessix.context.contracts import ContextInspection, ContextLimits
+from harnessix.context.tool_result_view import history_document
 from harnessix.domain.models import utc_now
 from harnessix.models.contracts import (
     ProviderEvent,
@@ -99,6 +113,14 @@ def thread(*turns: Turn) -> Thread:
 
 def observing(history: int, fixed: int, input_tokens: int) -> Thread:
     return thread(turn([inspection(1, history, fixed)], [attempt(1, input_tokens)]))
+
+
+def text_item(value: str) -> Item:
+    return Item(
+        item_id=uuid4(),
+        status=ItemStatus.COMPLETED,
+        content=TextContent(kind="assistant_message", text=value),
+    )
 
 
 def test_declared_windows_carry_their_real_token_window():
@@ -219,6 +241,47 @@ def test_small_windows_are_bounded_by_the_plausible_ratio():
         small.compaction_runtime(OUTPUT), small.token_window, observing(90_000, 10_000, 10)
     )
     assert bogus.trigger_history_tokens == (65_536 * 8 - 10_000) * 4 // 5 == 411_430
+
+
+def test_a_skipped_compaction_never_backs_off_past_the_trigger_ceiling():
+    """#33（32K窗口）：规划在6.65万字节处失败，按增长四分之一要到8.3万才重试；比例下降后输入上限
+    只剩约10.5万、工具与指令占2.65万，8.3万的历史已经放不下。越过触发点的上限必须重试。"""
+    small = product_context_budget(32_768, 8192, "half_window")
+    window = small.token_window
+    # 第26步的事实：估算94046字节（其中历史67521），真实输入20628 Token。
+    seen = observing(67_521, 26_525, 20_628)
+    limit = calibrated_limit(window, seen)
+    assert limit == 105_042
+    ceiling = backoff_ceiling(window, seen)
+    assert ceiling == (limit - 26_525) * 4 // 5 == 62_813
+    # 触发点受同一上限约束；上限之下仍按增长四分之一退避，越过就重试。
+    calibrated = calibrated_compaction(small.compaction_runtime(8192), window, seen)
+    assert calibrated.trigger_history_tokens <= ceiling
+    host = SimpleNamespace(_compaction_backoff={}, _token_window=window)
+    turn_id = uuid4()
+    host._compaction_backoff[turn_id] = 66_507
+
+    def history(size: int):
+        return SimpleNamespace(history=(text_item("x" * size),))
+
+    probe = history(1)
+    overhead = len(history_document(probe.history[0]).encode()) - 1
+    assert _compaction_backed_off(host, seen, turn_id, history(ceiling - overhead))
+    assert not _compaction_backed_off(host, seen, turn_id, history(ceiling - overhead + 1))
+    # 没有窗口或观测时不设上限，沿用原退避。
+    unbounded = SimpleNamespace(_compaction_backoff=host._compaction_backoff, _token_window=None)
+    assert backoff_ceiling(None, seen) is None and backoff_ceiling(window, thread()) is None
+    assert _compaction_backed_off(unbounded, seen, turn_id, history(80_000))
+
+
+def test_recent_groups_may_widen_the_target_only_halfway_to_the_trigger():
+    config = budget(65_536).compaction_runtime(OUTPUT)
+    assert (
+        relaxed_target_limit(config)
+        == (config.policy.target_history_tokens + config.trigger_history_tokens) // 2
+    )
+    assert config.policy.target_history_tokens < relaxed_target_limit(config)
+    assert relaxed_target_limit(config) < config.trigger_history_tokens
 
 
 def test_the_latest_completed_request_of_the_thread_calibrates_the_next_turn():

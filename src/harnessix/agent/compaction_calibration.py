@@ -9,7 +9,7 @@
 - 没有声明窗口、没有Context Planner或还没有完整用量时返回原配置，行为不变；
 - 校准只放宽：触发点、目标与输入上限都不低于固定比例换算出的数值；
 - 输入上限不超过CompactionTokenWindow.max_input_bytes（出站请求容量），触发点另在输入上限之下
-  留出一次退避的余量，所以请求大小始终受出站请求容量约束。
+  留出一次退避的余量，所以请求大小始终受出站请求容量约束；退避本身也不越过同一位置。
 
 非职责：不决定是否压缩（见model_history_runtime），不修改压缩计划、摘要来源或其校验。
 """
@@ -81,8 +81,7 @@ def calibrated_compaction(
     if window is None or observation is None:
         return config
     limit = observation.input_limit(window)
-    grown, base = SKIPPED_COMPACTION_GROWTH
-    ceiling = (limit - observation.fixed_bytes) * base // grown
+    ceiling = _trigger_ceiling(observation, window)
     trigger = max(
         config.trigger_history_tokens,
         min(observation.history_share(window, window.trigger_divisor), ceiling),
@@ -114,3 +113,30 @@ def calibrated_limit(window: CompactionTokenWindow | None, thread: Thread) -> in
     if window is None or observation is None:
         return None
     return observation.input_limit(window)
+
+
+def backoff_ceiling(window: CompactionTokenWindow | None, thread: Thread) -> int | None:
+    """跳过压缩后的退避只在这个历史字节数以下生效；没有窗口或观测时为None，退避不设上限。
+
+    取值与触发点的上限相同：历史再增长四分之一仍在输入上限之内。跳过发生的位置可能远高于
+    触发点（一个大工具结果把历史一步推过触发点），比例变化也会让输入上限变小；历史越过这里
+    还不重试，下一个请求就可能放不下。
+    """
+    observation = observed_input(thread) if window is not None else None
+    if window is None or observation is None:
+        return None
+    return _trigger_ceiling(observation, window)
+
+
+def relaxed_target_limit(config: CompactionRuntimeConfig) -> int:
+    """近期完整组超过压缩目标时，目标最多放宽到目标与触发点的中点。
+
+    放宽只用于让压缩成立；压缩后的历史仍至少比触发点低一半间隔，不会每一步都再压缩。
+    """
+    return (config.policy.target_history_tokens + config.trigger_history_tokens) // 2
+
+
+def _trigger_ceiling(observation: InputObservation, window: CompactionTokenWindow) -> int:
+    """输入上限扣除工具定义与指令后的五分之四：历史再增长四分之一仍不超过输入上限。"""
+    grown, base = SKIPPED_COMPACTION_GROWTH
+    return (observation.input_limit(window) - observation.fixed_bytes) * base // grown

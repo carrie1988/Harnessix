@@ -26,7 +26,11 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.usage import ModelAttempt
 from harnessix.artifacts.contracts import ArtifactRef
-from harnessix.context.compaction import plan_compaction, validate_compaction
+from harnessix.context.compaction import (
+    plan_compaction,
+    replay_compaction_plan,
+    validate_compaction,
+)
 from harnessix.context.compaction_contracts import (
     CompactionAnchor,
     CompactionPlan,
@@ -432,6 +436,41 @@ async def test_budget_failure_is_explicit_and_has_no_fallback(mode, code):
         await plan(thread, **fields)
     assert error.value.code == "context_compaction_" + code
     assert thread.model_dump_json() == before
+
+
+@pytest.mark.parametrize("retain_recent_groups", [2, 3])
+async def test_recent_groups_above_the_target_relax_it_only_up_to_the_given_limit(
+    retain_recent_groups,
+):
+    """近期完整组超过目标时目标放宽到恰好容纳它们，不回填更早的组；放宽后的Plan可原样重放。"""
+    thread = thread_with(groups=4)
+    with pytest.raises(KernelError) as strict:
+        await plan(thread, retain_recent_groups=retain_recent_groups)
+    assert strict.value.code == "context_compaction_retained_overflow"
+
+    async def relaxed(limit):
+        return await plan_compaction(
+            thread,
+            1,
+            ToolResultViewPolicy(),
+            policy(retain_recent_groups=retain_recent_groups),
+            CancelToken(),
+            compaction_id=uuid4(),
+            relaxed_target_limit=limit,
+        )
+
+    prepared = await relaxed(100_000)
+    chosen = prepared.plan
+    needed = chosen.retained_history_tokens + chosen.policy.summary_reserve_tokens
+    assert chosen.policy.target_history_tokens == needed > policy().target_history_tokens
+    # 保留的正好是首条用户消息与最近的完整组：放宽的空间不用来回填更早的组。
+    items = thread.turns[0].items
+    tail = 1 + 5 * (retain_recent_groups - 1)
+    assert chosen.retained_item_ids == tuple(entry.item_id for entry in (items[0], *items[-tail:]))
+    assert replay_compaction_plan(thread, chosen) == prepared
+    with pytest.raises(KernelError) as capped:
+        await relaxed(needed - 1)
+    assert capped.value.code == "context_compaction_retained_overflow"
 
 
 @pytest.mark.parametrize("text_value", ["", " \n\t", "bad\x00text", "bad\ud800"])

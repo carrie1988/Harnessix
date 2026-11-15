@@ -12,7 +12,9 @@ from uuid import UUID
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.compaction_calibration import (
     SKIPPED_COMPACTION_GROWTH,
+    backoff_ceiling,
     calibrated_compaction,
+    relaxed_target_limit,
 )
 from harnessix.agent.compaction_input_budget import (
     CompactionInputBudget,
@@ -147,15 +149,17 @@ def _history_utf8_bytes(prepared: PreparedModelHistory) -> int:
 
 
 def _compaction_backed_off(
-    host: ModelHistoryHost, turn_id: UUID, prepared: PreparedModelHistory
+    host: ModelHistoryHost, thread: Thread, turn_id: UUID, prepared: PreparedModelHistory
 ) -> bool:
+    """被跳过的主动压缩在历史再增长四分之一前不重试，但历史越过校准的退避上限后必须重试。"""
     failed_at = host._compaction_backoff.get(turn_id)
     if failed_at is None:
         return False
-    return (
-        _history_utf8_bytes(prepared) * _BACKOFF_GROWTH_DENOMINATOR
-        < failed_at * _BACKOFF_GROWTH_NUMERATOR
-    )
+    history = _history_utf8_bytes(prepared)
+    ceiling = backoff_ceiling(host._token_window, thread)
+    if ceiling is not None and history > ceiling:
+        return False
+    return history * _BACKOFF_GROWTH_DENOMINATOR < failed_at * _BACKOFF_GROWTH_NUMERATOR
 
 
 async def _budget_plan(
@@ -285,6 +289,28 @@ async def _prepaid_pressure_plan(
     return planned
 
 
+async def plan_history_compaction(
+    host: ModelHistoryHost,
+    thread: Thread,
+    model_step: int,
+    token: CancelToken,
+    compaction_id: UUID,
+) -> PreparedCompaction:
+    """按校准后的策略规划历史压缩；近期完整组超过目标时，目标至多放宽到目标与触发点的中点。"""
+    assert host._compaction is not None
+    calibrated = calibrated_compaction(host._compaction, host._token_window, thread)
+    return await plan_compaction(
+        thread,
+        model_step,
+        host._tool_result_view_policy,
+        calibrated.policy,
+        token,
+        compaction_id=compaction_id,
+        anchors=planning_history_anchors(thread),
+        relaxed_target_limit=relaxed_target_limit(calibrated),
+    )
+
+
 def _model_view(host: ModelHistoryHost, thread: Thread, model_step: int) -> PreparedModelHistory:
     return prepare_model_view(
         thread, model_step, host._tool_result_view_policy, host._working_set_result_groups
@@ -344,7 +370,7 @@ async def prepare_and_commit_model_history(
         budget_selection = None
         planned = None
         backed_off = not reactive_compaction_required and _compaction_backed_off(
-            host, turn_id, prepared
+            host, thread, turn_id, prepared
         )
         required = not backed_off and _requires_compaction(
             host, thread, prepared, reactive_compaction_required
@@ -372,6 +398,8 @@ async def prepare_and_commit_model_history(
                 budget_context = budget_selection = None
             else:
                 reactive_compaction_required = False
+                # 退避记录的是被跳过时的旧历史；新窗口生效后它不再成立，按新历史重新判断。
+                host._compaction_backoff.pop(turn_id, None)
             prepared = _model_view(host, thread, model_step)
         await host._verify_history_artifacts(thread, prepared, token)
         host._fault("runtime.after_history_artifacts_verified")

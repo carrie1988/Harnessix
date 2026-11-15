@@ -195,6 +195,23 @@ def _summary_source(items: tuple[Item, ...]) -> str:
     )
 
 
+def _fit_retained(
+    policy: CompactionPolicy, retained_tokens: int, relaxed_target_limit: int | None
+) -> CompactionPolicy:
+    """固定项与近期完整组放不进目标时，在放宽上限内把目标放宽到恰好容纳它们；仍放不下则失败。
+
+    放宽后可用预算正好等于保留量，规划不会再回填更早的组；放宽后的目标写入Plan并可重放。
+    """
+    if relaxed_target_limit is not None and type(relaxed_target_limit) is not int:
+        raise KernelError("context_compaction_invalid_policy", "放宽目标上限必须是整数")
+    needed = retained_tokens + policy.summary_reserve_tokens
+    if needed <= policy.target_history_tokens:
+        return policy
+    if relaxed_target_limit is None or needed > relaxed_target_limit:
+        raise KernelError("context_compaction_retained_overflow", "固定项和近期完整组超过保留预算")
+    return CompactionPolicy.model_validate({**policy.model_dump(), "target_history_tokens": needed})
+
+
 def _plan_steps(
     thread: Thread,
     model_step: int,
@@ -204,6 +221,7 @@ def _plan_steps(
     compaction_id: UUID,
     anchors: tuple[CompactionAnchor, ...] = (),
     preferred_history_tokens: int | None = None,
+    relaxed_target_limit: int | None = None,
 ) -> Generator[None, None, PreparedCompaction]:
     """规划首个压缩窗口；不调用Provider、读取Artifact或修改Session。"""
     yield None
@@ -254,9 +272,8 @@ def _plan_steps(
         policy = CompactionPolicy.model_validate(
             {**policy.model_dump(), "target_history_tokens": target}
         )
+    policy = _fit_retained(policy, retained_tokens, relaxed_target_limit)
     available = policy.target_history_tokens - policy.summary_reserve_tokens
-    if retained_tokens > available:
-        raise KernelError("context_compaction_retained_overflow", "固定项和近期完整组超过保留预算")
     for index in range(tail - 1, -1, -1):
         yield None
         if index in selected:
@@ -434,8 +451,13 @@ async def plan_compaction(
     compaction_id: UUID,
     anchors: tuple[CompactionAnchor, ...] = (),
     preferred_history_tokens: int | None = None,
+    relaxed_target_limit: int | None = None,
 ) -> PreparedCompaction:
-    """可取消纯规划；可选紧凑目标不突破原上限及完整组保留边界。"""
+    """可取消纯规划；可选紧凑目标不突破原上限及完整组保留边界。
+
+    给出relaxed_target_limit时，固定项与近期完整组超过目标的情况下，目标可放宽到恰好容纳它们，
+    但不超过该上限；超过上限仍以context_compaction_retained_overflow失败。
+    """
     return await _iterate(
         _plan_steps(
             thread,
@@ -445,6 +467,7 @@ async def plan_compaction(
             compaction_id=compaction_id,
             anchors=anchors,
             preferred_history_tokens=preferred_history_tokens,
+            relaxed_target_limit=relaxed_target_limit,
         ),
         cancel,
     )

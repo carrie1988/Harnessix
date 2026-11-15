@@ -29,7 +29,7 @@ from harnessix.agent.argument_normalization import normalize_proposal
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
-from harnessix.agent.compaction_calibration import calibrated_compaction, calibrated_limit
+from harnessix.agent.compaction_calibration import calibrated_limit
 from harnessix.agent.compaction_reducer import compaction_source
 from harnessix.agent.completion_guard import (
     CompletionGuardMode,
@@ -46,6 +46,7 @@ from harnessix.agent.lifecycle import prepare_fork_snapshot
 from harnessix.agent.model_history_runtime import (
     SUMMARY_EMPTY,
     SUMMARY_TRUNCATED,
+    plan_history_compaction,
     prepare_and_commit_model_history,
 )
 from harnessix.agent.model_input_budget import (
@@ -97,7 +98,6 @@ from harnessix.agent.planning import (
     UPDATE_PLAN_TOOL,
     execute_plan_update,
     plan_calls_last,
-    planning_history_anchors,
     planning_tool_descriptor,
 )
 from harnessix.agent.ports import (
@@ -204,7 +204,6 @@ from harnessix.artifacts.ports import (
 )
 from harnessix.context.compaction import (
     PreparedCompaction,
-    plan_compaction,
     replay_compaction_candidate,
     replay_compaction_plan,
     validate_compaction,
@@ -2062,14 +2061,8 @@ class AgentRuntime:
         ) as operation:
             try:
                 await self._verify_history_artifacts(thread, prepared_history, token)
-                planned = planned or await plan_compaction(
-                    thread,
-                    model_step,
-                    self._tool_result_view_policy,
-                    calibrated_compaction(self._compaction, self._token_window, thread).policy,
-                    token,
-                    compaction_id=compaction_id,
-                    anchors=planning_history_anchors(thread),
+                planned = planned or await plan_history_compaction(
+                    self, thread, model_step, token, compaction_id
                 )
                 if len(planned.summary_source) > 1_000_000:
                     raise KernelError(
