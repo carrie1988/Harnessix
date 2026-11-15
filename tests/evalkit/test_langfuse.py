@@ -30,6 +30,7 @@ from evalkit.contracts import (
 from evalkit.errors import EvalkitError
 from evalkit.files import write_model
 from evalkit.langfuse import LangfuseExport, build_export, read_back, send
+from evalkit.langfuse import transport as transport_module
 from evalkit.steps import Step, StepTrace
 
 from tests.evalkit.builders import CONFIG, PLAN_CREATED, task_digest
@@ -259,6 +260,73 @@ def test_transport_rejects_partial_acceptance_and_does_not_retry_or_leak(mode: s
         )
     assert "PRIVATE-SERVER-BODY" not in str(failure.value)
     assert len(calls) == (2 if mode == "partial_score" else 1)
+
+
+def test_trace_requests_split_spans_in_order_below_the_byte_limit() -> None:
+    # 2026-11-10一次66 MB的OTLP请求使Langfuse worker堆溢出、Trace丢失；按正文大小分批发送。
+    export = build_export(report())
+    (resource_spans,) = json.loads(export.model_dump_json())["resource_spans"]
+    spans = resource_spans["scopeSpans"][0]["spans"]
+    largest = max(len(json.dumps(span).encode()) for span in spans)
+    limit = 2 * largest + 400
+    requests = transport_module.trace_requests(export, limit)
+    assert len(requests) > 1
+    sent = [
+        span
+        for body in requests
+        for span in json.loads(json.dumps(body))["resourceSpans"][0]["scopeSpans"][0]["spans"]
+    ]
+    assert sent == spans
+    for body in requests:
+        assert len(json.dumps(body).encode()) <= limit
+        (part,) = body["resourceSpans"]
+        assert part["resource"] == resource_spans["resource"]
+        assert part["scopeSpans"][0]["scope"] == resource_spans["scopeSpans"][0]["scope"]
+    # 单个Span超过上限时独自成批，不丢弃也不拆开。
+    alone = transport_module.trace_requests(export, 1)
+    assert [len(body["resourceSpans"][0]["scopeSpans"][0]["spans"]) for body in alone] == [1] * len(
+        spans
+    )
+
+
+@pytest.mark.parametrize("reject_batch", [None, 1])
+def test_send_posts_every_trace_batch_before_any_score(
+    monkeypatch: pytest.MonkeyPatch, reject_batch: int | None
+) -> None:
+    export = build_export(report())
+    monkeypatch.setattr(transport_module, "MAX_TRACE_REQUEST_BYTES", 1)
+    paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.path)
+        traces = [p for p in paths if p.endswith("/traces")]
+        if request.url.path.endswith("/traces") and len(traces) - 1 == reject_batch:
+            return httpx.Response(200, json={"partialSuccess": {"rejectedSpans": "1"}})
+        return accept_all(request)
+
+    batches = len(transport_module.trace_requests(export, 1))
+    if reject_batch is None:
+        send(
+            export,
+            base_url="http://localhost:3000",
+            public_key="public",
+            secret_key="private",
+            transport=httpx.MockTransport(handler),
+        )
+        first_score = next(i for i, p in enumerate(paths) if not p.endswith("/traces"))
+        assert first_score == batches and all(p.endswith("/traces") for p in paths[:batches])
+    else:
+        with pytest.raises(EvalkitError) as failure:
+            send(
+                export,
+                base_url="http://localhost:3000",
+                public_key="public",
+                secret_key="private",
+                transport=httpx.MockTransport(handler),
+            )
+        assert failure.value.code == "langfuse_export_partial"
+        # 被拒收的批次之后不再发送Trace，也不发送评分。
+        assert len(paths) == reject_batch + 1 and all(p.endswith("/traces") for p in paths)
 
 
 @pytest.mark.parametrize(

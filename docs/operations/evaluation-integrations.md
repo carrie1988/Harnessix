@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: 25f482e9dee8e1ef4ad7ec715626f4d17f18dbe9
+version: 9
+code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
@@ -77,7 +77,9 @@ uv run --frozen python -m evalkit export \
 ```
 
 远端地址要求HTTPS，本机允许HTTP。自定义部署前缀保留；客户端不跟随重定向、不读取环境代理。
-Trace发送到api/public/otel/v1/traces；评分以score-create批次发送到api/public/ingestion。
+Trace发送到api/public/otel/v1/traces，按Span顺序分批，每次请求的JSON正文不超过5 MiB（单个Span超过时独自成批；
+2026-11-10一次66 MB的请求使Langfuse worker两次堆溢出、整次运行的Trace丢失）；全部批次被接受后，评分才以
+score-create批次发送到api/public/ingestion。
 后者保留源证据的时间戳，适用于仍支持score-create的Langfuse版本。
 每批必须逐项确认；错误、部分接收或超时返回非零，本地投影保留。
 省略--verify时，submitted仅表示传输响应已确认。
