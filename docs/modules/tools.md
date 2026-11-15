@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 34
-code_revision: 5149cfe397bdebfd19583c2e4f118b444f2567f0
+version: 35
+code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
 modules:
@@ -646,7 +646,9 @@ Git工具只有宿主传入受信`git_executable`时才注册。Runtime不从`PA
 仅容纳Git输出的正斜杠、大小写与单个行结束符。父仓库中的子目录不会被提升为授权仓库。
 
 进程环境固定关闭全局/系统配置、可选锁、Pager、终端提示并限制`PATH`与locale；全局参数关闭颜色、
-fsmonitor和Hook路径。Diff另外关闭external diff和textconv，并以`--`终止选项。底层仍是宿主Git
+fsmonitor和Hook路径。状态与差异另按用户实际生效的`core.autocrlf`/`core.eol`比较工作区：每个读取端口首次读取前
+以[`git_line_endings`](../../src/harnessix/tools/git_line_endings.py)执行一次只读`git config`探测，只取这两个键，
+以`-c`传给查询，其余配置照旧隔离（ADR 0043第2版）；交付基准读取按原始字节，不探测。Diff另外关闭external diff和textconv，并以`--`终止选项。底层仍是宿主Git
 进程，不是Sandbox；安全声明只覆盖当前固定命令和绑定环境。
 
 Git进程取消、超时和输出证据复用[0.5 Coding Tool设计](../m05-coding-tools.md)中的Process Runtime对应底层能力；当前源码入口
@@ -1135,6 +1137,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 35 | `a69806a8` 增量 | 2026-11-14 | Git状态与差异按用户实际生效的换行设置比较：首次读取前探测`core.autocrlf`/`core.eol`（可看到系统级与用户级配置，不展开include），以`-c`传给查询并在端口生命周期内复用；Git for Windows用户不再看到整文件差异或误报的修改（ADR 0043第2版） |
 | 34 | `5149cfe3` 增量 | 2026-11-14 | 提案修复的权限位观察在Windows上也成立：读取后端新增`file_mode`，POSIX取真实权限位，Windows对已有普通文件返回0644（与Windows工作区事务的约定相同，不模拟可执行位），不存在或不是普通文件时仍为空；此前Windows上replace漏写mode会被拒（`tool_invalid_arguments`），三个平台行为不一致 |
 | 33 | `48f5685f` 增量 | 2026-11-14 | `search._collect`与`windows_search._collect`改为按完整路径字典序逐个给出候选的生成器（目录名按“名称/”排序），快照与正则Grep边遍历边读（`patterns.included_while_walking`，Windows为`windows_search._included`；include规则与ADR 0129相同），原字面量Grep与Glob仍先遍历完；Windows目录在观察完成员后即核对未变（ADR 0162第2版，Beta Issue #24） |
 | 32 | 第二轮合入 | 2026-11-14 | 会话基线的工作区改动观察`workspace_changes`（ADR 0131）；读工具参数放宽、写给模型的英文失败说明与Grep的`include`语义（ADR 0129）；提案修复可读取现有文件的权限位（`workspace_file_mode`，没有权限位的平台返回空），整文件读取沿用主线的读取后端；Windows端的`include`筛选在收集候选时完成（主线第28版），单文件起点不筛选与“无一匹配即失败”的规则由`windows_search._included`保留 |

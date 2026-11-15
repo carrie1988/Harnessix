@@ -1,8 +1,8 @@
 ---
 doc_type: adr
 status: current
-version: 1
-code_revision: f6df90076f77a0ed29cadfba5f56669b7e16e7f1
+version: 2
+code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
 modules:
@@ -12,6 +12,7 @@ related_adrs: []
 related_tests:
   - tests/tools
   - tests/processes
+  - tests/tools/test_git_line_endings.py
 supersedes: []
 ---
 
@@ -50,7 +51,7 @@ git --no-pager --no-optional-locks
     <固定子命令与固定选项>
 ```
 
-`git_diff`额外固定`--no-ext-diff --no-textconv`，并以`--`结束选项。进程环境不继承父进程，只允许宿主绑定的最小变量；关闭用户全局配置、系统配置、可选锁、交互提示和分页器。运行前执行固定`rev-parse --show-toplevel`，结果必须严格等于规范工作区根；位于父仓库中的子目录不会被当作授权仓库。
+`git_diff`额外固定`--no-ext-diff --no-textconv`，并以`--`结束选项。进程环境不继承父进程，只允许宿主绑定的最小变量；关闭用户全局配置、系统配置、可选锁、交互提示和分页器（第2版补充：换行设置例外，见第8节）。运行前执行固定`rev-parse --show-toplevel`，结果必须严格等于规范工作区根；位于父仓库中的子目录不会被当作授权仓库。
 
 这不是对所有Git命令“无副作用”的证明，而是对当前固定命令、选项、环境和程序身份的窄声明。Git工具仍使用现有只读工具串行锁、Turn取消和5秒时限。
 
@@ -222,3 +223,33 @@ run_tests失败
 - 示例：`python -m examples.coding_feedback`无需API Key或远程中间件。
 
 本ADR完成0.5.4c当前定义的Git和受控测试反馈，不表示任意Shell、OS隔离、源目录交付或0.5.5真实Coding Eval已经完成。
+
+## 8. 第2版：按用户实际生效的换行设置比较工作区（2026-11-14）
+
+**背景。** 读取隔离了系统级与用户级配置。Git for Windows安装时在系统配置里写入`core.autocrlf=true`，
+检出的文件是CRLF、对象是LF。索引记录的时间与大小不再匹配时（文件被编辑器或工具重写、racy条目），
+Git要比较内容：不做转换时`git_status`把文件报成已修改，`git_diff`把每个改过的文件整个报成每行都改了，
+会话基线（ADR 0131）也会把这类文件记成会话前已有的改动。用户自己的Git没有这些问题。
+
+**决策（用户2026-11-14选定，只改读取侧）。**
+1. 每个读取端口在首次状态或差异查询前，另执行一次只读查询
+   `git config --no-includes --null --get-regexp ^core\.(autocrlf|eol|repositoryformatversion)$`
+   （[`git_line_endings`](../../src/harnessix/tools/git_line_endings.py)）。这次查询不关闭系统级配置，
+   用户级配置经`GIT_CONFIG_GLOBAL`指向宿主解析出的文件（`~/.gitconfig`，没有时取XDG位置的`git/config`；
+   Windows按Git for Windows的规则依次看HOME、HOMEDRIVE+HOMEPATH、USERPROFILE）；不向进程传HOME等变量。
+2. 只取`core.autocrlf`与`core.eol`，按Git认可的取值规范化后以`-c`传给状态与差异查询；输出是实际生效的值，
+   所以仓库配置仍然优先。`core.repositoryformatversion`只为让查询在两个键都没设置时以0退出，不使用。
+3. 其余隔离不变：Hook、fsmonitor、用户级attributes文件、可执行过滤器照旧禁用，配置include不展开。
+4. 探测结果在端口生命周期内复用；探测不成立（超时、输出不完整、其他读取失败）时，本次按隔离读取的原行为
+   继续，下次再探测。交付基准读取端口（`for_delivery`）按原始字节，不探测。
+5. 读取合同新增`line_endings`字段，Git工具指纹随之变化。
+
+**后果。**
+- Git for Windows用户看到的状态与差异和自己的Git一致；macOS/Linux没有设置这两个键时行为不变。
+- 每个读取端口多一次进程（首次读取前）；会话中修改了Git的换行配置，要到下次启动才生效。
+- `~/.gitconfig`与XDG文件同时存在时只读前者；只写在XDG文件或include文件里的换行设置此时不生效。
+- 原生Git提交（ADR 0068）目前没有启用，提交由用户批准后用自己的Git完成，本来就遵循用户设置。
+
+**验证。** [`test_git_line_endings.py`](../../tests/tools/test_git_line_endings.py)在任何平台复现Git for Windows的检出
+（用`core.autocrlf=true`检出CRLF，再改动文件时间）：按用户设置时状态干净、差异只含改动行；用户设置为false时
+保留原来的整文件差异；仓库设置优先；探测只做一次、失败后重试；去掉`-c`参数后两项关键测试失败。

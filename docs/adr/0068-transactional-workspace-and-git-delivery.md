@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 2
+version: 3
 code_revision: 386dd2c30c86865529d9163afa27344c15462ba9
 owners:
   - core
@@ -129,3 +129,10 @@ supersedes: []
 4. 区分大小写的文件系统（一般的Linux）行为不变：`a.txt`与`A.txt`仍是两个文件。Windows仍按原有的
    大小写折叠比较键处理，本次未改动；Git交付读取来源的路径不经此检查。
 
+## 第3版：原生Git提交启用时的换行要求（2026-11-14）
+
+原生Git提交（本ADR的交付路径）目前没有在产品中启用：用户的提交由Agent在批准后运行用户自己的
+`git add`/`git commit`完成，遵循用户的换行设置。Git读取已改为按用户实际生效的`core.autocrlf`/`core.eol`
+比较工作区（ADR 0043第2版）。原生提交将来启用时必须遵循同样的换行规则：写入对象前按用户实际生效的设置
+与仓库`.gitattributes`的text/eol做与`git add`相同的规范化，宿主侧计算的对象标识与树投影随之按规范化后的
+内容计算，可执行过滤器仍然禁用。在此之前，交付路径保持原始字节（上表“换行符”一行）。

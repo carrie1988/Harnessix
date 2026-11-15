@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 41
-code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
+version: 42
+code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
 modules:
@@ -1733,6 +1733,7 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 42 | `a69806a8` 增量 | 2026-11-14 | Windows固定Git读取新增换行设置探测用途：不关闭系统级配置、用户级配置经`GIT_CONFIG_GLOBAL`指向宿主解析的文件，绑定指纹另记用途（ADR 0043第2版） |
 | 38 | `dad55d32` 增量 | 2026-11-11 | macOS僵尸进程组：`HostProcessRuntime`发信号被拒绝时等回收后重试，不再误报cleanup_failed并关闭运行时（0.10.0b14） |
 | 37 | `b86793a7` 增量 | 2026-11-11 | Windows不再继承带括号的`PROGRAMFILES(X86)`；启动前失败归为确定未执行（0.10.0b13） |
 | 36 | `c7b13fb3` 增量 | 2026-11-11 | macOS僵尸进程组：发信号前先回收已退出组长，停止命令不再误报cleanup_failed（0.10.0b11） |
@@ -1803,7 +1804,8 @@ Gateway核对Output SHA及ArtifactRef SHA，但Shape验证不替代Owner字节�
 ## 固定Windows Git只读进程装配
 
 [`git_read_windows.py`](../../src/harnessix/processes/git_read_windows.py)提供固定Git查询的宿主装配：
-原完整Execution Plan先落盘，随后由原WindowsProcessSupervisor启动唯一Owner；
+换行设置探测（ADR 0043第2版）使用独立用途的绑定：环境不关闭系统级配置，`GIT_CONFIG_GLOBAL`指向宿主解析出的
+用户级配置文件，指纹另记用途`git-user-line-endings/v1`；原完整Execution Plan先落盘，随后由原WindowsProcessSupervisor启动唯一Owner；
 取消包括启动线程期间取消，先通过私有Token请求停机并排空，再交付原取消信号。
 Plan、Lease、签名Receipt和双流仍位于原`execution-plans.db`及`process-owner/`。
 启动只收敛source_id=`harnessix.git_read`的旧只读查询，不重放、不用历史数字PID控制进程。
