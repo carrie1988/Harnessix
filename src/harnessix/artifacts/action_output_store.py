@@ -9,6 +9,7 @@ from datetime import timedelta
 from uuid import UUID
 
 import aiosqlite
+from pydantic import JsonValue
 
 from harnessix.agent.approvals import approval_for, approval_matches
 from harnessix.agent.errors import KernelError
@@ -23,7 +24,12 @@ from harnessix.agent.models import (
 from harnessix.agent.patching import inspection_scope
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.action_publication_snapshot import action_publication_snapshot
-from harnessix.artifacts.contracts import ArtifactPolicy, ArtifactRef
+from harnessix.artifacts.contracts import (
+    ARTIFACT_OMITTED_KEY,
+    ARTIFACT_STORAGE_FULL,
+    ArtifactPolicy,
+    ArtifactRef,
+)
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
 from harnessix.domain.models import ApprovalOutcome, EffectClass, utc_now
@@ -106,6 +112,35 @@ class ActionOutputArtifactMixin:
             record_count=len(records(body)),
             publication=self._publication,
         )
+
+    async def archive_action_output(
+        self,
+        thread_id: UUID,
+        turn_id: UUID,
+        call: ToolCallContent,
+        body: bytes,
+        *,
+        artifact_id: UUID,
+        workspace_scope: str,
+        expected_sequence: int,
+    ) -> dict[str, JsonValue]:
+        """返回公开输出的存档字段；存储已满时命令已经执行，结果照常提交、不带存档（ADR 0163）。"""
+
+        try:
+            reference = await self.publish_action_output(
+                thread_id,
+                turn_id,
+                call,
+                body,
+                artifact_id=artifact_id,
+                workspace_scope=workspace_scope,
+                expected_sequence=expected_sequence,
+            )
+        except KernelError as error:
+            if error.code != "artifact_quota_exceeded":
+                raise
+            return {ARTIFACT_OMITTED_KEY: ARTIFACT_STORAGE_FULL}
+        return {"artifact": reference.model_dump(mode="json")}
 
 
 def _validated_output_reference(

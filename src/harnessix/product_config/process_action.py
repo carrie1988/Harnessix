@@ -706,7 +706,7 @@ class ProductProcessOutputProvider:
         )
         if public is None or hashlib.sha256(body).hexdigest() != expected_artifact_sha256:
             raise KernelError("trusted_action_output_mismatch", "Process输出与Router审计摘要不匹配")
-        ref = await self._artifacts.publish_action_output(
+        archive = await self._artifacts.archive_action_output(
             thread.thread_id,
             turn.turn_id,
             call,
@@ -715,7 +715,7 @@ class ProductProcessOutputProvider:
             workspace_scope=self._workspace_scope,
             expected_sequence=thread.sequence,
         )
-        return cast(JsonValue, {**public, "artifact": ref.model_dump(mode="json")})
+        return cast(JsonValue, {**public, **archive})
 
 
 def build_product_process_definition(

@@ -68,19 +68,24 @@ async def test_unknown_and_cross_owner_have_same_failure(tmp_path, kind):
 
 
 @pytest.mark.parametrize("field", ["max_turn_bytes", "max_live_bytes"])
-async def test_byte_quota_failure_rolls_back_result_and_content(tmp_path, field):
+async def test_byte_quota_keeps_the_result_without_archive(tmp_path, field):
+    # 存储已满时照常提交结果与预览、不留存档，本轮继续（ADR 0163）。
     store, _, _, thread, turn = await exercise(
         tmp_path, policy=ArtifactPolicy(**{field: 1}), count=1
     )
-    assert turn.status == TurnStatus.FAILED and turn.error.code == "artifact_quota_exceeded"
-    assert not any(r.outcome == "succeeded" for r in results(turn))
+    assert turn.status == TurnStatus.COMPLETED, turn.error
+    (result,) = results(turn)
+    assert result.outcome == "succeeded"
+    assert set(result.output) == {"preview", "artifact_omitted"}
+    assert result.output["artifact_omitted"] == "storage_full"
+    assert result.output["preview"]["matches"][0]["text"] == "needle 中文"
     with sqlite3.connect(store.path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_artifacts").fetchone()[0] == 0
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
 
 
 @pytest.mark.parametrize("field", ["max_turn_count", "max_manifests"])
-async def test_count_quotas_preserve_first_result(tmp_path, field):
+async def test_count_quotas_archive_the_first_result_and_omit_the_next(tmp_path, field):
     root = tmp_path / "repo"
     root.mkdir()
     (root / "x").write_text("needle")
@@ -95,8 +100,10 @@ async def test_count_quotas_preserve_first_result(tmp_path, field):
         ) as runtime:
             thread = await runtime.create_thread(str(tools.workspace_root))
             turn = await runtime.run_turn(thread.thread_id, "配额", request_id="count")
-    assert turn.error.code == "artifact_quota_exceeded"
-    assert sum(r.outcome == "succeeded" for r in results(turn)) == 1
+    assert turn.status == TurnStatus.COMPLETED, turn.error
+    first, second = results(turn)
+    assert first.outcome == second.outcome == "succeeded"
+    assert "artifact" in first.output and second.output["artifact_omitted"] == "storage_full"
     with sqlite3.connect(store.path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_artifacts").fetchone()[0] == 1
 
@@ -153,8 +160,10 @@ async def test_concurrent_publish_cannot_overdraw_global_quota(tmp_path):
             turns = await asyncio.gather(
                 *(runtime.run_turn(t.thread_id, "并发", request_id="a") for t in threads)
             )
-    assert sorted(t.status.value for t in turns) == ["completed", "failed"]
-    assert next(t for t in turns if t.error).error.code == "artifact_quota_exceeded"
+    assert [t.status for t in turns] == [TurnStatus.COMPLETED, TurnStatus.COMPLETED]
+    outputs = [results(t)[0].output for t in turns]
+    assert sorted("artifact" in output for output in outputs) == [False, True]
+    assert sum(output.get("artifact_omitted") == "storage_full" for output in outputs) == 1
     with sqlite3.connect(store.path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_artifacts").fetchone()[0] == 1
 

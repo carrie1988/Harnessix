@@ -33,6 +33,8 @@ from harnessix.artifacts.action_output_store import (
 )
 from harnessix.artifacts.collection import collect_expired
 from harnessix.artifacts.contracts import (
+    ARTIFACT_OMITTED_KEY,
+    ARTIFACT_STORAGE_FULL,
     MAX_ARTIFACT_BYTES,
     MAX_ARTIFACT_RECORDS,
     MAX_PAGE_BYTES,
@@ -191,25 +193,7 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             complete=output.complete,
             expires_at=now + timedelta(seconds=self.policy.ttl_seconds),
         )
-        published = result.model_copy(
-            update={"output": {"preview": result.output, "artifact": ref.model_dump(mode="json")}}
-        )
-        if len(published.model_dump_json()) > max_output_chars:
-            raise KernelError("tool_output_too_large", "Artifact 引用与预览超过 Kernel 上限")
-        item_id = new_id()
-        batch = self.session._freeze_batch(
-            (
-                EventDraft(
-                    turn_id=turn_id, payload=ItemStarted(item_id=item_id, content=published)
-                ),
-                EventDraft(
-                    turn_id=turn_id,
-                    payload=ItemFinished(
-                        item_id=item_id, content=published, status=ItemStatus.COMPLETED
-                    ),
-                ),
-            )
-        )
+        batch, fallback = self._result_batches(turn_id, result, ref, max_output_chars)
         async with self.session._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
             thread = await self.session._snapshot(database, thread_id)
@@ -228,20 +212,22 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                     or item.content.request_fingerprint != request_fingerprint(thread, turn, call)
                 ):
                     raise KernelError("approval_mismatch", "Artifact 发布缺少匹配的批准")
-            await self._check_quota(database, thread_id, turn_id, ref.size_bytes)
-            await insert_artifact(
-                database,
-                ref,
-                thread_id=thread_id,
-                turn_id=turn_id,
-                call_id=call.call_id,
-                workspace_scope=output.workspace_scope,
-                body=output.body,
-                purpose="tool_result",
-                created_at=now,
-                publication=self._publication,
-            )
-            self._fault("artifact.after_insert")
+            if await self._has_room(database, thread_id, turn_id, ref.size_bytes):
+                await insert_artifact(
+                    database,
+                    ref,
+                    thread_id=thread_id,
+                    turn_id=turn_id,
+                    call_id=call.call_id,
+                    workspace_scope=output.workspace_scope,
+                    body=output.body,
+                    purpose="tool_result",
+                    created_at=now,
+                    publication=self._publication,
+                )
+                self._fault("artifact.after_insert")
+            else:
+                batch = fallback
             updated, _ = await self.session._append_in_transaction(
                 database, thread_id, batch, expected_sequence=expected_sequence
             )
@@ -284,9 +270,40 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             publication=self._publication,
         )
 
+    def _result_batches(
+        self, turn_id: UUID, result: ToolResultContent, ref: ArtifactRef, max_output_chars: int
+    ) -> tuple[tuple[EventDraft, ...], tuple[EventDraft, ...]]:
+        """带存档引用的结果，以及存储已满时照常提交、不留存档的结果（ADR 0163）。"""
+        batches = []
+        for archive in (
+            {"artifact": ref.model_dump(mode="json")},
+            {ARTIFACT_OMITTED_KEY: ARTIFACT_STORAGE_FULL},
+        ):
+            content = result.model_copy(update={"output": {"preview": result.output, **archive}})
+            if len(content.model_dump_json()) > max_output_chars:
+                raise KernelError("tool_output_too_large", "Artifact 引用与预览超过 Kernel 上限")
+            item_id = new_id()
+            started = ItemStarted(item_id=item_id, content=content)
+            finished = ItemFinished(item_id=item_id, content=content, status=ItemStatus.COMPLETED)
+            batches.append(
+                self.session._freeze_batch(
+                    (
+                        EventDraft(turn_id=turn_id, payload=started),
+                        EventDraft(turn_id=turn_id, payload=finished),
+                    )
+                )
+            )
+        return batches[0], batches[1]
+
     async def _check_quota(
         self, database: aiosqlite.Connection, thread_id: UUID, turn_id: UUID, size: int
     ) -> None:
+        if not await self._has_room(database, thread_id, turn_id, size):
+            raise KernelError("artifact_quota_exceeded", "Artifact 配额不足，未发布正文或结果")
+
+    async def _has_room(
+        self, database: aiosqlite.Connection, thread_id: UUID, turn_id: UUID, size: int
+    ) -> bool:
         # 全局件数只计仍有正文的Manifest：回收后的Tombstone不再占名额（ADR 0164）。
         cursor = await database.execute(
             "SELECT COALESCE(SUM(state = 'published'), 0), COALESCE(SUM(length(body)), 0), "
@@ -297,13 +314,12 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
         )
         row = await cursor.fetchone()
         assert row is not None
-        if (
+        return not (
             row[0] >= self.policy.max_manifests
             or row[1] + size > self.policy.max_live_bytes
             or row[2] + size > self.policy.max_turn_bytes
             or row[3] >= self.policy.max_turn_count
-        ):
-            raise KernelError("artifact_quota_exceeded", "Artifact 配额不足，未发布正文或结果")
+        )
 
     @staticmethod
     def _body(row: aiosqlite.Row, thread: Thread, ref: ArtifactRef) -> list[str]:

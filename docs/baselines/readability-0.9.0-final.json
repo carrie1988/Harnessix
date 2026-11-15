@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 654,
-    "physical_lines": 136969,
-    "logical_lines": 118598,
+    "physical_lines": 137095,
+    "logical_lines": 118705,
     "documented_modules": 654,
     "classes": 1256,
     "documented_classes": 660,
-    "functions": 5479,
-    "documented_functions": 1951,
+    "functions": 5484,
+    "documented_functions": 1955,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -555,8 +555,8 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore",
       "kind": "class",
-      "line": 132,
-      "lines": 392,
+      "line": 134,
+      "lines": 406,
       "documented": true
     },
     {
@@ -565,7 +565,7 @@
       "path": "src/harnessix/artifacts/sqlite.py",
       "qualname": "SQLiteArtifactStore._verify_page",
       "kind": "function",
-      "line": 443,
+      "line": 459,
       "lines": 40,
       "documented": false,
       "decision_complexity": 24

@@ -11,7 +11,11 @@ from pydantic import JsonValue
 
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
-from harnessix.artifacts.contracts import ArtifactRef
+from harnessix.artifacts.contracts import (
+    ARTIFACT_OMITTED_KEY,
+    ARTIFACT_STORAGE_FULL,
+    ArtifactRef,
+)
 from harnessix.domain.models import ToolDescriptor
 from harnessix.domain.public_output_schema import (
     capture_public_output_schema,
@@ -336,12 +340,16 @@ def validate_public_projection(
     descriptor: ToolDescriptor | None = None,
     checkpoint: Callable[[], None] | None = None,
 ) -> None:
-    """所有Owner投影都绑定双摘要；成功也不能授权追加任意正文。"""
+    """所有Owner投影都绑定双摘要；成功也不能授权追加任意正文。
+
+    存储已满时以``artifact_omitted``代替``artifact``，二者恰有其一（ADR 0163）。
+    """
 
     try:
         if not isinstance(projected, dict):
             raise ValueError
-        summary = {key: value for key, value in projected.items() if key != "artifact"}
+        archive = {"artifact", ARTIFACT_OMITTED_KEY}
+        summary = {key: value for key, value in projected.items() if key not in archive}
         family = failure_family(plan)
         if outcome.kind != "succeeded":
             if family not in {"process", "eval"}:
@@ -349,12 +357,18 @@ def validate_public_projection(
             _validate_process_failure(plan, outcome, summary)
         else:
             validate_success_summary(plan, summary, descriptor=descriptor, checkpoint=checkpoint)
-        # AwareDatetime在严格JSON模式验证；其他字段仍禁止强制类型转换。
-        reference = ArtifactRef.model_validate_json(json.dumps(projected.get("artifact")))
         if (
             canonical_digest(summary) != expected_output_sha256
-            or reference.sha256 != expected_artifact_sha256
+            or len(projected) != len(summary) + 1
         ):
+            raise ValueError
+        if ARTIFACT_OMITTED_KEY in projected:
+            if projected[ARTIFACT_OMITTED_KEY] != ARTIFACT_STORAGE_FULL:
+                raise ValueError
+            return
+        # AwareDatetime在严格JSON模式验证；其他字段仍禁止强制类型转换。
+        reference = ArtifactRef.model_validate_json(json.dumps(projected["artifact"]))
+        if reference.sha256 != expected_artifact_sha256:
             raise ValueError
     except TurnCancelled:
         raise

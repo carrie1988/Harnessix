@@ -5,7 +5,8 @@ version: 1
 code_revision: pending
 owners: [core]
 modules: [artifacts, agent]
-related_adrs: []
+related_adrs:
+  - docs/adr/0163-artifact-archives-are-optional-when-storage-is-full.md
 related_tests:
   - tests/artifacts/test_store_capacity.py
   - tests/artifacts/test_reclaim.py

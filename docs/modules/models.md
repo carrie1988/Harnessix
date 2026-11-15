@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 37
+version: 38
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -878,6 +878,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 38 | `2d72f2c0` 增量 | 2026-11-15 | 文本渲染对带`artifact_omitted`的截断结果说明完整正文未保存（ADR 0163） |
 | 37 | 第二轮合入 | 2026-11-14 | 文档版本27～29随第二轮分支合入主线，与第30～36版并存：可读工具别名、目录拒绝在模型线协议上的英文反馈、说明随历史持久化（ADR 0136、0132）；序号空缺按到达的调用成组（第29版）保留，没有正文的响应沿用第31版，第二轮不另作处理 |
 | 36 | `8b07c214` 增量 | 2026-11-13 | 断开前只交付过响应开始、思考增量、工具参数进度与用量的请求照常有界重试，两个适配器共用`_provider_io.persistent_output`（ADR 0144第3版） |
 | 35 | `f24afce5` 增量 | 2026-11-13 | 名称缺失、为空或超长的工具调用只拒绝该次调用，不再使整个请求以`tool_name_unknown`失败；两个流式适配器一致，超长名称不保留原文（`_tool_names.py`，ADR 0157） |
@@ -968,7 +969,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
 - `OpenAIChatConfig.tool_result_format`（默认`json`、不序列化）：`text`时工具结果的线上正文由
   [`tool_result_text.py`](../../src/harnessix/models/tool_result_text.py)渲染——Grep为`行号:内容`/`行号-上下文`（同文件
   命中合并去重、不连续处`--`，每文件一次`content_sha256`与`revision`）、Glob为路径列表、read_file为一行范围与摘要加原始源码
-  （不加行号前缀，避免被抄进补丁原文）、命令为退出状态加stdout/stderr预览；截断与存档以`read_artifact artifact_id=…`说明。
+  （不加行号前缀，避免被抄进补丁原文）、命令为退出状态加stdout/stderr预览；截断与存档以`read_artifact artifact_id=…`说明，存储已满没有存档时说明
+  “not saved (artifact storage full)”（ADR 0163）。
   失败、拒绝、带diff或形状不符的结果仍发规范JSON；持久历史、Artifact、审计与回放不变，渲染只由结果内容决定。
   Anthropic映射要求JSON结果正文，不提供该选项。holdout的4题实测线上字符约为原来的58%（Grep约26%，命令约35%）。
 - `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存

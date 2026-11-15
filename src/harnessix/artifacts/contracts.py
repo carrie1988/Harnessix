@@ -35,6 +35,11 @@ type HistoryArtifactPurpose = Literal[
 ]
 type ArtifactOmittedField = Literal["preview", "matches", "paths"]
 
+# 存储配额不足时结果照常提交、不带完整存档：公开输出用这个键代替"artifact"，
+# 告诉模型与客户端完整正文没有保存（ADR 0163）。
+ARTIFACT_OMITTED_KEY = "artifact_omitted"
+ARTIFACT_STORAGE_FULL = "storage_full"
+
 
 class ArtifactContract(ContractModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
