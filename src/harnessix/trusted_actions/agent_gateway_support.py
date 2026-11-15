@@ -49,7 +49,7 @@ from harnessix.trusted_actions.contracts import (
 from harnessix.trusted_actions.legacy_projection import project_legacy_terminal
 from harnessix.trusted_actions.preparation_rejection import (
     cancel_pending_approval,
-    rollback_preparation_rejection,
+    preparation_rejection_result,
     workspace_patch_planning_rejection,
     workspace_patch_preparation_rejection,
 )
@@ -162,7 +162,7 @@ async def prepare_action(
         raise
     except Exception as error:
         rejection = sanitize_gateway_exception(error, stage="context")
-        result = rollback_preparation_rejection(state.router, binding, call, rejection)
+        result = preparation_rejection_result(state.router, binding, call, rejection)
         if result is not None:
             return result
         raise rejection from None
@@ -203,7 +203,7 @@ async def prepare_action(
                 if result is not None:
                     return result
                 rejection = sanitize_gateway_exception(error, stage="review")
-                result = rollback_preparation_rejection(router, binding, call, rejection, route)
+                result = preparation_rejection_result(router, binding, call, rejection, route)
                 if result is not None:
                     return result
                 raise rejection from None

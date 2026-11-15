@@ -23,6 +23,7 @@ from harnessix.agent.models import (
     Turn,
 )
 from harnessix.agent.trusted_action_contracts import TrustedActionReview
+from harnessix.artifacts.contracts import ARTIFACT_OMITTED_KEY
 from harnessix.domain.models import ApprovalDecision, ToolDescriptor, utc_now
 from harnessix.execution.contracts import SecretVersionBinding, canonical_digest
 from harnessix.trusted_actions.contracts import (
@@ -280,6 +281,10 @@ def _nonzero_exit_feedback(output: JsonValue) -> str | None:
         "diagnostic_preview shows the complete stdout and stderr, so do not read the artifact "
         "for the same output."
         if output["complete"] and visible
+        else "diagnostic_preview is incomplete or cannot be displayed, and the full output was "
+        "not saved because artifact storage is full; rerun the command with narrower output if "
+        "you need more of it."
+        if ARTIFACT_OMITTED_KEY in output
         else "diagnostic_preview is incomplete or cannot be displayed; read the referenced "
         "artifact in bounded pages if you need more of the output."
     )

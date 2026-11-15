@@ -23,6 +23,9 @@ _GAP_FIELDS = (
     "long_lines",
 )
 _SEARCH_FIELDS = {"path", "stats", "scan_complete", "truncated", "truncation_reason"}
+# 存储已满时结果不带存档（ADR 0163），截断处告诉模型完整正文没有保存、不能再读取。
+_STORAGE_FULL = {"artifact_omitted": "storage_full"}
+_NOT_SAVED = "not saved (artifact storage full)"
 _READ_FIELDS = {
     "path",
     "text",
@@ -79,28 +82,36 @@ def _render(public: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _archive_note(output: dict[str, Any], what: str) -> str:
+    """截断时说明完整正文去哪里读；存储已满时说明没有保存（ADR 0163）。"""
+    artifact = output.get("artifact")
+    if isinstance(artifact, dict):
+        return f"; full {what}: read_artifact artifact_id={artifact['artifact_id']}"
+    if output.get("artifact_omitted") == _STORAGE_FULL["artifact_omitted"]:
+        return f"; full {what} {_NOT_SAVED}"
+    return ""
+
+
 def _search(output: dict[str, Any]) -> str | None:
-    preview, artifact = output, None
-    if set(output) == {"preview", "artifact"} and isinstance(output["preview"], dict):
-        preview, artifact = output["preview"], output["artifact"]
+    preview, archive = output, ""
+    if isinstance(output.get("preview"), dict) and len(output) == 2:
+        if {"artifact", "artifact_omitted"} & set(output):
+            preview, archive = output["preview"], _archive_note(output, "results")
     keys = set(preview)
     if not _SEARCH_FIELDS <= keys:
         return None
     extra = keys - _SEARCH_FIELDS
     if extra == {"paths"}:
-        return _glob(preview, artifact)
+        return _glob(preview, archive)
     if extra <= {"matches", "spec_version", "literal_fallback"} and "matches" in extra:
-        return _grep(preview, artifact)
+        return _grep(preview, archive)
     return None
 
 
-def _scan_note(preview: dict[str, Any], artifact: dict[str, Any] | None) -> str:
+def _scan_note(preview: dict[str, Any], archive: str) -> str:
     notes = []
     if preview["truncated"]:
-        note = f"truncated ({preview['truncation_reason']})"
-        if artifact is not None:
-            note += f"; full results: read_artifact artifact_id={artifact['artifact_id']}"
-        notes.append(note)
+        notes.append(f"truncated ({preview['truncation_reason']}){archive}")
     gaps = [f"{preview['stats'][name]} {name}" for name in _GAP_FIELDS if preview["stats"][name]]
     if gaps:
         notes.append("skipped " + ", ".join(gaps))
@@ -113,20 +124,20 @@ def _count(number: int, one: str, many: str) -> str:
     return f"{number} {one if number == 1 else many}"
 
 
-def _glob(preview: dict[str, Any], artifact: dict[str, Any] | None) -> str:
+def _glob(preview: dict[str, Any], archive: str) -> str:
     paths = preview["paths"]
     if not isinstance(paths, list) or not all(isinstance(path, str) for path in paths):
         raise TypeError("glob paths")
     count = _count(len(paths), "path", "paths")
-    head = f"glob {preview['path']}: {count}{_scan_note(preview, artifact)}"
+    head = f"glob {preview['path']}: {count}{_scan_note(preview, archive)}"
     return "\n".join([head, *paths])
 
 
-def _grep(preview: dict[str, Any], artifact: dict[str, Any] | None) -> str:
+def _grep(preview: dict[str, Any], archive: str) -> str:
     matches = preview["matches"]
     if not isinstance(matches, list):
         raise TypeError("grep matches")
-    note = _scan_note(preview, artifact)
+    note = _scan_note(preview, archive)
     if preview.get("literal_fallback"):
         note += "; the regex matched nothing, these are literal matches of the query"
     if not matches:
@@ -235,10 +246,8 @@ def _process(output: dict[str, Any]) -> str | None:
             notes.append("terminal escape sequences removed")
         label = f"{stream}: {'; '.join(notes)}" if notes else stream
         shown.append(f"[{label}]\n{text}")
-    artifact = output.get("artifact")
-    truncated = any(preview[stream]["truncated"] for stream in ("stdout", "stderr"))
-    if truncated and isinstance(artifact, dict):
-        head += f"; full output: read_artifact artifact_id={artifact['artifact_id']}"
+    if any(preview[stream]["truncated"] for stream in ("stdout", "stderr")):
+        head += _archive_note(output, "output")
     if output.get("complete") is False:
         head += "; output incomplete"
     return "\n".join([head, *shown])

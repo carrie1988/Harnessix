@@ -292,6 +292,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0160：一次读取操作只在开头与结尾核对工作区根](0160-read-operations-verify-the-root-once.md)：此前每打开一个文件前后都从“/”（Windows从盘符）逐段重新核对根，16000个文件的仓库整仓grep在5秒时限内搜不完（Beta Issue #21，三个平台都有）；根的固定改为属于一次读取操作，结束时核对一次，Windows句柄链在根绑定后从根开始；第2版起Windows一次读取操作内每个目录只打开并核对一次，文件只打开自身这一段。
 - [ADR 0161：Python 3.15起Skill Frontmatter改用ruamel.yaml](0161-skill-frontmatter-yaml-on-python-315.md)：PyYAML 6.0.3没有Python 3.15的预编译包，Windows上没有MSVC就装不上（Beta Issue #10，0.10.0b35 Windows真机复测）；3.15起改用纯Python的ruamel.yaml，按YAML 1.1安全加载、拒绝重复键，3.14及以下不变；边角写法的已知差异列在ADR里。
 - [ADR 0162：读取时限到了而已有命中时，Grep返回这些命中](0162-grep-returns-matches-found-before-the-time-limit.md)：Windows上第一次搜索刚克隆的大仓库，读文件内容要先经Defender扫描，整仓grep在5秒时限处失败、没有结果（Beta Issue #24）；快照与正则Grep改为返回已找到的命中并标为`time_limit`，执行合同v9/v10，原字面量Grep与Glob不变。第2版起边遍历边读（顺序与按完整路径排序相同），Windows未配置时读取时限默认30秒。
+- [ADR 0163：存储已满时结果照常提交、不带存档，不中断本轮](0163-artifact-archives-are-optional-when-storage-is-full.md)：存档配额不足时搜索使Turn失败、已执行的命令被记为未知效果并以`uncertain_effect`中断、未执行的改动同样中断（NL2RepoBench冒烟第143、156步）；改为搜索与命令结果照常提交并带`artifact_omitted: storage_full`，审批Review存不下时关闭原Route并以失败结果说明改动未执行，模型看到“完整输出未保存”。
+- [ADR 0164：过期Artifact正文自动回收，Tombstone不再占全局件数](0164-expired-artifacts-are-reclaimed-automatically.md)：产品从未调用`collect`，过期正文一直计入32 MiB全局配额，回收后的Tombstone仍计入10000份上限，同一工作区用满后此后每次归档都撞线；改为Runtime打开时回收一轮、此后每小时一轮，Tombstone不再占全局件数，无法核对的行保留并跳过而不中止回收。
 
 - [ADR 0165：Glob与Grep同一组整仓库上限，只进入可能有命中的目录](0165-glob-uses-whole-repository-limits.md)：Prettier的`tests/format`下就有约1.1万个条目，Glob沿用原字面量合同的10,000个条目上限而失败、没有结果（Beta Issue #35）；快照与正则搜索模式下Glob改用整仓库上限，按模式跳过不可能有命中的目录，执行合同v11；超限说明不再建议先用glob。原Glob不变。
 

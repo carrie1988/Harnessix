@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 25
+version: 27
 code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
@@ -24,10 +24,15 @@ related_adrs:
   - docs/adr/0090-plan-first-store-maintenance-and-backup.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
   - docs/adr/0158-history-artifact-bodies-verified-once-per-store.md
+  - docs/adr/0163-artifact-archives-are-optional-when-storage-is-full.md
+  - docs/adr/0164-expired-artifacts-are-reclaimed-automatically.md
 related_tests:
   - tests/artifacts/test_binary_publication.py
   - tests/artifacts/test_contracts.py
   - tests/artifacts/test_store.py
+  - tests/artifacts/test_store_capacity.py
+  - tests/artifacts/test_reclaim.py
+  - tests/product_config/test_artifact_storage_full.py
   - tests/artifacts/test_runtime.py
   - tests/artifacts/test_recovery.py
   - tests/artifacts/test_batch_diff.py
@@ -147,8 +152,10 @@ flowchart LR
     Verifier --> Context[Model History Preparation]
 ```
 
-数据流包含三种发布入口，但共享同一存储表和验证器。标准只读结果要求正文与结果一起成功；Batch和
+数据流包含三种发布入口，但共享同一存储表和验证器。标准只读结果的正文与结果在同一事务提交；Batch和
 Process正文属于附加展示证据，准备、预算或配额失败时允许只提交原审批/结果事实。该降级不改变原效果。
+存储配额不足时（ADR 0163）只读结果与命令输出照常提交、不带存档，公开输出以`artifact_omitted: "storage_full"`
+代替`artifact`；审批Review存不下时原Route被拒绝，结果为失败并说明改动未执行。三者都不中断本轮。
 
 ### 5.1 信任边界
 
@@ -185,7 +192,7 @@ Process正文属于附加展示证据，准备、预算或配额失败时允许�
 | `max_turn_bytes` | `int`/32 MiB | 1～32 MiB | 同Thread、Turn的`size_bytes`总和 |
 | `max_turn_count` | `int`/1000 | 1～1000 | 同Thread、Turn的Manifest数 |
 | `max_live_bytes` | `int`/32 MiB | 1～256 MiB | 当前表中非空正文的实际字节和 |
-| `max_manifests` | `int`/10000 | 1～100000 | 包含Expired Tombstone的全部行数 |
+| `max_manifests` | `int`/10000 | 1～100000 | Published行数；回收后的Tombstone不计（ADR 0164） |
 
 单Turn两项默认值取允许范围上限（此前为128件/4 MiB）：长任务每步约产生0.8～0.9件（命令输出与审批Review），单件最大1 MiB，旧默认会在约150步或五六次大输出时中断仍在步数预算内的Turn，且配额检查发生在命令执行之后，结果只能记为未知效果。存储总量仍由`max_live_bytes`与`max_manifests`约束。公开Schema改为[`artifact-policy-v2`](../../spec/artifact-policy-v2.schema.json)，v1文件与摘要原样保留。
 
@@ -494,11 +501,17 @@ stateDiagram-v2
 ```
 
 `collect(limit, after)`使用`BEGIN IMMEDIATE`按Artifact ID有界扫描到期Published行。所属Thread存在活跃
-Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避免受保护前缀阻塞同批后续对象。回收
-失败整体回滚，可重试；Tombstone继续占用Manifest配额，且SQLite释放页不等于数据库文件立即缩小。
+Turn时保守保护；归属或Manifest无法核对的行保留正文并计入`protected`，不中止整批；否则将状态改为Expired并把
+BLOB置NULL。游标避免受保护前缀阻塞同批后续对象，同一批里同一Thread的快照只读取一次。回收失败整体回滚，可
+重试；Tombstone不再占用全局Manifest配额（仍计入所属Turn的件数），SQLite释放页不等于数据库文件立即缩小。
+
+回收事务位于[`collection.collect_expired`](../../src/harnessix/artifacts/collection.py)。
+`AgentRuntime`打开时（恢复开放Turn之后）由[`ArtifactReclaimer`](../../src/harnessix/artifacts/reclaim.py)回收一轮，
+最多占用2秒，积压更多时剩余部分转入后台；此后每小时一轮，Runtime关闭时取消。每批50行，批间让出事件循环；
+失败只记不含正文的警告日志并等待下一轮，不影响宿主与Turn（ADR 0164）。
 图中的Protected是一次回收扫描的决策，不是数据库合法状态；持久`state`始终只有Published和Expired。
 0.9.3b的共库Maintenance在不可变Plan、备份和二次保护下复用相同Tombstone语义，并且只有所属Thread也满足删除条件时才
-删除Manifest；升级、Agent启动和普通`collect`都不会自动删除Tombstone或运行Vacuum。
+删除Manifest；升级、Agent启动、自动回收和普通`collect`都不会删除Tombstone或运行Vacuum。
 
 ## 15. 失败语义与恢复矩阵
 
@@ -511,7 +524,7 @@ Turn时保守保护；否则将状态改为Expired并把BLOB置NULL。游标避�
 | 非Scoped入口返回Artifact | `artifact_scope_required` | 否 | 拒绝载荷 |
 | Thread Sequence变化（Action Review/Output发布时，同一Turn的Steering除外，见文末“Action Artifact发布与用户介入”） | `sequence_conflict` | 否 | 当前事务回滚 |
 | Pending Call或批准错绑 | `tool_scope_mismatch`/`approval_mismatch` | 否 | 当前事务回滚 |
-| 单Turn/全局配额不足 | `artifact_quota_exceeded`或可选归档省略 | 否 | 标准结果失败；Batch/Process保留原事实 |
+| 单Turn/全局配额不足 | 只读结果与命令输出带`artifact_omitted`；Review为`artifact_quota_exceeded`失败结果 | 否 | 结果照常提交、无存档；Review关闭原Route；Turn继续（ADR 0163） |
 | 引用与Preview超过输出预算 | `tool_output_too_large`或可选归档省略 | 否 | 不发布误导引用 |
 | 未知、跨Thread或跨Scope | `artifact_not_found` | 否 | 不泄露归属差异 |
 | TTL到期 | `artifact_expired` | 否 | Tombstone保留 |
@@ -567,8 +580,8 @@ Artifact存储当前没有独立OTel Span或Metric。Agent Tool操作和模型�
 用于事务和真实进程退出验证，不是生产故障注入API。
 
 建议的低基数运维信号包括用途、状态、公开错误码、页面记录数、正文大小桶、回收计数和操作耗时；禁止
-把正文、Thread/Turn/Call/Artifact ID、路径、Scope或SHA作为Metric标签。当前尚无内建GC调度、磁盘增长
-指标、到期告警、Vacuum/备份命令或Artifact SLO，发布前需由0.9.3和0.9.5补齐。
+把正文、Thread/Turn/Call/Artifact ID、路径、Scope或SHA作为Metric标签。自动回收（ADR 0164）只记失败日志；
+磁盘增长指标、到期告警、Vacuum/备份命令和Artifact SLO仍未提供，发布前需由0.9.3和0.9.5补齐。
 
 ## 19. 核心业务逻辑伪代码
 
@@ -707,14 +720,14 @@ prepared 的连接、全集观察与终端变更需按同一代码候选完成�
 
 | 项目 | 当前影响 | 后续归属 |
 |---|---|---|
-| 已有低敏容量和内部Plan-first维护，但无产品GC调度/命令 | 宿主可审阅和恢复，最终用户尚不能安全自助操作 | 0.9.3d基准与0.9.5维护UX |
+| 已有低敏容量、内部Plan-first维护和过期正文自动回收，但无产品维护命令 | 宿主可审阅和恢复，最终用户尚不能安全自助操作 | 0.9.3d基准与0.9.5维护UX |
 | 仅SQLite、单件1 MiB JSONL | 不适合远端协作、大型媒体或无限构建日志 | 1.x由真实需求驱动对象存储合同 |
 | Fork主动分页不解析原Owner | 子Thread可验证继承引用，但`read_artifact`不能直接取父Thread正文 | 0.9.1/0.9.4补权限安全闭环 |
 | TTL可能使历史不可继续 | 过期引用会在模型发网前失败，长会话和Fork受影响 | 0.9.3d Soak与产品保留默认值 |
 | Tombstone只有随满足条件的归属Thread才删除 | 未归档历史仍累计Manifest | 0.9.3d增长基准、0.9.5维护命令 |
 | 无加密、DLP和安全删除证明 | 源码、相对路径或命令输出可能留在本地数据库/空闲页 | 0.9.4安全审查与部署策略 |
-| 无内建GC调度，容量报告尚未接产品告警 | 宿主必须在维护窗口主动采集 | 0.9.3d可观测性和0.9.5产品化 |
-| Batch/Process允许无归档降级 | 权威效果仍完整，但详细展示证据可能不可用 | 产品UI必须明确“无可用归档” |
+| 容量报告尚未接产品告警 | 自动回收只清空过期正文，行数与文件大小仍需维护窗口处理 | 0.9.3d可观测性和0.9.5产品化 |
+| Batch/Process/只读结果允许无归档降级（ADR 0163） | 权威效果仍完整，但详细展示证据可能不可用 | 产品UI必须把`artifact_omitted`显示为“完整输出未保存” |
 | TTL依赖UTC墙钟 | 时钟跳变可能提前过期或延后回收 | 0.9.3故障注入与诊断 |
 | 没有通用媒体合同 | 图片、音频及任意二进制不能伪装为字符串Artifact | 后续独立ADR和版本化MIME合同 |
 | 显式只读与合作式路径 pin 不是 OS 原子打开 | 不能据此证明跨库、文件系统或恶意路径 ABA 的不可变快照 | 原 Runtime 锁、受信状态目录及独立平台验证 |
@@ -747,7 +760,7 @@ sequenceDiagram
 
 初始化能力现在包含`artifact/read`与`artifactPages=true`。读取仍由Reader加载Thread并重新获得当前Workspace Scope，再调用Store
 核对Thread、Scope、Artifact、用途、摘要和Session反向引用；仅知道Artifact ID不能读取正文。Reader或任一Runtime构造失败时配置
-不激活、stdio不开放，已存在数据库事实保持可恢复。默认启用不等于无限存储：1 MiB单件上限、JSONL、TTL、累计行数、无调度GC和
+不激活、stdio不开放，已存在数据库事实保持可恢复。默认启用不等于无限存储：1 MiB单件上限、JSONL、TTL、累计行数、过期正文自动回收（ADR 0164）和
 SQLite本地边界不变。
 
 ## 24. Workspace Action Review Artifact（0.9.1e3）
@@ -783,10 +796,10 @@ Eval的公开结果允许增加`passed`，但该字段不是Executor可自由提
 
 | 路径 | 调用边界 | 行为 | 适用场景 |
 |---|---|---|---|
-| `SQLiteArtifactStore.collect` | Artifact Store显式调用 | 有界扫描到期正文；活动Thread保护；保留Manifest | 既有单Store回收 |
+| `SQLiteArtifactStore.collect` | `ArtifactReclaimer`在Runtime打开时与每小时调用（ADR 0164），也可显式调用 | 有界扫描到期正文；活动Thread保护；保留Manifest | 单Store过期正文回收 |
 | `SQLiteStoreMaintenance` | Runtime Owner下的静默窗口 | 三类共库一致规划、强制备份、二次保护、批次恢复；可随归属Thread删除Manifest | 长期共库维护 |
 
-两条路径都不自动调度，不运行Vacuum，不删除活动或不确定Thread正文。Maintenance比`collect`额外保护任意`accepted` Protocol
+`collect`由Runtime自动调度，Maintenance不自动调度；两者都不运行Vacuum，不删除活动或不确定Thread正文。Maintenance比`collect`额外保护任意`accepted` Protocol
 Request、Fork来源和完整Thread依赖组；它不是旧接口的宽松替代。
 
 ### 26.2 Plan与执行数据流
@@ -838,6 +851,8 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 27 | `2d72f2c0` 增量 | 2026-11-15 | 存储配额不足时只读结果与命令输出照常提交、带`artifact_omitted`不带存档，Review存不下时关闭原Route并以失败结果说明，均不中断本轮（ADR 0163） |
+| 26 | `3e2f83d8` 增量 | 2026-11-15 | 过期正文由Runtime打开时与每小时一轮自动回收；Tombstone不再占全局件数；无法核对的行不再中止回收（ADR 0164） |
 | 25 | `f0ed1716` 增量 | 2026-11-14 | 单Turn默认配额改为1000件/32 MiB，长任务不再在约150步或五六次大输出时被`artifact_quota_exceeded`中断 |
 | 24 | `da4b117c` 增量 | 2026-11-13 | 历史核对在每批开头确认公开输出保护仍然有效，命中记住结果的引用在作用域关闭后同样拒绝（ADR 0158第2版） |
 | 23 | `f24afce5` 增量 | 2026-11-13 | 历史正文在同一存储对象里只完整核对一次，之后只确认记录、认证、清单、过期与SHA-256（`batch_verify`，ADR 0158，Beta Issue #8） |

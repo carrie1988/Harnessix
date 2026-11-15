@@ -245,7 +245,7 @@ class HostProcessOutputProvider:
         )
         if public is None or hashlib.sha256(body).hexdigest() != expected_artifact_sha256:
             raise KernelError("trusted_action_output_mismatch", "宿主Process输出与Router审计不一致")
-        reference = await self._artifacts.publish_action_output(
+        archive = await self._artifacts.archive_action_output(
             thread.thread_id,
             turn.turn_id,
             call,
@@ -254,4 +254,4 @@ class HostProcessOutputProvider:
             workspace_scope=self._workspace_scope,
             expected_sequence=thread.sequence,
         )
-        return cast(JsonValue, {**public, "artifact": reference.model_dump(mode="json")})
+        return cast(JsonValue, {**public, **archive})

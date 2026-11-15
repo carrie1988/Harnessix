@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 51
+version: 52
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -1667,6 +1667,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 52 | `2d72f2c0` 增量 | 2026-11-15 | 命令存档存不下时结果按审计终态照常提交并带`artifact_omitted`，不再记为未知效果中断本轮；Review存不下时关闭原Route并以失败结果说明改动未执行（ADR 0163） |
 | 51 | 第二轮合入 | 2026-11-14 | 命令非零退出与超时给模型英文说明（ADR 0136）；内置Patch规划期拒绝的说明改为写给模型的英文表并附整批未应用的事实（ADR 0129），父路径两类拒绝不再经`sanitize_plan_exception`重建；预留的文档版本47未另行使用 |
 | 50 | `33f91ad7` 增量 | 2026-11-13 | `workspace_parent_missing`的规划期说明只剩没有补建能力的端口会出现：Windows事务端口自ADR 0137第2版起同样补建父目录（Beta Issue #16），码表与说明文字不变 |
 | 49 | `d387a5cd` 增量 | 2026-11-12 | 批准后、执行前工作区变化的计划以确定失败结束（`execution_plan_stale`，ready→failed），不再中断整轮（0.10.0b21，ADR 0142） |
@@ -1699,7 +1700,8 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 配置Output Provider的成功和失败返回值共用[`validate_public_projection`](../../src/harnessix/trusted_actions/public_outcomes.py)：
 除顶层artifact外的原摘要必须匹配Audit output_sha256，完整[`ArtifactRef`](../../src/harnessix/artifacts/contracts.py)
-必须匹配artifact_sha256。Process/Eval还必须满足正式DTO、计划profile/process_id和终态语义；
+必须匹配artifact_sha256。存储配额不足时以顶层`artifact_omitted: "storage_full"`代替artifact，二者恰有其一，
+都不计入摘要；Review存不下时原Route以`artifact_quota_exceeded`拒绝并返回失败结果（ADR 0163）。Process/Eval还必须满足正式DTO、计划profile/process_id和终态语义；
 成功Process要求零退出，Eval非零退出仍是基础设施成功且passed=false。摘要相等不能替代业务语义。
 
 [`_project_output`](../../src/harnessix/trusted_actions/agent_gateway_output.py)给Owner回调和后置校验独立10秒

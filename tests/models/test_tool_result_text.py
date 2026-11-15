@@ -159,6 +159,43 @@ def test_process_output_keeps_exit_status_and_stream_text():
     )
 
 
+def test_results_without_archive_say_the_full_output_was_not_saved(tmp_path):
+    # 存储已满时结果不带存档（ADR 0163）：截断处说明完整正文没有保存，不给不存在的artifact_id。
+    body = b"x = f(1)\n" + b"pass\n" * 10 + b"y = f(1)\n"
+    preview = grep_output(
+        tmp_path, {"m.py": body}, RegexGrepInput(query="x =", context_lines=0, max_results=1)
+    )
+    truncated = {**preview, "truncated": True, "truncation_reason": "result_limit"}
+    omitted = {"artifact_omitted": "storage_full"}
+    text = tool_result_text(succeeded({"preview": truncated, **omitted}))
+    assert text.splitlines()[0] == (
+        "grep .: 1 match; truncated (result_limit); full results not saved (artifact storage full)"
+    )
+    # 未截断时预览就是全部结果，不提存档。
+    assert tool_result_text(succeeded({"preview": preview, **omitted})).splitlines()[0] == (
+        "grep .: 1 match"
+    )
+    process = {
+        "version": "trusted-process-output/v2",
+        "profile": "testbed",
+        "process_id": str(uuid4()),
+        "state": "exited",
+        "returncode": 0,
+        "stop_reason": "exited",
+        "stdout": {"observed_bytes": 9000, "observed_sha256": "0" * 64, "truncated": False},
+        "stderr": {"observed_bytes": 0, "observed_sha256": "1" * 64, "truncated": False},
+        "complete": True,
+        "diagnostic_preview": {
+            "stdout": {"text": "ok\n", "size_bytes": 1024, "truncated": True},
+            "stderr": {"text": "", "size_bytes": 0, "truncated": False},
+        },
+        **omitted,
+    }
+    assert tool_result_text(succeeded(process)).splitlines()[0] == (
+        "exit 0; stdout 9000 bytes; stderr 0 bytes; full output not saved (artifact storage full)"
+    )
+
+
 def test_other_results_failures_and_unknown_shapes_stay_canonical_json():
     cases = [
         succeeded({"ok": True}),

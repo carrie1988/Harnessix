@@ -26,6 +26,7 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.artifacts.contracts import ArtifactPolicy
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -116,7 +117,9 @@ class _CommandRun:
 
 
 @asynccontextmanager
-async def _approved_command(tmp_path: Path, process_type: type) -> AsyncIterator[_CommandRun]:
+async def _approved_command(
+    tmp_path: Path, process_type: type, *, policy: ArtifactPolicy | None = None
+) -> AsyncIterator[_CommandRun]:
     """真实产品装配下，模型请求运行单元测试且用户已批准；进程由测试替身控制。"""
 
     workspace = tmp_path / "workspace"
@@ -132,7 +135,7 @@ async def _approved_command(tmp_path: Path, process_type: type) -> AsyncIterator
         verified = replace(probe.verified, runtime=cast(Any, process))
 
     sessions = SQLiteSessionStore(tmp_path / "sessions.db")
-    artifacts = SQLiteArtifactStore(sessions)
+    artifacts = SQLiteArtifactStore(sessions, policy=policy)
     environment = build_fixed_product_action_environment(workspace)
     plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
     audit = SQLiteActionAuditStore(tmp_path / "audit.db")

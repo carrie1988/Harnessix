@@ -148,6 +148,48 @@ def workspace_patch_preparation_rejection(
     return ToolResultContent(call_id=call.call_id, outcome="failed", error=failure)
 
 
+# Review存档存不下时改动没有执行；写给模型的英文说明（ADR 0163）。
+_REVIEW_STORAGE_FULL = (
+    "Artifact storage is full, so the review of this action could not be saved and the action "
+    "was not run; nothing changed. Storage is freed as old archives expire"
+)
+
+
+def preparation_rejection_result(
+    router: TrustedActionRouter,
+    binding: TrustedToolBinding,
+    call: ToolCallContent,
+    rejection: KernelError,
+    route: ActionRouteSnapshot | None = None,
+) -> ToolResultContent | None:
+    """尚未执行的准备期拒绝：任意Action的Review存档存不下，或内置回滚的授权/版本拒绝。"""
+
+    if rejection.code != "artifact_quota_exceeded" or route is None:
+        return rollback_preparation_rejection(router, binding, call, rejection, route)
+    plan_id = route.plan.execution.plan_id
+    current = router.status(plan_id)
+    if (
+        route.state != "pending_approval"
+        or current.plan != route.plan
+        or current.state != "pending_approval"
+        or router.approval(plan_id) is not None
+    ):
+        return None
+    closed = router.decide(
+        plan_id,
+        ApprovalDecision(
+            outcome=ApprovalOutcome.REJECTED, actor="system.validation", reason=rejection.code
+        ),
+    )
+    if closed.state != "denied" or closed.plan != route.plan:
+        return None
+    return ToolResultContent(
+        call_id=call.call_id,
+        outcome="failed",
+        error=AgentFailure(code=rejection.code, message=_REVIEW_STORAGE_FULL),
+    )
+
+
 def rollback_preparation_rejection(
     router: TrustedActionRouter,
     binding: TrustedToolBinding,
