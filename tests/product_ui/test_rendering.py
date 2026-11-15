@@ -306,3 +306,37 @@ def test_a_user_cancel_reads_as_a_notice_not_an_error() -> None:
     slow = transcript_lines(view("context_artifact_timeout", "模型历史Artifact验证超过时间上限"))
     assert slow[0].text.startswith("核对会话记录超时") and "context_artifact" not in slow[0].text
     assert "发送“继续”" in slow[0].text and "Ctrl+N 新建会话" in slow[0].text
+
+
+def test_a_discarded_partial_reply_leaves_no_empty_line() -> None:
+    # 断开后作废的半截回复（ADR 0144第5版）是失败且没有正文的Item；只显示重新生成的那份回复。
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    thread = ThreadView(
+        thread_id=uuid4(),
+        workspace="/workspace",
+        cursor=2,
+        turn_count=1,
+        created_at=now,
+        updated_at=now,
+    )
+    turn_id = uuid4()
+
+    def entry(status: str, text: str, cursor: int) -> ProjectedItem:
+        return ProjectedItem(
+            item=PublicItem(
+                item_id=uuid4(),
+                status=status,
+                content=PublicTextContent(kind="assistant_message", text=text),
+            ),
+            turn_id=turn_id,
+            first_cursor=cursor,
+            last_cursor=cursor,
+            final=True,
+        )
+
+    view = ProductViewState(
+        thread=thread,
+        durable_cursor=2,
+        items=(entry("failed", "", 1), entry("completed", "你好", 2)),
+    )
+    assert [(line.role, line.text) for line in transcript_lines(view)] == [("Harnessix", "你好")]

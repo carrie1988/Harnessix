@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from uuid import UUID
 
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.errors import KernelError
+from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.generation_progress import GenerationProgress
 from harnessix.agent.ids import new_id
 from harnessix.agent.models import (
@@ -63,6 +63,8 @@ class ModelTextPublication:
     sequence: int = 0
     reasoning: ReasoningPreview | None = None
     progress: GenerationProgress | None = None
+    # 作废过的尝试数：新尝试的正文换一个公开保护身份，已开始扫描的文本块不再写入（ADR 0144第5版）。
+    discarded: int = 0
 
     def account(self, count: int) -> None:
         self.characters += count
@@ -80,7 +82,9 @@ class ModelTextPublication:
             self.account(len(event.delta))
             item.text += event.delta
             self._progress().text(event.delta)
-            prefix = await protect_text(self.protection, event.content_id, event.delta, self.token)
+            prefix = await protect_text(
+                self.protection, self.protection_id(event.content_id), event.delta, self.token
+            )
             self.publish(item, prefix)
         else:
             await _complete(self, item, event)
@@ -107,6 +111,9 @@ class ModelTextPublication:
                 if isinstance(event, ModelAttemptStarted | ModelAttemptFinished):
                     self._progress().attempt(event)
                 yield event
+
+    def protection_id(self, content_id: str) -> str:
+        return content_id if not self.discarded else f"{content_id}#attempt{self.discarded}"
 
     def _progress(self) -> GenerationProgress:
         if self.progress is None:
@@ -163,12 +170,13 @@ async def _complete(state: ModelTextPublication, item: _TextItem, event: TextCom
     if item.text and item.text != event.text:
         raise KernelError("invalid_provider_output", "文本终值与增量不一致")
     prefix = ""
+    protection_id = state.protection_id(event.content_id)
     if not item.text:
         state.account(len(event.text))
         item.text = event.text
         if state.protection is not None:
-            prefix = await protect_text(state.protection, event.content_id, event.text, state.token)
-    tail = await protect_text(state.protection, event.content_id, None, state.token)
+            prefix = await protect_text(state.protection, protection_id, event.text, state.token)
+    tail = await protect_text(state.protection, protection_id, None, state.token)
     # 先校验完整终值和待提交事件，再发布最后尾部；无保护宿主保留仅终值无增量行为。
     state.validate_prefix(item, prefix + tail, final=state.protection is not None)
     await state.commit(
@@ -187,13 +195,35 @@ async def _complete(state: ModelTextPublication, item: _TextItem, event: TextCom
 
 
 async def restart_attempt(state: ModelTextPublication, proposals: Sequence[object]) -> None:
-    """同一步骤的新尝试：断开前只显示过思考与生成进度时允许重来；已有正文或工具调用时拒绝。
+    """同一步骤的新尝试从头生成；完整正文或工具调用交付之后拒绝（ADR 0144第3、5版）。
 
-    思考预览与生成进度不建Item、不进模型历史，新尝试接着显示；正文Item与工具调用已经提交，
-    重来会让同一步出现两份回复（负责人2026-11-13决定先只做前一种）。
+    思考预览与生成进度不建Item、不进模型历史，新尝试接着显示。断开前已经开始的正文只有空的开始事实与
+    界面上的实时增量：标为失败后不进模型历史，界面撤下这段正文；新尝试的正文另起一个Item。
     """
-    if state.items or proposals:
-        raise KernelError("invalid_provider_output", "响应开始后不得重试模型请求")
+    if proposals or any(item.completed for item in state.items.values()):
+        raise KernelError("invalid_provider_output", "回复已完整交付后不得重试模型请求")
+    if state.items:
+        discarded = AgentFailure(
+            code="provider_attempt_discarded",
+            message="连接中断，这段回复作废，本步骤重新生成",
+            retryable=True,
+        )
+        await state.commit(
+            state.request.thread_id,
+            state.request.turn_id,
+            [
+                ItemFinished(
+                    item_id=item.item_id,
+                    status=ItemStatus.FAILED,
+                    content=TextContent(kind="assistant_message"),
+                    error=discarded,
+                )
+                for item in state.items.values()
+            ],
+        )
+        state.items.clear()
+        state.characters = 0
+        state.discarded += 1
     if state.reasoning is not None:
         await state.reasoning.restart()
 

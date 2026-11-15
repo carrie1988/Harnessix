@@ -16,6 +16,8 @@ from harnessix.models.contracts import (
     ReasoningDelta,
     ResponseFailed,
     ResponseStarted,
+    TextDelta,
+    TextStarted,
     ToolArgumentsProgress,
 )
 
@@ -86,13 +88,23 @@ def read_key(config: ModelHTTPConfig, *, headers_env: str) -> str:
     return validate_key(os.environ.get(config.api_key_env, ""), headers_env=headers_env)
 
 
-# 不建Item、不进模型历史的事件：响应开始、思考增量与工具参数进度只作界面的临时显示，
-# 用量快照由尝试账本记账。
-# 断开前只出现过这些事件时，丢弃重来是安全的（负责人2026-11-13决定“先做A”）。
-_TRANSIENT_EVENTS = (ModelUsageObserved, ResponseStarted, ReasoningDelta, ToolArgumentsProgress)
+# 断开前只出现过这些事件时，丢弃重来是安全的（ADR 0144）：
+# - 响应开始、思考增量与工具参数进度只作界面的临时显示，不建Item、不进模型历史；
+#   用量快照由尝试账本记账（第3版，负责人2026-11-13决定“先做A”）。
+# - 正文开始与正文增量：正文Item到TextCompleted才写入内容，运行时把未完成的正文标为失败、
+#   界面撤下这段正文，新尝试从头生成（第5版，负责人2026-11-15选B）。
+# 两个适配器都只在完整回复后才交出正文终值、工具调用与终态。
+_DISCARDABLE_EVENTS = (
+    ModelUsageObserved,
+    ResponseStarted,
+    ReasoningDelta,
+    ToolArgumentsProgress,
+    TextStarted,
+    TextDelta,
+)
 
 
 def persistent_output(event: ProviderEvent) -> bool:
-    """这个事件会留下持久的结果（正文、工具调用、终态）；出现过这类事件之后请求断开不再重试。"""
+    """这个事件会留下不能作废的结果（完整正文、工具调用、终态）；出现过之后请求断开不再重试。"""
 
-    return not isinstance(event, _TRANSIENT_EVENTS)
+    return not isinstance(event, _DISCARDABLE_EVENTS)

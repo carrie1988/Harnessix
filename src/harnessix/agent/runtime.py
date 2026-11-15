@@ -3151,7 +3151,7 @@ class AgentRuntime:
                             self._require_request_slots(current)
                         if started:
                             await restart_attempt(texts, proposals)
-                            started, response_id = False, None
+                            started, response_id, event_count = False, None, 1
                         if (
                             accounted.total_tokens + unreported_reservations + request_reservation
                             > request.budget.max_tokens

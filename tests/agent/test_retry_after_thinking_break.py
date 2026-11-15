@@ -1,10 +1,12 @@
-"""回复中途断开：断开前只收到过临时内容（思考、工具参数进度）时自动重试。
+"""回复中途断开：完整回复交付之前断开时，同一步自动重新请求（ADR 0144）。
 
-负责人2026-11-13决定“先做A”。
+第3版（负责人2026-11-13决定“先做A”）：0.10.0b30 macOS正式测试的会话记录：17次失败的尝试里
+16次断开前没有任何正文，其中多次已经思考了46～148秒，断开后整轮直接结束，要用户发送“继续”。
+思考预览与生成进度只作临时增量，不建Item、不进模型历史，丢弃后重来是安全的。
 
-0.10.0b30 macOS正式测试的会话记录：17次失败的尝试里16次断开前没有任何正文，
-其中多次已经思考了46～148秒，断开后整轮直接结束，要用户发送“继续”。思考预览与生成进度只作临时增量，不建Item、不进模型历史，
-丢弃后重来是安全的；已经出过正文后断开仍按原来结束（B，另行决定）。
+第5版（负责人2026-11-15选B）：2026-11-15 NL2RepoBench冒烟中推理服务开始写正文后卡住300秒，
+整轮以provider_transport结束。正文到完整回复才写入内容、工具调用也只在完整回复后交出，
+未完成的正文标为失败后重来同样安全。
 """
 
 from __future__ import annotations
@@ -16,10 +18,12 @@ import httpx2
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
-from harnessix.agent.errors import AgentFailure
+from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.generation_progress import generation_progress_item_id
-from harnessix.agent.models import Budget, ItemDelta, TextContent
+from harnessix.agent.model_text import ModelTextPublication, restart_attempt
+from harnessix.agent.models import Budget, ItemDelta, ItemFinished, TextContent
 from harnessix.agent.reasoning_preview import ReasoningPreview, reasoning_item_id
+from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.turn_budget_compaction import UnknownUsagePolicy
 from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted, ModelUsageObserved
@@ -30,6 +34,9 @@ from harnessix.models.contracts import (
     ResponseCompleted,
     ResponseFailed,
     ResponseStarted,
+    TextCompleted,
+    TextDelta,
+    TextStarted,
     ToolArgumentsProgress,
 )
 from harnessix.models.openai_chat import OpenAIChatProvider
@@ -111,13 +118,16 @@ async def test_a_break_during_thinking_is_retried_in_the_adapter() -> None:
     assert not any(isinstance(e, ResponseFailed) for e in events)
 
 
-async def test_a_break_after_reply_text_started_still_ends_the_request() -> None:
+async def test_a_break_after_reply_text_started_is_retried_in_the_adapter() -> None:
     requests: list[httpx.Request] = []
     streams = [_reply_then_break(), WireStream(text_frames())]
     async with _provider(streams, requests) as provider:
         events = [e async for e in provider.stream(model_request(with_tools=True), CancelToken())]
-    assert len(requests) == 1
-    assert events[-1] == ResponseFailed(code="transport", retryable=True)
+    assert len(requests) == 2
+    ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
+    assert [e.outcome for e in ends] == ["failed", "completed"]
+    assert isinstance(events[-1], ResponseCompleted)
+    assert not any(isinstance(e, ResponseFailed) for e in events)
 
 
 def _anthropic_tool_arguments_then_break() -> anthropic_wire.WireStream:
@@ -162,12 +172,14 @@ async def test_anthropic_retries_a_break_before_any_reply_the_same_way() -> None
     assert isinstance(events[-1], ResponseCompleted)
 
 
-async def test_anthropic_still_ends_the_request_after_reply_text_started() -> None:
+async def test_anthropic_retries_a_break_after_reply_text_started_the_same_way() -> None:
     count, events = await _anthropic_events(
         [_anthropic_reply_then_break(), anthropic_wire.WireStream(anthropic_wire.text_frames())]
     )
-    assert count == 1
-    assert events[-1] == ResponseFailed(code="transport", retryable=True)
+    assert count == 2
+    ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
+    assert [e.outcome for e in ends] == ["failed", "completed"]
+    assert isinstance(events[-1], ResponseCompleted)
 
 
 async def test_the_runtime_accepts_the_retry_and_the_turn_completes(tmp_path: Path) -> None:
@@ -235,20 +247,90 @@ async def test_a_finished_preview_segment_is_never_written_again() -> None:
     assert "".join(d.delta for d in shown) == "先读一下\n\n换个思路"
 
 
-async def test_the_runtime_still_ends_the_turn_when_reply_text_had_started(tmp_path: Path) -> None:
+async def test_the_runtime_discards_the_partial_reply_and_the_turn_completes(
+    tmp_path: Path,
+) -> None:
+    """断开前已显示的半截正文标为失败、不进模型历史；新尝试的正文另起一个Item，同一步只有一份回复。"""
     requests: list[httpx.Request] = []
     streams = [_reply_then_break(), WireStream(text_frames())]
+    deltas: list[ItemDelta] = []
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    async with _provider(streams, requests) as provider:
+        async with AgentRuntime(store, provider, unknown_usage=PAID_INTERACTIVE) as runtime:
+            runtime.subscribe_deltas(deltas.append)
+            thread = await runtime.create_thread(str(tmp_path))
+            turn = await runtime.run_turn(
+                thread.thread_id, "回答一句话", request_id="r", budget=INTERACTIVE_BUDGET
+            )
+    assert len(requests) == 2
+    assert turn.status.value == "completed", turn.error
+    assert [a.status for a in turn.model_attempts] == ["failed", "completed"]
+    replies = [
+        i
+        for i in turn.items
+        if isinstance(i.content, TextContent) and i.content.kind == "assistant_message"
+    ]
+    assert [(i.status.value, i.content.text) for i in replies] == [
+        ("failed", ""),
+        ("completed", "你好"),
+    ]
+    assert replies[0].error is not None
+    assert replies[0].error.code == "provider_attempt_discarded"
+    # 半截正文曾实时显示过；新回复的增量属于新的Item。
+    shown = {d.item_id: "" for d in deltas}
+    for d in deltas:
+        shown[d.item_id] += d.delta
+    assert shown[replies[0].item_id] == "已经开始写"
+    assert shown[replies[1].item_id] == "你好"
+    assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
+
+
+async def test_a_partial_reply_is_left_out_of_the_next_model_request(tmp_path: Path) -> None:
+    """作废的半截正文不进模型历史：下一轮请求只看到完整的那份回复。"""
+    requests: list[httpx.Request] = []
+    streams = [_reply_then_break(), WireStream(text_frames()), WireStream(text_frames())]
     async with _provider(streams, requests) as provider:
         async with AgentRuntime(
             SQLiteSessionStore(tmp_path / "s.db"), provider, unknown_usage=PAID_INTERACTIVE
         ) as runtime:
             thread = await runtime.create_thread(str(tmp_path))
-            turn = await runtime.run_turn(
-                thread.thread_id, "回答一句话", request_id="r", budget=INTERACTIVE_BUDGET
-            )
-    assert len(requests) == 1
-    assert turn.status.value == "failed" and turn.error is not None
-    assert turn.error.code == "provider_transport"
+            for request_id in ("first", "second"):
+                turn = await runtime.run_turn(
+                    thread.thread_id, "回答一句话", request_id=request_id, budget=INTERACTIVE_BUDGET
+                )
+                assert turn.status.value == "completed", turn.error
+    body = requests[-1].content.decode()
+    assert "已经开始写" not in body and body.count("你好") == 1
+
+
+async def test_the_new_attempts_reply_uses_a_fresh_protected_text_block() -> None:
+    """真实的公开保护步骤：作废的正文块不再写入，新尝试同名的正文块换一个保护身份，扣住与放出照常。"""
+    request = model_request(with_tools=True)
+    step = SecretTextStep((b"not-a-real-secret",), lambda: None)
+    shown: list[ItemDelta] = []
+    committed: list[object] = []
+
+    async def commit(_thread, _turn, payloads):  # type: ignore[no-untyped-def]
+        committed.extend(payloads)
+
+    texts = ModelTextPublication(request, CancelToken(), step, commit, shown.append)
+    await texts.accept(TextStarted(content_id="text"))
+    await texts.accept(TextDelta(content_id="text", delta="已经开始写了一段回复"))
+    first = texts.items["text"].item_id
+    await restart_attempt(texts, [])
+    await texts.accept(TextStarted(content_id="text"))
+    await texts.accept(TextDelta(content_id="text", delta="完整的回复"))
+    await texts.accept(TextCompleted(content_id="text", text="完整的回复"))
+    second = texts.items["text"].item_id
+    finished = [p for p in committed if isinstance(p, ItemFinished)]
+    assert [(p.item_id, p.status.value, p.content.text) for p in finished] == [
+        (first, "failed", ""),
+        (second, "completed", "完整的回复"),
+    ]
+    assert "".join(d.delta for d in shown if d.item_id == second) == "完整的回复"
+    # 完整交付之后不得再重来。
+    with pytest.raises(KernelError, match="完整交付"):
+        await restart_attempt(texts, [])
 
 
 def _thinking_then_break_then_answer():  # type: ignore[no-untyped-def]

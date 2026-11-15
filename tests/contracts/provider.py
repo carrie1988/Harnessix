@@ -194,7 +194,10 @@ class ProviderContract:
             assert [e.attempt_id for e in starts] == [e.attempt_id for e in ends]
             assert all(e.outcome == "failed" for e in ends)
 
-    async def test_midstream_failure_not_retried(self, provider_factory: ProviderFactory) -> None:
+    async def test_midstream_failure_after_text_is_retried_within_the_attempt_limit(
+        self, provider_factory: ProviderFactory
+    ) -> None:
+        # 回复写到一半断开：整步重新请求（ADR 0144第5版）；每次都断开时用完尝试上限后报告失败。
         async with provider_factory("midstream") as probe:
             events = [
                 event async for event in probe.provider.stream(model_request(), CancelToken())
@@ -202,7 +205,8 @@ class ProviderContract:
             assert any(isinstance(e, TextDelta) for e in events)
             assert isinstance(events[-1], ResponseFailed)
             assert not any(isinstance(e, ResponseCompleted) for e in events)
-            assert probe.closed() and probe.attempts() == 1
+            starts = [e for e in events if isinstance(e, ModelAttemptStarted)]
+            assert probe.closed() and probe.attempts() == len(starts) == 2
 
     async def test_cancel_closes_blocked_stream(self, provider_factory: ProviderFactory) -> None:
         async with provider_factory("blocked") as probe:

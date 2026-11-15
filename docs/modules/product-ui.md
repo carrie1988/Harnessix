@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 69
+version: 70
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：作废的半截回复不留空行（ADR 0144第5版）
+
+- 正文写到一半断开时，运行时把这段回复标为失败（内容为空）并在同一步重新生成。[`rendering._item_lines`](../../src/harnessix/product_ui/rendering.py)对失败且没有正文的回复不再输出一行空的“Harnessix”；实时增量行照旧在Item结束时撤下。整轮失败时收尾的空回复同样不再显示。回归见`tests/product_ui/test_rendering.py::test_a_discarded_partial_reply_leaves_no_empty_line`。
 
 ## 当前增量：失败的检查不被之后的其他命令覆盖（Beta Issue #36）
 
@@ -1272,6 +1276,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 70 | `39e1e1bf` 增量 | 2026-11-15 | 失败且没有正文的回复（断开后作废的半截回复、整轮失败时的收尾）不显示空行（ADR 0144第5版） |
 | 69 | `9d17f702` 增量 | 2026-11-15 | 审批窗口里按`Ctrl+F`同样收尾：窗口关闭，这条审批按收尾规则拒绝；此前窗口自动弹出后`Ctrl+F`落到原因输入框或按钮上而悄无声息（`ApprovalScreen.action_wrap_up`、`WrapUpFromApproval`，ADR 0148第5版，Beta Issue #4） |
 | 68 | `7d2e735d` 增量 | 2026-11-15 | 完成证据：失败的检查只有同一命令重新运行并通过才算解决，其他命令的成功不再覆盖它；失败时给出`failed_check`，`last_native_returncode`取自该检查（`verification._Check`，Beta Issue #36） |
 | 67 | 第二轮合入 | 2026-11-14 | 工具步骤说明（命令账本）同样显示为“提示”行，完成守卫与回复恢复两行沿用第46版的文案；不显示会话基线的两条宿主说明（ADR 0131、0135）。分支上的另外两条（原文档版本38“审批窗口列出将新建的目录”、39“宿主说明显示为提示”）与第44、46版是同一改动，不另列 |

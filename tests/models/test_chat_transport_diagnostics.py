@@ -155,7 +155,8 @@ async def test_sdk_verified_status_does_not_relabel_429(status, code, reason, ca
 
 
 @pytest.mark.parametrize("native_timeout", [False, True])
-async def test_stream_failure_preserves_exposed_text_and_last_usage_without_retry(native_timeout):
+async def test_stream_failure_after_text_keeps_each_attempts_diagnostic_and_usage(native_timeout):
+    # 正文写到一半断开整步重新请求（ADR 0144第5版）；每次都断开时用完3次尝试后报告失败。
     class NativeTimeoutStream(WireStream):
         async def __aiter__(self):
             async for part in super().__aiter__():
@@ -178,15 +179,30 @@ async def test_stream_failure_preserves_exposed_text_and_last_usage_without_retr
         config(max_attempts=3), api_key=CANARY, transport=httpx.MockTransport(handle)
     ) as provider:
         events = [e async for e in provider.stream(model_request(with_tools=True), CancelToken())]
-    assert requests == 1 and wire.closed
+    assert requests == 3 and wire.closed
     assert events[-1] == ResponseFailed(code="transport", retryable=True)
-    assert_diagnostic(events, "timeout_origin_unknown" if native_timeout else "httpx_read_failure")
-    assert "".join(e.delta for e in events if isinstance(e, TextDelta)) == "你好"
-    observations = [e for e in events if isinstance(e, ModelUsageObserved)]
-    assert len(observations) == 2 and observations[0].usage.completeness == "unknown"
-    assert observations[-1].usage.completeness == "complete"
-    assert (observations[-1].usage.input_tokens, observations[-1].usage.output_tokens) == (10, 2)
-    assert all(e.attempt_id == events[0].attempt_id for e in observations)
+    reason = "timeout_origin_unknown" if native_timeout else "httpx_read_failure"
+    ends = [e for e in events if isinstance(e, ModelAttemptFinished)]
+    assert [e.outcome for e in ends] == ["failed"] * 3
+    assert all(
+        e.error is not None
+        and e.error.message == f"Provider 返回结构化失败；chat_transport/v1:{reason}"
+        for e in ends
+    )
+    assert CANARY not in repr(events)
+    assert "".join(e.delta for e in events if isinstance(e, TextDelta)) == "你好" * 3
+    starts = [e for e in events if isinstance(e, ModelAttemptStarted)]
+    assert [e.index for e in starts] == [1, 2, 3]
+    for start in starts:
+        observations = [
+            e
+            for e in events
+            if isinstance(e, ModelUsageObserved) and e.attempt_id == start.attempt_id
+        ]
+        assert len(observations) == 2 and observations[0].usage.completeness == "unknown"
+        assert observations[-1].usage.completeness == "complete"
+        usage = observations[-1].usage
+        assert (usage.input_tokens, usage.output_tokens) == (10, 2)
     assert not any(isinstance(e, ResponseCompleted | ToolCallCompleted) for e in events)
 
 

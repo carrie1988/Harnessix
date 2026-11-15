@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 38
+version: 39
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -50,6 +50,12 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：正文写到一半断开的请求同样重试（ADR 0144第5版）
+
+- [`_provider_io.persistent_output`](../../src/harnessix/models/_provider_io.py)的可作废事件加上`TextStarted`与`TextDelta`：两个适配器都只在完整回复后交出`TextCompleted`、工具调用与终态，流式中途断开时只出现过正文开始与增量，照常有界重试；运行时作废半截正文（见Agent模块）。出现过完整正文、工具调用或终态之后仍不重试。
+- 重试次数、退避、总Deadline与按尝试记账不变：报回用量后断开的请求按已知计入，没有报回的按未知预留。2026-11-15 NL2RepoBench冒烟中本机vLLM写正文时卡住300秒、整轮失败，促成本版（负责人选B）。
+- 回归：`tests/agent/test_retry_after_thinking_break.py`、`tests/models/test_chat_transport_diagnostics.py`、`tests/models/test_cost_integration.py`、提供方契约`test_midstream_failure_after_text_is_retried_within_the_attempt_limit`。
 
 ## 当前增量：只出过思考与进度就断开的请求照常重试（ADR 0144第3版）
 
@@ -220,7 +226,7 @@ Model Runtime不是Agent Loop，也不是Prompt/Context规划器。它把已准�
 5. 原始SSE先严格校验，再交给可能执行类型转换的SDK；
 6. Tool Call只在完整参数、唯一身份、合法名称、正确Stop Reason、完整Usage和流终态后释放；
 7. Adapter先交付`ModelAttemptStarted`，Runtime持久化后才拉取下一事件并触发HTTP；
-8. 仅在没有语义输出暴露时执行有界重试，已出现正文、Tool或终态后不重发（响应开始、思考与参数进度不算，ADR 0144第3版）；
+8. 仅在没有语义输出暴露时执行有界重试，已出现完整正文、Tool或终态后不重发（响应开始、思考、参数进度、正文开始与增量不算，ADR 0144第3、5版）；
 9. 用量按Attempt累计快照记录，未知保持`null`，失败请求有完整用量时仍可计价；
 10. 价格必须显式绑定实际模型、平台、地域、等级、模式、时间、输入阶梯和缓存TTL；
 11. 成本报告可从Attempt与嵌入价格重算，未知、部分和完整三种结论不可混淆；
@@ -243,7 +249,7 @@ Model Runtime不是Agent Loop，也不是Prompt/Context规划器。它把已准�
 |---|---|---|
 | Model Step | Agent Loop的一次Provider调用阶段 | 同一Step可有多个HTTP Attempt |
 | Attempt | 一次可能发出HTTP的独立请求意图 | ID唯一，Step内Index连续；领域上限32，单Adapter配置上限5 |
-| Semantic Exposure | 文本、Tool或完成事件已经交付Runtime（`persistent_output`） | 一旦发生，当前Adapter不再自动重试 |
+| Semantic Exposure | 完整正文、Tool或完成事件已经交付Runtime（`persistent_output`） | 一旦发生，当前Adapter不再自动重试；正文开始与增量不算（ADR 0144第5版） |
 | Usage Observation | 同一Attempt的累计用量快照 | 重复值不累加，后继不可回退 |
 | Billing Metadata | 响应中观测到的等级、地域和缓存TTL分项 | 不是平台身份、价格或账单证明 |
 | Price Snapshot | 宿主提供的不可变费率事实 | 需与Attempt摘要和计费上下文显式绑定 |
@@ -878,6 +884,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 39 | `39e1e1bf` 增量 | 2026-11-15 | 正文开始与正文增量也算可作废事件，正文写到一半断开的请求照常有界重试（ADR 0144第5版） |
 | 38 | `2d72f2c0` 增量 | 2026-11-15 | 文本渲染对带`artifact_omitted`的截断结果说明完整正文未保存（ADR 0163） |
 | 37 | 第二轮合入 | 2026-11-14 | 文档版本27～29随第二轮分支合入主线，与第30～36版并存：可读工具别名、目录拒绝在模型线协议上的英文反馈、说明随历史持久化（ADR 0136、0132）；序号空缺按到达的调用成组（第29版）保留，没有正文的响应沿用第31版，第二轮不另作处理 |
 | 36 | `8b07c214` 增量 | 2026-11-13 | 断开前只交付过响应开始、思考增量、工具参数进度与用量的请求照常有界重试，两个适配器共用`_provider_io.persistent_output`（ADR 0144第3版） |

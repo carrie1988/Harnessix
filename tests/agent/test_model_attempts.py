@@ -24,6 +24,7 @@ from harnessix.models.contracts import (
     ResponseCompleted,
     ResponseFailed,
     ResponseStarted,
+    TextCompleted,
     TextStarted,
     ToolCallCompleted,
 )
@@ -489,7 +490,7 @@ async def test_interrupted_stream_is_settled_by_kernel_not_generator_cleanup(
         "wrong_step",
         "skipped_index",
         "parallel",
-        "retry_after_reply_text",
+        "retry_after_completed_reply_text",
         "success_without_usage",
         "wrong_response_usage",
         "response_before_finish",
@@ -511,11 +512,12 @@ async def test_invalid_attempt_protocol_never_executes_tools(tmp_path: Path, cas
         "wrong_step": [start.model_copy(update={"step": 2})],
         "skipped_index": [start.model_copy(update={"index": 2})],
         "parallel": [start, attempt_start(index=2)],
-        # 只出过ResponseStarted与思考时可以重试（负责人2026-11-13决定A）；出过正文后不行。
-        "retry_after_reply_text": [
+        # 未完成的正文可以作废重来（ADR 0144第5版）；正文已完整交付后不行。
+        "retry_after_completed_reply_text": [
             start,
             ResponseStarted(response_id="r"),
             TextStarted(content_id="t"),
+            TextCompleted(content_id="t", text="已经写完"),
             failed(start),
             attempt_start(index=2),
         ],

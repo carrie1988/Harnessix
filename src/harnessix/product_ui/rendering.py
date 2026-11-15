@@ -160,6 +160,9 @@ def _item_lines(item: PublicItem) -> tuple[TranscriptLine, ...]:
     item_id = item.item_id
     content = item.content
     if isinstance(content, PublicTextContent):
+        if item.status == "failed" and not content.text:
+            # 断开后作废的半截回复（ADR 0144第5版）或失败时尚无正文：没有可显示的内容。
+            return ()
         role = {
             "user_message": "你",
             "assistant_message": "Harnessix",

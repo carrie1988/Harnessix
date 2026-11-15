@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 4
+version: 5
 code_revision: pending
 owners: [core]
 modules: [agent, product_config, models]
@@ -10,6 +10,7 @@ related_adrs:
 related_tests:
   - tests/agent/test_model_attempts.py
   - tests/agent/test_retry_after_thinking_break.py
+  - tests/product_ui/test_rendering.py
   - tests/context/test_pressure_window_candidates.py
   - tests/product_config/test_service_failure_retries.py
   - tests/product_config/test_retry_limit.py
@@ -55,7 +56,8 @@ supersedes: []
 
 - 响应已经开始输出之后才断开的请求，适配器不重试（ADR 0123），该轮仍以原故障结束，界面提示直接发送“继续”。
   要在这种情况下自动重试，需要作废已经显示的半截内容并重新采样这一步，涉及事件合同，另行设计。
-  （第3版起，断开前只显示过思考与生成进度、还没有正文和工具调用的请求会自动重试，见下文“修订（第3版）”。）
+  （第3版起，断开前只显示过思考与生成进度、还没有正文和工具调用的请求会自动重试，见下文“修订（第3版）”；
+  第5版起，正文写到一半断开的请求同样自动重试，见下文“修订（第5版）”。）
 - 确定未计费的失败（HTTP错误响应、连接未建立）本来就会重试，不受本ADR影响。（第2版起，配置了`service_failure_retries`时它们的次数也受这个设置限制，见下文“修订”。）
 - 评测与冒烟配置仍要求`max_attempts=1`。
 
@@ -113,3 +115,35 @@ supersedes: []
 决定：这一检查以`budget_exceeded`结束，说明里给出已用量、为用量未知的请求预留的量与上限，并提示提高预算后可在同一会话续做。其余停止的归因不变：默认策略下故障后的下一步停止、连续故障超过次数、一次请求内仅因失败尝试的预留超限，仍以故障的原错误码结束。
 
 验证：`tests/agent/test_model_attempts.py::test_a_recovered_transport_failure_is_not_blamed_when_the_budget_runs_out`（修改前为`provider_transport`）与`test_unknown_usage_is_reserved_at_the_largest_known_request`（说明含三个数字）。
+
+## 修订（第5版，2026-11-15）：正文写到一半断开时整步重新请求
+
+2026-11-15 NL2RepoBench冒烟（本机vLLM，Qwen3.8-Flash-Next）：tinydb第11步，推理服务开始输出正文后卡住，300秒后
+读取超时（`provider_transport`）。错误可重试、`max_attempts`为6，但适配器已经交付过正文增量，按第3版不再重试，
+整轮失败，无人值守的任务就此结束；事后两个推理服务实例都正常。负责人2026-11-15选B（第3版延后的方案）。
+
+梳理确认这一步重来不会留下两份结果：
+
+- 两个适配器都只在完整回复之后才交出正文终值（`TextCompleted`）、工具调用与终态；流式过程中只有正文开始与正文增量。
+- 正文开始只写入一个空的正文Item，增量只推给界面实时显示，内容到`TextCompleted`才写入；工具调用在完整回复之后才提交，
+  在本步结束之后才执行。断在中途时没有任何工具效果需要撤销。
+
+决定：
+
+- **可作废的事件加上正文开始与正文增量。** `models/_provider_io.persistent_output`改为只把完整正文、工具调用与终态算作
+  不能作废的输出；OpenAI Chat与Anthropic两个适配器共用，重试次数、等待与该请求的总时限照旧。
+- **运行时作废半截正文。** `model_text.restart_attempt`在新尝试开始时把未完成的正文Item标为失败（内容为空，错误码
+  `provider_attempt_discarded`），它不进模型历史；新尝试的正文另起一个Item，并换一个公开保护身份（已开始扫描的文本块
+  不再写入）。本步骤的输出字数与事件计数从新尝试重新计。正文已完整交付或已有工具调用时仍以`invalid_provider_output`拒绝。
+- **界面撤下半截正文。** 正文Item结束时实时行本来就会撤下；失败且没有正文的回复不再显示为空行（整轮失败时同样适用）。
+  生成进度照第3版说明“第 N 次尝试，上次网络中断或超时”。
+
+后果：断开的那次请求可能已被计费，用量照实记账（报回了用量的按已知计入，没有报回的按未知预留），与其他重试相同；
+客户端会看到一个失败的空回复Item，随后是新的回复。三个平台行为相同，判断在适配器与运行时的Python层完成。
+
+验证（0.10.0b46上失败、本版通过）：`tests/agent/test_retry_after_thinking_break.py`（两个适配器在正文开始后断开时重试；
+运行时作废半截正文、Turn完成、同一步只有一份回复；半截正文不进下一次模型请求；真实公开保护下新尝试换保护身份）、
+`tests/models/test_chat_transport_diagnostics.py`、`tests/models/test_cost_integration.py`（报回用量后断开的两次请求都计费）、
+提供方契约`test_midstream_failure_after_text_is_retried_within_the_attempt_limit`、
+`tests/product_ui/test_rendering.py::test_a_discarded_partial_reply_leaves_no_empty_line`。
+`tests/agent/test_model_attempts.py`的协议用例改为“正文已完整交付后重试”，仍被拒绝。

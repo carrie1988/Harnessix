@@ -38,9 +38,11 @@ async def test_real_sdk_to_durable_cost_report_replay(tmp_path, monkeypatch, kin
             )
     bindings = tuple(bind_price(a, price(), context()) for a in turn.model_attempts)
     report = build_cost_report(turn, bindings)
-    assert wire.closed and len(requests) == (2 if scenario == "retry" else 1)
+    # 用量报告之后断开的回复同样整步重新请求（ADR 0144第5版），两次请求的已知用量都计入。
+    assert wire.closed and len(requests) == (1 if scenario == "success" else 2)
     assert report.summary.completeness == ("partial" if scenario == "retry" else "complete")
-    assert report.summary.totals[0].known_amount == "0.000025"
+    expected = "0.00005" if scenario == "failure_after_usage" else "0.000025"
+    assert report.summary.totals[0].known_amount == expected
     assert turn.status == ("failed" if scenario == "failure_after_usage" else "completed")
     encoded = report.model_dump_json()
     assert CANARY not in encoded and "成本报告不保存此用户消息" not in encoded

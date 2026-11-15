@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 68
+version: 69
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -56,6 +56,12 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：同一步骤作废半截正文后接受新的尝试（ADR 0144第5版）
+
+- [`model_text.restart_attempt`](../../src/harnessix/agent/model_text.py)在新尝试开始时把未完成的正文Item以`ItemFinished(FAILED)`结束（内容为空，错误码`provider_attempt_discarded`）：它不进模型历史，界面撤下实时显示的这段正文；清空本步骤的正文块与输出字数，新尝试的正文另起一个Item，并换一个公开保护身份（`ModelTextPublication.protection_id`，`SecretTextStep`不向已开始扫描的块续写）。正文已完整交付或已有工具调用时仍以`invalid_provider_output`拒绝。
+- `_sample_events`在新尝试开始时把本步骤事件计数重新从1计（改原有一行，`AgentRuntime`行数不变）。
+- 安全依据：正文内容到`TextCompleted`才写入，工具调用在完整回复后提交、本步结束后执行，断在中途时没有效果需要撤销。回归见`tests/agent/test_retry_after_thinking_break.py`；[ADR 0144](../adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md)第5版。
 
 ## 当前增量：同一步骤在只显示过思考时接受新的尝试（ADR 0144第3版）
 
@@ -1137,6 +1143,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 69 | `39e1e1bf` 增量 | 2026-11-15 | 正文写到一半断开时，同一步骤作废半截正文（`ItemFinished(FAILED)`，`provider_attempt_discarded`）并接受新的尝试，新正文换公开保护身份（ADR 0144第5版） |
 | 68 | `3e2f83d8` 增量 | 2026-11-15 | `AgentRuntime`打开时启动过期Artifact正文回收（`artifacts.reclaim.start_artifact_reclaim`：打开时回收一轮，最多2秒，余下转后台，之后每小时一轮），关闭时停止；回收失败只记日志，不影响Turn（ADR 0164） |
 | 67 | `882b96ea` 增量 | 2026-11-14 | 小窗口压缩不再停摆（#33）：压缩成功后清除退避，退避不越过校准触发点的上限，近期完整组超过目标时有限放宽目标（ADR 0132第3版） |
 | 66 | `5149cfe3` 增量 | 2026-11-14 | replace缺mode的补全在Windows上也生效：已有普通文件按0644补（工具模块第34版） |
