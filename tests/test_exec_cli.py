@@ -317,5 +317,19 @@ def test_a_check_whose_last_native_program_failed_is_not_a_pass():
     assert _verification(items) == {
         "status": "failed_after_last_edit",
         "last_check": "npm test; Write-Host done",
+        "failed_check": "npm test; Write-Host done",
+        "last_native_returncode": 1,
+    }
+    # Beta Issue #36：之后一条成功的清理命令不覆盖这次失败，退出码仍来自失败的检查。
+    cleanup = uuid4()
+    cleaned = [
+        *items,
+        _call(cleanup, "host_command.host-shell", {"cmd": "Remove-Item tmp.txt"}),
+        _result(cleanup, "succeeded"),
+    ]
+    assert _verification(cleaned) == {
+        "status": "failed_after_last_edit",
+        "last_check": "Remove-Item tmp.txt",
+        "failed_check": "npm test; Write-Host done",
         "last_native_returncode": 1,
     }

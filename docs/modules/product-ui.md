@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 67
+version: 68
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：失败的检查不被之后的其他命令覆盖（Beta Issue #36）
+
+- [`verification.verification_summary`](../../src/harnessix/product_ui/verification.py)记下最后一次成功修改之后每条检查命令最近一次的结果：一条检查失败后，只有同一条命令重新运行并通过才算解决，之后其他命令的成功（例如清理临时文件、`Test-Path`）不再把状态翻成`passed_after_last_edit`。
+- 失败时摘要另给`failed_check`（仍未通过的检查中最近运行的一条），`last_native_returncode`也取自这条；`last_check`仍是最后运行的检查。对话末尾的提示附`failed_check`。
+- 换了一条命令重跑并通过（例如缩小范围的测试）不算解决，状态保持失败：宁可让用户确认，也不报出假的通过（负责人2026-11-15选方案A）。回归见`tests/product_ui/test_unverified_completion.py`、`tests/test_exec_cli.py`。
 
 ## 当前增量：多行粘贴保留全文（Beta Issue #19）
 
@@ -1265,6 +1271,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 68 | `7d2e735d` 增量 | 2026-11-15 | 完成证据：失败的检查只有同一命令重新运行并通过才算解决，其他命令的成功不再覆盖它；失败时给出`failed_check`，`last_native_returncode`取自该检查（`verification._Check`，Beta Issue #36） |
 | 67 | 第二轮合入 | 2026-11-14 | 工具步骤说明（命令账本）同样显示为“提示”行，完成守卫与回复恢复两行沿用第46版的文案；不显示会话基线的两条宿主说明（ADR 0131、0135）。分支上的另外两条（原文档版本38“审批窗口列出将新建的目录”、39“宿主说明显示为提示”）与第44、46版是同一改动，不另列 |
 | 66 | `57dd7d7f` 增量 | 2026-11-11 | 对话记录不显示预算与目录说明（ADR 0132）；分支上的文档版本37 |
 | 65 | `e9e5b0cd` 增量 | 2026-11-14 | 启动失败说明新增`retry_config_read`（“这次没能读取配置文件”，稍后重新运行，不需要重新配置）；只有配置文件不存在才显示“还没有配置模型” |

@@ -91,7 +91,7 @@ def test_a_failed_check_after_the_last_edit_is_flagged_with_the_command() -> Non
     ]
     last = transcript_lines(_view(items))[-1]
     assert last.role == "提示"
-    assert "最后一次检查没有通过" in last.text and "python -B -m unittest -v" in last.text
+    assert "有检查没有通过" in last.text and "python -B -m unittest -v" in last.text
 
 
 def test_nothing_is_added_when_the_last_edit_was_checked_or_nothing_was_edited() -> None:
@@ -135,3 +135,52 @@ def test_only_a_finished_turn_is_judged() -> None:
     for status in ("calling_model", "executing_tools", "failed", "cancelled"):
         lines = transcript_lines(_view(_red_then_fix(), status=status))
         assert all("没有运行过测试" not in line.text for line in lines)
+
+
+VITEST = ("host_command.host-shell", {"cmd": "pnpm vitest run --root pkgs/core"})
+CLEANUP = ("host_command.host-shell", {"cmd": "Remove-Item repro.test.ts; Test-Path repro.test.ts"})
+OTHER_TEST = ("host_command.host-shell", {"cmd": "pnpm vitest run --root pkgs/core repro"})
+
+
+def _after_a_fix(*runs: tuple[tuple[str, dict[str, object]], str]) -> list[PublicItem]:
+    fix = uuid4()
+    items = [_call(fix, "apply_patch_batch"), _result(fix, "succeeded")]
+    for (tool, arguments), outcome in runs:
+        call = uuid4()
+        items += [_call(call, tool, arguments), _result(call, outcome)]
+    return [*items, _answer("完成。")]
+
+
+def test_a_successful_cleanup_does_not_hide_a_failed_test() -> None:
+    """Beta Issue #36：失败的测试之后一条成功的清理命令，此前把状态翻成“修改后检查通过”。"""
+    items = _after_a_fix((VITEST, "failed"), (CLEANUP, "succeeded"))
+    assert verification_summary(items) == {
+        "status": "failed_after_last_edit",
+        "last_check": CLEANUP[1]["cmd"],
+        "failed_check": VITEST[1]["cmd"],
+    }
+    last = transcript_lines(_view(items))[-1]
+    assert last.role == "提示" and VITEST[1]["cmd"] in last.text
+    assert CLEANUP[1]["cmd"] not in last.text
+
+
+def test_a_failed_check_is_resolved_only_by_the_same_command_passing() -> None:
+    rerun = _after_a_fix((VITEST, "failed"), (VITEST, "succeeded"), (CLEANUP, "succeeded"))
+    assert verification_summary(rerun) == {
+        "status": "passed_after_last_edit",
+        "last_check": CLEANUP[1]["cmd"],
+    }
+    assert transcript_lines(_view(rerun))[-1].role != "提示"
+    # 另一条命令通过不算解决（保守：不再报出假的“通过”）。
+    other = _after_a_fix((VITEST, "failed"), (OTHER_TEST, "succeeded"))
+    assert verification_summary(other)["failed_check"] == VITEST[1]["cmd"]
+    # 同一命令通过之后又失败，以最近一次为准。
+    again = _after_a_fix((VITEST, "succeeded"), (VITEST, "failed"), (CLEANUP, "succeeded"))
+    assert verification_summary(again)["status"] == "failed_after_last_edit"
+
+
+def test_the_most_recent_unresolved_failure_is_named() -> None:
+    items = _after_a_fix((RUN, "failed"), (VITEST, "failed"), (CLEANUP, "succeeded"))
+    assert verification_summary(items)["failed_check"] == VITEST[1]["cmd"]
+    resolved = _after_a_fix((RUN, "failed"), (VITEST, "failed"), (VITEST, "succeeded"))
+    assert verification_summary(resolved)["failed_check"] == RUN[1]["cmd"]

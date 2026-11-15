@@ -2,12 +2,16 @@
 
 `harnessix exec`的摘要与终端界面共用这一判断。模型的总结可能声称跑过测试而实际没有
 （Beta Issue #9），这里只看这一轮里真正发生过的工具调用与结果。
+
+一条检查失败后，只有同一条命令重新运行并通过才算解决；之后其他命令的成功（如清理临时文件）
+不覆盖它（Beta Issue #36）。
 """
 
 from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from harnessix.protocol.contracts import PublicItem, PublicToolCallContent, PublicToolResultContent
@@ -20,8 +24,20 @@ CHECK_TOOL_PREFIXES = ("exec_command.", "host_command.", "run_profile.")
 _NATIVE_EXIT = re.compile(r"harnessix: the last native program exited with (-?\d+)")
 
 
+@dataclass(frozen=True, slots=True)
+class _Check:
+    """一次检查：命令（没有cmd时是工具名）、是否通过、最后一个原生程序的非零退出码。"""
+
+    command: str
+    passed: bool
+    native: int | None
+
+
 def verification_summary(items: Sequence[PublicItem]) -> dict[str, Any]:
-    """完成证据：最后一次成功改代码之后是否运行过检查，以及最后一次检查的结果。"""
+    """完成证据：最后一次成功改代码之后是否运行过检查，以及检查有没有全部通过。
+
+    `last_check`是最后运行的检查；`failed_check`是仍未通过的检查中最近运行的一条（失败时才有）。
+    """
 
     results = {
         item.content.call_id: item.content
@@ -29,31 +45,42 @@ def verification_summary(items: Sequence[PublicItem]) -> dict[str, Any]:
         if isinstance(item.content, PublicToolResultContent)
     }
     edited = False
-    last_check: tuple[str | None, str | None, int | None] | None = None
+    # 每条检查命令最近一次的结果，按最近运行的先后排列：同一命令再运行即取代原结果。
+    checks: dict[str, _Check] = {}
     for item in items:
         call = item.content
         if not isinstance(call, PublicToolCallContent):
             continue
         result = results.get(call.call_id)
-        outcome = None if result is None else result.outcome
-        if call.tool in PATCH_TOOLS and outcome == "succeeded":
-            edited, last_check = True, None  # 之后的检查才算数
+        if call.tool in PATCH_TOOLS and result is not None and result.outcome == "succeeded":
+            edited = True
+            checks.clear()  # 之后的检查才算数
         elif call.tool.startswith(CHECK_TOOL_PREFIXES) and edited:
-            command = call.arguments.get("cmd")
-            native = _native_exit_code(result)
-            last_check = (command if isinstance(command, str) else call.tool, outcome, native)
+            check = _check(call, result)
+            checks.pop(check.command, None)
+            checks[check.command] = check
     if not edited:
         return {"status": "no_changes"}
-    if last_check is None:
+    if not checks:
         return {"status": "unverified"}
-    command, check_outcome, native = last_check
-    # 命令本身成功、但其中最后一个原生程序失败（测试之后又打印了一行）不算通过。
-    passed = check_outcome == "succeeded" and not native
-    status = "passed_after_last_edit" if passed else "failed_after_last_edit"
-    summary: dict[str, Any] = {"status": status, "last_check": command}
-    if native:
-        summary["last_native_returncode"] = native
+    summary: dict[str, Any] = {
+        "status": "passed_after_last_edit",
+        "last_check": list(checks)[-1],
+    }
+    failed = [check for check in checks.values() if not check.passed]
+    if failed:
+        summary.update(status="failed_after_last_edit", failed_check=failed[-1].command)
+        if failed[-1].native:
+            summary["last_native_returncode"] = failed[-1].native
     return summary
+
+
+def _check(call: PublicToolCallContent, result: PublicToolResultContent | None) -> _Check:
+    command = call.arguments.get("cmd")
+    native = _native_exit_code(result)
+    # 命令本身成功、但其中最后一个原生程序失败（测试之后又打印了一行）不算通过。
+    passed = result is not None and result.outcome == "succeeded" and not native
+    return _Check(command if isinstance(command, str) else call.tool, passed, native)
 
 
 def _native_exit_code(result: PublicToolResultContent | None) -> int | None:
@@ -68,7 +95,7 @@ def _native_exit_code(result: PublicToolResultContent | None) -> int | None:
 
 
 def unverified_notice(items: Sequence[PublicItem]) -> str | None:
-    """一轮已完成的任务该附带的提示：最后一次修改之后没有检查，或最后一次检查没有通过；否则None。"""
+    """一轮已完成的任务该附带的提示：最后一次修改之后没有检查，或有检查没有通过；否则None。"""
 
     summary = verification_summary(items)
     if summary["status"] == "unverified":
@@ -78,7 +105,7 @@ def unverified_notice(items: Sequence[PublicItem]) -> str | None:
         )
     if summary["status"] == "failed_after_last_edit":
         return (
-            f"本轮最后一次修改之后，最后一次检查没有通过（{summary['last_check']}）；"
-            "请先确认再使用这些修改"
+            f"本轮最后一次修改之后有检查没有通过（{summary['failed_check']}），"
+            "之后没有重新运行这条检查并通过；请先确认再使用这些修改"
         )
     return None

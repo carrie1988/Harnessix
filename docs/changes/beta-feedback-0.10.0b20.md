@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 50
+version: 51
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -132,9 +132,10 @@ supersedes: []
 | 四十三 | 第一次搜索刚克隆的大仓库仍超时、没有结果（0.10.0b39 Windows，Issue #24的剩余部分） | 读取时限到了而已有命中时返回这些命中 | [ADR 0162](../adr/0162-grep-returns-matches-found-before-the-time-limit.md)、本文第57节 |
 | 四十四 | 几个进程同时首次启动，偶尔提示“还没有配置模型”（0.10.0b39 Windows，发布会话复测#15时约1/9） | 区分文件不存在与读取失败，读取失败短暂重试并如实提示 | 本文第58节 |
 | 四十五 | Glob在中型仓库的子目录上超限、没有结果（0.10.0b46 Windows，Issue #35） | 快照与正则搜索模式下Glob用整仓库上限，只进入可能有命中的目录 | [ADR 0165](../adr/0165-glob-uses-whole-repository-limits.md)、本文第59节 |
+| 四十六 | 失败的测试之后一条成功的清理命令把完成证据翻成“修改后检查通过”（0.10.0b46 Windows，Issue #36） | 失败的检查只有同一命令重新运行并通过才算解决，失败时给出`failed_check` | 本文第60节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十五项在第26～59节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节。
 
 ## 2. 需求背景
 
@@ -1484,3 +1485,11 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 见[ADR 0165](../adr/0165-glob-uses-whole-repository-limits.md)。0.10.0b46 Windows：在Prettier仓库根用`glob`找`tests/format/**/class*/**/*.ts`，3次都以扫描上限失败、没有结果；超限说明还建议先用glob。本机用同一提交复现：ADR 0129的参数修复已从`tests/format`开始找，但该目录下就有11,237个条目，超过Glob沿用的10,000个条目上限；Grep早在ADR 0145放宽到整仓库，Glob没有跟上。三个平台遍历与上限相同。
 
 修改（属易用性问题，按规则直接修）：快照与正则搜索模式（产品默认）下Glob改用与快照Grep同一组整仓库上限，只进入模式可能命中的目录（POSIX与Windows共用判定）；Glob超限说明改为缩小`path`或把开头的通配段换成目录名。原Glob不变。验证：`tests/tools/test_glob_prefix.py`（修改前两个平台都失败）；真实工具Runtime在Prettier上对报告人的参数修改前超限、修改后0.4秒返回40条。
+
+## 60. 第四十六项：成功的清理命令覆盖了失败的测试（Issue #36）
+
+0.10.0b46 Windows（`harnessix exec`）：补丁之后`pnpm vitest run …`退出1，模型随后用一条宿主命令清掉临时复现文件并`Test-Path`，退出0；摘要的`last_check`是这条清理命令，状态为`passed_after_last_edit`。报告人用同一wheel的`verification_summary`回放：只保留“补丁→Vitest退出1→清理退出0”时状态也是通过。完成证据取的是最后一次修改之后的最后一条检查命令，任何成功的命令都会覆盖之前的失败。判定只在`product_ui.verification`一处，三个平台共用。
+
+负责人2026-11-15选方案A：一条检查失败后，只有同一条命令（`cmd`逐字相同；没有`cmd`时按工具名）重新运行并通过才算解决；其他命令的成功不覆盖它。失败时摘要给出`failed_check`（仍未通过的检查中最近运行的一条），`last_native_returncode`取自这条，`last_check`仍是最后运行的检查；对话末尾的提示附`failed_check`。代价：换一条命令重跑并通过（如缩小范围的测试）、或预期失败的探测命令，状态仍是失败——不会再报出假的通过。没有采用按命令清单识别“测试/构建命令”的方案B：清单列不全，对新工具链不友好。
+
+验证：`tests/product_ui/test_unverified_completion.py`（报告人的序列为失败并点名Vitest；同一命令重跑通过后为通过；另一条命令通过不算解决；通过后又失败以最近一次为准；多条未解决时点名最近一条），`tests/test_exec_cli.py`（#27的原生退出码之后再清理，仍为失败、退出码来自失败的检查）。修改前这些用例失败。
