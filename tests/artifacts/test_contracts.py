@@ -57,7 +57,9 @@ def test_frozen_artifact_schema(name, model, frozen):
     path = Path(__file__).parents[2] / "spec" / f"{name}-v1.schema.json"
     assert hashlib.sha256(path.read_bytes()).hexdigest() == frozen
     active_path = (
-        path.with_name(f"{name}-v2.schema.json") if name == "archived-grep-output" else path
+        path.with_name(f"{name}-v2.schema.json")
+        if name in {"archived-grep-output", "artifact-policy"}
+        else path
     )
     assert json.loads(active_path.read_text(encoding="utf-8")) == model.model_json_schema()
 

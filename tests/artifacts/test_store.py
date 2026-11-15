@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import ToolCallContent, TurnStatus
+from harnessix.agent.models import Budget, ToolCallContent, TurnStatus
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts import sqlite as artifact_sqlite
@@ -99,6 +99,44 @@ async def test_count_quotas_preserve_first_result(tmp_path, field):
     assert sum(r.outcome == "succeeded" for r in results(turn)) == 1
     with sqlite3.connect(store.path) as db:
         assert db.execute("SELECT COUNT(*) FROM agent_artifacts").fetchone()[0] == 1
+
+
+async def _archive_every_step(tmp_path, *, steps: int, matches: int):
+    """每步一次产生归档的搜索；返回Turn与库中Artifact的件数和总字节。"""
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "x").write_text("needle 中文\n" * matches, encoding="utf-8")
+    store = SQLiteSessionStore(tmp_path / "s.db")
+    artifacts = SQLiteArtifactStore(store)
+    budget = Budget(max_steps=steps + 1, max_tokens=10**9, timeout_seconds=600)
+    async with CodingToolRuntime(root, artifacts=artifacts) as tools:
+        async with AgentRuntime(
+            store,
+            ScriptedProvider([step() for _ in range(steps)] + [answer()]),
+            scoped_tools=tools,
+            artifacts=artifacts,
+        ) as runtime:
+            thread = await runtime.create_thread(str(tools.workspace_root))
+            turn = await runtime.run_turn(
+                thread.thread_id, "长任务", request_id="long", budget=budget
+            )
+    with sqlite3.connect(store.path) as db:
+        count, size = db.execute("SELECT COUNT(*), SUM(size_bytes) FROM agent_artifacts").fetchone()
+    return turn, count, size
+
+
+async def test_default_turn_quota_admits_a_long_turn(tmp_path):
+    # 旧默认128件在第129次归档时中断Turn，长任务在约150步处被腰斩。
+    turn, count, _ = await _archive_every_step(tmp_path, steps=150, matches=1)
+    assert turn.status == TurnStatus.COMPLETED, turn.error
+    assert sum(r.outcome == "succeeded" for r in results(turn)) == count == 150
+
+
+async def test_default_turn_quota_admits_several_large_archives(tmp_path):
+    # 旧默认4 MiB在第6件约800 KiB的归档时中断Turn。
+    turn, count, size = await _archive_every_step(tmp_path, steps=6, matches=5000)
+    assert turn.status == TurnStatus.COMPLETED, turn.error
+    assert count == 6 and size > 4 * 1024 * 1024
 
 
 async def test_concurrent_publish_cannot_overdraw_global_quota(tmp_path):

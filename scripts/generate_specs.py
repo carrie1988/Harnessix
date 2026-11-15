@@ -654,6 +654,7 @@ def generate_specs(output: Path) -> None:
                 "grep-input",
                 "grep-output",
                 "archived-grep-output",
+                "artifact-policy",
             }
             else 1
         )

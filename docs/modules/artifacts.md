@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 24
+version: 25
 code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
@@ -182,10 +182,12 @@ Process正文属于附加展示证据，准备、预算或配额失败时允许�
 | 字段 | 类型/默认值 | 允许范围 | 计量和影响 |
 |---|---|---|---|
 | `ttl_seconds` | `int`/86400 | 60～604800 | Artifact创建时固定绝对过期时间 |
-| `max_turn_bytes` | `int`/4 MiB | 1～32 MiB | 同Thread、Turn的`size_bytes`总和 |
-| `max_turn_count` | `int`/128 | 1～1000 | 同Thread、Turn的Manifest数 |
+| `max_turn_bytes` | `int`/32 MiB | 1～32 MiB | 同Thread、Turn的`size_bytes`总和 |
+| `max_turn_count` | `int`/1000 | 1～1000 | 同Thread、Turn的Manifest数 |
 | `max_live_bytes` | `int`/32 MiB | 1～256 MiB | 当前表中非空正文的实际字节和 |
 | `max_manifests` | `int`/10000 | 1～100000 | 包含Expired Tombstone的全部行数 |
+
+单Turn两项默认值取允许范围上限（此前为128件/4 MiB）：长任务每步约产生0.8～0.9件（命令输出与审批Review），单件最大1 MiB，旧默认会在约150步或五六次大输出时中断仍在步数预算内的Turn，且配额检查发生在命令执行之后，结果只能记为未知效果。存储总量仍由`max_live_bytes`与`max_manifests`约束。公开Schema改为[`artifact-policy-v2`](../../spec/artifact-policy-v2.schema.json)，v1文件与摘要原样保留。
 
 字段使用严格整数校验，布尔值不能冒充整数。策略进入Tool版本指纹，启用、关闭或改变策略会使等待中的
 搜索批准失效，不能用新策略继续旧调用。
@@ -836,6 +838,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 25 | `f0ed1716` 增量 | 2026-11-14 | 单Turn默认配额改为1000件/32 MiB，长任务不再在约150步或五六次大输出时被`artifact_quota_exceeded`中断 |
 | 24 | `da4b117c` 增量 | 2026-11-13 | 历史核对在每批开头确认公开输出保护仍然有效，命中记住结果的引用在作用域关闭后同样拒绝（ADR 0158第2版） |
 | 23 | `f24afce5` 增量 | 2026-11-13 | 历史正文在同一存储对象里只完整核对一次，之后只确认记录、认证、清单、过期与SHA-256（`batch_verify`，ADR 0158，Beta Issue #8） |
 | 22 | `5d18bb3e` 增量 | 2026-11-11 | 取消收尾时照常发布已对账命令的终态输出：发布改用宿主核对作用域，取消运行中的命令得到确定的`process_cancelled`而不是`unknown`（0.10.0b16，Beta反馈HX-10） |

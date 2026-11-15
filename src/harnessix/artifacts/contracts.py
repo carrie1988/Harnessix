@@ -41,11 +41,14 @@ class ArtifactContract(ContractModel):
 
 
 class ArtifactPolicy(ArtifactContract):
+    # 单Turn默认配额取允许范围的上限：长任务每步约产生0.8～0.9件（命令输出与审批Review），
+    # 单件最大1 MiB；128件/4 MiB会在约150步或五六次大输出时中断仍在步数预算内的Turn。
+    # 存储总量仍由max_live_bytes与max_manifests约束。
     ttl_seconds: int = Field(default=86400, ge=60, le=604800, strict=True)
     max_turn_bytes: int = Field(
-        default=4 * MAX_ARTIFACT_BYTES, ge=1, le=32 * MAX_ARTIFACT_BYTES, strict=True
+        default=32 * MAX_ARTIFACT_BYTES, ge=1, le=32 * MAX_ARTIFACT_BYTES, strict=True
     )
-    max_turn_count: int = Field(default=128, ge=1, le=1000, strict=True)
+    max_turn_count: int = Field(default=1000, ge=1, le=1000, strict=True)
     max_live_bytes: int = Field(
         default=32 * MAX_ARTIFACT_BYTES, ge=1, le=256 * MAX_ARTIFACT_BYTES, strict=True
     )
