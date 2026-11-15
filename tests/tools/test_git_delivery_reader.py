@@ -34,6 +34,7 @@ from harnessix.processes.supervision_contracts import ProcessLease, ProcessOutpu
 from harnessix.processes.supervision_planner import build_process_capability
 from harnessix.processes.supervisor import SupervisedProcess
 from harnessix.tools import git as git_reader
+from harnessix.tools import git_line_endings as line_endings_module
 from harnessix.tools.git_contracts import GitDiffInput, GitStatusInput
 from harnessix.workspace import snapshot as workspace_snapshot
 
@@ -112,6 +113,11 @@ def offline_process_guard(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
     monkeypatch.setattr(asyncio, "create_subprocess_shell", forbidden_process)
     monkeypatch.setattr(asyncio.BaseEventLoop, "subprocess_exec", forbidden_process)
     monkeypatch.setattr(asyncio.BaseEventLoop, "subprocess_shell", forbidden_process)
+
+
+def _line_endings(for_delivery: bool) -> str:
+    """交付基准按原始字节比较；普通读取按用户实际生效的换行设置。"""
+    return "raw" if for_delivery else "user-core-autocrlf-eol/v1"
 
 
 def _digest(payload: object) -> str:
@@ -281,6 +287,7 @@ def test_posix_profile_keeps_exact_binding_environment_arguments_and_limits(
         **_PUBLIC_CONTRACT,
         "implementation": "git-baseline-read/v1" if for_delivery else "git-read/v1",
         "binding": _baseline_binding(fingerprint) if for_delivery else fingerprint,
+        "line_endings": _line_endings(for_delivery),
     }
     ordinary = git_reader.GitReadRuntime(tmp_path, executable)
     assert ordinary.contract()["binding"] == _posix_fingerprint(tmp_path, executable, False)
@@ -402,6 +409,7 @@ def test_windows_runtime_forwards_profile_and_private_state_offline(
             if for_delivery
             else _windows_fingerprint(fixture, False)
         ),
+        "line_endings": _line_endings(for_delivery),
     }
     if for_delivery:
         assert reader.contract()["binding"] != process.binding_fingerprint
@@ -570,6 +578,9 @@ async def test_generated_queries_keep_all_fixed_guards_offline(
         run = AsyncMock(return_value=_result(b""))
     monkeypatch.setattr(reader, "_run", run)
     monkeypatch.setattr(reader, "_run_baseline", baseline)
+    # 换行设置探测另有专门测试；这里固定它的结果，检查参数只加在状态与差异查询上。
+    probe = AsyncMock(return_value=("-c", "core.autocrlf=true"))
+    monkeypatch.setattr(line_endings_module, "probe_line_endings", probe)
     cancel = CancelToken()
     args = _arguments(platform, for_delivery)
     if operation == "status":
@@ -602,9 +613,12 @@ async def test_generated_queries_keep_all_fixed_guards_offline(
     if for_delivery:
         assert baseline.await_args_list == checks
         run.assert_awaited_once_with((*args, *command), cancel)
+        probe.assert_not_awaited()
     else:
-        assert run.await_args_list == [*checks, call((*args, *command), cancel)]
+        line_endings = ("-c", "core.autocrlf=true")
+        assert run.await_args_list == [*checks, call((*args, *line_endings, *command), cancel)]
         baseline.assert_not_awaited()
+        probe.assert_awaited_once()
 
 
 @pytest.mark.parametrize("for_delivery", [False, True])

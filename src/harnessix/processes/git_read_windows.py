@@ -44,6 +44,7 @@ from harnessix.processes.supervision_store import SQLiteProcessLeaseStore
 from harnessix.processes.supervisor import WindowsProcessSupervisor
 from harnessix.processes.supervisor_capabilities import probe_windows_process_capability
 from harnessix.tools.contracts import ReadToolError
+from harnessix.tools.git_line_endings import probe_environment
 from harnessix.workspace.git_windows_binding import pin_windows_git, pin_windows_git_state
 from harnessix.workspace.snapshot import capture_workspace_snapshot
 
@@ -63,9 +64,11 @@ WINDOWS_GIT_ARGUMENTS = (
 )
 
 
-def _environment(executable: Path, *, for_delivery: bool = False) -> dict[str, str]:
+def _environment(
+    executable: Path, *, for_delivery: bool = False, user_config: bool = False
+) -> dict[str, str]:
     system_root = os.environ.get("SystemRoot", r"C:\Windows")
-    return {
+    isolated = {
         "SystemRoot": system_root,
         "WINDIR": system_root,
         "PATH": os.pathsep.join((str(executable.parent), str(Path(system_root) / "System32"))),
@@ -81,6 +84,10 @@ def _environment(executable: Path, *, for_delivery: bool = False) -> dict[str, s
         "GIT_ALLOW_PROTOCOL": "",
         **({"GIT_NO_LAZY_FETCH": "1"} if for_delivery else {}),
     }
+    if not user_config:
+        return isolated
+    # 只供换行设置探测：能看到系统级与用户级配置（tools/git_line_endings）。
+    return probe_environment(isolated, windows=True)
 
 
 def _stream(body: bytes, observation: ProcessOutputObservation, limit: int) -> ProcessStream:
@@ -104,6 +111,16 @@ class _GitReadConfiguration:
     fingerprint: str
     output_redaction: OutputRedactionSource | None
     for_delivery: bool = False
+    user_config: bool = False
+
+
+def _purpose(*, for_delivery: bool, user_config: bool) -> dict[str, str]:
+    """进入绑定指纹的用途：交付基准与换行设置探测各自独立绑定，与普通读取互不复用。"""
+    if for_delivery:
+        return {"purpose": "git-delivery-baseline/raw-v2"}
+    if user_config:
+        return {"purpose": "git-user-line-endings/v1"}
+    return {}
 
 
 class WindowsGitReadProcess:
@@ -117,6 +134,7 @@ class WindowsGitReadProcess:
         output_redaction: OutputRedactionSource | None = None,
         *,
         for_delivery: bool = False,
+        user_config: bool = False,
     ) -> None:
         with pin_windows_git(root, executable) as binding:
             self.binding_fingerprint = binding.fingerprint
@@ -133,7 +151,7 @@ class WindowsGitReadProcess:
                 "capability": capability.digest,
                 "executable": os.path.normcase(str(executable)),
                 "state": os.path.normcase(str(state_directory)),
-                **({"purpose": "git-delivery-baseline/raw-v2"} if for_delivery else {}),
+                **_purpose(for_delivery=for_delivery, user_config=user_config),
             }
         )
         self._configuration = _GitReadConfiguration(
@@ -144,6 +162,7 @@ class WindowsGitReadProcess:
             self.binding_fingerprint,
             output_redaction,
             for_delivery,
+            user_config,
         )
         self._closed = False
 
@@ -216,7 +235,7 @@ async def _execute_git(
                 "capability": config.capability.digest,
                 "executable": os.path.normcase(str(config.executable)),
                 "state": os.path.normcase(str(config.state)),
-                **({"purpose": "git-delivery-baseline/raw-v2"} if config.for_delivery else {}),
+                **_purpose(for_delivery=config.for_delivery, user_config=config.user_config),
             }
         )
         if current != config.fingerprint:
@@ -224,7 +243,11 @@ async def _execute_git(
         async with WindowsProcessSupervisor(
             config.state / "process-owner", output_redaction=config.output_redaction
         ) as supervisor:
-            environment = _environment(config.executable, for_delivery=config.for_delivery)
+            environment = _environment(
+                config.executable,
+                for_delivery=config.for_delivery,
+                user_config=config.user_config,
+            )
             spec = build_process_spec(
                 invocation="argv",
                 argv=(str(config.executable), *request.arguments),

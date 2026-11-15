@@ -139,10 +139,11 @@ async def test_windows_git_unicode_status_staged_diff_and_persistent_receipts(
         assert "+中间" in staged.output["text"] and "+最后" in worktree.output["text"]
     assert (root / ".git/index").read_bytes() == index_before
     leases = _leases(state)
-    assert len(leases) == 9
+    # 三次读取各三个进程，另有首次读取前的一次换行设置探测（之后复用结果）。
+    assert len(leases) == 3 * 3 + 1
     assert all(lease.state == "exited" and lease.returncode == 0 for lease in leases)
     assert all(lease.stdout.eof and lease.stderr.eof for lease in leases)
-    assert len({lease.process_id for lease in leases}) == 9
+    assert len({lease.process_id for lease in leases}) == 3 * 3 + 1
 
 
 async def test_windows_git_rejects_parent_repository_and_preserves_nonrepo_failure(

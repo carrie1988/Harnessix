@@ -6,6 +6,7 @@ import hashlib
 import ntpath
 import os
 import re
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
 
@@ -34,6 +35,7 @@ from harnessix.tools.git_contracts import (
     GitStatusInput,
     GitStatusOutput,
 )
+from harnessix.tools.git_line_endings import UserLineEndings, probe_environment
 
 if TYPE_CHECKING:
     from harnessix.processes.git_read_windows import WindowsGitReadProcess
@@ -71,6 +73,23 @@ _STATUS_ARGUMENTS: Final = (
     "--ignore-submodules=all",
     "-z",
 )
+
+# 读取端口对外声明的固定观察策略；实现、绑定与换行设置随端口用途另行给出。
+_PUBLIC_CONTRACT: Final = {
+    "timeout_seconds": _TIMEOUT_SECONDS,
+    "max_capture_bytes": MAX_CAPTURE_BYTES,
+    "max_diff_text_bytes": MAX_GIT_DIFF_TEXT_BYTES,
+    "max_result_bytes": MAX_RESULT_BYTES,
+    "pager": False,
+    "optional_locks": False,
+    "external_diff": False,
+    "textconv": False,
+    "full_index": True,
+    "fsmonitor": False,
+    "executable_filters": False,
+    "configuration_includes": False,
+    "submodule_queries": False,
+}
 
 
 def _git_arguments(*, for_delivery: bool) -> tuple[str, ...]:
@@ -113,6 +132,7 @@ class GitReadRuntime:
         self._output_redaction = output_redaction
         self._for_delivery = for_delivery
         self._global_arguments = _git_arguments(for_delivery=for_delivery)
+        self._line_endings = None if for_delivery else _user_line_endings(self)
         sample = self._runtime()
         self._process_fingerprint = sample.binding_fingerprint
         self._binding_fingerprint = git_reader_binding(self._process_fingerprint, for_delivery)
@@ -127,19 +147,8 @@ class GitReadRuntime:
                 else "git-read/v1"
             ),
             "binding": self._binding_fingerprint,
-            "timeout_seconds": _TIMEOUT_SECONDS,
-            "max_capture_bytes": MAX_CAPTURE_BYTES,
-            "max_diff_text_bytes": MAX_GIT_DIFF_TEXT_BYTES,
-            "max_result_bytes": MAX_RESULT_BYTES,
-            "pager": False,
-            "optional_locks": False,
-            "external_diff": False,
-            "textconv": False,
-            "full_index": True,
-            "fsmonitor": False,
-            "executable_filters": False,
-            "configuration_includes": False,
-            "submodule_queries": False,
+            **_PUBLIC_CONTRACT,
+            "line_endings": "raw" if self._for_delivery else "user-core-autocrlf-eol/v1",
         }
 
     def _runtime(self) -> HostProcessRuntime | WindowsGitReadProcess:
@@ -194,6 +203,28 @@ class GitReadRuntime:
         )
 
 
+def _user_line_endings(runtime: GitReadRuntime) -> UserLineEndings:
+    """状态与差异按用户实际生效的core.autocrlf/core.eol比较工作区；探测用独立的进程端口。"""
+    return UserLineEndings(
+        partial(
+            _build_git_process,
+            runtime._root,
+            runtime._executable,
+            runtime._state_directory,
+            runtime._output_redaction,
+            user_config=True,
+        ),
+        runtime._global_arguments,
+        _TIMEOUT_SECONDS,
+    )
+
+
+async def _line_ending_arguments(runtime: GitReadRuntime, cancel: CancelToken) -> tuple[str, ...]:
+    """交付基准按原始字节比较，不追加；其余读取追加探测得到的`-c`参数。"""
+    endings = runtime._line_endings
+    return () if endings is None else await endings.arguments(cancel)
+
+
 async def _execute_git_read(
     runtime: GitReadRuntime,
     args: GitStatusInput | GitDiffInput | GitReviewInput,
@@ -208,6 +239,7 @@ async def _execute_git_read(
         return await _read_status(runtime, cancel, args.limit)
     diff_args = [
         *runtime._global_arguments,
+        *await _line_ending_arguments(runtime, cancel),
         "diff",
         "--no-ext-diff",
         "--no-textconv",
@@ -228,7 +260,10 @@ async def _read_status(
 ) -> GitStatusOutput:
     """状态查询的唯一命令行；路径只来自宿主先前的状态观察，经字面pathspec传入，不接受模型输入。"""
     pathspec = ("--", *paths) if paths else ()
-    result = await runtime._run((*runtime._global_arguments, *_STATUS_ARGUMENTS, *pathspec), cancel)
+    line_endings = await _line_ending_arguments(runtime, cancel)
+    result = await runtime._run(
+        (*runtime._global_arguments, *line_endings, *_STATUS_ARGUMENTS, *pathspec), cancel
+    )
     return _status(result, limit)
 
 
@@ -370,21 +405,28 @@ def _build_git_process(
     output_redaction: OutputRedactionSource | None,
     *,
     for_delivery: bool = False,
+    user_config: bool = False,
 ) -> HostProcessRuntime | WindowsGitReadProcess:
     if os.name == "nt":
         from harnessix.processes.git_read_windows import WindowsGitReadProcess
 
         return WindowsGitReadProcess(
-            root, executable, state_directory, output_redaction, for_delivery=for_delivery
+            root,
+            executable,
+            state_directory,
+            output_redaction,
+            for_delivery=for_delivery,
+            user_config=user_config,
         )
     # 延迟导入避免processes.runtime复用tools.runtime._drain时形成初始化环。
     from harnessix.processes.runtime import HostProcessRuntime
 
+    isolated = probe_environment(_ENVIRONMENT, windows=False) if user_config else _ENVIRONMENT
     return HostProcessRuntime(
         root,
         {"git": executable},
         environment={
-            **_ENVIRONMENT,
+            **isolated,
             **(
                 {
                     "GIT_NO_REPLACE_OBJECTS": "1",
