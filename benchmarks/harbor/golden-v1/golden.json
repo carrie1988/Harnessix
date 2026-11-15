@@ -1,0 +1,151 @@
+{
+  "spec_version": "harnessix.golden-eval-set/v1",
+  "name": "harnessix-golden",
+  "version": 1,
+  "frozen_on": "2026-11-14",
+  "purpose": "Fixed task set for formal evaluations of releases that are expected to change the resolve rate or the task time noticeably. Not run for every release. Rules and conditions: docs/operations/golden-eval-set.md.",
+  "parts": [
+    {
+      "part_id": "multilingual-test28",
+      "role": "primary",
+      "dataset": "SWE-bench Multilingual",
+      "harbor_datasets_commit": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "lock_file": "benchmarks/harbor/swebench-multilingual-round2/test.tasks.lock.json",
+      "lock_sha256": "11e1aecb093f2e3e0607ff41616297a654c9be706a74c992d210d95c55416424",
+      "selection_file": "benchmarks/harbor/swebench-multilingual-round2/selection.json",
+      "selection_sha256": "e3c275493663e0279d627d4527d230f9c262259cd93ce450d8e8ecd0391d73e4",
+      "selection_seed": 20261111,
+      "locked_tasks": 30,
+      "excluded": [
+        {
+          "task": "axios__axios-4738",
+          "reason": "The gold patch is graded unresolved by the official grader in this environment."
+        },
+        {
+          "task": "fluent__fluentd-3641",
+          "reason": "A FAIL_TO_PASS test needs IPv6; the offline task network has none, so no system can pass it."
+        }
+      ],
+      "valid_tasks": 28,
+      "attempts_per_system": 3
+    },
+    {
+      "part_id": "verified-dev23",
+      "role": "python-regression",
+      "dataset": "SWE-bench Verified",
+      "harbor_datasets_commit": "37db108843a49bb31a592e37a75e2c40dc3f9749",
+      "lock_file": "benchmarks/harbor/swebench-verified-dev25/tasks.lock.json",
+      "lock_sha256": "80a4e26ea9656eaa6ac471c359ff9726b119d7c850016b5cb9a04d0be0fb0c88",
+      "selection_file": "benchmarks/harbor/swebench-verified-dev25/selection.json",
+      "selection_sha256": "aeee74bb428404265905a5ff133d99716a40675a32e9eaf5934c2e12f8629536",
+      "selection_seed": null,
+      "locked_tasks": 25,
+      "excluded": [
+        {
+          "task": "psf__requests-1921",
+          "reason": "The tests need httpbin.org; tasks run offline, so the gold patch fails too."
+        },
+        {
+          "task": "psf__requests-2317",
+          "reason": "The tests need httpbin.org; tasks run offline, so the gold patch fails too."
+        }
+      ],
+      "valid_tasks": 23,
+      "attempts_per_system": 1
+    }
+  ],
+  "conditions": {
+    "model": "Qwen3.8-Flash-Next, INT8 weights (W8A8: weights per channel, activations per token, dynamic)",
+    "serving": "vLLM 0.29.0, 2 replicas on 8 Hygon DCU K100_AI (tensor parallel 4 each), max model length 262144, prefix caching, MTP speculative decoding with 1 token, at most 32 requests per replica",
+    "thinking": "off for every system (enable_thinking=false)",
+    "sampling": "not set in requests; model defaults temperature=1.0, top_p=0.95, top_k=20",
+    "concurrency": "4 trials at a time, each trial pinned to one replica",
+    "budgets": {
+      "model_calls": 100,
+      "wall_time_seconds": 3600,
+      "command_timeout_seconds": 900,
+      "model_request_timeout_seconds": 1800,
+      "harnessix_max_output_tokens_per_reply": 16384,
+      "harnessix_cumulative_tokens": 10000000,
+      "harnessix_context_window_tokens": 262144,
+      "mini_swe_agent_output_cap": "none (server context 262144)",
+      "mini_swe_agent_cost_limit": "off"
+    },
+    "environment": "commands run inside the task container, network cut off during the agent phase; Harnessix unattended with automatic approval, mini-swe-agent in yolo mode",
+    "reference_system": "mini-swe-agent 2.4.6 with its built-in SWE-bench configuration, only the budgets above changed and thinking off",
+    "scheduler": "Harbor 0.25.0"
+  },
+  "grading": {
+    "primary": "SWE-bench official grader (swebench 5.0.2) on the exported whole-repository patch; ambiguous failures count as unresolved",
+    "time": "wall time per trial from agent start to agent end, including model inference and commands",
+    "invalid_slots": "slots that end with an infrastructure error are excluded from both numerator and denominator and reported",
+    "comparison": "paired by task: bootstrap over tasks (10,000 resamples, 95% interval), sign test over tasks; report resolve rate and time together"
+  },
+  "baselines": [
+    {
+      "part_id": "multilingual-test28",
+      "system": "Harnessix, 2026-11-13 build (round-2 candidate e55ba858, released in 0.10.0b41)",
+      "measured": "2026-11-13",
+      "resolved": 47,
+      "valid_slots": 84,
+      "mean_minutes": 20.9
+    },
+    {
+      "part_id": "multilingual-test28",
+      "system": "Harnessix, 2026-11-10 build (efc184f0)",
+      "measured": "2026-11-12/13",
+      "resolved": 27,
+      "valid_slots": 55,
+      "mean_minutes": 29.0
+    },
+    {
+      "part_id": "multilingual-test28",
+      "system": "mini-swe-agent 2.4.6",
+      "measured": "2026-11-12/13",
+      "resolved": 33,
+      "valid_slots": 79,
+      "mean_minutes": 15.9
+    },
+    {
+      "part_id": "verified-dev23",
+      "system": "Harnessix, 2026-11-13 build (round-2 candidate e55ba858, released in 0.10.0b41)",
+      "measured": "2026-11-14",
+      "resolved": 16,
+      "valid_slots": 23,
+      "mean_minutes": 15.4
+    },
+    {
+      "part_id": "verified-dev23",
+      "system": "Harnessix, 2026-11-10 build (0ac45d13; 4096-token output cap per reply)",
+      "measured": "2026-11-10",
+      "resolved": 17,
+      "valid_slots": 23,
+      "mean_minutes": 15.2
+    },
+    {
+      "part_id": "verified-dev23",
+      "system": "mini-swe-agent 2.4.6",
+      "measured": "2026-11-10",
+      "resolved": 17,
+      "valid_slots": 23,
+      "mean_minutes": 7.6
+    }
+  ],
+  "exposure_log": [
+    {
+      "part_id": "multilingual-test28",
+      "date": "2026-11-13",
+      "use": "Round-2 formal evaluation (one run, three systems). Afterwards: aggregate results, review of non-normal ends (terraform-34900, php-cs-fixer-7663, lombok-3326 and valkey-790 never ended normally), official check of all gold patches. No product change was derived from per-task results."
+    },
+    {
+      "part_id": "verified-dev23",
+      "date": "2026-11-10",
+      "use": "Formal A/B with per-task attribution of failures (e.g. pytest-5262, xarray-4356). Treated as seen: Python regression check only."
+    },
+    {
+      "part_id": "verified-dev23",
+      "date": "2026-11-14",
+      "use": "Regression run of the round-2 candidate; aggregate results only."
+    }
+  ]
+}
