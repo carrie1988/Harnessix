@@ -48,6 +48,7 @@ from integrations.harnessix_eval.steps import (
     export_protocol_steps,
     protocol_turn_steps,
     state_compactions,
+    state_turn_events,
     step_trace,
 )
 from tests.agent.helpers import RecordingTools, answer, tool_step
@@ -363,6 +364,25 @@ async def test_harbor_state_archive_feeds_steps_through_its_own_key(
     assert await asyncio.to_thread(state_compactions, body, thread_id, turn_id) == ()
     with pytest.raises(ValueError, match="没有该Turn"):
         await asyncio.to_thread(state_compactions, body, thread_id, uuid4())
+
+    # 长Turn的事件文件可能缺失（评测脚本限时内重读不完）：会话库按回放的同一投影还原，逐条相同。
+    restored = await asyncio.to_thread(state_turn_events, body, thread_id, turn_id)
+    assert restored == tuple(events)
+    with pytest.raises(ValueError, match="没有该Turn"):
+        await asyncio.to_thread(state_turn_events, body, thread_id, uuid4())
+    (agent / EVENTS_FILE).unlink()
+    without = import_harbor_job(job, plan, "A", PARSERS, run_dir)
+    assert EVENTS_ARTIFACT not in {a.name for a in without[0].artifacts}
+    without_path = run_dir / "trials-A-without-events.json"
+    write_model(
+        without_path, ArmTrials(plan_digest=plan.digest, arm_id="A", trials=without), 1 << 20
+    )
+    exported = await asyncio.to_thread(
+        export_protocol_steps, run_dir, without_path, run_dir / "steps-from-state", model="qwen"
+    )
+    assert exported == 1
+    rebuilt = read_model(run_dir / "steps-from-state" / "A-slot0.json", StepTrace, 1 << 20)
+    assert rebuilt.steps == trace.steps
 
 
 def test_state_archive_is_registered_unless_it_exceeds_the_artifact_limit(

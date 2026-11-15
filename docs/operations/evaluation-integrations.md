@@ -308,6 +308,8 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    - Harnessix：适配器打包的试次状态（`agent/harnessix-state.tar.gz`，会话库与独立密钥）登记为制品；
      逐步记录以只验真Binding只读打开其副本，每次上下文压缩记为一次`compaction`模型调用（摘要，或失败原因），
      成功的摘要计入其后那次调用的输入。状态包超过32 MiB时不登记，只缺压缩步骤。
+     长Turn结束后协议驱动在30秒内重读不完公开事件、没有事件文件时，从状态包的会话库按App Server回放的同一投影
+     （`protocol.projection.project_event`）还原本Turn公开事件，逐步记录与有事件文件时相同。
    - mini-swe-agent：命令取自`extra.actions`并按`tool_call_id`对应输出；系统提示与任务没有时间戳，
      首次调用从Harbor记录的智能体执行开始（`agent_execution.started_at`）起算，与Harnessix从Turn开始同一口径。
    - 公开基准（SWE-bench等）的运行规格设`content_policy: "full"`（2026-11-08用户决定，对此后冻结的运行生效；
