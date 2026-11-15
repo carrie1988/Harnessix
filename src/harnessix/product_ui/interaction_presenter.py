@@ -14,9 +14,11 @@ from harnessix.product_ui.error_help import current_error_help
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_screens import (
     ApprovalScreen,
+    ApprovalScreenResult,
     HelpScreen,
     QuestionScreen,
     SteerScreen,
+    WrapUpFromApproval,
 )
 from harnessix.product_ui.interactions import (
     ApprovalBinding,
@@ -31,10 +33,32 @@ from harnessix.product_ui.interactions import (
     pending_approval,
     pending_question,
 )
+from harnessix.product_ui.turn_pacing import wrap_up
 
 PromptKind = Literal["approval", "question"]
 # 审批出现后等待片刻再弹窗：沙箱策略或“自动接受修改”通常在这之前就已决定，避免弹窗一闪而过。
 AUTO_PROMPT_DELAY_SECONDS = 2.0
+
+
+async def _apply_approval_reply(
+    controller: ProductController,
+    binding: ApprovalBinding,
+    reply: ApprovalScreenResult | WrapUpFromApproval | None,
+) -> None:
+    """审批窗口的结果：收尾、批准或拒绝；关闭窗口不产生结果。"""
+
+    if isinstance(reply, WrapUpFromApproval):
+        # 窗口本身就在一次交互里，再经应用动作会被“交互进行中”挡掉；与主界面Ctrl+F共用同一发送。
+        await wrap_up(controller)
+    elif reply is not None:
+        await controller.dispatch(
+            RespondApprovalIntent(
+                binding,
+                outcome=reply.outcome,
+                reason=reply.reason,
+                remember_for_session=reply.remember,
+            )
+        )
 
 
 class InteractionPresenter:
@@ -88,15 +112,7 @@ class InteractionPresenter:
         review = approval_review(state.thread_view, state.approval_evidence)
         screen = ApprovalScreen(review, self._controller.rule_offer)
         reply = await self._app.push_screen_wait(screen)
-        if reply is not None:
-            await self._controller.dispatch(
-                RespondApprovalIntent(
-                    review.pending.binding,
-                    outcome=reply.outcome,
-                    reason=reply.reason,
-                    remember_for_session=reply.remember,
-                )
-            )
+        await _apply_approval_reply(self._controller, review.pending.binding, reply)
 
     async def toggle_auto_accept(self) -> None:
         await self._controller.dispatch(ToggleAutoAcceptIntent())

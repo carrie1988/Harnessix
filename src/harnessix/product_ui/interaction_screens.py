@@ -109,15 +109,23 @@ class ApprovalScreenResult:
     remember: bool = False
 
 
-class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
+@dataclass(frozen=True, slots=True)
+class WrapUpFromApproval:
+    """在审批窗口里按Ctrl+F：关闭窗口并让本轮收尾，这条审批随后按收尾规则拒绝（ADR 0148第5版）。"""
+
+
+class ApprovalScreen(ModalScreen[ApprovalScreenResult | WrapUpFromApproval | None]):
     """展示完整公开证据；关闭窗口不产生审批结果。
 
     证据从开头显示；焦点留在按钮上时，PgUp/PgDn直接翻看证据，不必先把焦点移进去。
+    审批窗口在审批出现后自动弹出，主界面的Ctrl+F此时停用；窗口自己接住Ctrl+F，
+    否则按键会落到原因输入框（删除右侧单词）或按钮上而悄无声息。
     """
 
     CSS = _MODAL_CSS
     BINDINGS = [
         Binding("escape", "close_modal", "关闭"),
+        Binding("ctrl+f", "wrap_up", "让它收尾", priority=True),
         Binding("pageup", "page_evidence(-1)", "上翻", show=False),
         Binding("pagedown", "page_evidence(1)", "下翻", show=False),
     ]
@@ -165,7 +173,7 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
                 yield Button("拒绝", id="approval-reject", variant="error")
                 yield Button("暂不处理", id="approval-close")
             yield Static(
-                "Enter 确认所选按钮 · Tab 切换 · PgUp/PgDn 翻看 · Esc 关闭",
+                "Enter 确认所选按钮 · Tab 切换 · PgUp/PgDn 翻看 · Ctrl+F 让它收尾 · Esc 关闭",
                 classes="interaction-summary",
             )
             yield Static(detail, markup=False, classes="interaction-detail")
@@ -200,6 +208,9 @@ class ApprovalScreen(ModalScreen[ApprovalScreenResult | None]):
 
     def action_close_modal(self) -> None:
         self.dismiss(None)
+
+    def action_wrap_up(self) -> None:
+        self.dismiss(WrapUpFromApproval())
 
 
 class QuestionScreen(ModalScreen[str | None]):
