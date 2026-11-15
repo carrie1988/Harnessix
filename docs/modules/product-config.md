@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 168
+version: 169
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - core
@@ -2420,6 +2420,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 169 | `3e2f83d8` 增量 | 2026-11-15 | 沙箱内与宿主Process输出改经`archive_action_output`归档：存得下时公开输出照旧带`artifact`，Artifact存储已满时改为`"artifact_omitted": "storage_full"`，结果按审计终态如实提交，本轮不再以`uncertain_effect`中断（ADR 0163） |
 | 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为30秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
 | 167 | 第二轮合入 | 2026-11-14 | 文档版本160～166即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |
 | 166 | `68eb6fae` 增量 | 2026-11-12 | 默认工作习惯升为`harnessix.working-habits/v2`：原因清楚时先改后验、改后重跑、不为弄坏的原有测试找例外、自己的检查未过不交付、结束前复查整份改动（ADR 0134第2版） |
