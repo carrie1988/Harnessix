@@ -1,8 +1,8 @@
 ---
 doc_type: module-design
 status: current
-version: 66
-code_revision: 5149cfe397bdebfd19583c2e4f118b444f2567f0
+version: 67
+code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
 modules:
@@ -134,7 +134,7 @@ supersedes: []
   - 预算说明每个关口一次：剩余调用数、剩余累计Token或Turn剩余时间≤1/2、≤1/4，以及过了四分之一关口后剩余调用数≤10、按上一请求实际尺寸只够再发≤10次或剩余时间≤1/10。只读Turn的持久事实（`budget`、`model_steps`、`model_attempts`、`usage`、`created_at`）与当前时刻，不依赖Provider是否实现输入估算端口，产品路径同样生效。身份`uuid5(turn_id, "harnessix.request-notes/v1:budget:<half|quarter|final>")`；较紧的关口发过后不补发较松的。
   - 目录说明只在配置了`model_tool_view`时发：每个Turn首个请求一条，此后正文（可执行别名、受限原因、选择约束）与本Turn上一条不同才再发，身份`uuid5(turn_id, "harnessix.request-notes/v1:catalog:<序号>")`。没有工具视图时不发。
   - 工具视图拿到的Turn副本不含这些说明（`without_request_notes`）；Product UI按身份隐藏。大多数步骤没有到期的说明，判断只用调用方手里的Turn快照，不加锁、不读Session。
-- **压缩点校准（`compaction_window`，默认不校准）**：[`compaction_calibration`](../../src/harnessix/agent/compaction_calibration.py)取Thread内最近一次已完成主请求的Context检查（估算字节）与Provider报告的真实输入Token，把触发点、目标与输入上限换算到真实窗口的同一比例：触发时整个请求的真实输入约为窗口的一半。只放宽固定比例换算的数值；输入上限不超过出站请求容量，触发点另在其下留出一次退避（历史增长四分之一后重试）的余量。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)用校准后的触发点判断，`_run_compaction`用校准后的策略规划，校准的输入上限经`ContextBuildInput.input_limit_tokens`交给Planner。没有声明窗口、没有Context Planner或没有完整用量时配置原样返回。
+- **压缩点校准（`compaction_window`，默认不校准）**：[`compaction_calibration`](../../src/harnessix/agent/compaction_calibration.py)取Thread内最近一次已完成主请求的Context检查（估算字节）与Provider报告的真实输入Token，把触发点、目标与输入上限换算到真实窗口的同一比例：触发时整个请求的真实输入约为窗口的一半。只放宽固定比例换算的数值；输入上限不超过出站请求容量，触发点另在其下留出一次退避（历史增长四分之一后重试）的余量。退避本身也不越过这个位置（`backoff_ceiling`）：被跳过时的历史可能远高于触发点，比例变化也会让输入上限变小，历史越过上限后每步都重试；压缩成功后该Turn的退避作废。`_run_compaction`经`plan_history_compaction`规划，另把`relaxed_target_limit`（目标与触发点的中点）交给规划器，近期完整组超过目标时有限放宽目标（#33，ADR 0132第3版）。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)用校准后的触发点判断，`_run_compaction`用校准后的策略规划，校准的输入上限经`ContextBuildInput.input_limit_tokens`交给Planner。没有声明窗口、没有Context Planner或没有完整用量时配置原样返回。
 - **回放**：不新增事件类型或版本；说明是普通Item事件，压缩计划记录它实际使用的策略，Reducer重放与历史哈希按既有规则覆盖。回归见[`test_request_notes.py`](../../tests/agent/test_request_notes.py)与[`test_compaction_calibration.py`](../../tests/agent/test_compaction_calibration.py)。
 
 ## 当前增量：思考预览（0.10.0b9）
@@ -1137,6 +1137,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 67 | `882b96ea` 增量 | 2026-11-14 | 小窗口压缩不再停摆（#33）：压缩成功后清除退避，退避不越过校准触发点的上限，近期完整组超过目标时有限放宽目标（ADR 0132第3版） |
 | 66 | `5149cfe3` 增量 | 2026-11-14 | replace缺mode的补全在Windows上也生效：已有普通文件按0644补（工具模块第34版） |
 | 65 | 第二轮合入 | 2026-11-14 | 文档版本48～54随第二轮分支合入主线（第54版在分支上编为47，与主线第47版重号）。合入时的取舍：完成守卫的完整模式沿用第48版（按回复形态判定、补发2～6次、提示写明剩余调用次数），交互模式沿用第60版（只认宣布的下一步、至多2次、提示不附剩余次数），`leaves_a_step_undone`移到`reply_shape.py`；没有正文的摘要沿用第57版，第53版的“摘要输出不成立时跳过”不再保留；会话基线的完成前复核改为在本步不需要回复恢复时进行 |
 | 64 | `d6aa6c54` 增量 | 2026-11-14 | 为用量未知的失败请求预留后预算将用完时，`turn_budget_compaction.require_reserved_unknown_usage`以`budget_exceeded`结束并给出数字，不再借用早已恢复的服务方故障的错误码（ADR 0144第4版，Beta Issue #32） |
