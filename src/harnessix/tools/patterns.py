@@ -110,3 +110,27 @@ class PathPattern:
                     current[index] = previous[index - 1] and fnmatchcase(name, pattern)
             previous = current
         return previous[-1]
+
+    def may_contain(self, directory: str) -> bool:
+        """这个目录（相对搜索起点）下是否可能有匹配的文件；不可能时子树不必遍历（Issue #35）。
+
+        与matches同一张状态表：目录的各段被模式的前若干段完全吃下、且还剩至少一段时，才可能有匹配；
+        `**`结尾的模式也算。此前`tests/format/**/*.ts`从仓库根遍历全仓，触发扫描上限而没有任何结果。
+        """
+        if directory in {"", "."}:
+            return True
+        names = directory.split("/")
+        previous = [True] + [False] * len(names)
+        for pattern in self._parts:
+            if previous[-1]:
+                return True
+            current = [False] * (len(names) + 1)
+            if pattern == "**":
+                current[0] = previous[0]
+                for index in range(1, len(current)):
+                    current[index] = previous[index] or current[index - 1]
+            else:
+                for index, name in enumerate(names, start=1):
+                    current[index] = previous[index - 1] and fnmatchcase(name, pattern)
+            previous = current
+        return self._parts[-1] == "**" and previous[-1]

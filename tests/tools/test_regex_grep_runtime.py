@@ -39,6 +39,9 @@ def definitions(**flags):
     )
 
 
+GREP_AND_GLOB = {"grep", "glob"}
+
+
 def test_legacy_and_snapshot_descriptors_are_byte_identical_to_prechange_sha():
     # Grep的include语义（单文件起点不筛选、无文件匹配时失败，ADR 0129）进入各Grep合同摘要；
     # 其余只读工具的Descriptor逐字节不变。
@@ -59,6 +62,8 @@ def test_legacy_and_snapshot_descriptors_are_byte_identical_to_prechange_sha():
     # v9在读取时限到了而已有命中时返回这些命中（time_limit，ADR 0162）。原字面量Grep不变；
     # 与其余Grep合同一样带有include的语义（ADR 0129）。
     expected["grep"] = "16e732ddc78722fb181be651d111ae8a2e3bd330ad110d36bd69bda2deb8a9ef"
+    # 同一模式下Glob用整仓库上限、只进入可能有命中的目录（v11，ADR 0165）；原Glob不变。
+    expected["glob"] = "7d705135ad161db9da629977463d2375cfc597730b1b0dfb3b58c6e6122acaf6"
     for name, definition in snapshots.items():
         assert digest(definition.model_dump(mode="json")) == expected[name]
     assert hashlib.sha256(snapshots["grep"].model_dump_json().encode()).hexdigest() == (
@@ -70,7 +75,9 @@ def test_major4_only_replaces_grep_and_fingerprints_engine_semantics(monkeypatch
     baseline = definitions()
     candidate = definitions(enable_regex_search=True)
     assert candidate["grep"].version.startswith("4.")
-    assert all(candidate[name] == baseline[name] for name in baseline if name != "grep")
+    assert all(candidate[name] == baseline[name] for name in baseline if name not in GREP_AND_GLOB)
+    # 正则与快照模式共用整仓库Glob（ADR 0165）。
+    assert candidate["glob"] == definitions(enable_grep_snapshots=True)["glob"] != baseline["glob"]
     schema = candidate["grep"].input_schema["properties"]
     assert schema["match_mode"]["default"] == "regex"
     assert schema["match_mode"]["enum"] == ["regex", "literal"]

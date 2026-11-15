@@ -39,6 +39,7 @@ from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
     ArchivedGrepOutput,
     ArchivedGrepSnapshotOutput,
+    ArchivedWholeRepositoryGlobOutput,
     GlobInput,
     GlobOutput,
     GrepInput,
@@ -47,6 +48,8 @@ from harnessix.tools.search_contracts import (
     GrepSnapshotOutput,
     RegexGrepInput,
     SearchInput,
+    WholeRepositoryGlobInput,
+    WholeRepositoryGlobOutput,
 )
 from harnessix.tools.search_execution_contract import (
     execution_contract as search_execution_contract,
@@ -142,6 +145,15 @@ _REGEX_GREP_BINDING = _ReadBinding(
     GrepSnapshotOutput,
 )
 
+# ADR 0165：快照与正则搜索模式下Glob与Grep同一组整仓库上限（Beta Issue #35）。
+_WHOLE_REPOSITORY_GLOB_BINDING = _ReadBinding(
+    "glob",
+    "在文件或目录起点定位文件；支持 * ? [] 和 ** 路径段，显式报告截断。"
+    "只进入可能有命中的目录：模式开头的固定目录（如tests/format/**/*.ts）直接限定遍历范围",
+    WholeRepositoryGlobInput,
+    WholeRepositoryGlobOutput,
+)
+
 _DEFINITION_READ_BINDING = _ReadBinding(
     "read_file",
     "读取原始文本页及完整SHA。已知Python(.py/.pyi)定义可显式view=definition、唯一def/class头anchor，"
@@ -166,15 +178,15 @@ def _read_bindings(
         raise KernelError("tool_definition_policy_invalid", "定义视图开关必须显式为布尔值")
     if enable_grep_snapshots and enable_regex_search:
         raise KernelError("tool_search_policy_conflict", "搜索快照与正则搜索开关不能同时启用")
-    grep_binding = _REGEX_GREP_BINDING if enable_regex_search else _SNAPSHOT_GREP_BINDING
-    return tuple(
-        _DEFINITION_READ_BINDING
-        if enable_definition_views and b.name == "read_file"
-        else grep_binding
-        if (enable_grep_snapshots or enable_regex_search) and b.name == "grep"
-        else b
-        for b in _BINDINGS
-    )
+    whole_repository = enable_grep_snapshots or enable_regex_search
+    replacements = {
+        "read_file": _DEFINITION_READ_BINDING if enable_definition_views else None,
+        "glob": _WHOLE_REPOSITORY_GLOB_BINDING if whole_repository else None,
+        "grep": (_REGEX_GREP_BINDING if enable_regex_search else _SNAPSHOT_GREP_BINDING)
+        if whole_repository
+        else None,
+    }
+    return tuple(replacements.get(b.name) or b for b in _BINDINGS)
 
 
 _GIT_BINDINGS = (
@@ -275,6 +287,7 @@ def _binding_rules(
         rules["search"] = search_execution_contract(
             enable_regex_search=binding.input_model is RegexGrepInput,
             snapshot_grep=binding.input_model is GrepSnapshotInput,
+            whole_repository_glob=binding.input_model is WholeRepositoryGlobInput,
         )
         if issubclass(binding.input_model, GrepInput):
             rules["grep_include"] = GREP_INCLUDE_RULE
@@ -287,7 +300,9 @@ def _binding_rules(
         if artifacts is not None:
             rules["artifacts"] = artifacts.contract()
             output: type[ReadContract] = ArchivedGrepOutput
-            if binding.name == "glob":
+            if binding.output_model is WholeRepositoryGlobOutput:
+                output = ArchivedWholeRepositoryGlobOutput
+            elif binding.name == "glob":
                 output = ArchivedGlobOutput
             elif binding.output_model is GrepSnapshotOutput:
                 output = ArchivedGrepSnapshotOutput

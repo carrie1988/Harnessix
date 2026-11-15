@@ -256,9 +256,11 @@ def test_failures_that_are_still_chinese_or_unknown_are_shown_as_before() -> Non
 def test_every_english_read_failure_has_a_user_reason() -> None:
     """读工具每条写给模型的英文说明都有对应的用户文案，不会把英文诊断直接显示给用户。"""
     from harnessix.product_ui import tool_summary
-    from harnessix.tools import runtime
+    from harnessix.tools import read_error_messages, runtime
 
-    messages = {f"tool_{code}": text for code, text in runtime._READ_ERROR_MESSAGES.items()}
+    messages = {
+        f"tool_{code}": text for code, text in read_error_messages.READ_ERROR_MESSAGES.items()
+    }
     messages |= runtime._ARTIFACT_ERROR_MESSAGES
     assert messages.keys() <= tool_summary._USER_REASONS.keys()
     for code, message in messages.items():

@@ -31,7 +31,12 @@ from harnessix.context.tool_result_contracts import (
     ToolResultViewDecision,
     ToolResultViewPolicy,
 )
-from harnessix.tools.search_contracts import GlobOutput, GrepOutput, GrepSnapshotOutput
+from harnessix.tools.search_contracts import (
+    GlobOutput,
+    GrepOutput,
+    GrepSnapshotOutput,
+    WholeRepositoryGlobOutput,
+)
 
 _PUBLIC_RESULT_FIELDS = {"outcome", "output", "error", "diff_artifact"}
 
@@ -170,6 +175,7 @@ def _preview_metadata(preview: object) -> tuple[object, Literal["preview", "matc
         for field, model in (
             ("matches", GrepSnapshotOutput),
             ("matches", GrepOutput),
+            ("paths", WholeRepositoryGlobOutput),
             ("paths", GlobOutput),
         ):
             if field not in preview:

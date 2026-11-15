@@ -328,3 +328,37 @@ def test_history_preparation_has_bounded_item_and_byte_limits():
         with pytest.raises(KernelError) as error:
             prepared(excessive)
         assert error.value.code == "context_budget_exceeded"
+
+
+def test_whole_repository_glob_preview_beyond_the_original_entry_limit_omits_paths():
+    """整仓库Glob的统计可以超过原Glob的10,000个条目（ADR 0165）；预览仍按paths识别。"""
+    from harnessix.context.tool_result_view import _preview_metadata
+    from harnessix.tools.search_contracts import (
+        MAX_SEARCH_ENTRIES,
+        SnapshotSearchStats,
+        WholeRepositoryGlobOutput,
+    )
+
+    counts = (
+        "files_read",
+        "bytes_read",
+        "ignored_entries",
+        "unreadable_entries",
+        "oversized_files",
+        "invalid_utf8_files",
+        "binary_files",
+        "long_lines",
+    )
+    stats = SnapshotSearchStats(
+        entries_scanned=MAX_SEARCH_ENTRIES + 1236, **dict.fromkeys(counts, 0)
+    )
+    preview = WholeRepositoryGlobOutput(
+        path=".",
+        paths=("tests/format/a.ts",),
+        stats=stats,
+        scan_complete=True,
+        truncated=False,
+        truncation_reason=None,
+    ).model_dump(mode="json")
+    remainder, field = _preview_metadata(preview)
+    assert field == "paths" and isinstance(remainder, dict) and "paths" not in remainder

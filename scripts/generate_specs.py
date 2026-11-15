@@ -321,6 +321,7 @@ from harnessix.tools.search_contracts import (
     ArchivedGlobOutput,
     ArchivedGrepOutput,
     ArchivedGrepSnapshotOutput,
+    ArchivedWholeRepositoryGlobOutput,
     GlobInput,
     GlobOutput,
     GrepInput,
@@ -328,6 +329,8 @@ from harnessix.tools.search_contracts import (
     GrepSnapshotInput,
     GrepSnapshotOutput,
     RegexGrepInput,
+    WholeRepositoryGlobInput,
+    WholeRepositoryGlobOutput,
 )
 from harnessix.trusted_actions.contracts import (
     ActionAuditEvent,
@@ -522,6 +525,9 @@ def generate_specs(output: Path) -> None:
         ("grep-snapshot-input", GrepSnapshotInput),
         ("grep-snapshot-output", GrepSnapshotOutput),
         ("archived-grep-snapshot-output", ArchivedGrepSnapshotOutput),
+        ("whole-repository-glob-input", WholeRepositoryGlobInput),
+        ("whole-repository-glob-output", WholeRepositoryGlobOutput),
+        ("archived-whole-repository-glob-output", ArchivedWholeRepositoryGlobOutput),
         ("patch-proposal", PatchProposal),
         ("patch-manifest", PatchManifest),
         ("managed-copy-manifest", CopyManifest),

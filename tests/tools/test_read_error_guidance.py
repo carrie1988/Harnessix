@@ -91,11 +91,11 @@ def test_every_read_error_code_has_an_english_next_step():
     """模型读到的读工具失败都是英文并说明下一步；兜底说明只留给表外的错误码。"""
     from typing import get_args
 
-    from harnessix.tools import runtime
+    from harnessix.tools import read_error_messages
     from harnessix.tools.contracts import ReadErrorCode
 
-    assert set(get_args(ReadErrorCode)) == runtime._READ_ERROR_MESSAGES.keys()
-    assert all(message.isascii() for message in runtime._READ_ERROR_MESSAGES.values())
+    assert set(get_args(ReadErrorCode)) == read_error_messages.READ_ERROR_MESSAGES.keys()
+    assert all(message.isascii() for message in read_error_messages.READ_ERROR_MESSAGES.values())
 
 
 async def test_reads_past_the_end_or_of_a_changed_page_explain_how_to_continue(tmp_path):

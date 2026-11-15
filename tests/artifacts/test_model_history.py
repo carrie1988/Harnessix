@@ -365,7 +365,10 @@ async def test_real_crash_reopen_does_not_repeat_tool_or_model(tmp_path, point, 
     assert replay(await store.events(thread.thread_id)) == await store.get_thread(thread.thread_id)
 
 
-async def test_glob_omits_only_archived_paths_and_preserves_search_statistics(tmp_path):
+@pytest.mark.parametrize("whole_repository", [False, True], ids=["glob", "whole-repository-glob"])
+async def test_glob_omits_only_archived_paths_and_preserves_search_statistics(
+    tmp_path, whole_repository
+):
     root = tmp_path / "repo"
     root.mkdir()
     for index in range(45):
@@ -373,7 +376,9 @@ async def test_glob_omits_only_archived_paths_and_preserves_search_statistics(tm
     store = SQLiteSessionStore(tmp_path / "s.db")
     artifacts = SQLiteArtifactStore(store)
     provider = ScriptedProvider([step("glob", pattern="*.py", max_results=40), answer()])
-    async with CodingToolRuntime(root, artifacts=artifacts) as tools:
+    async with CodingToolRuntime(
+        root, artifacts=artifacts, enable_regex_search=whole_repository
+    ) as tools:
         async with AgentRuntime(
             store,
             provider,

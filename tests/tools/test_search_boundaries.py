@@ -284,9 +284,9 @@ async def test_search_cancel_waits_for_file_descriptor_cleanup(
 async def test_search_cooperative_deadline(tmp_path, monkeypatch):
     collect = search._collect
 
-    def expired(workspace, args, operation, scan):
+    def expired(workspace, args, operation, scan, *descend):
         operation.deadline = 0
-        return collect(workspace, args, operation, scan)
+        return collect(workspace, args, operation, scan, *descend)
 
     monkeypatch.setattr(search, "_collect", expired)
     async with CodingToolRuntime(tmp_path) as tools:

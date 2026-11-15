@@ -84,6 +84,13 @@ class GlobInput(SearchInput):
         return validate_pattern(value)
 
 
+# 快照与正则搜索模式下的Glob：与快照Grep同一组整仓库上限，只遍历可能有命中的目录。原Glob沿用
+# 10,000个条目的原字面量合同上限，Prettier的tests/format（约1.1万个条目）一个子目录就超限、一条结果
+# 也没有（ADR 0165，Beta Issue #35）。不写docstring：类说明会进入发给模型的输入Schema。
+class WholeRepositoryGlobInput(GlobInput):
+    pass
+
+
 class GrepInput(SearchInput):
     query: str = Field(min_length=1, max_length=256)
     include: str = Field(default="**/*", min_length=1, max_length=256)
@@ -180,6 +187,10 @@ class GlobOutput(SearchOutput):
         if list(self.paths) != sorted(set(self.paths)) or (self.truncated and not self.paths):
             raise ValueError("定位结果必须有序、无重复且截断时非空")
         return self
+
+
+class WholeRepositoryGlobOutput(GlobOutput):
+    stats: SnapshotSearchStats
 
 
 class GrepContextLine(ReadContract):
@@ -280,6 +291,11 @@ class GrepSnapshotOutput(GrepOutput):
 
 class ArchivedGlobOutput(ReadContract):
     preview: GlobOutput
+    artifact: ArtifactRef
+
+
+class ArchivedWholeRepositoryGlobOutput(ReadContract):
+    preview: WholeRepositoryGlobOutput
     artifact: ArtifactRef
 
 

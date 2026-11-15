@@ -69,8 +69,8 @@ class _Scan:
 
 
 def _scan_for(args: SearchInput) -> _Scan:
-    """快照与正则搜索用整仓库上限，其余沿用原合同上限；运行时读取模块常量。"""
-    if isinstance(args, GrepSnapshotInput):
+    """整仓库搜索（search.whole_repository）用整仓库上限，其余沿用原合同上限；运行时读取模块常量。"""
+    if search.whole_repository(args):
         return _Scan(
             max_entries=MAX_SNAPSHOT_SEARCH_ENTRIES,
             max_names_bytes=MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
@@ -152,6 +152,7 @@ def _collect(
     operation: ReadOperation,
     scan: _Scan,
     wanted: Callable[[str], bool],
+    descend: Callable[[str], bool] | None = None,
 ) -> Iterator[_Candidate]:
     """按完整路径的字典序逐个给出候选文件，边遍历边交给调用方（ADR 0162第2版）。
 
@@ -199,6 +200,8 @@ def _collect(
             if isinstance(member, _Candidate):
                 yield member
                 continue
+            if descend is not None and not descend(relative_path(member, root)):
+                continue  # 子树里不可能有命中（Glob的固定目录前缀，Beta Issue #35）
             try:
                 yield from visit(member, depth + 1)
             except ReadToolError as error:
@@ -276,8 +279,8 @@ def glob_files(
 
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
     paths: list[str] = []
-    root = port.path(args.path)
-    for candidate in list(_collect(port, args, operation, scan, pattern.matches)):
+    root, walk = port.path(args.path), search.glob_walk(args, pattern)
+    for candidate in list(_collect(port, args, operation, scan, pattern.matches, walk.descend)):
         operation.checkpoint()
         if not pattern.matches(relative_path(candidate.path, root)):
             continue
@@ -296,7 +299,7 @@ def glob_files(
         elif capture is None:
             break
     stats, complete = _capture_status(capture, scan, records)
-    return GlobOutput(
+    return walk.output(
         path=args.path,
         paths=tuple(paths),
         stats=stats,

@@ -22,13 +22,17 @@ from harnessix.tools.search_contracts import (
 
 
 def execution_contract(
-    *, enable_regex_search: bool = False, snapshot_grep: bool = False
+    *,
+    enable_regex_search: bool = False,
+    snapshot_grep: bool = False,
+    whole_repository_glob: bool = False,
 ) -> dict[str, object]:
     """原字面量Grep与Glob合同不变；快照与正则Grep另有整仓库上限、文件名include与更宽上下文。
 
     v7（快照）与v8（正则）：整仓库上限放宽到四倍；整份文本不命中的文件不再逐行扫描，
     超长行只在可能命中的文件里计数（ADR 0145）。此前分别是v5、v6。
     v9（快照）与v10（正则）：读取时限到了而已有命中时返回这些命中，标为time_limit（ADR 0162）。
+    v11（同一模式下的Glob）：整仓库条目与名称上限，只进入可能有命中的目录（ADR 0165）。
     """
     rules: dict[str, object] = {
         "version": "bounded-search/v3",
@@ -45,6 +49,15 @@ def execution_contract(
         "max_match_bytes": MAX_MATCH_BYTES,
         "max_grep_context_lines": MAX_GREP_CONTEXT_LINES,
     }
+    if whole_repository_glob:
+        rules.update(
+            version="bounded-search/v11",
+            glob={
+                "max_entries": MAX_SNAPSHOT_SEARCH_ENTRIES,
+                "max_names_bytes": MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
+                "walk": "only-directories-that-can-contain-a-match",
+            },
+        )
     if snapshot_grep or enable_regex_search:
         rules.update(
             version="bounded-search/v9",

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 35
+version: 36
 code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
@@ -50,9 +50,16 @@ related_tests:
   - tests/tools/test_windows_native_runtime.py
   - tests/tools/test_windows_directory_cache.py
   - tests/tools/test_grep_time_limit.py
+  - tests/tools/test_glob_prefix.py
   - tests/product_config/test_server_and_cli.py
 supersedes: []
 ---
+
+## 当前增量：Glob与Grep同一组整仓库上限（ADR 0165，Beta Issue #35）
+
+- 启用快照或正则Grep时（产品默认），`glob`绑定为[`WholeRepositoryGlobInput`/`WholeRepositoryGlobOutput`](../../src/harnessix/tools/search_contracts.py)：条目与名称上限与快照Grep相同，统计为`SnapshotSearchStats`，存档为`ArchivedWholeRepositoryGlobOutput`，执行合同`bounded-search/v11`。此前沿用10,000个条目，Prettier的`tests/format`（11,237个条目）一个子目录就让Glob失败。
+- [`PathPattern.may_contain`](../../src/harnessix/tools/patterns.py)与`matches`同一张逐段状态表；[`search.glob_walk`](../../src/harnessix/tools/search.py)把它作为`_collect`的`descend`判定，POSIX与[Windows](../../src/harnessix/tools/windows_search.py)都不进入不可能有命中的目录。原Glob不剪枝、合同不变。
+- Glob超限说明为[`read_error_messages.GLOB_LIMIT_HINT`](../../src/harnessix/tools/read_error_messages.py)（缩小`path`或把开头的通配段换成目录名），不再建议先用glob；读工具失败说明表从`runtime`移到该模块。回归见`tests/tools/test_glob_prefix.py`。
 
 ## 当前增量：会话基线的工作区改动观察（ADR 0131）
 
@@ -970,7 +977,7 @@ close_runtime():
 | 文件读取 | [files.py](../../src/harnessix/tools/files.py)：`list_files`、`read_file` | [test_files.py](../../tests/tools/test_files.py)：编码、空文件、长行、扫描与JSON边界用例 |
 | Workspace安全 | [workspace.py](../../src/harnessix/tools/workspace.py)：`_parts`、`Workspace.open`、`revision_state` | [test_workspace.py](../../tests/tools/test_workspace.py)：路径替换、根替换、Deadline、策略前缀用例 |
 | Glob模式 | [patterns.py](../../src/harnessix/tools/patterns.py)：`PathPattern` | [test_search.py](../../tests/tools/test_search.py)：`test_bounded_glob_semantics` |
-| 搜索合同与统计 | [search_contracts.py](../../src/harnessix/tools/search_contracts.py)：`GlobInput/Output`、`GrepInput/Output`、`SearchStats` | [test_search.py](../../tests/tools/test_search.py)：参数、排序、截断和不变量用例 |
+| 搜索合同与统计 | [search_contracts.py](../../src/harnessix/tools/search_contracts.py)：`GlobInput/Output`、`WholeRepositoryGlobInput/Output`、`GrepInput/Output`、`SearchStats` | [test_search.py](../../tests/tools/test_search.py)：参数、排序、截断和不变量用例 |
 | 搜索遍历与匹配 | [search.py](../../src/harnessix/tools/search.py)：`_collect`、`glob`、`grep` | [test_search_boundaries.py](../../tests/tools/test_search_boundaries.py)：忽略/权限、缺口、替换、预算、取消、超时用例 |
 | Search Artifact捕获 | [search.py](../../src/harnessix/tools/search.py)：`SearchCapture`；[runtime.py](../../src/harnessix/tools/runtime.py)：`execute_scoped` | [tests/artifacts](../../tests/artifacts/)：发布、读取、配额、损坏和恢复套件 |
 | Artifact分页 | [runtime.py](../../src/harnessix/tools/runtime.py)：`_read_artifact`；[contracts.py](../../src/harnessix/artifacts/contracts.py)：`ArtifactPage` | [test_server_sdk.py](../../tests/app_server/test_server_sdk.py)：`test_artifact_read_is_advertised_only_with_scoped_reader` |
@@ -1137,6 +1144,7 @@ Agent构造单个`ModelRequest.tools`时合并只读Descriptor和由Trusted Acti
 
 | 版本 | 代码基线 | 变更 |
 |---:|---|---|
+| 36 | `3e2f83d8` 增量 | 2026-11-15 | 快照与正则搜索模式下Glob用整仓库上限并只进入可能有命中的目录（`WholeRepositoryGlob*`、`PathPattern.may_contain`、`search.glob_walk`，执行合同v11）；Glob超限说明不再建议先用glob，失败说明表移到`read_error_messages`（ADR 0165，Beta Issue #35） |
 | 35 | `a69806a8` 增量 | 2026-11-14 | Git状态与差异按用户实际生效的换行设置比较：首次读取前探测`core.autocrlf`/`core.eol`（可看到系统级与用户级配置，不展开include），以`-c`传给查询并在端口生命周期内复用；Git for Windows用户不再看到整文件差异或误报的修改（ADR 0043第2版） |
 | 34 | `5149cfe3` 增量 | 2026-11-14 | 提案修复的权限位观察在Windows上也成立：读取后端新增`file_mode`，POSIX取真实权限位，Windows对已有普通文件返回0644（与Windows工作区事务的约定相同，不模拟可执行位），不存在或不是普通文件时仍为空；此前Windows上replace漏写mode会被拒（`tool_invalid_arguments`），三个平台行为不一致 |
 | 33 | `48f5685f` 增量 | 2026-11-14 | `search._collect`与`windows_search._collect`改为按完整路径字典序逐个给出候选的生成器（目录名按“名称/”排序），快照与正则Grep边遍历边读（`patterns.included_while_walking`，Windows为`windows_search._included`；include规则与ADR 0129相同），原字面量Grep与Glob仍先遍历完；Windows目录在观察完成员后即核对未变（ADR 0162第2版，Beta Issue #24） |

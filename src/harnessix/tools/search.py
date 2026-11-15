@@ -8,7 +8,7 @@ import json
 import os
 import stat
 from collections import deque
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -50,6 +50,8 @@ from harnessix.tools.search_contracts import (
     SearchInput,
     SearchStats,
     SnapshotSearchStats,
+    WholeRepositoryGlobInput,
+    WholeRepositoryGlobOutput,
 )
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, identity, revision_state
 
@@ -93,9 +95,27 @@ class _Scan:
         )
 
 
+def whole_repository(args: SearchInput) -> bool:
+    """快照与正则Grep、以及同一模式下的Glob（ADR 0165）用整仓库上限；其余沿用原合同上限。"""
+    return isinstance(args, GrepSnapshotInput | WholeRepositoryGlobInput)
+
+
+def glob_walk(args: GlobInput, pattern: PathPattern) -> GlobWalk:
+    """整仓库Glob只进入可能有命中的目录并输出整仓库统计；原Glob的遍历与输出合同不变。"""
+    if isinstance(args, WholeRepositoryGlobInput):
+        return GlobWalk(pattern.may_contain, WholeRepositoryGlobOutput)
+    return GlobWalk(None, GlobOutput)
+
+
+@dataclass(frozen=True, slots=True)
+class GlobWalk:
+    descend: Callable[[str], bool] | None
+    output: type[GlobOutput]
+
+
 def _scan_for(args: SearchInput) -> _Scan:
-    """快照与正则搜索用整仓库上限，其余沿用原合同上限；运行时读取模块常量。"""
-    if isinstance(args, GrepSnapshotInput):
+    """整仓库搜索用整仓库上限，其余沿用原合同上限；运行时读取模块常量。"""
+    if whole_repository(args):
         return _Scan(
             max_entries=MAX_SNAPSHOT_SEARCH_ENTRIES,
             max_names_bytes=MAX_SNAPSHOT_SEARCH_NAMES_BYTES,
@@ -133,7 +153,11 @@ def _open_candidate(
 
 
 def _collect(
-    workspace: Workspace, args: SearchInput, operation: ReadOperation, scan: _Scan
+    workspace: Workspace,
+    args: SearchInput,
+    operation: ReadOperation,
+    scan: _Scan,
+    descend: Callable[[str], bool] | None = None,
 ) -> Iterator[_Candidate]:
     """按完整路径的字典序逐个给出候选文件，边遍历边交给调用方（ADR 0162第2版，Beta Issue #24）。
 
@@ -199,6 +223,8 @@ def _collect(
             if not directory:
                 yield node
                 continue
+            if descend is not None and not descend(relative_to_start(node.path, args.path)):
+                continue  # 子树里不可能有命中（Glob的固定目录前缀，Beta Issue #35）
             try:
                 yield from visit(node.path, depth + 1, node)
             except PermissionError:
@@ -238,8 +264,8 @@ def glob(
     capture: SearchCapture | None = None,
 ) -> GlobOutput:
     scan, pattern, records = _scan_for(args), PathPattern(args.pattern), _Records(args)
-    paths = []
-    for node in list(_collect(workspace, args, operation, scan)):
+    walk, paths = glob_walk(args, pattern), []
+    for node in list(_collect(workspace, args, operation, scan, walk.descend)):
         operation.checkpoint()
         if not pattern.matches(relative_to_start(node.path, args.path)):
             continue
@@ -259,7 +285,7 @@ def glob(
     stats = scan.snapshot()
     if capture is not None:
         capture.complete = not stats.has_gaps
-    return GlobOutput(
+    return walk.output(
         path=args.path,
         paths=tuple(paths),
         stats=stats,

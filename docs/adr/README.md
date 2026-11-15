@@ -293,6 +293,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0161：Python 3.15起Skill Frontmatter改用ruamel.yaml](0161-skill-frontmatter-yaml-on-python-315.md)：PyYAML 6.0.3没有Python 3.15的预编译包，Windows上没有MSVC就装不上（Beta Issue #10，0.10.0b35 Windows真机复测）；3.15起改用纯Python的ruamel.yaml，按YAML 1.1安全加载、拒绝重复键，3.14及以下不变；边角写法的已知差异列在ADR里。
 - [ADR 0162：读取时限到了而已有命中时，Grep返回这些命中](0162-grep-returns-matches-found-before-the-time-limit.md)：Windows上第一次搜索刚克隆的大仓库，读文件内容要先经Defender扫描，整仓grep在5秒时限处失败、没有结果（Beta Issue #24）；快照与正则Grep改为返回已找到的命中并标为`time_limit`，执行合同v9/v10，原字面量Grep与Glob不变。第2版起边遍历边读（顺序与按完整路径排序相同），Windows未配置时读取时限默认30秒。
 
+- [ADR 0165：Glob与Grep同一组整仓库上限，只进入可能有命中的目录](0165-glob-uses-whole-repository-limits.md)：Prettier的`tests/format`下就有约1.1万个条目，Glob沿用原字面量合同的10,000个条目上限而失败、没有结果（Beta Issue #35）；快照与正则搜索模式下Glob改用整仓库上限，按模式跳过不可能有命中的目录，执行合同v11；超限说明不再建议先用glob。原Glob不变。
+
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 
 - [ADR 0112：原生命令的工作区模式](0112-native-workspace-modes.md)：`read_only`与`read_write`（默认，改动保留）两种模式；`.git`只读、工作区`.env*`拒读；不做快照、撤销、改动记录与命令前清单，补丁前镜像核对兜底并发改动。
