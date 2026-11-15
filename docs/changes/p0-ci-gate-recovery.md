@@ -198,6 +198,7 @@ P1-3又为交互预算增加2行。
 0.10.0b45发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。内容是第二轮会话的换行读取修复：Git读取端口首次status/diff前只读探测用户实际生效的core.autocrlf/core.eol，并以-c传给git_status、git_diff与会话基线的workspace_changes（ADR 0043第2版、ADR 0068第3版，tools模块文档第35版、processes模块文档第42版）；交付基准读取不变。
 0.10.0b46发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。内容是第一阶段开发会话的单Turn Artifact默认配额修复：max_turn_count由128改为1000、max_turn_bytes由4 MiB改为32 MiB（均为原允许范围上限，store级max_live_bytes与max_manifests不变；公开Schema新增artifact-policy-v2，v1冻结不变；artifacts模块文档第25版）。配额不足时降级与过期Artifact自动回收待用户决定，不在本版。
 0.10.0b47发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。内容是：Artifact存储已满时结果照常提交、不带存档（ADR 0163）与过期Artifact正文自动回收、Tombstone不再占全局件数（ADR 0164），由NL2Repo会话提交，负责人2026-11-15选B+C；Beta反馈会话的#35 Glob使用整仓库上限（ADR 0165）与#36失败的检查只有同一命令重跑通过才算解决；发布会话的#26 exec标准输出不是终端时JSON摘要只写ASCII与#4审批窗口里的Ctrl+F同样收尾（ADR 0148第5版）。设计与验证见[0.10.0b20 Beta反馈变更设计](beta-feedback-0.10.0b20.md)第59～62节。
+0.10.0b48发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。内容是NL2Repo会话的回复中途断开整步重试（ADR 0144第5版，负责人2026-11-15选B）：网络中断或读取超时发生在正文写出途中时，作废未完成的正文Item（`provider_attempt_discarded`，不进模型历史）并重新请求这一步；完整正文、工具调用或终态之后仍不重试。设计与验证见[回复中途断开整步重试变更设计](resample-after-partial-reply.md)。
 0.10.0b16发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 0.10.0b15发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
 0.10.0b14发布：升版本带来的SBOM、许可证证据与锁文件变化随本说明一并提交。
