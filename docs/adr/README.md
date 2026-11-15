@@ -292,6 +292,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0160：一次读取操作只在开头与结尾核对工作区根](0160-read-operations-verify-the-root-once.md)：此前每打开一个文件前后都从“/”（Windows从盘符）逐段重新核对根，16000个文件的仓库整仓grep在5秒时限内搜不完（Beta Issue #21，三个平台都有）；根的固定改为属于一次读取操作，结束时核对一次，Windows句柄链在根绑定后从根开始；第2版起Windows一次读取操作内每个目录只打开并核对一次，文件只打开自身这一段。
 - [ADR 0161：Python 3.15起Skill Frontmatter改用ruamel.yaml](0161-skill-frontmatter-yaml-on-python-315.md)：PyYAML 6.0.3没有Python 3.15的预编译包，Windows上没有MSVC就装不上（Beta Issue #10，0.10.0b35 Windows真机复测）；3.15起改用纯Python的ruamel.yaml，按YAML 1.1安全加载、拒绝重复键，3.14及以下不变；边角写法的已知差异列在ADR里。
 - [ADR 0162：读取时限到了而已有命中时，Grep返回这些命中](0162-grep-returns-matches-found-before-the-time-limit.md)：Windows上第一次搜索刚克隆的大仓库，读文件内容要先经Defender扫描，整仓grep在5秒时限处失败、没有结果（Beta Issue #24）；快照与正则Grep改为返回已找到的命中并标为`time_limit`，执行合同v9/v10，原字面量Grep与Glob不变。第2版起边遍历边读（顺序与按完整路径排序相同），Windows未配置时读取时限默认30秒。
+- [ADR 0164：过期Artifact正文自动回收，Tombstone不再占全局件数](0164-expired-artifacts-are-reclaimed-automatically.md)：产品从未调用`collect`，过期正文一直计入32 MiB全局配额，回收后的Tombstone仍计入10000份上限，同一工作区用满后此后每次归档都撞线；改为Runtime打开时回收一轮、此后每小时一轮，Tombstone不再占全局件数，无法核对的行保留并跳过而不中止回收。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

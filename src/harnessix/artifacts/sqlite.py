@@ -31,6 +31,7 @@ from harnessix.artifacts.action_output_store import (
     ActionOutputArtifactMixin,
     validate_action_output_body,
 )
+from harnessix.artifacts.collection import collect_expired
 from harnessix.artifacts.contracts import (
     MAX_ARTIFACT_BYTES,
     MAX_ARTIFACT_RECORDS,
@@ -286,8 +287,9 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
     async def _check_quota(
         self, database: aiosqlite.Connection, thread_id: UUID, turn_id: UUID, size: int
     ) -> None:
+        # 全局件数只计仍有正文的Manifest：回收后的Tombstone不再占名额（ADR 0164）。
         cursor = await database.execute(
-            "SELECT COUNT(*), COALESCE(SUM(length(body)), 0), "
+            "SELECT COALESCE(SUM(state = 'published'), 0), COALESCE(SUM(length(body)), 0), "
             "COALESCE(SUM(CASE WHEN thread_id = ? AND turn_id = ? THEN size_bytes ELSE 0 END), 0), "
             "COALESCE(SUM(CASE WHEN thread_id = ? AND turn_id = ? THEN 1 ELSE 0 END), 0) "
             "FROM agent_artifacts",
@@ -516,40 +518,6 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
     async def collect(self, *, limit: int = 100, after: UUID | None = None) -> CollectionReport:
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise KernelError("artifact_invalid_cursor", "清理批次大小不合法")
-        now = utc_now()
-        expired = protected = 0
-        async with self.session._connection() as database:
-            await database.execute("BEGIN IMMEDIATE")
-            cursor = await database.execute(
-                ARTIFACT_READ_SELECT + " WHERE state = 'published' AND expires_at <= ? "
-                "AND artifact_id > ? ORDER BY artifact_id LIMIT ?",
-                (now.isoformat(), str(after) if after else "", limit),
-            )
-            rows = list(await cursor.fetchall())
-            for row in rows:
-                thread = await self.session._snapshot(database, UUID(row["thread_id"]))
-                if thread is None:
-                    raise KernelError("artifact_corrupt", "Artifact 归属不存在")
-                try:
-                    self._reference(row, thread)
-                except KernelError as error:
-                    if error.code != "artifact_unreferenced":
-                        raise
-                if thread.active_turn_id is not None:
-                    protected += 1
-                    continue
-                await database.execute(
-                    "UPDATE agent_artifacts SET state = 'expired', body = NULL "
-                    "WHERE artifact_id = ?",
-                    (row["artifact_id"],),
-                )
-                expired += 1
-            self._fault("artifact.before_collect_commit")
-            await database.commit()
-        return CollectionReport(
-            len(rows),
-            expired,
-            protected,
-            now,
-            UUID(rows[-1]["artifact_id"]) if len(rows) == limit else None,
+        return await collect_expired(
+            self.session, self._reference, self._fault, now=utc_now(), limit=limit, after=after
         )

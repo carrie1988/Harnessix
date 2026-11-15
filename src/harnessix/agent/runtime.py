@@ -202,6 +202,7 @@ from harnessix.artifacts.ports import (
     ArtifactReferenceVerifier,
     BatchDiffPublisher,
 )
+from harnessix.artifacts.reclaim import ArtifactReclaimer, start_artifact_reclaim
 from harnessix.context.compaction import (
     PreparedCompaction,
     replay_compaction_candidate,
@@ -416,6 +417,7 @@ class AgentRuntime:
             raise KernelError("artifact_store_mismatch", "差异发布必须绑定原 Session 和整组端口")
         self._batch_diffs = batch_diffs
         self._artifacts = artifacts
+        self._reclaimer: ArtifactReclaimer | None = None
         self._public_output_protection = public_output_protection
         self.store = store
         self._telemetry = KernelTelemetry(observability or NoOpObservability())
@@ -521,6 +523,8 @@ class AgentRuntime:
             await self.store.initialize()
             for thread in await self.store.recovery_threads():
                 await self._recover(thread)
+            # 过期正文不自动回收会使工作区存储只增不减，最终每次归档都撞全局配额（ADR 0164）。
+            self._reclaimer = await start_artifact_reclaim(self._artifacts)
         except BaseException:
             self._open = False
             self._owner = None
@@ -634,6 +638,9 @@ class AgentRuntime:
             async with lock:
                 pass
         close_trusted_actions(self._trusted_actions)
+        if self._reclaimer is not None:
+            await self._reclaimer.stop()
+            self._reclaimer = None
         if self._owner is not None:
             await self._owner.__aexit__(exc_type, exc, traceback)
             self._owner = None
