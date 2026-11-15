@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 17
+version: 18
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -1387,6 +1387,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 18 | `3e2f83d8` 增量 | 2026-11-15 | `harnessix exec`的JSON摘要写到标准输出、而标准输出不是终端（重定向或管道）时只写ASCII（`exec_cli._write_summary`）：Windows PowerShell 5.1的`>`与管道按系统代码页转码，中文吞掉引号后JSON无法解析；解析出的内容不变，终端里照常显示中文，`--summary-file`照常按UTF-8写原文（Issue #26的Windows复测发现，负责人2026-11-15选A） |
 | 17 | `98e58f5d` 增量 | 2026-11-14 | 瘦CLI的审批提示写明工具、完整命令、理由与要修改的文件（`agent_cli.approval_prompt`，控制字符转成可见转义）；`harnessix exec`的提示写到标准错误、不受`--quiet`影响，标准输出只留给JSON摘要（Beta Issue #26） |
 | 16 | `a47ce892` 增量 | 2026-11-13 | 瘦CLI配了审批策略时，提示处由人输入的决定记`<主体>:interactive`，与策略决定区分（`agent_cli._actors`，Beta Issue #23） |
 | 15 | `f24afce5` 增量 | 2026-11-13 | `harnessix exec`摘要的`verification`改由`product_ui.verification.verification_summary`计算（逻辑不变，与终端界面共用，Beta Issue #9） |

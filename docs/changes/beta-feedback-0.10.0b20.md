@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 51
+version: 52
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -133,6 +133,8 @@ supersedes: []
 | 四十四 | 几个进程同时首次启动，偶尔提示“还没有配置模型”（0.10.0b39 Windows，发布会话复测#15时约1/9） | 区分文件不存在与读取失败，读取失败短暂重试并如实提示 | 本文第58节 |
 | 四十五 | Glob在中型仓库的子目录上超限、没有结果（0.10.0b46 Windows，Issue #35） | 快照与正则搜索模式下Glob用整仓库上限，只进入可能有命中的目录 | [ADR 0165](../adr/0165-glob-uses-whole-repository-limits.md)、本文第59节 |
 | 四十六 | 失败的测试之后一条成功的清理命令把完成证据翻成“修改后检查通过”（0.10.0b46 Windows，Issue #36） | 失败的检查只有同一命令重新运行并通过才算解决，失败时给出`failed_check` | 本文第60节 |
+| 四十七 | Windows PowerShell 5.1把`harnessix exec`的输出重定向到文件，JSON摘要无法解析（0.10.0b43～b45 Windows正式测试，发布会话复测#26发现） | 标准输出不是终端时摘要只写ASCII | 本文第61节 |
+| 四十八 | 审批窗口已经弹出时按`Ctrl+F`没有收尾，之后的命令照样执行（0.10.0b46 Windows正式测试3次中2次，Issue #4的剩余部分） | 审批窗口里的`Ctrl+F`同样收尾，这条审批按收尾规则拒绝 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第5版、本文第62节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
 第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节。
@@ -1493,3 +1495,19 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 负责人2026-11-15选方案A：一条检查失败后，只有同一条命令（`cmd`逐字相同；没有`cmd`时按工具名）重新运行并通过才算解决；其他命令的成功不覆盖它。失败时摘要给出`failed_check`（仍未通过的检查中最近运行的一条），`last_native_returncode`取自这条，`last_check`仍是最后运行的检查；对话末尾的提示附`failed_check`。代价：换一条命令重跑并通过（如缩小范围的测试）、或预期失败的探测命令，状态仍是失败——不会再报出假的通过。没有采用按命令清单识别“测试/构建命令”的方案B：清单列不全，对新工具链不友好。
 
 验证：`tests/product_ui/test_unverified_completion.py`（报告人的序列为失败并点名Vitest；同一命令重跑通过后为通过；另一条命令通过不算解决；通过后又失败以最近一次为准；多条未解决时点名最近一条），`tests/test_exec_cli.py`（#27的原生退出码之后再清理，仍为失败、退出码来自失败的检查）。修改前这些用例失败。
+## 61. 第四十七项：重定向的JSON摘要只写ASCII（发布会话发现）
+
+0.10.0b43～b45 Windows正式测试复测#26：Windows PowerShell 5.1里`harnessix exec ... > summary.json`得到的文件无法按JSON解析。`exec`按UTF-8写出含中文的摘要，PowerShell 5.1的`>`与管道按系统代码页（中文系统为GBK）解码再以UTF-16写入，中文被转成乱码，个别乱码吞掉了紧随其后的引号。macOS、Linux与PowerShell 7不转码，但同样不能假定调用方的管道按UTF-8处理。
+
+负责人2026-11-15在三个方案中选A：终端里照常；标准输出不是终端（重定向或管道）时摘要按`ensure_ascii`把非ASCII字符写成`\uXXXX`，解析出的内容与原来逐字相同；`--summary-file`照常按UTF-8写原文。另两个方案是任何情况都写ASCII（终端里中文不可读），以及维持现状只在手册提示（脚本仍会坏）。三个平台共用同一规则（`exec_cli._write_summary`）。
+
+验证：`tests/test_exec_cli.py`（标准输出不是终端时只有ASCII且解析结果不变、终端里保留中文、已关闭的标准输出按非终端处理、摘要文件保留UTF-8原文）。Windows真机PowerShell 5.1的`>`重定向复测由发布会话完成。
+
+## 62. 第四十八项：审批窗口里的`Ctrl+F`（Issue #4的剩余部分）
+
+0.10.0b46 Windows正式测试：命令等待审批时按`Ctrl+F`，3次中2次没有收尾。审批窗口在审批出现2秒后自动弹出，窗口打开时主界面的
+`Ctrl+F`停用，按键落到窗口里的原因输入框或按钮上，没有任何提示；ADR 0148第3版只覆盖窗口弹出之前按下的情形。三个平台相同。
+
+修改：审批窗口自己绑定`Ctrl+F`，关闭窗口并发送与主界面相同的收尾说明，这条审批随后按收尾规则拒绝；窗口底部提示加上
+“Ctrl+F 让它收尾”。设计见[ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第5版。验证：
+`tests/product_ui/test_wrap_up.py::test_wrap_up_from_inside_the_approval_dialog`（修复前该轮一直停在等待审批）；Windows真机复测由发布会话完成。

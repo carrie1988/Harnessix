@@ -130,6 +130,64 @@ async def test_wrap_up_rejects_an_approval_still_waiting_for_its_dialog(tmp_path
     assert texts[-1] == ("assistant_message", "已完成：总结如下。")
 
 
+async def test_wrap_up_from_inside_the_approval_dialog(tmp_path: Path) -> None:
+    """审批窗口已经自动弹出时按Ctrl+F（ADR 0148第5版，发布会话Windows真机0.10.0b46：3次中2次）。
+
+    主界面的Ctrl+F在窗口打开时停用，此前按键落到原因输入框（删除右侧单词）或按钮上，收尾悄悄丢失，
+    窗口里批准后命令照样执行。现在窗口关闭，本轮收尾，这条审批按收尾规则拒绝，命令不执行。
+    """
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+    requests = SQLiteProtocolRequestStore(sessions.path)
+    tools = RecordingTools(approval=True)
+    provider = ScriptedProvider([tool_step("test.read"), answer("已完成：总结如下。")])
+    async with AgentRuntime(sessions, provider, tools, model_tool_view=WrapUpToolView()) as runtime:
+
+        def transport() -> InProcessAgentTransport:
+            service = AgentApplicationService(
+                runtime, sessions, requests, workspace=workspace.resolve()
+            )
+            return InProcessAgentTransport(AgentProtocolServer(service))
+
+        with ClientStateStore(
+            tmp_path / "client", workspace_identity=str(workspace.resolve())
+        ) as store:
+            controller = ProductController(RecoverableAgentSession(store, transport))
+            app = ProductApp(controller, StartRequest(workspace=str(workspace)))
+            async with app.run_test(size=(120, 30)) as pilot:
+                composer = app.query_one("#composer", Input)
+                await _wait_until(lambda: not composer.disabled)
+                await pilot.press("g", "o", "enter")
+                await _wait_until(
+                    lambda: isinstance(app.screen, ApprovalScreen), timeout_seconds=10
+                )
+                # 最容易吞键的位置：焦点在原因输入框里。
+                app.screen.query_one("#approval-reason", Input).focus()
+                await pilot.pause()
+                await pilot.press("ctrl+f")
+                await _wait_until(
+                    lambda: _turn_status(controller) == "completed", timeout_seconds=30
+                )
+                assert not isinstance(app.screen, ApprovalScreen)
+                thread_id = controller.state.selected_thread_id
+                assert thread_id is not None
+
+        turn = (await sessions.get_thread(thread_id)).turns[-1]
+    assert tools.calls == []
+    decisions = [
+        item.content for item in turn.items if isinstance(item.content, ApprovalRequestContent)
+    ]
+    assert [d.decision.outcome.value for d in decisions if d.decision] == ["rejected"]
+    texts = [
+        (item.content.kind, item.content.text)
+        for item in turn.items
+        if isinstance(item.content, TextContent)
+    ]
+    assert ("user_message", WRAP_UP_MESSAGE) in texts
+    assert texts[-1] == ("assistant_message", "已完成：总结如下。")
+
+
 def test_wrap_up_is_a_main_screen_action_hidden_behind_dialogs() -> None:
     idle = ProductControllerState()
     assert not action_enabled("wrap_up_turn", idle, modal_open=False)

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import io
+import json
 from uuid import uuid4
 
 import pytest
@@ -10,6 +12,8 @@ from harnessix.exec_cli import (
     NeedsHumanInput,
     _commands,
     _parser,
+    _stdout_is_terminal,
+    _write_summary,
     approval_policy,
 )
 from harnessix.product_ui.verification import verification_summary as _verification
@@ -333,3 +337,43 @@ def test_a_check_whose_last_native_program_failed_is_not_a_pass():
         "failed_check": "npm test; Write-Host done",
         "last_native_returncode": 1,
     }
+
+
+class _Stream(io.StringIO):
+    def __init__(self, *, terminal: bool) -> None:
+        super().__init__()
+        self._terminal = terminal
+
+    def isatty(self) -> bool:
+        return self._terminal
+
+
+_CHINESE_SUMMARY = {"status": "completed", "final": "已修复“解析器”"}
+
+
+@pytest.mark.parametrize("terminal", [False, True])
+def test_the_summary_on_stdout_is_ascii_only_unless_it_is_a_terminal(monkeypatch, terminal):
+    """重定向或管道可能被宿主转码，Windows PowerShell 5.1的`>`按系统代码页重写，中文吞掉引号后
+    JSON无法解析（Beta Issue #26）。不是终端时只写ASCII，解析出的内容不变；终端里照常显示中文。
+    """
+    stream = _Stream(terminal=terminal)
+    monkeypatch.setattr("sys.stdout", stream)
+    _write_summary(_CHINESE_SUMMARY, None)
+    text = stream.getvalue()
+    assert json.loads(text) == _CHINESE_SUMMARY
+    assert text.isascii() is not terminal
+
+
+def test_a_closed_stdout_counts_as_not_a_terminal(monkeypatch):
+    stream = io.StringIO()
+    stream.close()
+    monkeypatch.setattr("sys.stdout", stream)
+    assert not _stdout_is_terminal()
+
+
+def test_the_summary_file_keeps_utf8_text(tmp_path, monkeypatch):
+    monkeypatch.setattr("sys.stdout", _Stream(terminal=False))
+    target = tmp_path / "summary.json"
+    _write_summary(_CHINESE_SUMMARY, str(target))
+    text = target.read_text(encoding="utf-8")
+    assert "已修复“解析器”" in text and json.loads(text) == _CHINESE_SUMMARY

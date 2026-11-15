@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 68
+version: 69
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -135,7 +135,8 @@ supersedes: []
 以Mixin `TurnPacing`并入`ProductApp`（自己的定时器和动作，主应用类不增长）：
 
 - **一键收尾（`Ctrl+F`）**：`wrap_up`向当前Turn发送固定的补充说明`WRAP_UP_MESSAGE`（与`Ctrl+S`同一条Steer通道）。
-  Turn不可补充说明时报`turn_control_stale`。
+  Turn不可补充说明时报`turn_control_stale`。审批窗口自动弹出后主界面操作停用，窗口自己接住`Ctrl+F`：关闭窗口、返回
+  `WrapUpFromApproval`，`InteractionPresenter.approval`直接调用同一个`wrap_up`，这条审批随后按收尾规则拒绝（ADR 0148第5版）。
 - **运行时间检查点**：[`turn_checkpoint.py`](../../src/harnessix/product_ui/turn_checkpoint.py)的`ActiveTimeMeter`
   按Turn累计实际运行时间——每秒观察一次当前Turn的状态，只有已接受、准备上下文、调用模型、执行工具、收尾这些状态计时，
   等待审批、等待操作、等待回答不计；Turn变了就从零开始。满60分钟且没有其他窗口打开时，`run_checkpoint`弹出
@@ -1271,6 +1272,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 69 | `9d17f702` 增量 | 2026-11-15 | 审批窗口里按`Ctrl+F`同样收尾：窗口关闭，这条审批按收尾规则拒绝；此前窗口自动弹出后`Ctrl+F`落到原因输入框或按钮上而悄无声息（`ApprovalScreen.action_wrap_up`、`WrapUpFromApproval`，ADR 0148第5版，Beta Issue #4） |
 | 68 | `7d2e735d` 增量 | 2026-11-15 | 完成证据：失败的检查只有同一命令重新运行并通过才算解决，其他命令的成功不再覆盖它；失败时给出`failed_check`，`last_native_returncode`取自该检查（`verification._Check`，Beta Issue #36） |
 | 67 | 第二轮合入 | 2026-11-14 | 工具步骤说明（命令账本）同样显示为“提示”行，完成守卫与回复恢复两行沿用第46版的文案；不显示会话基线的两条宿主说明（ADR 0131、0135）。分支上的另外两条（原文档版本38“审批窗口列出将新建的目录”、39“宿主说明显示为提示”）与第44、46版是同一改动，不另列 |
 | 66 | `57dd7d7f` 增量 | 2026-11-11 | 对话记录不显示预算与目录说明（ADR 0132）；分支上的文档版本37 |

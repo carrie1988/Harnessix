@@ -443,9 +443,22 @@ def exec_main(argv: Sequence[str] | None = None) -> None:
     except AgentSDKError as error:
         code, summary = EXIT_INTERNAL, {"status": "error", "error": {"code": error.code}}
     if summary is not None:
-        text = json.dumps(summary, ensure_ascii=False, indent=2)
-        if arguments.summary_file:
-            Path(arguments.summary_file).write_text(text + "\n", encoding="utf-8")
-        else:
-            print(text)
+        _write_summary(summary, arguments.summary_file)
     raise SystemExit(code)
+
+
+def _write_summary(summary: dict[str, Any], summary_file: str | None) -> None:
+    """摘要文件按UTF-8写原文；标准输出不是终端时只写ASCII（Issue #26的Windows复测发现）。"""
+    if summary_file:
+        text = json.dumps(summary, ensure_ascii=False, indent=2)
+        Path(summary_file).write_text(text + "\n", encoding="utf-8")
+    else:
+        print(json.dumps(summary, ensure_ascii=not _stdout_is_terminal(), indent=2))
+
+
+def _stdout_is_terminal() -> bool:
+    """重定向或管道可能被宿主转码（Windows PowerShell 5.1按系统代码页），不是终端时只写ASCII。"""
+    try:
+        return sys.stdout.isatty()
+    except (AttributeError, ValueError):
+        return False

@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 4
+version: 5
 code_revision: pending
 owners: [product]
 modules: [product_ui, product_config]
@@ -126,3 +126,18 @@ now”）。只是提示，不改变准入与拒绝；固定的拒绝结果合�
 验证：`tests/product_config/test_wrap_up_stops_work.py::test_a_turn_started_with_the_checkpoint_wrap_up_offers_no_tools`（请求带上说明）；
 真实终端界面（tmux，百炼qwen3.8-flash，同一场景）：修改前11次中2次在收尾后多出4～6次被拒的调用，修改后24次都在收尾后的第一次请求
 直接给出总结。宿主在收尾后限制步数（连续被拒若干次即结束本轮）会让用户拿不到总结，暂不采用；再出现时另行评估。
+
+## 修订（第5版，2026-11-15）：审批窗口已经弹出时按`Ctrl+F`
+
+0.10.0b46 Windows真机正式测试：命令等待审批时按`Ctrl+F`，3次中2次没有收尾，之后的审批都被批准执行；0.10.0b34、b40各有一次同样的失败，
+当时归因于机器繁忙。根因：审批出现2秒后窗口自动弹出（`AUTO_PROMPT_DELAY_SECONDS`），窗口打开时主界面操作停用（`action_enabled`），
+`Ctrl+F`于是落到窗口里获得焦点的控件上——焦点在原因输入框时删除光标右侧的单词，在按钮上时什么也不做，界面没有任何提示。
+按键早于窗口弹出时由第3版处理，晚于弹出就丢失；三个平台相同，较慢的终端更容易落在窗口之后。
+
+决定：`ApprovalScreen`自己绑定`Ctrl+F`（优先于输入框），关闭窗口并返回`WrapUpFromApproval`；`InteractionPresenter.approval`
+收到后调用与主界面`Ctrl+F`相同的`turn_pacing.wrap_up`发送收尾说明（不经应用动作：审批窗口本身就在一次交互里，新的交互会被
+“交互进行中”挡掉），这条审批随后按第3版的规则拒绝，命令不执行。窗口底部的按键提示加上“Ctrl+F 让它收尾”。其他窗口
+（提问、补充说明、检查点、帮助）不变：检查点窗口自带“收尾”，其余窗口里的`Ctrl+F`仍不生效。
+
+验证：`tests/product_ui/test_wrap_up.py::test_wrap_up_from_inside_the_approval_dialog`（窗口自动弹出后、焦点在原因输入框时按
+`Ctrl+F`：窗口关闭、审批记为拒绝、命令未执行、以总结结束；修复前该轮一直停在等待审批）。Windows真机复测由发布会话完成。
