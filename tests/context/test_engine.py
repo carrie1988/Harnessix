@@ -128,6 +128,10 @@ def test_history_or_required_instruction_overflow_fails_closed() -> None:
     with pytest.raises(ContextPreparationError) as required_error:
         ContextEngine(limits, (required,)).prepare(build_input())
     assert required_error.value.code == "context_budget_exceeded"
+    # Beta Issue #33：说明给出各部分的估算量，不再把超出一律说成“必选指令”。
+    assert history_error.value.message.startswith("模型输入超过可用Context输入预算：历史")
+    assert "必选指令" not in history_error.value.message
+    assert "必选指令" in required_error.value.message and "可用1" in required_error.value.message
 
 
 def test_duplicate_fragment_is_rejected_before_runtime_use() -> None:

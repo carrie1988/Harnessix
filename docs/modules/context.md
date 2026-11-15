@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 20
+version: 21
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -630,6 +630,7 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 21 | `684e0a4b` 增量 | 2026-11-14 | `context_budget_exceeded`的说明给出历史、工具定义、必选指令与可用量的估算值（`engine._overflow`）；此前第二种情况一律写“Runtime或用户必选指令超过……”，0.10.0b42实测中超出的其实是历史（Beta Issue #33） |
 | 20 | 第二轮合入 | 2026-11-14 | 文档版本15～17随第二轮分支合入主线；第16版的“摘要输出不成立时跳过”在合入时由第19版的空摘要处理取代（ADR 0109第6版），代码不再保留；工作区概览的ADR编号由0147改为0153 |
 | 19 | `e5141ec7` 增量 | 2026-11-12 | 没有正文的摘要：正常结束的用独立代码`provider_summary_empty`，用满上限的归为截断；主动压缩时都可跳过（0.10.0b20） |
 | 17 | `a33e5ace` 增量 | 2026-11-12 | 新增`TurnStableContextSource`：产品装配里工作区概览每个Turn只观察一次，系统指令不在Turn中途变化（ADR 0153） |

@@ -71,6 +71,18 @@ def _render(fragments: Sequence[ContextFragment]) -> str | None:
     return json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _overflow(history: int, tools: int, instructions: int | None, available: int) -> str:
+    """超出输入预算时如实给出各部分的估算量（Beta Issue #33）。
+
+    此前第二种情况一律写“Runtime或用户必选指令超过……”：0.10.0b42实测中指令约1万、工具定义约1.6万，
+    超出的其实是历史（约7.6万），说明把人引向错误的方向。
+    """
+    parts = f"历史{history}、工具定义{tools}"
+    if instructions is not None:
+        parts += f"、必选指令{instructions}"
+    return f"模型输入超过可用Context输入预算：{parts}，可用{available}（估算值）"
+
+
 def _copy_and_order(fragments: Sequence[ContextFragment]) -> tuple[ContextFragment, ...]:
     copied = tuple(fragment.model_copy(deep=True) for fragment in fragments)
     if len(copied) > 128:
@@ -156,8 +168,7 @@ class ContextEngine:
         fixed_tokens, available = history_tokens + tool_tokens, limits.available_input_tokens
         if fixed_tokens > available:
             raise ContextPreparationError(
-                "context_budget_exceeded",
-                "历史与工具定义超过可用Context输入预算，无法准备完整模型输入",
+                "context_budget_exceeded", _overflow(history_tokens, tool_tokens, None, available)
             )
 
         required = [fragment for fragment in fragments if _METADATA[fragment.kind][2]]
@@ -167,7 +178,8 @@ class ContextEngine:
         instruction_tokens = estimate_tokens(instructions or "")
         if fixed_tokens + instruction_tokens > available:
             raise ContextPreparationError(
-                "context_budget_exceeded", "Runtime 或用户必选指令超过可用 Context 输入预算"
+                "context_budget_exceeded",
+                _overflow(history_tokens, tool_tokens, instruction_tokens, available),
             )
 
         dispositions: dict[str, Literal["included", "omitted_budget"]] = {
