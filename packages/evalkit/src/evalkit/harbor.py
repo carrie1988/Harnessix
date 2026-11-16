@@ -46,6 +46,15 @@ _MAX_AGENT_ARTIFACT_BYTES = 64 * 1024 * 1024
 OVERSIZED_ARTIFACTS_REF = "oversized_artifacts"
 # executor_refs中Harbor为一次试次分配的唯一标识。
 TRIAL_REF = "harbor_trial_id"
+# 智能体适配器在安装阶段写入agent/的任务环境系统信息（integrations/harbor/environment_facts.py）；
+# 文件不合规时只是不记录，不中止导入。
+ENVIRONMENT_FILE = "environment.json"
+ENVIRONMENT_SPEC = "evalkit.agent-environment/v1"
+ENVIRONMENT_ARTIFACT = "harbor_agent_environment"
+AGENT_OS_REF = "agent_os"
+AGENT_ARCH_REF = "agent_arch"
+_ENVIRONMENT_REFS = {"os": AGENT_OS_REF, "arch": AGENT_ARCH_REF, "source": "environment_source"}
+_HOST_FIELDS = ("host_os", "host_kernel", "host_arch")
 _EXCEPTION_TYPE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,127}")
 _AGENT_EXCEPTIONS = frozenset(
     {"NonZeroAgentExitCodeError", "AgentSafetyRefusalError", "AgentTimeoutError"}
@@ -240,6 +249,31 @@ class _JobContext:
     source_timezone: str | None
 
 
+def _environment(trial_dir: Path, evidence_root: Path) -> tuple[dict[str, str], list[ArtifactRef]]:
+    """智能体实际运行的系统、架构与记录来源，以及评测主机系统；记录缺失或不合规时返回空。"""
+    path = trial_dir / "agent" / ENVIRONMENT_FILE
+    if not path.is_file() or path.is_symlink():
+        return {}, []
+    try:
+        document = read_json_object(path, 64 * 1024)
+    except EvalkitError:
+        return {}, []
+    if document.get("spec_version") != ENVIRONMENT_SPEC:
+        return {}, []
+
+    def text(key: str) -> str | None:
+        value = document.get(key)
+        return value if isinstance(value, str) and 0 < len(value) <= 128 else None
+
+    refs = {ref: value for key, ref in _ENVIRONMENT_REFS.items() if (value := text(key))}
+    host = " ".join(value for key in _HOST_FIELDS if (value := text(key)))
+    if host:
+        refs["host_os"] = host
+    if AGENT_OS_REF not in refs or AGENT_ARCH_REF not in refs:
+        return {}, []
+    return refs, [artifact_ref(ENVIRONMENT_ARTIFACT, path, evidence_root, _MAX_SOURCE_BYTES)]
+
+
 def _missing(slot: int, trial_lock: Any, context: _JobContext) -> TrialRecord:
     _, item_id, attempt = context.plan.slots()[slot]
     return TrialRecord(
@@ -298,6 +332,9 @@ def _record(
         path = trial_dir / "verifier" / filename
         if path.is_file() and not path.is_symlink():
             artifacts.append(artifact_ref(name, path, context.evidence_root, _MAX_SOURCE_BYTES))
+    environment_refs, environment_artifacts = _environment(trial_dir, context.evidence_root)
+    executor_refs.update(environment_refs)
+    artifacts.extend(environment_artifacts)
     oversized = []
     for name, path in sorted(parsed.artifact_files.items()):
         if not path.resolve(strict=True).is_relative_to(trial_dir.resolve()):

@@ -734,8 +734,12 @@ def test_full_content_policy_exports_step_text() -> None:
 
 
 def with_sessions(source: EvalRunReport) -> EvalRunReport:
-    """槽位0由系统自报会话，槽位1只有Harbor试次标识，槽位2两者都没有，槽位3是缺失试次。"""
-    refs = ({"session_id": "thread-0"}, {}), ({}, {"harbor_trial_id": "harbor-1"}), ({}, {})
+    """槽位0由系统自报会话并记录了运行环境，槽位1只有Harbor试次标识，槽位2两者都没有，槽位3缺失。"""
+    refs = (
+        ({"session_id": "thread-0"}, {"agent_os": "Debian GNU/Linux 12", "agent_arch": "x86_64"}),
+        ({}, {"harbor_trial_id": "harbor-1"}),
+        ({}, {}),
+    )
     trials = tuple(
         trial.model_copy(
             update={
@@ -768,7 +772,10 @@ def test_every_observation_of_a_trial_carries_its_session_name_and_tags() -> Non
         json.loads(values["langfuse.trace.tags"]) == ["smoke", "harnessix@v1", "case-0", "passed"]
         for values in first
     } == {True}
+    user = "harnessix@v1 · Debian GNU/Linux 12 · x86_64"
+    assert {values["langfuse.user.id"] for values in first} == {user}
     assert harbor_only[0]["langfuse.session.id"] == "harbor-1"
+    assert "langfuse.user.id" not in harbor_only[0]
     assert "langfuse.session.id" not in unreported[0]
     assert "langfuse.session.id" not in missing[0]
     assert missing[0]["langfuse.trace.name"] == "baseline@v1/case-1/attempt1"
@@ -786,6 +793,7 @@ def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
             "name": span["name"],
             "parentObservationId": span.get("parentSpanId"),
             "sessionId": values.get("langfuse.session.id", ""),
+            "userId": values.get("langfuse.user.id", ""),
         }
         if "langfuse.observation.model.name" in values:
             remote["model"] = values["langfuse.observation.model.name"]
@@ -834,7 +842,9 @@ def test_readback_verifies_step_observations(mode: str) -> None:
     )
 
 
-@pytest.mark.parametrize("mode", ["complete", "step_session", "root_session", "root_pending"])
+@pytest.mark.parametrize(
+    "mode", ["complete", "step_session", "root_session", "step_user", "root_pending"]
+)
 def test_readback_verifies_the_session_of_every_observation(mode: str) -> None:
     source = with_sessions(report())
     export = build_export(source, (step_trace(source),))
@@ -845,6 +855,8 @@ def test_readback_verifies_the_session_of_every_observation(mode: str) -> None:
         observations[first][-1]["sessionId"] = "other-session"
     elif mode == "root_session":
         observations[harbor_only][0]["sessionId"] = ""
+    elif mode == "step_user":
+        observations[first][1]["userId"] = "someone-else"
     elif mode == "root_pending":
         observations[harbor_only] = []
     requested = []

@@ -229,6 +229,29 @@ async def test_install_uploads_bundle_templates_runner_and_relay(tmp_path: Path)
     assert root_commands[1] == "mkdir -p /opt/harnessix"
 
 
+PROBE_OUTPUT = "Debian GNU/Linux\n12\nDebian GNU/Linux 12 (bookworm)\nLinux\nx86_64\n"
+
+
+async def test_install_records_the_task_environment_last(tmp_path: Path) -> None:
+    """安装阶段在任务容器里探测一次系统与架构，写入日志目录；不计入智能体运行时间。"""
+    instance = agent(tmp_path)
+    instance.exec_as_agent = AsyncMock()
+    instance.exec_as_root = AsyncMock()
+
+    async def upload(source, target):
+        pass
+
+    probe = AsyncMock(return_value=SimpleNamespace(return_code=0, stdout=PROBE_OUTPUT))
+    await instance.install(SimpleNamespace(upload_file=upload, exec=probe))
+    record = json.loads((tmp_path / "environment.json").read_text(encoding="utf-8"))
+    assert (record["os"], record["arch"], record["source"]) == (
+        "Debian GNU/Linux 12",
+        "x86_64",
+        "runtime",
+    )
+    assert probe.await_count == 1
+
+
 @pytest.mark.parametrize("enabled", [False, True])
 async def test_workspace_mode_normalization_runs_only_when_enabled(
     tmp_path: Path, enabled: bool

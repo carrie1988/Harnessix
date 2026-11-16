@@ -18,7 +18,7 @@ from evalkit.contracts import (
 )
 from evalkit.contracts import trial_outcome as _trial_outcome
 from evalkit.digest import content_digest
-from evalkit.harbor import TRIAL_REF
+from evalkit.harbor import AGENT_ARCH_REF, AGENT_OS_REF, TRIAL_REF
 from evalkit.langfuse.contracts import LangfuseExport
 from evalkit.langfuse.wire import Attributes, attributes, identifier, score_events, span
 from evalkit.steps import StepTrace
@@ -38,7 +38,8 @@ def _trace_attributes(
     分批发送时根与步骤也可能不在同一请求。
 
     sessionId标识一次会话：被测系统自报的会话标识优先，没有会话概念的系统以执行器的一次试次为一个会话；
-    没有执行的试次不设。名称为“系统@版本/题目/第几次”（从1数起）。
+    没有执行的试次不设。名称为“系统@版本/题目/第几次”（从1数起）。userId为“系统@版本 · 智能体实际
+    运行的系统 · 架构”，执行器没有记录运行环境时不设。
     """
     system = f"{arm.system}@{arm.system_version}"
     values: Attributes = {
@@ -48,6 +49,9 @@ def _trace_attributes(
     session = trial.system_refs.get(SESSION_REF) or trial.executor_refs.get(TRIAL_REF)
     if session is not None:
         values["langfuse.session.id"] = session
+    os_name, arch = trial.executor_refs.get(AGENT_OS_REF), trial.executor_refs.get(AGENT_ARCH_REF)
+    if os_name is not None and arch is not None:
+        values["langfuse.user.id"] = f"{system} · {os_name} · {arch}"
     return values
 
 

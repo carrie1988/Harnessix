@@ -123,6 +123,54 @@ def test_an_oversized_agent_artifact_only_affects_its_trial(
     assert evalkit_harbor.OVERSIZED_ARTIFACTS_REF not in trials[1].executor_refs
 
 
+ENVIRONMENT = {
+    "spec_version": "evalkit.agent-environment/v1",
+    "source": "runtime",
+    "os": "Debian GNU/Linux 12",
+    "os_pretty": "Debian GNU/Linux 12 (bookworm)",
+    "arch": "x86_64",
+    "host_os": "Ubuntu 22.04.5 LTS",
+    "host_kernel": "5.15.0-194-generic",
+    "host_arch": "x86_64",
+}
+
+
+@pytest.mark.parametrize(
+    "variant", ["recorded", "absent", "wrong_spec", "no_arch", "not_json", "too_long"]
+)
+def test_agent_environment_record_reaches_executor_refs(tmp_path: Path, variant: str) -> None:
+    job = harbor_job(tmp_path / "job", [Trial(reward=1.0)])
+    document: Any = dict(ENVIRONMENT)
+    if variant == "wrong_spec":
+        document["spec_version"] = "other/v1"
+    elif variant == "no_arch":
+        del document["arch"]
+    elif variant == "too_long":
+        document["os"] = "x" * 129
+    if variant != "absent":
+        (job / "trial-0-0" / "agent").mkdir()
+        body = "{" if variant == "not_json" else json.dumps(document)
+        (job / "trial-0-0" / "agent" / "environment.json").write_text(body)
+    trial = report_for(job, harbor_plan(1)).trials[0]
+    environment = {k: v for k, v in trial.executor_refs.items() if k in ENVIRONMENT_REFS}
+    artifacts = {a.name for a in trial.artifacts}
+    if variant == "recorded":
+        assert environment == {
+            "agent_os": "Debian GNU/Linux 12",
+            "agent_arch": "x86_64",
+            "environment_source": "runtime",
+            "host_os": "Ubuntu 22.04.5 LTS 5.15.0-194-generic x86_64",
+        }
+        assert "harbor_agent_environment" in artifacts
+    else:
+        assert environment == {}
+        assert "harbor_agent_environment" not in artifacts
+    assert trial.status == "completed"
+
+
+ENVIRONMENT_REFS = ("agent_os", "agent_arch", "environment_source", "host_os")
+
+
 def test_attempts_bind_to_plan_slots_and_job_must_cover_the_plan(tmp_path: Path) -> None:
     job = harbor_job(tmp_path / "job", [Trial(), Trial(reward=0.0)], attempts=2)
     trials = import_harbor_job(job, harbor_plan(2, attempts=2), "A", {}, tmp_path)

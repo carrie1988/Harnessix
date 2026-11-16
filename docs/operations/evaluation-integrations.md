@@ -85,7 +85,7 @@ score-create批次发送到api/public/ingestion。
 省略--verify时，submitted仅表示传输响应已确认。
 使用--verify时通过v4公开Experiments和Experiment Items API读取真实根Observation及评分，
 核对全部试次、输入输出摘要、身份、原币种、数值、评分归属及重复项，再经v2 observations核对步骤
-与每个Observation的sessionId，全部一致后才返回verified。
+与每个Observation的sessionId、userId，全部一致后才返回verified。
 不使用已经移除的旧Trace GET。默认读回预算120秒，可用--verify-timeout-seconds调整，最大600秒。
 API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据仅接受原整数或规范十进制字符串，
 布尔元数据仅接受布尔值或JSON规范的true/false字符串，不按数字或任意字符串推断真值。
@@ -95,14 +95,21 @@ API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据�
 每个组别是一个实验；报告改变（例如补充判分）产生新的实验身份。
 同一数据集条目的同一重复序号在各组别、各报告间共享条目ID，可直接对照。
 
-会话、名称与标签（2026-11-16用户决定，只对此后的导出生效，已导出的运行不补发）：
+会话、用户、名称与标签（2026-11-16用户决定，只对此后的导出生效，已导出的运行不补发）：
 
 - sessionId标识一次会话，同一会话的全部内容共用：被测系统自报的会话标识（`system_refs.session_id`，
   Harnessix取`thread_id`）优先；没有会话概念的系统（mini-swe-agent）以Harbor为该试次分配的标识为会话；
   没有执行的试次不设。
 - Trace名称为“系统@版本/题目/第几次”（从1数起），例如`harnessix@0.10.0b48/tinydb/attempt1`；
   标签为运行名、系统@版本、题目和结果（passed、failed或invalid）。
-- 三者写在试次的每个Observation（根与步骤）上：Langfuse v4按Observation存储这些字段，
+- userId为“系统@版本 · 智能体实际运行的系统 · 架构”，例如`harnessix@0.10.0b48 · Debian GNU/Linux 12 · x86_64`。
+  系统信息由适配器在安装阶段于任务容器内探测一次（`integrations/harbor/environment_facts.py`读`/etc/os-release`
+  与`uname`，不计入智能体耗时），连同评测主机系统写入`agent/environment.json`；导入时进入executor_refs
+  （`agent_os`、`agent_arch`、`environment_source`、`host_os`）并登记为制品。没有这份记录的试次
+  （对照组oracle与nop、没有执行的试次）不设userId。
+- 加入探测之前开跑的运行，导出前执行`python -m integrations.harbor.environment_facts --run-dir <运行目录>`，
+  用任务镜像在断网、用完即删的容器里执行同一探测补读，记为`environment_source=task_image`；已有记录的试次不动。
+- 这些字段写在试次的每个Observation（根与步骤）上：Langfuse v4按Observation存储这些字段，
   分批发送时根与步骤也可能不在同一请求。名称与标签公开API读不到，只在界面核对。
 Suite报告未包含预算明细，不能仅凭此投影证明预算公平；对照实验仍需核对冻结的原始计划。
 

@@ -19,8 +19,8 @@ _MAX_PAGES = 101
 _MAX_ITEMS_PER_EXPERIMENT = 10_000
 _SCORE_LIMIT = 50
 _METADATA = "langfuse.observation.metadata."
-# v2 observations的basic字段 ← 投影写在试次每个Observation上的会话属性；未设置时读回空字符串。
-_TRACE_FIELDS = {"sessionId": "langfuse.session.id"}
+# v2 observations的basic字段 ← 投影写在试次每个Observation上的会话与用户属性；未设置时读回空字符串。
+_TRACE_FIELDS = {"sessionId": "langfuse.session.id", "userId": "langfuse.user.id"}
 
 
 def _mismatch() -> EvalkitError:
@@ -244,10 +244,10 @@ def _trace_complete(
     expected: dict[str, dict[str, Any]],
     fields: dict[str, str],
 ) -> bool:
-    """一个Trace内只能有根Observation和投影的步骤，每一行的会话字段都与投影一致；缺少的视为尚未可见。
+    """一个Trace内只能有根Observation和投影的步骤，每一行的会话与用户字段都与投影一致；缺少的视为尚未可见。
 
     v4事件存储在后台合并前，同身份重发会读到多行；每一行都必须与投影一致，只计一次。
-    设有会话时根Observation也必须可见。
+    设有会话或用户时根Observation也必须可见。
     """
     seen = set()
     root_seen = False
@@ -275,7 +275,7 @@ def read_back(
     transport: httpx.BaseTransport | None = None,
 ) -> LangfuseReadback:
     """轮询v4公开Experiments与Experiment Items API，核对全部实验、槽位和评分；
-    再经v2 observations核对步骤及每个Observation的会话字段。不重发、不重跑。"""
+    再经v2 observations核对步骤及每个Observation的会话与用户字段。不重发、不重跑。"""
     if not math.isfinite(timeout_seconds) or not 0 < timeout_seconds <= 600:
         raise EvalkitError("langfuse_readback_budget_invalid", "Langfuse读回预算必须在0到600秒之间")
     raw = json.loads(export.model_dump_json())

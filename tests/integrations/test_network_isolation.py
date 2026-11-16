@@ -164,6 +164,23 @@ def test_compose_project_follows_harbor_and_rejects_other_environments() -> None
         compose_project(SimpleNamespace(session_id="x", type=lambda: "docker"))
 
 
+async def test_mini_install_records_the_task_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = evidence_agents.MiniSweAgentOffline(
+        logs_dir=tmp_path, model_name="openai/qwen3.8-flash-next"
+    )
+    monkeypatch.setattr(agent, "ensure_system_dependencies", AsyncMock())
+    monkeypatch.setattr(agent, "exec_as_agent", AsyncMock())
+    output = "Debian GNU/Linux\n10\nDebian GNU/Linux 10 (buster)\nLinux\nx86_64\n"
+    environment = SimpleNamespace(
+        exec=AsyncMock(return_value=SimpleNamespace(return_code=0, stdout=output))
+    )
+    await agent.install(environment)
+    record = json.loads((tmp_path / "environment.json").read_text(encoding="utf-8"))
+    assert (record["os"], record["source"]) == ("Debian GNU/Linux 10", "runtime")
+
+
 @pytest.mark.parametrize("enabled", [False, True])
 async def test_mini_runs_offline_only_when_enabled_and_installs_online(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, enabled: bool
