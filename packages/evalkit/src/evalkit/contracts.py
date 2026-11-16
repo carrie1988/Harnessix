@@ -19,6 +19,8 @@ Digest = Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")]
 Identifier = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$")]
 ShortText = Annotated[str, StringConstraints(min_length=1, max_length=256)]
 RefKey = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
+# system_refs中被测系统自报的会话标识：同一会话的全部内容共用（Harnessix为thread_id）。
+SESSION_REF = "session_id"
 Completeness = Literal["complete", "partial", "unknown"]
 Provenance = Literal["preregistered", "backfilled"]
 

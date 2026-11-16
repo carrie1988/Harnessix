@@ -7,9 +7,18 @@ from datetime import datetime
 
 from pydantic import JsonValue
 
-from evalkit.contracts import ArmSpec, DatasetItem, EvalRunReport, Outcome, RunPlan, TrialRecord
+from evalkit.contracts import (
+    SESSION_REF,
+    ArmSpec,
+    DatasetItem,
+    EvalRunReport,
+    Outcome,
+    RunPlan,
+    TrialRecord,
+)
 from evalkit.contracts import trial_outcome as _trial_outcome
 from evalkit.digest import content_digest
+from evalkit.harbor import TRIAL_REF
 from evalkit.langfuse.contracts import LangfuseExport
 from evalkit.langfuse.wire import Attributes, attributes, identifier, score_events, span
 from evalkit.steps import StepTrace
@@ -20,6 +29,26 @@ _METADATA = "langfuse.observation.metadata."
 def _experiment_name(plan: RunPlan, arm: ArmSpec, digest: str) -> str:
     prefix = "backfilled/" if plan.provenance == "backfilled" else ""
     return f"{prefix}{plan.run_name}/{arm.arm_id}/{digest.removeprefix('sha256:')[:12]}"
+
+
+def _trace_attributes(
+    plan: RunPlan, arm: ArmSpec, item: DatasetItem, trial: TrialRecord, outcome: Outcome
+) -> Attributes:
+    """会话、名称与标签写在试次的每个Observation上：Langfuse v4按Observation存储这些字段，
+    分批发送时根与步骤也可能不在同一请求。
+
+    sessionId标识一次会话：被测系统自报的会话标识优先，没有会话概念的系统以执行器的一次试次为一个会话；
+    没有执行的试次不设。名称为“系统@版本/题目/第几次”（从1数起）。
+    """
+    system = f"{arm.system}@{arm.system_version}"
+    values: Attributes = {
+        "langfuse.trace.name": f"{system}/{item.item_id}/attempt{trial.attempt + 1}",
+        "langfuse.trace.tags": json.dumps([plan.run_name, system, item.item_id, outcome]),
+    }
+    session = trial.system_refs.get(SESSION_REF) or trial.executor_refs.get(TRIAL_REF)
+    if session is not None:
+        values["langfuse.session.id"] = session
+    return values
 
 
 def _experiment_attributes(
@@ -134,7 +163,11 @@ def _usage_details(step_usage: object) -> str | None:
 
 
 def _step_spans(
-    trace_id: str, root_span_id: str, trace: StepTrace, full_content: bool
+    trace_id: str,
+    root_span_id: str,
+    trace: StepTrace,
+    full_content: bool,
+    trace_fields: Attributes,
 ) -> list[JsonValue]:
     """系统适配器提供的步骤投影为根Observation之下的子Observation；正文只在完整内容级别导出。"""
     steps = (trace if full_content else trace.without_content()).steps
@@ -157,6 +190,7 @@ def _step_spans(
             values["langfuse.observation.input"] = step.input_text
         if step.output_text is not None:
             values["langfuse.observation.output"] = step.output_text
+        values.update(trace_fields)
         parent = ids[step.parent_step_id] if step.parent_step_id else root_span_id
         result.append(
             span(
@@ -203,8 +237,10 @@ def build_export(report: EvalRunReport, step_traces: tuple[StepTrace, ...] = ())
         trace_id = identifier("evalkit.trace/v1", digest, str(trial.slot))[:32]
         span_id = identifier("evalkit.root/v1", trace_id)[:16]
         start, end = _window(report, trial)
+        trace_fields = _trace_attributes(plan, arm, item, trial, outcome)
         metadata = _experiment_attributes(report, digest, arm, item, trial, outcome, span_id)
         metadata.update(_metadata(report, digest, arm, item, trial, outcome))
+        metadata.update(trace_fields)
         spans.append(
             span(trace_id, span_id, "evalkit.trial", start, end, outcome == "passed", metadata)
         )
@@ -212,7 +248,8 @@ def build_export(report: EvalRunReport, step_traces: tuple[StepTrace, ...] = ())
         scores.extend(score_events(trace_id, span_id, values, end))
         if trial.slot in steps_by_slot:
             full = plan.content_policy == "full"
-            spans.extend(_step_spans(trace_id, span_id, steps_by_slot[trial.slot], full))
+            steps = steps_by_slot[trial.slot]
+            spans.extend(_step_spans(trace_id, span_id, steps, full, trace_fields))
     return LangfuseExport(
         source_report_digest=digest,
         plan_digest=report.plan_digest,

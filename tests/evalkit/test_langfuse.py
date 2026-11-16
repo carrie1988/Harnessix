@@ -733,6 +733,48 @@ def test_full_content_policy_exports_step_text() -> None:
     assert "PRIVATE-PROMPT" in body and "PRIVATE-REPLY" in body
 
 
+def with_sessions(source: EvalRunReport) -> EvalRunReport:
+    """槽位0由系统自报会话，槽位1只有Harbor试次标识，槽位2两者都没有，槽位3是缺失试次。"""
+    refs = ({"session_id": "thread-0"}, {}), ({}, {"harbor_trial_id": "harbor-1"}), ({}, {})
+    trials = tuple(
+        trial.model_copy(
+            update={
+                "system_refs": {**trial.system_refs, **refs[trial.slot][0]},
+                "executor_refs": refs[trial.slot][1],
+            }
+        )
+        if trial.slot < len(refs)
+        else trial
+        for trial in source.trials
+    )
+    return source.model_copy(update={"trials": trials})
+
+
+def roots_of(export: LangfuseExport) -> list[dict[str, Any]]:
+    return [span for span in spans_of(export) if "langfuse.experiment.id" in attrs(span)]
+
+
+def test_every_observation_of_a_trial_carries_its_session_name_and_tags() -> None:
+    source = with_sessions(report())
+    export = build_export(source, (step_trace(source),))
+    by_trace: dict[str, list[dict[str, Any]]] = {}
+    for span in spans_of(export):
+        by_trace.setdefault(span["traceId"], []).append(attrs(span))
+    first, harbor_only, unreported, missing = by_trace.values()
+    assert len(first) == 3
+    assert {values["langfuse.session.id"] for values in first} == {"thread-0"}
+    assert {values["langfuse.trace.name"] for values in first} == {"harnessix@v1/case-0/attempt1"}
+    assert {
+        json.loads(values["langfuse.trace.tags"]) == ["smoke", "harnessix@v1", "case-0", "passed"]
+        for values in first
+    } == {True}
+    assert harbor_only[0]["langfuse.session.id"] == "harbor-1"
+    assert "langfuse.session.id" not in unreported[0]
+    assert "langfuse.session.id" not in missing[0]
+    assert missing[0]["langfuse.trace.name"] == "baseline@v1/case-1/attempt1"
+    assert json.loads(missing[0]["langfuse.trace.tags"])[-1] == "invalid"
+
+
 def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
     by_trace: dict[str, list[dict]] = {}
     for span in spans_of(export):
@@ -743,6 +785,7 @@ def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
             "type": str(values["langfuse.observation.type"]).upper(),
             "name": span["name"],
             "parentObservationId": span.get("parentSpanId"),
+            "sessionId": values.get("langfuse.session.id", ""),
         }
         if "langfuse.observation.model.name" in values:
             remote["model"] = values["langfuse.observation.model.name"]
@@ -788,4 +831,39 @@ def test_readback_verifies_step_observations(mode: str) -> None:
         verify(export, handler, timeout=0.05)
     assert error.value.code == (
         "langfuse_readback_timeout" if mode == "pending" else "langfuse_readback_mismatch"
+    )
+
+
+@pytest.mark.parametrize("mode", ["complete", "step_session", "root_session", "root_pending"])
+def test_readback_verifies_the_session_of_every_observation(mode: str) -> None:
+    source = with_sessions(report())
+    export = build_export(source, (step_trace(source),))
+    experiments, items = remote_view(export)
+    observations = remote_steps(export)
+    first, harbor_only = (root["traceId"] for root in roots_of(export)[:2])
+    if mode == "step_session":
+        observations[first][-1]["sessionId"] = "other-session"
+    elif mode == "root_session":
+        observations[harbor_only][0]["sessionId"] = ""
+    elif mode == "root_pending":
+        observations[harbor_only] = []
+    requested = []
+    base = serve(experiments, items)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/v2/observations"):
+            requested.append(request.url.params["traceId"])
+            data = observations[request.url.params["traceId"]]
+            return httpx.Response(200, json={"data": data, "meta": {}})
+        return base(request)
+
+    if mode == "complete":
+        result = verify(export, handler)
+        assert (result.verified_trials, result.verified_steps) == (4, 2)
+        assert set(requested) == {first, harbor_only}
+        return
+    with pytest.raises(EvalkitError) as error:
+        verify(export, handler, timeout=0.05)
+    assert error.value.code == (
+        "langfuse_readback_timeout" if mode == "root_pending" else "langfuse_readback_mismatch"
     )

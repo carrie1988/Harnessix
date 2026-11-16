@@ -44,6 +44,8 @@ _MAX_SOURCE_BYTES = 8 * 1024 * 1024
 # SWE-bench补丁是整个仓库的改动，可含二进制文件；超过上限的智能体制品只影响本试次（见_record）。
 _MAX_AGENT_ARTIFACT_BYTES = 64 * 1024 * 1024
 OVERSIZED_ARTIFACTS_REF = "oversized_artifacts"
+# executor_refs中Harbor为一次试次分配的唯一标识。
+TRIAL_REF = "harbor_trial_id"
 _EXCEPTION_TYPE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,127}")
 _AGENT_EXCEPTIONS = frozenset(
     {"NonZeroAgentExitCodeError", "AgentSafetyRefusalError", "AgentTimeoutError"}
@@ -279,7 +281,7 @@ def _record(
         raise ValueError("Harbor试次时间超出Job窗口")
     executor_refs = {
         "harbor_job_id": str(context.job_id),
-        "harbor_trial_id": str(UUID(result["id"])),
+        TRIAL_REF: str(UUID(result["id"])),
         "input_lock_sha256": _digest(trial_lock),
         "agent_name": agent_name,
         "agent_version": info.get("version"),

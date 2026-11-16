@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 9
+version: 10
 code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners: [core]
 modules: [evals, observability, sdk]
@@ -84,7 +84,8 @@ score-create批次发送到api/public/ingestion。
 每批必须逐项确认；错误、部分接收或超时返回非零，本地投影保留。
 省略--verify时，submitted仅表示传输响应已确认。
 使用--verify时通过v4公开Experiments和Experiment Items API读取真实根Observation及评分，
-核对全部试次、输入输出摘要、身份、原币种、数值、评分归属及重复项后才返回verified。
+核对全部试次、输入输出摘要、身份、原币种、数值、评分归属及重复项，再经v2 observations核对步骤
+与每个Observation的sessionId，全部一致后才返回verified。
 不使用已经移除的旧Trace GET。默认读回预算120秒，可用--verify-timeout-seconds调整，最大600秒。
 API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据仅接受原整数或规范十进制字符串，
 布尔元数据仅接受布尔值或JSON规范的true/false字符串，不按数字或任意字符串推断真值。
@@ -93,6 +94,16 @@ API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据�
 同一报告重发使用相同实验、Trace、Span、评分ID与时间；不会重跑原任务。
 每个组别是一个实验；报告改变（例如补充判分）产生新的实验身份。
 同一数据集条目的同一重复序号在各组别、各报告间共享条目ID，可直接对照。
+
+会话、名称与标签（2026-11-16用户决定，只对此后的导出生效，已导出的运行不补发）：
+
+- sessionId标识一次会话，同一会话的全部内容共用：被测系统自报的会话标识（`system_refs.session_id`，
+  Harnessix取`thread_id`）优先；没有会话概念的系统（mini-swe-agent）以Harbor为该试次分配的标识为会话；
+  没有执行的试次不设。
+- Trace名称为“系统@版本/题目/第几次”（从1数起），例如`harnessix@0.10.0b48/tinydb/attempt1`；
+  标签为运行名、系统@版本、题目和结果（passed、failed或invalid）。
+- 三者写在试次的每个Observation（根与步骤）上：Langfuse v4按Observation存储这些字段，
+  分批发送时根与步骤也可能不在同一请求。名称与标签公开API读不到，只在界面核对。
 Suite报告未包含预算明细，不能仅凭此投影证明预算公平；对照实验仍需核对冻结的原始计划。
 
 导出只有真实试次的起止时间与结构化摘要。聚合Token不生成伪造的逐调用generation，

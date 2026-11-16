@@ -19,6 +19,8 @@ _MAX_PAGES = 101
 _MAX_ITEMS_PER_EXPERIMENT = 10_000
 _SCORE_LIMIT = 50
 _METADATA = "langfuse.observation.metadata."
+# v2 observations的basic字段 ← 投影写在试次每个Observation上的会话属性；未设置时读回空字符串。
+_TRACE_FIELDS = {"sessionId": "langfuse.session.id"}
 
 
 def _mismatch() -> EvalkitError:
@@ -231,23 +233,36 @@ def _step_matches(remote: dict[str, Any], span: dict[str, Any]) -> None:
             raise _mismatch()
 
 
-def _steps_complete(
-    remote: list[dict[str, Any]], root_id: str, expected: dict[str, dict[str, Any]]
+def _trace_fields(root: dict[str, Any]) -> dict[str, str]:
+    attrs = _attributes(root)
+    return {field: str(attrs.get(key, "")) for field, key in _TRACE_FIELDS.items()}
+
+
+def _trace_complete(
+    remote: list[dict[str, Any]],
+    root_id: str,
+    expected: dict[str, dict[str, Any]],
+    fields: dict[str, str],
 ) -> bool:
-    """一个Trace内只能有根Observation和投影的步骤；缺少的步骤视为尚未可见。
+    """一个Trace内只能有根Observation和投影的步骤，每一行的会话字段都与投影一致；缺少的视为尚未可见。
 
     v4事件存储在后台合并前，同身份重发会读到多行；每一行都必须与投影一致，只计一次。
+    设有会话时根Observation也必须可见。
     """
     seen = set()
+    root_seen = False
     for observation in remote:
+        if any((observation.get(name) or "") != value for name, value in fields.items()):
+            raise _mismatch()
         identity = observation["id"]
         if identity == root_id:
+            root_seen = True
             continue
         if identity not in expected:
             raise _mismatch()
         _step_matches(observation, expected[identity])
         seen.add(identity)
-    return len(seen) == len(expected)
+    return len(seen) == len(expected) and (root_seen or not any(fields.values()))
 
 
 def read_back(
@@ -259,7 +274,8 @@ def read_back(
     timeout_seconds: float = 120,
     transport: httpx.BaseTransport | None = None,
 ) -> LangfuseReadback:
-    """轮询v4公开Experiments与Experiment Items API，核对全部实验、槽位和评分；不重发、不重跑。"""
+    """轮询v4公开Experiments与Experiment Items API，核对全部实验、槽位和评分；
+    再经v2 observations核对步骤及每个Observation的会话字段。不重发、不重跑。"""
     if not math.isfinite(timeout_seconds) or not 0 < timeout_seconds <= 600:
         raise EvalkitError("langfuse_readback_budget_invalid", "Langfuse读回预算必须在0到600秒之间")
     raw = json.loads(export.model_dump_json())
@@ -267,6 +283,7 @@ def read_back(
     by_experiment: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     steps: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     roots: dict[str, str] = {}
+    fields: dict[str, dict[str, str]] = {}
     for span in spans:
         experiment = _attributes(span).get("langfuse.experiment.id")
         if experiment is None:
@@ -274,6 +291,7 @@ def read_back(
         else:
             by_experiment[experiment][span["spanId"]] = span
             roots[span["traceId"]] = span["spanId"]
+            fields[span["traceId"]] = _trace_fields(span)
     scores: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for score in raw["scores"]:
         scores[score["observationId"]].append(score)
@@ -305,7 +323,10 @@ def read_back(
                     deadline,
                 )
                 complete = _experiment_complete(experiments, items, expected, scores) and complete
-            for trace_id, expected_steps in steps.items():
+            for trace_id, root_id in roots.items():
+                expected_steps = steps.get(trace_id, {})
+                if not expected_steps and not any(fields[trace_id].values()):
+                    continue
                 observations = _pages(
                     http,
                     "api/public/v2/observations",
@@ -313,7 +334,8 @@ def read_back(
                     deadline,
                 )
                 complete = (
-                    _steps_complete(observations, roots[trace_id], expected_steps) and complete
+                    _trace_complete(observations, root_id, expected_steps, fields[trace_id])
+                    and complete
                 )
             if complete:
                 return LangfuseReadback(

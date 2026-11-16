@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from evalkit.contracts import TrialStatus, Usage
+from evalkit.contracts import SESSION_REF, TrialStatus, Usage
 from evalkit.harbor import AgentResult
 
 # 服务方故障码，与产品harnessix.agent.provider_stop.SERVICE_FAILURE_CODES一致（由测试核对）。
@@ -40,6 +40,14 @@ _REFS = (
     "tool_results_succeeded",
     "final_assistant_sha256",
 )
+
+
+def _system_refs(native: Mapping[str, Any]) -> dict[str, str]:
+    """Harnessix的一次会话即一个Thread，thread_id同时作为评测的会话标识。"""
+    refs = {k: _ref(native[k]) for k in _REFS if native.get(k) is not None}
+    if "thread_id" in refs:
+        refs[SESSION_REF] = refs["thread_id"]
+    return refs
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -125,5 +133,5 @@ class HarnessixResultParser:
                 if path.is_file()
                 and (name != STATE_ARTIFACT or path.stat().st_size <= STATE_ARTIFACT_MAX_BYTES)
             },
-            system_refs={k: _ref(native[k]) for k in _REFS if native.get(k) is not None},
+            system_refs=_system_refs(native),
         )
