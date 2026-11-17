@@ -20,7 +20,7 @@ import os
 import pstats
 import statistics
 import sys
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Callable, Coroutine, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -153,7 +153,7 @@ def seed_workspace(workspace: Path) -> None:
         (package / f"warehouse_{index:02d}.py").write_text(_module_source(index), encoding="utf-8")
 
 
-def _tool_call(kind: str, step: int) -> tuple[str, dict[str, object]]:
+def tool_call(kind: str, step: int) -> tuple[str, dict[str, object]]:
     module = step % _MODULES
     function = step % _FUNCTIONS_PER_MODULE
     path = f"inventory/warehouse_{module:02d}.py"
@@ -170,7 +170,7 @@ def _tool_call(kind: str, step: int) -> tuple[str, dict[str, object]]:
     return "apply_patch_batch", {"files": [{"operation": "edit", "path": path, "edits": [edit]}]}
 
 
-def _narration(step: int, text: str) -> list[ProviderEvent]:
+def narration(step: int, text: str) -> list[ProviderEvent]:
     content = f"text-{step}"
     size = -(-len(text) // _TEXT_DELTAS)
     deltas = [text[offset : offset + size] for offset in range(0, len(text), size)]
@@ -181,7 +181,7 @@ def _narration(step: int, text: str) -> list[ProviderEvent]:
     ]
 
 
-def _model_step(step: int, events: Sequence[ProviderEvent]) -> list[ProviderEvent]:
+def model_step(step: int, events: Sequence[ProviderEvent]) -> list[ProviderEvent]:
     """按真实Provider的顺序包上尝试、用量与回复终态。"""
     attempt = uuid4()
     usage = Usage(input_tokens=2_000 + 600 * step, output_tokens=180)
@@ -213,16 +213,16 @@ def build_script(steps: int) -> tuple[list[list[ProviderEvent]], list[str]]:
     tools: list[str] = []
     for step in range(1, steps + 1):
         kind = _STEP_CYCLE[(step - 1) % len(_STEP_CYCLE)]
-        tool, arguments = _tool_call(kind, step)
+        tool, arguments = tool_call(kind, step)
         tools.append(tool)
         text = (
             f"Step {step}: the reconciliation path still loses records when the ledger entry "
             f"is absent, so I check the {kind} evidence for warehouse {step % _MODULES} next."
         )
         call = ToolCallCompleted(call_id=f"bench-call-{step}", tool=tool, arguments=arguments)
-        script.append(_model_step(step, [*_narration(step, text), call]))
+        script.append(model_step(step, [*narration(step, text), call]))
     summary = "The reconciliation markers are updated and the affected modules were re-read."
-    script.append(_model_step(steps + 1, _narration(steps + 1, summary)))
+    script.append(model_step(steps + 1, narration(steps + 1, summary)))
     return script, tools
 
 
@@ -290,7 +290,7 @@ def step_timings(
     return tuple(timings)
 
 
-def _failed_tool_results(events: Sequence[PublicEvent]) -> int:
+def failed_tool_results(events: Sequence[PublicEvent]) -> int:
     failed = 0
     for event in events:
         if event.data.type != "item_finished":
@@ -301,13 +301,27 @@ def _failed_tool_results(events: Sequence[PublicEvent]) -> int:
     return failed
 
 
-async def run_benchmark(
-    root: Path, *, steps: int = 60, delta_interval_seconds: float = 0.0
-) -> BenchReport:
-    """在root下建工作区与状态目录并跑完一个Turn；root须为已存在的空目录，且不在任何工作区内。
+@dataclass(frozen=True)
+class ScriptedTurn:
+    """一次脚本化Turn的原始观测；状态目录留在root下，调用方可继续读取其中的持久事实。"""
 
-    delta_interval_seconds大于0时脚本在每个模型事件前等待这么久，用来观察流式输出期间客户端轮询
-    对宿主的占用；等待本身从model_call中减去。
+    events: tuple[PublicEvent, ...]
+    cpu_marks: tuple[float, ...]
+    wall_seconds: float
+    reason: str
+    state: Path
+
+
+async def run_scripted_turn(
+    root: Path,
+    script: Sequence[Sequence[ProviderEvent]],
+    *,
+    delta_interval_seconds: float = 0.0,
+) -> ScriptedTurn:
+    """在root下建工作区与状态目录，以评测同款装配跑完script描述的一个Turn。
+
+    root须为已存在的空目录，且不在任何工作区内。delta_interval_seconds大于0时脚本在每个模型事件前
+    等待这么久，用来观察流式输出期间客户端轮询对宿主的占用。
     """
     workspace, state = root / "workspace", root / "state"
     workspace.mkdir()
@@ -318,7 +332,6 @@ async def run_benchmark(
     actions.write_text(action_config(environment=environment), encoding="utf-8")
     for path in (config, actions):
         path.chmod(0o600)
-    script, tools = build_script(steps)
     provider = ClockedScriptedProvider(script, delay_seconds=delta_interval_seconds)
     events: list[PublicEvent] = []
     receipts: list[dict[str, object]] = []
@@ -337,7 +350,7 @@ async def run_benchmark(
                     workspace=str(workspace),
                     instruction="Reconcile the inventory markers and verify the affected modules.",
                     budget=PublicBudget(
-                        max_steps=steps + 8,
+                        max_steps=len(script) + 7,
                         max_tokens=50_000_000,
                         timeout_seconds=3600,
                         max_output_chars=65_536,
@@ -377,17 +390,32 @@ async def run_benchmark(
                 os.environ[name] = value
     wall = perf_counter() - started
     (receipt,) = receipts
-    sessions = state / "sessions.db"
-    return BenchReport(
-        steps=step_timings(
-            events,
-            tools,
-            [len(step) * delta_interval_seconds for step in script[:steps]],
-            provider.cpu_marks,
-        ),
+    return ScriptedTurn(
+        events=tuple(events),
+        cpu_marks=tuple(provider.cpu_marks),
         wall_seconds=wall,
         reason=str(receipt["reason"]),
-        failed_tool_results=_failed_tool_results(events),
+        state=state,
+    )
+
+
+async def run_benchmark(
+    root: Path, *, steps: int = 60, delta_interval_seconds: float = 0.0
+) -> BenchReport:
+    """按评测的工具占比跑steps个工具步骤；脚本的等待从model_call中减去。"""
+    script, tools = build_script(steps)
+    turn = await run_scripted_turn(root, script, delta_interval_seconds=delta_interval_seconds)
+    sessions = turn.state / "sessions.db"
+    return BenchReport(
+        steps=step_timings(
+            turn.events,
+            tools,
+            [len(step) * delta_interval_seconds for step in script[:steps]],
+            turn.cpu_marks,
+        ),
+        wall_seconds=turn.wall_seconds,
+        reason=turn.reason,
+        failed_tool_results=failed_tool_results(turn.events),
         session_bytes=sessions.stat().st_size if sessions.is_file() else 0,
     )
 
@@ -410,14 +438,12 @@ def format_report(report: BenchReport) -> str:
     return "\n".join(lines)
 
 
-def _profiled(root: Path, steps: int, delta_interval_seconds: float) -> BenchReport:
+def profiled[Report](run: Callable[[], Coroutine[object, object, Report]]) -> Report:
     """只剖析事件循环线程：宿主开销几乎都是这里的CPU时间，SQLite工作线程的占比很小。"""
     profiler = cProfile.Profile()
     profiler.enable()
     try:
-        return asyncio.run(
-            run_benchmark(root, steps=steps, delta_interval_seconds=delta_interval_seconds)
-        )
+        return asyncio.run(run())
     finally:
         profiler.disable()
         pstats.Stats(profiler).strip_dirs().sort_stats("tottime").print_stats(40)
@@ -433,12 +459,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     interval = arguments.delta_interval_ms / 1000
     with TemporaryDirectory(prefix="harnessix-overhead-") as directory:
         root = Path(directory).resolve()
-        if arguments.profile:
-            report = _profiled(root, arguments.steps, interval)
-        else:
-            report = asyncio.run(
-                run_benchmark(root, steps=arguments.steps, delta_interval_seconds=interval)
-            )
+
+        def run() -> Coroutine[object, object, BenchReport]:
+            return run_benchmark(root, steps=arguments.steps, delta_interval_seconds=interval)
+
+        report = profiled(run) if arguments.profile else asyncio.run(run())
     print(format_report(report))
     if arguments.json is not None:
         body = {
