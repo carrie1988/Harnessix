@@ -11,6 +11,7 @@ from typing import Literal, Protocol, cast
 from harnessix.agent.errors import KernelError
 from harnessix.tools.contracts import MAX_SCAN_BYTES, ReadErrorCode, ReadToolError
 from harnessix.tools.workspace import ReadOperation, WorkspaceReadPolicy, digest
+from harnessix.workspace.paths import has_windows_short_name
 from harnessix.workspace.windows import WindowsWorkspaceRoot, windows_port_source_digest
 from harnessix.workspace.windows_directory_cache import DirectoryHandles
 
@@ -154,6 +155,9 @@ class WindowsReadPort:
 
     def path(self, path: str) -> str:
         parts = self.policy.parts(path)
+        # 敏感名称按请求字符串拒绝；ENV~1等8.3短名称会被系统解析到.env，同样拒绝（ADR 0170）。
+        if has_windows_short_name(path):
+            raise ReadToolError("path_denied")
         return "/".join(parts) if parts else "."
 
     def observe(

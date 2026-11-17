@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 25
+version: 26
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
   - workspace
 related_adrs:
+  - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0069-unified-coding-action-risk-route.md
@@ -15,6 +16,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0137-create-with-missing-parent-directories.md
 related_tests:
+  - tests/delivery/test_windows_short_names.py
   - tests/workspace/test_snapshot_missing_parents.py
   - tests/workspace/test_snapshot_v2_capture_progress.py
   - tests/workspace/test_snapshot_v2_native_progress.py
@@ -48,6 +50,10 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：8.3短名称形状判断（ADR 0170）
+
+- [`paths.has_windows_short_name`](../../src/harnessix/workspace/paths.py)：任一段含“`~`数字”即视为Windows 8.3短名称。只供模型提交路径的读写入口（Windows读取端口、Patch与事务规划）使用。通用的`normalize_workspace_path`不加这条规则：Git清单与树投影也调用它，仓库里真名含“`~`数字”的文件不能因此让Git交付失败。
 
 ## 当前增量：Windows一次读取操作内每个目录只打开一次（ADR 0160第2版）
 

@@ -284,7 +284,10 @@ def test_glob_grep_and_capture_share_search_budgets(
     assert result.stats.files_read == 1 and result.scan_complete
 
 
-@pytest.mark.parametrize("path", [".env", "private/file", "../outside", "a\\b"])
+@pytest.mark.parametrize(
+    "path",
+    [".env", "private/file", "../outside", "a\\b", "ENV~1", "SSH~1/config", "src/GIT~1/config"],
+)
 def test_denied_paths_fail_before_content_is_returned(
     runtime: WindowsReadRuntime,
     path: str,
@@ -292,6 +295,18 @@ def test_denied_paths_fail_before_content_is_returned(
     with pytest.raises(ReadToolError) as denied:
         runtime.read_file(ReadFileInput(path=path), ReadOperation())
     assert denied.value.code == "path_denied"
+
+
+def test_names_with_a_tilde_but_no_short_name_shape_stay_readable(
+    tmp_path: Path,
+    runtime: WindowsReadRuntime,
+) -> None:
+    """ADR 0170只拒绝“~数字”形状（8.3短名称）；编辑器备份等普通含~名称照常可读。"""
+    (tmp_path / "notes~").write_text("backup\n", encoding="utf-8")
+    (tmp_path / "a~b.txt").write_text("tilde\n", encoding="utf-8")
+
+    assert "backup" in runtime.read_file(ReadFileInput(path="notes~"), ReadOperation()).text
+    assert "tilde" in runtime.read_file(ReadFileInput(path="a~b.txt"), ReadOperation()).text
 
 
 def test_links_binary_limits_and_cancellation_fail_closed(
