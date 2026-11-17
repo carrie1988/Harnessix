@@ -21,6 +21,7 @@ from harnessix.execution.contracts import (
 from harnessix.execution.planner import build_execution_plan_v2, build_execution_plan_v3
 from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.tools.argument_feedback import invalid_argument_message
+from harnessix.tools.contracts import ReadToolError
 from harnessix.tools.workspace import ReadOperation
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
@@ -35,7 +36,7 @@ from harnessix.trusted_actions.policy import DefaultCodingRiskPolicy
 from harnessix.trusted_actions.public_errors import sanitize_plan_exception
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
 from harnessix.trusted_actions.versioned_contracts import ActionRoutePlanV2
-from harnessix.workspace.contracts import WorkspaceSnapshot
+from harnessix.workspace.contracts import WorkspaceResourceRequest, WorkspaceSnapshot
 from harnessix.workspace.native_observation_io import NativeReadOperation, UpstreamCheckpointError
 from harnessix.workspace.snapshot import capture_workspace_snapshot
 from harnessix.workspace.snapshot_contracts import WorkspaceSnapshotV2
@@ -124,26 +125,7 @@ def _plan_normalized_action(
         decision = policy.evaluate(binding, resources, context.sandbox, context.secrets)
     except Exception as error:
         raise sanitize_plan_exception(error, stage="policy") from None
-    workspace: WorkspaceSnapshot | WorkspaceSnapshotV2
-    if context.snapshot_ports is None:
-        workspace = capture_workspace_snapshot(
-            context.workspace_root,
-            cwd=context.cwd,
-            resources=resolved.workspace_resources,
-            external_roots=context.external_roots,
-            platform=context.capabilities.platform,
-        )
-    else:
-        workspace = capture_workspace_snapshot_v2(
-            context.workspace_root,
-            cwd=context.cwd,
-            resources=resolved.workspace_resources,
-            external_roots=context.external_roots,
-            platform=context.capabilities.platform,
-            checkpoint=_planning_checkpoint(context),
-            write_blob=context.snapshot_ports.write_blob,
-            read_blob=context.snapshot_ports.read_blob,
-        )
+    workspace = _capture_workspace(context, resolved.workspace_resources)
     if resolved.expected_workspace is not None and workspace != resolved.expected_workspace:
         raise KernelError(
             "action_preparation_workspace_changed", "可信准备后Workspace完整观察已变化"
@@ -160,6 +142,40 @@ def _plan_normalized_action(
     snapshot = audit.save_plan(route, initial_state=initial_state)
     plans.save_plan(route.execution)
     return snapshot
+
+
+def _capture_workspace(
+    context: ActionPlanningContext, resources: Sequence[WorkspaceResourceRequest]
+) -> WorkspaceSnapshot | WorkspaceSnapshotV2:
+    """规划时观察Workspace资源；工作区策略拒绝的路径（如密钥文件）按可修正的路径拒绝报告。
+
+    快照按工作区读取策略打开每个资源，保护名称与后缀（.ssh、.env、.key、.pem等）在这里以
+    ReadToolError("path_denied")失败。它与Delivery层的保护路径同属“这个路径不能写”，此前未转换，
+    整轮以runtime_error中断（2026-11-17 NL2RepoBench冒烟：wsgidav新建sample_bogo_server.key）。
+    """
+    try:
+        if context.snapshot_ports is None:
+            return capture_workspace_snapshot(
+                context.workspace_root,
+                cwd=context.cwd,
+                resources=resources,
+                external_roots=context.external_roots,
+                platform=context.capabilities.platform,
+            )
+        return capture_workspace_snapshot_v2(
+            context.workspace_root,
+            cwd=context.cwd,
+            resources=resources,
+            external_roots=context.external_roots,
+            platform=context.capabilities.platform,
+            checkpoint=_planning_checkpoint(context),
+            write_blob=context.snapshot_ports.write_blob,
+            read_blob=context.snapshot_ports.read_blob,
+        )
+    except ReadToolError as error:
+        if error.code == "path_denied":
+            raise KernelError("delivery_path_denied", "Workspace Patch路径不允许写入") from None
+        raise
 
 
 def _planning_checkpoint(context: ActionPlanningContext) -> Callable[[], None]:
