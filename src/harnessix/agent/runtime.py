@@ -41,6 +41,7 @@ from harnessix.agent.completion_guard import (
 )
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
+from harnessix.agent.generation_progress import announce_compaction
 from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
@@ -1740,6 +1741,7 @@ class AgentRuntime:
             accounted = current
 
         await protect_request(request, self._public_output_protection, token)
+        announce_compaction(request, self._emit_delta)
         async with aclosing(self._summary_provider.stream(request, token)) as stream:
             try:
                 first = await token.run(anext(stream))

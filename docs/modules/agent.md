@@ -65,6 +65,7 @@ supersedes: []
 - 以下情况沿用原独立请求（ADR 0058，逐字不变）：被动压缩、预算压力压缩、Context准备放不下，或剩余Token预算放不下。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)按“非被动压缩且本Turn未退回”传入`shared_prefix`。
 - 共用前缀的摘要回复里出现工具调用：`summary_tool_call_error`报`provider_summary_tool_call`，归入主动压缩可跳过的失败，`_isolated_summary_turns`记下这个Turn，之后的压缩改用独立请求。独立请求里的工具调用仍按原规则报`context_compaction_summary_tool_forbidden`或`invalid_provider_output`。
 - 压缩计划、账本事件、预留、校验、激活与投影不变。原因：NL2RepoBench回归里摘要请求平均等148秒才收到第一个字（全部重算）。
+- 界面：摘要请求开始前，[`generation_progress.announce_compaction`](../../src/harnessix/agent/generation_progress.py)以`compaction_progress_item_id`发布一行进度（与该步主请求的进度流不同身份），终端界面据此显示“正在压缩较早的对话 · 已用时 N 秒”。回归见`tests/agent/test_compaction_progress.py`。
 - 回归：`tests/context/test_shared_prefix_summary.py`；`tests/context/test_compaction_runtime.py`原有用例不变。
 
 ## 当前增量：同一步骤作废半截正文后接受新的尝试（ADR 0144第5版）

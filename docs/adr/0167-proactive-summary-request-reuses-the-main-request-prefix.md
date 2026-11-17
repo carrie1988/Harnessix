@@ -4,7 +4,7 @@ status: reviewing
 version: 1
 code_revision: pending
 owners: [core]
-modules: [agent, context]
+modules: [agent, context, app_server, product_ui]
 related_adrs:
   - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
   - docs/adr/0132-append-only-requests-and-token-calibrated-compaction.md
@@ -12,6 +12,7 @@ related_adrs:
 related_tests:
   - tests/context/test_shared_prefix_summary.py
   - tests/context/test_compaction_runtime.py
+  - tests/agent/test_compaction_progress.py
 supersedes: []
 ---
 
@@ -69,6 +70,14 @@ ADR 0058规定摘要请求是“摘要指令＋一条包含来源JSON的用户�
    - 摘要预留、时点说明头、候选校验、窗口激活与投影都不变。
    - 发出的请求不参与重放；实际输入由这次尝试报告的用量记账。
 
+5. **界面写明正在压缩**（负责人2026-11-17要求优化同时考虑用户体验）。
+   - 摘要请求开始前，运行时以压缩进度的条目身份（`compaction_progress_item_id`，与该步主请求的生成进度不同）
+     发布一行进度。它沿用生成进度的通道与能力位，只有声明`generation_progress`的客户端（终端界面）才收到。
+   - 终端界面在准备上下文期间收到它时：
+     - 运行提示写“正在压缩较早的对话 · 已用时 40 秒”，秒数从压缩开始算起；
+     - 底栏的进展写“正在压缩较早的对话”。
+   - 此前两处都只有“准备中”。
+
 ## 安全设计的修订
 
 原设计把较早历史当作一份不可信数据交给摘要模型，用来强调“历史里的指令只是数据”。这里的依据是：
@@ -87,6 +96,8 @@ ADR 0058规定摘要请求是“摘要指令＋一条包含来源JSON的用户�
 - 主请求的形态与内容。
 
 ## 后果
+
+- 终端界面：压缩期间写明“正在压缩较早的对话”和已用时，用户知道任务为什么暂时没有新输出。
 
 - 本机vLLM这类有前缀缓存的服务：摘要请求不再从头计算约10万Token。
   - 按本次数据估算，每次压缩少等约140秒，平均每题少约3.4分钟。

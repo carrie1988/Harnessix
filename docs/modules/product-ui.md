@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 71
+version: 72
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,12 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：压缩较早的对话时写明在做什么（ADR 0167）
+
+- [`projection.apply_item_delta`](../../src/harnessix/product_ui/projection.py)识别压缩进度（`TransientItemStream.compaction`）。它只在准备上下文期间保留，开始调用模型后清除；主请求的生成估算不读它。
+- [`generation_estimate.compacting`](../../src/harnessix/product_ui/generation_estimate.py)为真时，运行提示写“⠹ 正在压缩较早的对话 · 已用时 40 秒 · 已运行 …”，秒数从压缩开始算起；底栏的进展写“正在压缩较早的对话”。此前两处都只有“准备中”，一次压缩要等几十秒到几分钟。
+- 回归见`tests/agent/test_compaction_progress.py`。
 
 ## 当前增量：服务端攒工具参数时说明已用时（ADR 0166）
 

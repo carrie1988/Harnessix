@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 18
+version: 19
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -25,6 +25,10 @@ supersedes: []
 ---
 
 # App Server模块设计
+
+## 当前增量：压缩进度同样按能力过滤（ADR 0167）
+
+- [`preview_streams.PreviewStreams`](../../src/harnessix/app_server/preview_streams.py)把压缩进度（`compaction_progress_item_id`）与生成进度归为同一能力`progress`：声明`generation_progress`的客户端（终端界面）才收到，`harnessix exec`与默认SDK客户端收不到，否则会把进度行当成助手正文显示。回归见`tests/agent/test_compaction_progress.py`。
 
 ## 当前增量：薄CLI给思考预览加标注
 

@@ -71,11 +71,24 @@ def _current_counts(view: ProductViewState | None) -> GenerationCounts | None:
         # model_step是已结算用量的步数；正在调用模型的步骤号更大。
         if (
             stream.progress
+            and not stream.compaction
             and stream.turn_id == turn.turn_id
             and stream.model_step > turn.model_step
         ):
             return latest_counts(stream.text)
     return None
+
+
+def compacting(view: ProductViewState | None) -> bool:
+    """当前Turn正在为下一步压缩较早的对话（ADR 0167）：准备上下文期间收到了压缩进度。"""
+
+    turn = None if view is None else view.current_turn
+    if view is None or turn is None or turn.status != "preparing_context":
+        return False
+    return any(
+        stream.compaction and stream.turn_id == turn.turn_id and stream.model_step > turn.model_step
+        for stream in view.streams
+    )
 
 
 def in_flight_request(view: ProductViewState | None) -> InFlightRequest | None:
