@@ -182,7 +182,7 @@ async def prepare_action(
             call,
             cancel,
         )
-    except KernelError as error:
+    except Exception as error:
         result = workspace_patch_planning_rejection(binding, call, error)
         if result is not None:
             return result

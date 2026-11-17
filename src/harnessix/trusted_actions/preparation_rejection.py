@@ -15,6 +15,7 @@ from harnessix.delivery.workspace_patch_errors import (
     unapplied_batch_notice,
 )
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
+from harnessix.tools.contracts import ReadToolError
 from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
 from harnessix.trusted_actions.router import TrustedActionRouter
 
@@ -26,8 +27,9 @@ _WORKSPACE_PATCH_PLANNING_FAILURES = {
     ),
     "delivery_path_denied": (
         "A path in files cannot be written by a patch: it is the workspace root, repeats "
-        "another entry, or is protected (for example .git or .env files). Fix that path and "
-        "resend"
+        "another entry, or is protected (for example .git, .env, .ssh, or key and certificate "
+        "files such as .key, .pem, .p12 and .pfx). Fix that path and resend; to ship sample "
+        "keys or certificates, generate them when the code runs instead of storing them"
     ),
     "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
     # create会补建缺失的父目录（POSIX自ADR 0137，Windows自其第2版）；
@@ -59,26 +61,39 @@ class OfficialWorkspacePatchReview:
 def workspace_patch_planning_rejection(
     binding: TrustedToolBinding,
     call: ToolCallContent,
-    rejection: KernelError,
+    rejection: Exception,
 ) -> ToolResultContent | None:
-    """把内置Patch规划期的确定性边界拒绝投影为可修正Tool Result。"""
+    """把内置Patch规划期的确定性边界拒绝投影为可修正Tool Result；其他可信操作与其他异常返回None。"""
 
+    code = _planning_failure_code(rejection)
     if (binding.source, binding.source_id, binding.tool, binding.executor_id) != (
         "builtin",
         "harnessix.product",
         "apply_patch_batch",
         "product.workspace-patch",
-    ) or rejection.code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
+    ) or code not in _WORKSPACE_PATCH_PLANNING_FAILURES:
         return None
     # 码表不含出错的是哪一项（见上），但整批未应用是确定的事实，一并告诉模型。
-    message = _WORKSPACE_PATCH_PLANNING_FAILURES[rejection.code]
+    message = _WORKSPACE_PATCH_PLANNING_FAILURES[code]
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",
         error=AgentFailure(
-            code=rejection.code, message=f"{message}. {unapplied_batch_notice(_file_count(call))}"
+            code=code, message=f"{message}. {unapplied_batch_notice(_file_count(call))}"
         ),
     )
+
+
+def _planning_failure_code(rejection: Exception) -> str | None:
+    """规划失败的公开码。规划按工作区读取策略观察要写的路径，保护名称与后缀（.ssh、.env、.key、
+    .pem等）以ReadToolError("path_denied")失败：它与Delivery层的保护路径同属“这个路径不能写”。
+    此前未转换，整轮以runtime_error中断（2026-11-17 NL2RepoBench冒烟：wsgidav新建
+    sample_bogo_server.key）。"""
+    if isinstance(rejection, KernelError):
+        return rejection.code
+    if isinstance(rejection, ReadToolError) and rejection.code == "path_denied":
+        return "delivery_path_denied"
+    return None
 
 
 def _file_count(call: ToolCallContent) -> int:
