@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 23
+version: 24
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -13,6 +13,7 @@ related_adrs:
   - docs/adr/0054-context-planning-and-inspection.md
   - docs/adr/0058-compaction-windows-and-accounted-summary-attempts.md
   - docs/adr/0059-compaction-attempt-ledger-and-purpose-costs.md
+  - docs/adr/0155-model-view-item-reuse.md
 related_tests:
   - tests/product_config/test_optional_pre_edit_profile.py
   - tests/tools/test_grep_snapshot_runtime.py
@@ -21,6 +22,7 @@ related_tests:
   - tests/context/test_engine.py
   - tests/context/test_sources.py
   - tests/context/test_tool_result_view.py
+  - tests/context/test_model_view_memo.py
   - tests/context/test_compaction.py
   - tests/context/test_compaction_ledger.py
   - tests/context/test_compaction_runtime.py
@@ -377,6 +379,25 @@ Patch、Process或Batch效果结果超限时不能用通用Artifact替换，因�
 字段不会直接进入Provider历史。使用Artifact Reference前，Agent Runtime还会通过当前Workspace Scope
 验证Artifact存在、完整且Owner正确。
 
+### 11.1 逐项结果复用（ADR 0155）
+
+一个模型步骤要准备三次模型视图（准备、提交前复核、Reducer核对事件），历史只追加，旧Item与旧决定的
+内容不再变化。[`model_view_memo.py`](../../src/harnessix/context/model_view_memo.py)在进程内按内容指纹
+记住两类逐项结果：原始Item的历史文档字节数与规范JSON；一条冻结决定对（结果Item、调用Item、决定、
+策略）核对通过后的视图与决定的规范JSON。规则如下：
+
+- 指纹取Item全部字段未经JSON模式转换的值，每次调用都由拿到的对象重新计算：`1`、`1.0`与`true`
+  互不相同，字典保留键序；含非有限数字或无法序列化的Item没有指纹，本次按原路径逐项计算。
+- 只记成功的结果；内容有任何变化都重新核对并得到原来的错误。表里不保存视图对象，交给调用方的
+  视图每次由当前Item重新拷贝。
+- 三个摘要由逐项规范JSON以逗号拼接后取SHA-256，与对整个列表序列化的结果逐字节相同。
+- `detached=False`只用于读完即弃的核对（提交前复核、Reducer核对、活动窗口对自身摘要的核对）：
+  未改写的视图Item就是传入的Item本身，不得修改、保留或交给模型请求。默认仍返回独立副本。
+- 表最多16,384条，淘汰最久未用的记录，进程退出即失效；上限为0时每次逐项重算。
+
+回归见[`test_model_view_memo.py`](../../tests/context/test_model_view_memo.py)；产品运行时上的逐次比对见
+[`test_host_step_overhead_bench.py`](../../tests/benchmarks/test_host_step_overhead_bench.py)。
+
 ## 12. Compaction状态、数据与不变量
 
 ```mermaid
@@ -630,6 +651,7 @@ Context只在Session已持久引用且Artifact Store重新验证Thread、Workspa
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 24 | ADR 0155增量 | 2026-11-16 | 模型视图按内容指纹复用逐Item的核对与序列化；只用来比对的视图不拷贝（`detached=False`）；请求字节、事件、摘要与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第18版） |
 | 23 | `3e2f83d8` 增量 | 2026-11-15 | 工具结果视图按整仓库Glob输出（`WholeRepositoryGlobOutput`，统计可超过10,000个条目）识别`paths`预览，存档引用照旧只省略`paths`（ADR 0165，Beta Issue #35） |
 | 22 | `882b96ea` 增量 | 2026-11-14 | 固定项与近期完整组超过目标时目标有限放宽（至多到目标与触发点的中点）；被跳过的主动压缩的退避在压缩成功后作废，且不越过触发点的上限（#33，ADR 0132第3版） |
 | 21 | `684e0a4b` 增量 | 2026-11-14 | `context_budget_exceeded`的说明给出历史、工具定义、必选指令与可用量的估算值（`engine._overflow`）；此前第二种情况一律写“Runtime或用户必选指令超过……”，0.10.0b42实测中超出的其实是历史（Beta Issue #33） |

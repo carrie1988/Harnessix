@@ -33,6 +33,7 @@ from harnessix.processes.owner_protocol import (
     protected_owner_start,
 )
 from harnessix.processes.owner_receipt import OwnerReceipt, read_owner_receipt
+from harnessix.processes.receipt_polling import receipt_poll_delays
 from harnessix.processes.receipt_projection import (
     lease_changes_from_receipt,
     read_terminal_owner_receipt,
@@ -133,7 +134,7 @@ class SupervisedProcess:
             return self._apply_receipt(receipt)
 
     async def wait(self, cancel: CancelToken | None = None) -> ProcessLease:
-        cancellation_sent = False
+        cancellation_sent, delays = False, receipt_poll_delays(0.02)
         try:
             while self._lease.state not in _TERMINAL_STATES:
                 if cancel is not None and cancel.cancelled and not cancellation_sent:
@@ -141,7 +142,7 @@ class SupervisedProcess:
                     await self.stop("cancelled")
                 await self.refresh()
                 if self._lease.state not in _TERMINAL_STATES:
-                    await asyncio.sleep(0.02)
+                    await asyncio.sleep(next(delays))
         except asyncio.CancelledError:
             await self.stop("cancelled")
             await asyncio.shield(self._wait_terminal())
@@ -535,11 +536,11 @@ class PosixProcessSupervisor(_ProcessObservation):
             owner=owner,
         )
         self._handles[spec.process_id] = handle
-        for _ in range(500):
+        for delay in receipt_poll_delays(0.01, limit=500):
             await handle.refresh()
             if handle.lease.state != "starting":
                 return handle
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(delay)
         await handle.stop("closed")
         await handle.wait()
         raise KernelError("process_launch_failed", "Process owner未在时限内报告启动结果")

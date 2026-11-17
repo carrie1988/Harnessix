@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 42
+version: 43
 code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
@@ -54,6 +54,15 @@ supersedes: []
 ---
 
 # Harnessix Code Process Runtime模块设计
+
+## 当前增量：Owner回执的轮询从1毫秒起加倍（ADR 0168）
+
+- `SupervisedProcess.wait`与POSIX启动后等待启动结果的轮询，间隔由固定的20毫秒、10毫秒改为
+  [`receipt_polling.receipt_poll_delays`](../../src/harnessix/processes/receipt_polling.py)给出的1、2、4、8……毫秒，到原间隔为止。
+  简单命令的回执在几毫秒内出现，固定间隔让每条命令平均白等半个间隔；运行较久的命令几次之后回到原间隔。
+- 启动结果仍最多轮询500次，总等待约4.975秒（原为5秒）。回执的读取、认证与Lease迁移不变，Owner与其能力摘要不变。
+- 回归见`tests/processes/test_receipt_polling.py`；既有的Supervisor与生命周期测试覆盖行为。`supervisor.py`为新增的导入多一行，
+  预算说明见[P0门禁恢复§7](../changes/p0-ci-gate-recovery.md)。
 
 ## 当前增量：macOS僵尸进程组在宿主进程运行时一侧的同类误报（0.10.0b14）
 
@@ -921,7 +930,7 @@ Supervisor按顺序执行：
 | `starting`后Owner spawn/Start发送失败 | `failed/launch_failed` | Supervisor杀死已创建Owner；不宣称有运行结果 |
 | Owner发布`failed` Receipt | `failed/launch_failed` | Owner证明目标未建立运行身份 |
 | Owner已启动目标但无法证明清理 | `unknown/cleanup_failed` | 禁止自动重放 |
-| 约5秒内未报告启动结果 | 先请求关闭并等待，再抛`process_launch_failed` | 持久Lease可能为exited或unknown，诊断必须读取Lease |
+| 500次轮询（间隔1毫秒起加倍到10毫秒，约5秒）内未报告启动结果 | 先请求关闭并等待，再抛`process_launch_failed` | 持久Lease可能为exited或unknown，诊断必须读取Lease |
 
 [`_start_bound`](../../src/harnessix/processes/supervisor.py#L417)将管道创建纳入原启动保护块，
 普通异常复用原失败结算。`CancelledError`不属于`Exception`，不据此将仍可能运行的后台spawn写成failed；
@@ -1162,7 +1171,7 @@ Windows Owner以最大64项事件队列和32项stdin队列提供有界线程间�
 | 方法 | 当前行为 | 权限/限制 |
 |---|---|---|
 | `refresh()` | 读取HMAC Receipt并CAS推进Lease | 终态幂等返回；缺Receipt且本地Owner退出→unknown |
-| `wait(cancel)` | 20ms轮询直到终态 | Token取消只发送一次stop；Task取消先停止并等待终态再抛出 |
+| `wait(cancel)` | 轮询直到终态，间隔1毫秒起加倍到20毫秒 | Token取消只发送一次stop；Task取消先停止并等待终态再抛出 |
 | `send_stdin(bytes)` | 单帧1～64 KiB | 需仍持有私有控制FD |
 | `close_stdin()` | 发送逻辑关闭 | Owner端幂等 |
 | `resize(c,r)` | 严格尺寸Command | pipe最终进入清理失败，调用方应先按Spec判断 |
@@ -1733,6 +1742,7 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 43 | ADR 0168增量 | 2026-11-16 | Owner回执的轮询间隔从1毫秒起加倍到原固定间隔（等待终态20毫秒、等待启动结果10毫秒），启动结果仍最多轮询500次（`receipt_polling.receipt_poll_delays`） |
 | 42 | `a69806a8` 增量 | 2026-11-14 | Windows固定Git读取新增换行设置探测用途：不关闭系统级配置、用户级配置经`GIT_CONFIG_GLOBAL`指向宿主解析的文件，绑定指纹另记用途（ADR 0043第2版） |
 | 38 | `dad55d32` 增量 | 2026-11-11 | macOS僵尸进程组：`HostProcessRuntime`发信号被拒绝时等回收后重试，不再误报cleanup_failed并关闭运行时（0.10.0b14） |
 | 37 | `b86793a7` 增量 | 2026-11-11 | Windows不再继承带括号的`PROGRAMFILES(X86)`；启动前失败归为确定未执行（0.10.0b13） |

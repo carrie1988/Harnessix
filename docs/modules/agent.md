@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 70
+version: 72
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -67,6 +67,14 @@ supersedes: []
 - 压缩计划、账本事件、预留、校验、激活与投影不变。原因：NL2RepoBench回归里摘要请求平均等148秒才收到第一个字（全部重算）。
 - 界面：摘要请求开始前，[`generation_progress.announce_compaction`](../../src/harnessix/agent/generation_progress.py)以`compaction_progress_item_id`发布一行进度（与该步主请求的进度流不同身份），终端界面据此显示“正在压缩较早的对话 · 已用时 N 秒”。回归见`tests/agent/test_compaction_progress.py`。
 - 回归：`tests/context/test_shared_prefix_summary.py`；`tests/context/test_compaction_runtime.py`原有用例不变。
+
+## 当前增量：只读的工具视图拿Session中的Turn，不先深拷贝（ADR 0168）
+
+- `_select_model_tools`交给视图`select`的Turn由[`request_notes.tool_view_turn`](../../src/harnessix/agent/request_notes.py)给出：视图声明
+  `reads_turn_in_place`为`True`（[`ports.InPlaceTurnToolView`](../../src/harnessix/agent/ports.py)，只认布尔`True`）时，是去掉请求说明后
+  共享其余对象的浅副本；其余视图照旧拿到独立的深拷贝。`admit_call`与`step_notice`本来就拿共享的Turn与Thread，这里与它们一致。
+- 选择结果、请求字节与持久事件不变；深拷贝在160步基准的第121–160步每次约30毫秒、每步两次。运行时主文件只改一行（调用名），
+  行数不变。回归见`tests/agent/test_tool_view_turn.py`（含产品运行中每次选择都与深拷贝路径比对）。
 
 ## 当前增量：同一步骤作废半截正文后接受新的尝试（ADR 0144第5版）
 
@@ -547,6 +555,11 @@ Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并�
 60步的会话里一次追加约12毫秒。聚合内全部是冻结模型，共享不改变取值；调用方不得原地修改其中的JSON容器。
 Store边界仍把调用方的Draft经JSON往返冻结。回归见
 [结构共享测试](../../tests/agent/test_reducer_structural_sharing.py)。
+
+Reducer核对`ModelHistoryPrepared`、以及Runtime在提交前确认Session没有变化（`_commit_if_current`）时，
+准备出的模型视图只用来比对、读完即弃，所以以`detached=False`准备：未改写的视图Item就是Thread里的
+Item本身，不再深拷贝；逐Item的核对与序列化按内容指纹复用
+（[ADR 0155](../adr/0155-model-view-item-reuse.md)）。进入模型请求的那一份视图仍是独立副本。
 
 ## 10. 公共端口与方法合同
 
@@ -1154,6 +1167,8 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 71 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
+| 70 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
 | 69 | `39e1e1bf` 增量 | 2026-11-15 | 正文写到一半断开时，同一步骤作废半截正文（`ItemFinished(FAILED)`，`provider_attempt_discarded`）并接受新的尝试，新正文换公开保护身份（ADR 0144第5版） |
 | 68 | `3e2f83d8` 增量 | 2026-11-15 | `AgentRuntime`打开时启动过期Artifact正文回收（`artifacts.reclaim.start_artifact_reclaim`：打开时回收一轮，最多2秒，余下转后台，之后每小时一轮），关闭时停止；回收失败只记日志，不影响Turn（ADR 0164） |
 | 67 | `882b96ea` 增量 | 2026-11-14 | 小窗口压缩不再停摆（#33）：压缩成功后清除退避，退避不越过校准触发点的上限，近期完整组超过目标时有限放宽目标（ADR 0132第3版） |

@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 656,
-    "physical_lines": 137761,
-    "logical_lines": 119204,
-    "documented_modules": 656,
-    "classes": 1264,
-    "documented_classes": 663,
-    "functions": 5517,
-    "documented_functions": 1973,
+    "source_files": 659,
+    "physical_lines": 138118,
+    "logical_lines": 119444,
+    "documented_modules": 659,
+    "classes": 1270,
+    "documented_classes": 669,
+    "functions": 5542,
+    "documented_functions": 1987,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -211,6 +211,10 @@
       "lines": 839
     },
     {
+      "path": "src/harnessix/context/tool_result_view.py",
+      "lines": 602
+    },
+    {
       "path": "src/harnessix/delivery/git.py",
       "lines": 902
     },
@@ -240,7 +244,7 @@
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
-      "lines": 728
+      "lines": 729
     },
     {
       "path": "src/harnessix/product_config/action_composition.py",
@@ -268,7 +272,7 @@
     },
     {
       "path": "src/harnessix/session/sqlite.py",
-      "lines": 619
+      "lines": 620
     },
     {
       "path": "src/harnessix/skills/runtime.py",
@@ -524,8 +528,8 @@
       "path": "src/harnessix/app_server/service.py",
       "qualname": "AgentApplicationService",
       "kind": "class",
-      "line": 64,
-      "lines": 430,
+      "line": 69,
+      "lines": 428,
       "documented": true
     },
     {
@@ -692,10 +696,10 @@
       "path": "src/harnessix/context/tool_result_view.py",
       "qualname": "prepare_model_history_items",
       "kind": "function",
-      "line": 360,
-      "lines": 114,
+      "line": 462,
+      "lines": 105,
       "documented": true,
-      "decision_complexity": 44
+      "decision_complexity": 35
     },
     {
       "id": "harnessix.delivery.filesystem:WorkspaceTransactionRuntime",
@@ -1359,7 +1363,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor",
       "kind": "class",
-      "line": 331,
+      "line": 332,
       "lines": 304,
       "documented": false
     },
@@ -1369,7 +1373,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor._start_bound",
       "kind": "function",
-      "line": 420,
+      "line": 421,
       "lines": 126,
       "documented": false,
       "decision_complexity": 23
@@ -1380,7 +1384,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "SupervisedProcess",
       "kind": "class",
-      "line": 84,
+      "line": 85,
       "lines": 215,
       "documented": false
     },
@@ -1769,7 +1773,7 @@
       "path": "src/harnessix/session/sqlite.py",
       "qualname": "SQLiteSessionStore",
       "kind": "class",
-      "line": 202,
+      "line": 203,
       "lines": 418,
       "documented": true
     },

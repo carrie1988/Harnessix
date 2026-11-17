@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 19
+version: 20
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -14,7 +14,9 @@ related_adrs:
   - docs/adr/0072-durable-interaction-and-pull-live-stream.md
   - docs/adr/0080-capability-proven-product-action-composition.md
   - docs/adr/0089-bounded-local-transport-lifecycle.md
+  - docs/adr/0168-host-overhead-per-model-step.md
 related_tests:
+  - tests/app_server/test_events_wake.py
   - tests/app_server/test_budget_mapping.py
   - tests/app_server/test_server_sdk.py
   - tests/app_server/test_agent_cli.py
@@ -29,6 +31,19 @@ supersedes: []
 ## 当前增量：压缩进度同样按能力过滤（ADR 0167）
 
 - [`preview_streams.PreviewStreams`](../../src/harnessix/app_server/preview_streams.py)把压缩进度（`compaction_progress_item_id`）与生成进度归为同一能力`progress`：声明`generation_progress`的客户端（终端界面）才收到，`harnessix exec`与默认SDK客户端收不到，否则会把进度行当成助手正文显示。回归见`tests/agent/test_compaction_progress.py`。
+
+## 当前增量：Turn等待客户端或结束时立即唤醒长轮询（ADR 0168）
+
+- `events/next`原先只在文本增量到达时被唤醒，审批请求要等下一次50毫秒定时重读才交给客户端；自动审批的
+  客户端每次审批平均多等约25毫秒。现在[`ThreadSignals`](../../src/harnessix/app_server/query_runtime.py)
+  订阅Session的追加通知（[`AppendSignal`](../../src/harnessix/session/append_signal.py)）：追加提交后，活动Turn
+  处于`waiting_approval`、`waiting_input`或Thread已没有活动Turn时，置位该Thread的信号，长轮询立即重读并返回。
+- 其余追加（状态变化、Tool结果等）不唤醒，仍由50毫秒重读成批取走：每次提交都唤醒会让客户端为每个事件
+  多发一轮请求，与Turn争用事件循环。
+- 通知只催促重读。返回的内容仍取自存储并过公开输出检查；定时重读保留，通知丢失只晚一个周期。
+- `_delta_events`更名为`_signals`，仍是“Thread → `asyncio.Event`”的映射，只有等待过的Thread才有条目。
+
+回归见[长轮询唤醒](../../tests/app_server/test_events_wake.py)。
 
 ## 当前增量：薄CLI给思考预览加标注
 
@@ -591,7 +606,7 @@ flowchart LR
 ```
 
 每个Thread的Deque上限为1000，写入时深拷贝Delta。溢出删除最旧项并在`_delta_gaps`登记；下一次消费返回
-一次`liveGap=true`后清除标记。Buffer清空后从`_deltas`删除，但`_delta_events`中的每Thread Event不会在
+一次`liveGap=true`后清除标记。Buffer清空后从`_deltas`删除，但`_signals`中的每Thread Event不会在
 运行期删除。
 
 Service在构造时总是订阅Runtime Delta，是否协商Delta是每个Server连接的状态。因此未协商Delta的连接
@@ -617,7 +632,7 @@ sequenceDiagram
         else 无进展
             A->>E: clear
             A->>DB: 再读一次避免clear/wait竞态
-            A->>E: wait min(50ms, remaining)
+            A->>E: wait min(50ms, remaining)，Delta或追加通知可提前唤醒
         end
     end
     A->>DB: deadline边界最终读取
@@ -628,9 +643,9 @@ sequenceDiagram
     end
 ```
 
-双重Snapshot避免Delta恰在`clear`与`wait`之间到达而沉睡；50毫秒轮询用于发现不产生文本Delta的审批、
-Question、Tool和终态Session事件；Deadline后再读一次避免边界进展被误报为Timeout。Service关闭会Set
-所有Event并使循环退出。
+双重Snapshot避免Delta或追加通知恰在`clear`与`wait`之间到达而沉睡。审批、Question和Turn结束由Session
+追加通知立即唤醒（ADR 0168）；50毫秒轮询用于发现其余不产生文本Delta的事件（Tool结果、状态变化），并为
+不经通知的写入兜底。Deadline后再读一次避免边界进展被误报为Timeout。Service关闭会Set所有Event并使循环退出。
 
 ## 15. stdio JSONL传输
 
@@ -936,7 +951,7 @@ I/O泵只由`run_stdio`拥有，关闭后不复用。Writer故障会在Server和
 | Replay请求Limit | Protocol 1～1000；AgentClient和薄CLI执行协商值前置门禁，Server Service当前未再次收紧 |
 | 单Thread Delta | 1000条Deque |
 | 单次Delta返回 | Request `limit`，最多1000 |
-| 长轮询等待 | 0～30秒，50毫秒持久事件探测 |
+| 长轮询等待 | 0～30秒，50毫秒持久事件探测；等待客户端或Turn结束时立即唤醒 |
 | Thread列表页 | 1～200，但实现会加载过滤前尾部Thread |
 | Artifact页 | 1～200记录、24 Ki字符公共合同 |
 | Service关闭宽限 | 默认5秒 |
@@ -1391,6 +1406,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 19 | ADR 0168增量 | 2026-11-16 | Turn停下来等客户端（审批、提问）或已经结束时，Session追加通知立即唤醒`events/next`的长轮询（`query_runtime.ThreadSignals`）；其余事件仍由50毫秒重读取走（自`feat/r2-cmdpath`移植） |
 | 18 | `3e2f83d8` 增量 | 2026-11-15 | `harnessix exec`的JSON摘要写到标准输出、而标准输出不是终端（重定向或管道）时只写ASCII（`exec_cli._write_summary`）：Windows PowerShell 5.1的`>`与管道按系统代码页转码，中文吞掉引号后JSON无法解析；解析出的内容不变，终端里照常显示中文，`--summary-file`照常按UTF-8写原文（Issue #26的Windows复测发现，负责人2026-11-15选A） |
 | 17 | `98e58f5d` 增量 | 2026-11-14 | 瘦CLI的审批提示写明工具、完整命令、理由与要修改的文件（`agent_cli.approval_prompt`，控制字符转成可见转义）；`harnessix exec`的提示写到标准错误、不受`--quiet`影响，标准输出只留给JSON摘要（Beta Issue #26） |
 | 16 | `a47ce892` 增量 | 2026-11-13 | 瘦CLI配了审批策略时，提示处由人输入的决定记`<主体>:interactive`，与策略决定区分（`agent_cli._actors`，Beta Issue #23） |

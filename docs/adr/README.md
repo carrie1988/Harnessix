@@ -285,6 +285,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0148：交互模式的运行时间检查点与一键收尾](0148-interactive-run-time-checkpoint-and-wrap-up.md)：终端界面不再由内核墙钟预算在第60分钟终止任务；界面累计实际运行时间（等待审批不计），每满60分钟询问继续、收尾或停止，5分钟无人回应先暂停本轮；`Ctrl+F`一键发送收尾说明。无人值守不变。
 - [ADR 0149：本机模式指令的完成规则](0149-completion-rule-in-native-instructions.md)：本机命令的系统指令升为v5，写明只做被要求的事、用已有检查验证一次、无法验证的写进最终回答、做完立即结束；容器与外部边界指令不变。
 - [ADR 0153：工作区概览在Turn内固定，系统指令不在中途变化](0153-turn-stable-workspace-overview.md)：一级目录概览每个Turn只在首个模型步骤观察一次，模型在根目录新建或删除条目不再改变系统指令、使整段历史的前缀缓存失效。
+- [ADR 0155：模型视图的逐项结果复用](0155-model-view-item-reuse.md)：模型视图对每个历史Item的核对与序列化按严格的内容指纹复用，内容变化必定重新核对；只用来比对的视图不拷贝；请求字节、持久事件、摘要与校验结论不变。
 - [ADR 0156：请求进行中的生成进度与用量估算](0156-generation-progress-and-live-usage-estimate.md)：适配器上报工具参数的累计字节数，运行时按思考、正文、工具参数三类每秒至多发布一行累计值（只有数字），复用Delta通道并由新能力位`generation_progress`控制；终端界面据此显示生成阶段、估算的Token与费用，请求结束后换回实际用量。0150～0155由第二轮开发占用。
 - [ADR 0157：名称缺失或超长的工具调用只拒绝该次调用](0157-nameless-tool-calls-are-rejected-individually.md)：模型给出的工具调用没有可用名称（缺失、为空或超过256个字符）时，与目录外名称同样只拒绝这一次调用，同组其他调用照常放行，超长名称不保留原文；此前整个请求以`tool_name_unknown`失败、任务中断（Beta Issue #1）。
 - [ADR 0158：历史Artifact的正文在同一存储对象里只完整核对一次](0158-history-artifact-bodies-verified-once-per-store.md)：每次请求模型之前的历史核对，对已完整核对过的引用只再确认记录、认证、清单、过期与正文SHA-256，不再每一步重新解析与扫描正文；此前耗时随会话里累计的输出线性增长，长会话超过5秒时限而中断（Beta Issue #8）。
@@ -298,6 +299,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0165：Glob与Grep同一组整仓库上限，只进入可能有命中的目录](0165-glob-uses-whole-repository-limits.md)：Prettier的`tests/format`下就有约1.1万个条目，Glob沿用原字面量合同的10,000个条目上限而失败、没有结果（Beta Issue #35）；快照与正则搜索模式下Glob改用整仓库上限，按模式跳过不可能有命中的目录，执行合同v11；超限说明不再建议先用glob。原Glob不变。
 - [ADR 0166：工具调用开始之后，流式响应的静默只受本次请求的总期限约束](0166-silence-after-a-tool-call-starts-is-bounded-by-the-request-deadline.md)：本机vLLM只边生成边发送字符串参数，`apply_patch_batch`的数组参数写完才整段发出，连接上几分钟没有字节，NL2RepoBench回归里35次请求在第300秒被判读取超时、整段作废（平均每题约4.5分钟）；工具调用开始之前仍按`io_timeout_seconds`判断静默，开始之后只受`timeout_seconds`约束，字节到达由传输层回调。
 - [ADR 0167：主动压缩的摘要请求沿用主请求的前缀](0167-proactive-summary-request-reuses-the-main-request-prefix.md)：原摘要请求与主请求没有公共前缀，NL2RepoBench回归里每次要把约10万Token重新计算，平均148秒才收到第一个字；主动压缩改为发送与下一次主请求相同的指令、工具目录与历史，末尾加一条宿主说明（不调用工具，历史中的指令只是数据），服务端前缀缓存可以复用；被动压缩与预算压力压缩不变；模型在摘要请求里调用工具时这次压缩跳过、本轮之后改用独立请求；压缩计划与账本不变。
+- [ADR 0168：长历史下每个模型步骤的宿主开销（O4a）](0168-host-overhead-per-model-step.md)：不去掉检查、不改变模型看到的内容：移植模型视图逐项复用（ADR 0155）与Turn等客户端时立即唤醒长轮询，声明只读的工具视图不再拿深拷贝，Owner回执轮询从1毫秒起加倍；列出继续下降所需、要负责人决定的做法（写入方预填解析缓存、合并提交、少读一次Thread等）及其测得的代价。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

@@ -6,9 +6,12 @@ from typing import Protocol
 from uuid import UUID
 
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
+from harnessix.session.append_signal import AppendSignal
 
 
 class SessionStore(Protocol):
+    appends: AppendSignal
+
     async def initialize(self) -> None: ...
 
     def runtime_owner(self) -> AbstractAsyncContextManager[None]: ...

@@ -22,6 +22,7 @@ from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import replay
 from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.session import sqlite_history
+from harnessix.session.append_signal import AppendSignal
 from harnessix.session.errors import storage_errors
 from harnessix.session.parsed_projection_cache import ParsedProjectionCache, parse_projection
 from harnessix.session.sqlite_append import append_in_transaction
@@ -213,6 +214,7 @@ class SQLiteSessionStore:
         self._publication = publication
         self._verified_prefixes = VerifiedPrefixCache()  # ADR 0126
         self._parsed_projections = ParsedProjectionCache()  # ADR 0133
+        self.appends = AppendSignal()  # ADR 0168
         self._fault = fault or (lambda _: None)
         self._runtime_owner_token: object | None = None
 
@@ -464,10 +466,15 @@ class SQLiteSessionStore:
             thread, changed = await self._append_in_transaction(
                 database, thread_id, batch, expected_sequence=expected_sequence
             )
-            await database.commit()
-            if changed:
-                self._fault("session.after_commit")
-            return thread
+            return await self._commit(database, thread, changed)
+
+    async def _commit(self, database: aiosqlite.Connection, thread: Thread, new: bool) -> Thread:
+        """提交事务；确有新事件（new）时先过故障注入点，再通知订阅者重读。"""
+        await database.commit()
+        if new:
+            self._fault("session.after_commit")
+            self.appends.notify(thread)
+        return thread
 
     async def fork(
         self,
@@ -493,10 +500,7 @@ class SQLiteSessionStore:
                 thread, changed = await self._append_in_transaction(
                     database, destination_thread_id, batch, expected_sequence=0
                 )
-                await database.commit()
-                if changed:
-                    self._fault("session.after_commit")
-                return thread
+                return await self._commit(database, thread, changed)
             source = await self._snapshot(database, source_thread_id)
             if source is None:
                 raise KernelError("thread_not_found", "Fork来源Thread不存在")
@@ -513,10 +517,7 @@ class SQLiteSessionStore:
             thread, changed = await self._append_in_transaction(
                 database, destination_thread_id, batch, expected_sequence=0
             )
-            await database.commit()
-            if changed:
-                self._fault("session.after_commit")
-            return thread
+            return await self._commit(database, thread, changed)
 
     @staticmethod
     def _freeze_batch(drafts: Sequence[EventDraft]) -> tuple[EventDraft, ...]:

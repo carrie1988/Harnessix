@@ -96,7 +96,7 @@ async def test_unavailable_input_guard_precedes_every_query_store_and_live_regis
                 else:
                     await query(service, surface, thread.thread_id)
             assert caught.value.code == "public_input_secret_unavailable"
-            assert not read.await_count and not service._delta_events and not service._tasks
+            assert not read.await_count and not service._signals and not service._tasks
             await service.close()
 
 
@@ -412,7 +412,7 @@ async def test_real_empty_long_poll_has_bounded_close_cancel_and_timeout(
             )
             # 实际快照读取开始意味着信号已注册；仍调用原SQLite读取，不用轮询sleep。
             await asyncio.wait_for(reached.wait(), 2)
-            assert thread.thread_id in service._delta_events
+            assert thread.thread_id in service._signals
             if reason == "cancel":
                 task.cancel()
                 with pytest.raises(asyncio.CancelledError):
@@ -502,7 +502,7 @@ async def test_registered_uuid_identity_is_rejected_before_query_io_or_registrat
                 else:
                     await query(service, surface, identity)
             assert caught.value.code == "public_input_secret_leak" and not read.await_count
-            assert not service._delta_events and not service._tasks
+            assert not service._signals and not service._tasks
             await service.close()
 
 
@@ -586,5 +586,5 @@ async def test_non_boolean_live_delta_option_is_rejected_before_signal_or_store(
         with pytest.raises(AgentServiceError) as caught:
             await service.next_events(EventsNextParams(thread_id=uuid4()), include_deltas=CANARY)
         assert caught.value.code == "invalid_params" and not read.await_count
-        assert not service._delta_events
+        assert not service._signals
         await service.close()

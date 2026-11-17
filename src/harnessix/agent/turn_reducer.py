@@ -368,6 +368,8 @@ def _prepare_model_history(thread: Thread, turn: Turn, payload: ModelHistoryPrep
                 else None
             ),
             decisions=payload.decisions,
+            # 这里只比对检查记录与新决定，视图不离开本函数。
+            detached=False,
         )
     except (KernelError, ValueError):
         raise KernelError("invalid_event", "模型历史决定无法由Session事实验证") from None

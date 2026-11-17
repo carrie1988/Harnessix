@@ -125,7 +125,7 @@ from harnessix.agent.publication import (
 )
 from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
-from harnessix.agent.request_notes import append_request_notes, without_request_notes
+from harnessix.agent.request_notes import append_request_notes, tool_view_turn
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
     select_artifact_verifier,
@@ -2281,7 +2281,7 @@ class AgentRuntime:
         if self._model_tool_view is None:
             return ModelToolSelection(available)
         selected_view = self._model_tool_view.select(
-            without_request_notes(turn),
+            tool_view_turn(self._model_tool_view, turn),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
         if type(selected_view) is tuple:

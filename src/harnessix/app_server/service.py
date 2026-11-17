@@ -15,7 +15,12 @@ from harnessix.app_server.artifacts import ScopedProtocolArtifactReader
 from harnessix.app_server.command_runtime import AgentServiceError as AgentServiceError
 from harnessix.app_server.command_runtime import execute_command
 from harnessix.app_server.preview_streams import NO_PREVIEWS, PreviewStreams
-from harnessix.app_server.query_runtime import execute_query, poll_events, replay_snapshot
+from harnessix.app_server.query_runtime import (
+    ThreadSignals,
+    execute_query,
+    poll_events,
+    replay_snapshot,
+)
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
 from harnessix.protocol.contracts import (
     ApprovalRespondParams,
@@ -85,7 +90,7 @@ class AgentApplicationService:
         self._delta_limit = 1000
         self._deltas: dict[UUID, deque[ItemDelta]] = {}
         self._delta_gaps: set[UUID] = set()
-        self._delta_events: dict[UUID, asyncio.Event] = {}
+        self._signals = ThreadSignals(store.appends)
         self._unsubscribe_deltas = runtime.subscribe_deltas(self._receive_delta)
         self._closed = False
 
@@ -95,7 +100,7 @@ class AgentApplicationService:
             buffer.popleft()
             self._delta_gaps.add(delta.thread_id)
         buffer.append(delta.model_copy(deep=True))
-        self._delta_events.setdefault(delta.thread_id, asyncio.Event()).set()
+        self._signals.wake(delta.thread_id)
 
     def _spawn(self, thread_id: UUID, turn_id: UUID) -> None:
         if self._closed:
@@ -124,8 +129,7 @@ class AgentApplicationService:
             return
         self._closed = True
         self._unsubscribe_deltas()
-        for event in self._delta_events.values():
-            event.set()
+        self._signals.close()
         tasks = tuple(self._tasks.values())
         if tasks:
             _, pending = await asyncio.wait(tasks, timeout=grace_seconds)
@@ -473,10 +477,9 @@ class AgentApplicationService:
             raise AgentServiceError("invalid_params", "协议参数无效")
 
         async def operation() -> EventsNextResult:
-            signal = self._delta_events.setdefault(params.thread_id, asyncio.Event())
             page = await poll_events(
                 params,
-                signal=signal,
+                signal=self._signals.setdefault(params.thread_id, asyncio.Event()),
                 snapshot=lambda: self._next_snapshot(params, include_deltas=include_deltas),
                 replay=lambda: replay_snapshot(
                     self.store,
