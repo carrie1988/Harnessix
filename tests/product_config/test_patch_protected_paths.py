@@ -8,9 +8,15 @@ sample_bogo_server.key）。现在与Delivery层的保护路径一样报告deliv
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from uuid import uuid4
+
 import pytest
 
 from harnessix.agent.models import TurnStatus
+from harnessix.delivery.trusted_action import workspace_patch_binding
+from harnessix.tools.contracts import ReadToolError
+from harnessix.trusted_actions.preparation_rejection import workspace_patch_planning_rejection
 from tests.product_config.test_patch_missing_parents import (
     GENERATIONS,
     create,
@@ -50,3 +56,15 @@ async def test_a_protected_path_rejects_only_this_call(tmp_path, closure, files)
     assert "Nothing was written" in failed.error.message
     # 整批原子：同批的其他文件也没有写入。
     assert tree(root) == before
+
+
+def test_only_the_built_in_patch_turns_a_protected_path_into_a_rejection():
+    """转换只用于内置Patch：其他可信操作（命令、Git检查点、回滚）沿原错误处理，不报“Patch”措辞的拒绝；
+    其他读取错误也不转换。"""
+    call = SimpleNamespace(call_id=uuid4(), arguments={"files": [{"path": "server.key"}]})
+    patch = workspace_patch_binding()
+    rejected = workspace_patch_planning_rejection(patch, call, ReadToolError("path_denied"))
+    assert rejected is not None and rejected.error.code == "delivery_path_denied"
+    other = patch.model_copy(update={"tool": "exec_command", "executor_id": "product.process"})
+    assert workspace_patch_planning_rejection(other, call, ReadToolError("path_denied")) is None
+    assert workspace_patch_planning_rejection(patch, call, ReadToolError("not_found")) is None
