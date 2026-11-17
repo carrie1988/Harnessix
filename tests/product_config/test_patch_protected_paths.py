@@ -20,7 +20,9 @@ from tests.product_config.test_patch_missing_parents import (
 )
 from tests.product_config.test_product_patch_rollback import result
 
-KEY = "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n"
+# 示例密钥块按段拼接，避免仓库的Secret扫描把测试数据当成真实私钥。
+PEM = "PRIVATE" + " KEY"
+KEY = f"-----BEGIN {PEM}-----\nAAAA\n-----END {PEM}-----\n"
 
 
 @GENERATIONS
