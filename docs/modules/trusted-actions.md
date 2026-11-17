@@ -60,7 +60,7 @@ supersedes: []
 
 ## 当前增量：规划时写受保护路径只拒绝这次调用（NL2RepoBench冒烟，2026-11-17）
 
-- 规划时按工作区读取策略观察Workspace，保护名称与后缀（`.ssh`、`.env`、`.key`、`.pem`、`.p12`、`.pfx`等）以`ReadToolError("path_denied")`失败。此前这个异常没有转换，`apply_patch_batch`新建`sample_bogo_server.key`时整轮以`runtime_error`→`uncertain_effect`中断（0.10.0b48同样复现）。现在[`agent_gateway_support.prepare_action`](../../src/harnessix/trusted_actions/agent_gateway_support.py)经[`workspace_patch_planning_rejection`](../../src/harnessix/trusted_actions/preparation_rejection.py)把它报告为`delivery_path_denied`的可修正失败结果：整批不写入，Turn继续。只用于内置Patch；规划代码不变，其他可信操作（命令、Git检查点、回滚只声明根目录或已观察过的路径）沿原错误处理，不会出现“Patch”措辞的拒绝。
+- POSIX规划观察Workspace时附带执行工作区读取策略（Windows规划只规范路径语法，Windows上补丁照旧写入这类文件，本次不改变），保护名称与后缀（`.ssh`、`.env`、`.key`、`.pem`、`.p12`、`.pfx`等）以`ReadToolError("path_denied")`失败。此前这个异常没有转换，`apply_patch_batch`新建`sample_bogo_server.key`时整轮以`runtime_error`→`uncertain_effect`中断（0.10.0b48同样复现）。现在[`agent_gateway_support.prepare_action`](../../src/harnessix/trusted_actions/agent_gateway_support.py)经[`workspace_patch_planning_rejection`](../../src/harnessix/trusted_actions/preparation_rejection.py)把它报告为`delivery_path_denied`的可修正失败结果：整批不写入，Turn继续。只用于内置Patch；规划代码不变，其他可信操作（命令、Git检查点、回滚只声明根目录或已观察过的路径）沿原错误处理，不会出现“Patch”措辞的拒绝。
 - 写给模型的说明补上密钥与证书文件，并建议示例密钥在运行时生成（[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)）。其他读取错误的处理不变。
 - 回归：`tests/product_config/test_patch_protected_paths.py`（两代快照 × 密钥、同批混合、.p12、.ssh目录；只有内置Patch转换，其他读取错误不转换）。
 
