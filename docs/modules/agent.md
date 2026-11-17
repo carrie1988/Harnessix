@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 69
+version: 70
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -536,6 +536,11 @@ Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并�
 60步的会话里一次追加约12毫秒。聚合内全部是冻结模型，共享不改变取值；调用方不得原地修改其中的JSON容器。
 Store边界仍把调用方的Draft经JSON往返冻结。回归见
 [结构共享测试](../../tests/agent/test_reducer_structural_sharing.py)。
+
+Reducer核对`ModelHistoryPrepared`、以及Runtime在提交前确认Session没有变化（`_commit_if_current`）时，
+准备出的模型视图只用来比对、读完即弃，所以以`detached=False`准备：未改写的视图Item就是Thread里的
+Item本身，不再深拷贝；逐Item的核对与序列化按内容指纹复用
+（[ADR 0155](../adr/0155-model-view-item-reuse.md)）。进入模型请求的那一份视图仍是独立副本。
 
 ## 10. 公共端口与方法合同
 
@@ -1143,6 +1148,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 70 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
 | 69 | `39e1e1bf` 增量 | 2026-11-15 | 正文写到一半断开时，同一步骤作废半截正文（`ItemFinished(FAILED)`，`provider_attempt_discarded`）并接受新的尝试，新正文换公开保护身份（ADR 0144第5版） |
 | 68 | `3e2f83d8` 增量 | 2026-11-15 | `AgentRuntime`打开时启动过期Artifact正文回收（`artifacts.reclaim.start_artifact_reclaim`：打开时回收一轮，最多2秒，余下转后台，之后每小时一轮），关闭时停止；回收失败只记日志，不影响Turn（ADR 0164） |
 | 67 | `882b96ea` 增量 | 2026-11-14 | 小窗口压缩不再停摆（#33）：压缩成功后清除退避，退避不越过校准触发点的上限，近期完整组超过目标时有限放宽目标（ADR 0132第3版） |
