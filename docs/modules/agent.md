@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 70
+version: 71
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -56,6 +56,14 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：只读的工具视图拿Session中的Turn，不先深拷贝（ADR 0168）
+
+- `_select_model_tools`交给视图`select`的Turn由[`request_notes.tool_view_turn`](../../src/harnessix/agent/request_notes.py)给出：视图声明
+  `reads_turn_in_place`为`True`（[`ports.InPlaceTurnToolView`](../../src/harnessix/agent/ports.py)，只认布尔`True`）时，是去掉请求说明后
+  共享其余对象的浅副本；其余视图照旧拿到独立的深拷贝。`admit_call`与`step_notice`本来就拿共享的Turn与Thread，这里与它们一致。
+- 选择结果、请求字节与持久事件不变；深拷贝在160步基准的第121–160步每次约30毫秒、每步两次。运行时主文件只改一行（调用名），
+  行数不变。回归见`tests/agent/test_tool_view_turn.py`（含产品运行中每次选择都与深拷贝路径比对）。
 
 ## 当前增量：同一步骤作废半截正文后接受新的尝试（ADR 0144第5版）
 
@@ -1148,6 +1156,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 71 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
 | 70 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
 | 69 | `39e1e1bf` 增量 | 2026-11-15 | 正文写到一半断开时，同一步骤作废半截正文（`ItemFinished(FAILED)`，`provider_attempt_discarded`）并接受新的尝试，新正文换公开保护身份（ADR 0144第5版） |
 | 68 | `3e2f83d8` 增量 | 2026-11-15 | `AgentRuntime`打开时启动过期Artifact正文回收（`artifacts.reclaim.start_artifact_reclaim`：打开时回收一轮，最多2秒，余下转后台，之后每小时一轮），关闭时停止；回收失败只记日志，不影响Turn（ADR 0164） |

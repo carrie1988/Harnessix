@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 169
+version: 170
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - core
@@ -131,6 +131,8 @@ supersedes: []
 
 - [`wrap_up.WrapUpToolView`](../../src/harnessix/product_config/wrap_up.py)：本轮记入固定收尾说明之后，`select`返回空的工具集，`admit_call`以`tool_wrap_up_requested`拒绝尚未开始、经审批边界的调用；之前照原视图（通用执行时为全部工具）。
 - `server._model_tool_view`始终安装它；`WRAP_UP_STEER`、`WRAP_UP_PROMPT`由界面直接引用。回归见`tests/product_config/test_wrap_up_stops_work.py`。
+- 没有内层视图（通用执行）时`select`只读本轮用户消息的正文，`reads_turn_in_place`为`True`：Runtime把Session中的Turn直接交给它，
+  不先深拷贝（ADR 0168）；有内层编码阶段视图时为`False`，内层视图照旧拿到独立的深拷贝。回归见`tests/agent/test_tool_view_turn.py`。
 - 第4版：收尾之后的空目录带上`WRAP_UP_NOTICE`（`ModelToolSelection.notice`），进入请求末尾的目录说明；百炼qwen3.8-flash此前约五分之一的情况下在收尾后仍连续4～6次调用工具。
 
 ## 当前增量：按配置告诉模型它是谁（Beta Issue #17）
@@ -2420,6 +2422,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 170 | ADR 0168增量 | 2026-11-16 | `wrap_up.WrapUpToolView.reads_turn_in_place`：没有内层视图时为`True`，Runtime不再为它深拷贝整个Turn；选择结果不变 |
 | 169 | `3e2f83d8` 增量 | 2026-11-15 | 沙箱内与宿主Process输出改经`archive_action_output`归档：存得下时公开输出照旧带`artifact`，Artifact存储已满时改为`"artifact_omitted": "storage_full"`，结果按审计终态如实提交，本轮不再以`uncertain_effect`中断（ADR 0163） |
 | 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为30秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
 | 167 | 第二轮合入 | 2026-11-14 | 文档版本160～166即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |

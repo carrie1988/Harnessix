@@ -63,6 +63,17 @@ class ModelToolView(Protocol):
     ) -> ModelToolSelection | tuple[ToolDescriptor, ...]: ...
 
 
+class InPlaceTurnToolView(ModelToolView, Protocol):
+    """select只读取传入的Turn、不修改也不保留其中任何对象的视图（ADR 0168）。
+
+    reads_turn_in_place为True时，Runtime把Session中的Turn（去掉请求说明的浅副本）直接交给select，
+    不先深拷贝，与admit_call一样；为False或没有该属性的视图仍拿到独立的深拷贝。
+    """
+
+    @property
+    def reads_turn_in_place(self) -> bool: ...
+
+
 @runtime_checkable
 class ModelToolCallAdmission(Protocol):
     """视图对已提出调用的准入判定：只能拒绝为可纠正的失败结果，不授予任何执行权限。
