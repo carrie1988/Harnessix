@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 53
+version: 54
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
 modules:
   - trusted_actions
 related_adrs:
+  - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0066-sandbox-network-and-secret-boundaries.md
@@ -22,6 +23,7 @@ related_adrs:
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
 related_tests:
+  - tests/delivery/test_windows_short_names.py
   - tests/product_config/test_patch_protected_paths.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/trusted_actions/test_process_preview_projection.py
@@ -57,6 +59,10 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：Patch拒绝说明提到8.3短名称（ADR 0170）
+
+- [`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)里`delivery_path_denied`写给模型的说明加上“on Windows is an 8.3 short name such as GIT~1 (use the full name)”。Windows上Delivery把短名称当作保护路径拒绝。
 
 ## 当前增量：规划时写受保护路径只拒绝这次调用（NL2RepoBench冒烟，2026-11-17）
 

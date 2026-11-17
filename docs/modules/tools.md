@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 36
+version: 37
 code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
@@ -11,6 +11,7 @@ modules:
   - artifacts
   - processes
 related_adrs:
+  - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0023-workspace-read-tools.md
   - docs/adr/0024-bounded-search-and-artifact-scope.md
   - docs/adr/0025-trusted-tool-execution-scope.md
@@ -106,6 +107,12 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 正则解释会静默无命中，回退把这类查询变为可用结果而不改变显式`match_mode=literal`的语义。
 
 # Coding Tool Runtime模块设计
+
+## 当前增量：Windows读取工具拒绝8.3短名称（ADR 0170）
+
+- 敏感名称策略按模型提交的字符串判断；Windows上`ENV~1`、`SSH~1`等8.3短名称会被系统解析到`.env`、`.ssh`。2026-11-17在Windows 11真机上用0.10.0b48复现：`read_file("ENV~1")`把`.env`内容交给了模型。
+- [`WindowsReadPort.path`](../../src/harnessix/tools/windows_read_port.py)在敏感名称策略之后再拒绝含“`~`数字”的段（[`has_windows_short_name`](../../src/harnessix/workspace/paths.py)），`read_file`、`list_files`、`glob`、`grep`的路径参数都经过这里，错误同为`path_denied`。逐条目过滤不加这条规则：遍历得到的是长名称。POSIX不变。
+- 回归：`tests/tools/test_windows_read_adapter.py`（`ENV~1`、`SSH~1/config`、`src/GIT~1/config`拒绝；`notes~`、`a~b.txt`可读）。
 
 ## 当前增量：一次读取操作只核对两次根（ADR 0160，Beta Issue #21）
 

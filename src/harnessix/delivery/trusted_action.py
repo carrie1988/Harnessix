@@ -77,7 +77,11 @@ from harnessix.workspace.contracts import (
     WorkspaceResourceRequest,
 )
 from harnessix.workspace.leases import WorkspaceLeaseStore
-from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
+from harnessix.workspace.paths import (
+    has_windows_short_name,
+    normalize_workspace_path,
+    path_comparison_key,
+)
 from harnessix.workspace.snapshot_ports import WorkspacePureProgressFactory
 
 WORKSPACE_PATCH_TOOL = "apply_patch_batch"
@@ -363,7 +367,7 @@ def _normalized_files(
             raise KernelError("delivery_metadata_unsupported", "Windows事务不模拟POSIX可执行模式")
         path = normalize_workspace_path(item.path, platform)
         key = path_comparison_key(path, platform)
-        if path == "." or key in keys or _protected(path):
+        if path == "." or key in keys or _protected(path, platform):
             raise KernelError("delivery_path_denied", "Workspace Patch路径不允许写入")
         keys.add(key)
         normalized.append((path, item.model_copy(update={"path": path})))
@@ -594,11 +598,12 @@ def _request_id(plan_id: UUID) -> str:
     return f"action:{plan_id}"
 
 
-def _protected(path: str) -> bool:
+def _protected(path: str, platform: PlatformKind) -> bool:
+    """保护组件、.env*；Windows上8.3短名称（GIT~1会落到.git，ADR 0170）也拒绝。"""
     return any(
         component.casefold() in PROTECTED_COMPONENTS or component.casefold().startswith(".env")
         for component in path.split("/")
-    )
+    ) or (platform == "windows" and has_windows_short_name(path))
 
 
 def workspace_patch_supported(root: Path | None = None) -> bool:

@@ -28,8 +28,9 @@ _WORKSPACE_PATCH_PLANNING_FAILURES = {
     "delivery_path_denied": (
         "A path in files cannot be written by a patch: it is the workspace root, repeats "
         "another entry, or is protected (for example .git, .env, .ssh, or key and certificate "
-        "files such as .key, .pem, .p12 and .pfx). Fix that path and resend; to ship sample "
-        "keys or certificates, generate them when the code runs instead of storing them"
+        "files such as .key, .pem, .p12 and .pfx), or on Windows is an 8.3 short name such as "
+        "GIT~1 (use the full name). Fix that path and resend; to ship sample keys or "
+        "certificates, generate them when the code runs instead of storing them"
     ),
     "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
     # create会补建缺失的父目录（POSIX自ADR 0137，Windows自其第2版）；

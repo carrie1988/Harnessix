@@ -40,7 +40,11 @@ from harnessix.workspace.contracts import (
     WorkspaceResourceRequest,
 )
 from harnessix.workspace.native_observation_io import NativeReadOperation, UpstreamCheckpointError
-from harnessix.workspace.paths import normalize_workspace_path, path_comparison_key
+from harnessix.workspace.paths import (
+    has_windows_short_name,
+    normalize_workspace_path,
+    path_comparison_key,
+)
 from harnessix.workspace.snapshot import capture_workspace_snapshot, verify_workspace_snapshot
 
 
@@ -203,7 +207,7 @@ def _normalized_targets(
             raise KernelError("delivery_metadata_unsupported", "Windows事务不模拟POSIX可执行模式")
         path = normalize_workspace_path(supplied, platform)
         key = path_comparison_key(path, platform)
-        if path == "." or key in comparison or _protected(path):
+        if path == "." or key in comparison or _protected(path, platform):
             raise KernelError("delivery_path_denied", "Workspace事务路径不允许写入")
         comparison.add(key)
         normalized[path] = target
@@ -338,11 +342,12 @@ def _read_all(descriptor: int, *, checkpoint: Callable[[], None] | None = None) 
             raise KernelError("delivery_plan_limit", "Workspace事务文件超过上限")
 
 
-def _protected(path: str) -> bool:
+def _protected(path: str, platform: PlatformKind) -> bool:
+    """保护组件、.env*；Windows上8.3短名称（GIT~1会落到.git，ADR 0170）也拒绝。"""
     return any(
         component.casefold() in PROTECTED_COMPONENTS or component.casefold().startswith(".env")
         for component in path.split("/")
-    )
+    ) or (platform == "windows" and has_windows_short_name(path))
 
 
 def _native_platform() -> PlatformKind:
