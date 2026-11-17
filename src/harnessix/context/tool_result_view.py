@@ -23,6 +23,13 @@ from harnessix.agent.models import (
 )
 from harnessix.agent.tool_rejections import require_rejection_result
 from harnessix.artifacts.contracts import ArtifactOmittedField, ArtifactPage, ArtifactRef
+from harnessix.context.model_view_memo import (
+    ModelViewMemo,
+    SourceFacts,
+    VerifiedDecision,
+    content_fingerprint,
+    memo_key,
+)
 from harnessix.context.tool_result_contracts import (
     TOOL_RESULT_OMISSION_VERSION,
     ModelHistoryInspection,
@@ -39,6 +46,8 @@ from harnessix.tools.search_contracts import (
 )
 
 _PUBLIC_RESULT_FIELDS = {"outcome", "output", "error", "diff_artifact"}
+# 进程内共用：键是内容指纹，不含Thread身份，同一Item在Fork、重放与各步骤之间都能复用。
+_MEMO = ModelViewMemo()
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,8 +81,9 @@ def _canonical(value: object) -> bytes:
         ) from None
 
 
-def _digest(value: object) -> str:
-    return hashlib.sha256(_canonical(value)).hexdigest()
+def _array_digest(elements: list[bytes]) -> str:
+    """列表规范JSON的SHA-256：规范JSON数组就是各元素的规范JSON以逗号相连。"""
+    return hashlib.sha256(b"[" + b",".join(elements) + b"]").hexdigest()
 
 
 def canonical_json_bytes(value: object) -> bytes:
@@ -83,7 +93,7 @@ def canonical_json_bytes(value: object) -> bytes:
 
 def view_history_sha256(history: tuple[Item, ...]) -> str:
     """实际模型历史的检查摘要；所有视图版本共用同一算法。"""
-    return _digest([item.model_dump(mode="json") for item in history])
+    return _array_digest([_canonical(item.model_dump(mode="json")) for item in history])
 
 
 def history_items(thread: Thread) -> tuple[Item, ...]:
@@ -285,12 +295,22 @@ def _new_decision(
     )
 
 
+def _decided_content(
+    content: ToolResultContent, decision: ToolResultViewDecision
+) -> ToolResultContent:
+    """按决定给出结果正文的独立副本：inline保留原输出，引用策略换成冻结的替换输出。"""
+    if decision.strategy == "inline":
+        return content.model_copy(deep=True)
+    return content.model_copy(deep=True, update={"output": deepcopy(decision.replacement_output)})
+
+
 def _apply_decision(
     item: Item,
     call: ToolCallContent | ToolCallRejectionContent,
     decision: ToolResultViewDecision,
     policy: ToolResultViewPolicy,
-) -> ToolResultContent:
+) -> tuple[ToolResultViewDecision, ToolResultContent]:
+    """对结果Item完整核对一条冻结决定，返回重新校验后的决定与视图正文。"""
     assert isinstance(item.content, ToolResultContent)
     content = item.content
     source = _canonical(_public_result(content))
@@ -307,11 +327,7 @@ def _apply_decision(
             "context_tool_result_decision_mismatch",
             "冻结的Tool Result模型视图决定与Session事实不一致",
         )
-    view = (
-        content.model_copy(deep=True)
-        if decision.strategy == "inline"
-        else content.model_copy(deep=True, update={"output": deepcopy(decision.replacement_output)})
-    )
+    view = _decided_content(content, decision)
     if decision.strategy == "artifact_reference":
         assert isinstance(content.output, dict)
         metadata, omitted_field = _preview_metadata(content.output.get("preview"))
@@ -337,7 +353,57 @@ def _apply_decision(
             "context_tool_result_decision_mismatch",
             "冻结的Tool Result模型视图不满足当前边界或摘要校验",
         )
-    return view
+    return decision, view
+
+
+def _source_facts(item: Item, fingerprint: bytes | None) -> SourceFacts:
+    return _MEMO.recall(
+        memo_key("source", fingerprint),
+        lambda: SourceFacts(
+            len(history_document(item).encode()), _canonical(item.model_dump(mode="json"))
+        ),
+    )
+
+
+def _view_item(item: Item, view: ToolResultContent) -> tuple[Item, bytes]:
+    prepared = item.model_copy(deep=True, update={"content": view})
+    return prepared, _canonical(prepared.model_dump(mode="json"))
+
+
+def _verify_decision(
+    item: Item,
+    call: ToolCallContent | ToolCallRejectionContent,
+    decision: ToolResultViewDecision,
+    policy: ToolResultViewPolicy,
+) -> VerifiedDecision:
+    verified, view = _apply_decision(item, call, decision, policy)
+    return VerifiedDecision(
+        decision=verified,
+        view_canonical_json=_view_item(item, view)[1],
+        decision_canonical_json=_canonical(decision.model_dump(mode="json")),
+    )
+
+
+def _frozen_view(
+    item: Item,
+    call: ToolCallContent | ToolCallRejectionContent,
+    decision: ToolResultViewDecision,
+    policy: ToolResultViewPolicy,
+    key_fingerprints: tuple[bytes | None, ...],
+    detached: bool,
+) -> tuple[Item, VerifiedDecision]:
+    """按冻结决定给出视图Item；核对只取决于结果、调用、决定与策略的内容，四个指纹都与某次
+    通过的核对相同时不重做，任何一项变化都重新核对。视图对象不复用，由当前Item得出。"""
+    assert isinstance(item.content, ToolResultContent)
+    verified = _MEMO.recall(
+        memo_key("decision", *key_fingerprints, content_fingerprint(decision)),
+        lambda: _verify_decision(item, call, decision, policy),
+    )
+    if verified.decision.strategy == "inline":
+        # inline视图与原Item内容相同：整体拷贝一次即可，不必先拷贝正文再拷贝Item。
+        return (item.model_copy(deep=True) if detached else item), verified
+    view = _decided_content(item.content, verified.decision)
+    return item.model_copy(deep=True, update={"content": view}), verified
 
 
 def prepare_model_history(
@@ -346,6 +412,7 @@ def prepare_model_history(
     policy: ToolResultViewPolicy,
     *,
     decisions: tuple[ToolResultViewDecision, ...] | None = None,
+    detached: bool = True,
 ) -> PreparedModelHistory:
     return prepare_model_history_items(
         thread,
@@ -354,7 +421,42 @@ def prepare_model_history(
         policy,
         decisions=decisions,
         require_all_prior_decisions=True,
+        detached=detached,
     )
+
+
+def _bounded_sources(
+    source_history: tuple[Item, ...],
+) -> tuple[list[bytes | None], list[SourceFacts]]:
+    """核对项数与字节上限，返回各Item的内容指纹与派生字节。"""
+    if not source_history:
+        raise KernelError("empty_transcript", "模型历史不能为空")
+    too_large = KernelError("context_budget_exceeded", "模型历史超过8192项或8 MiB准备上限")
+    if len(source_history) > 8192:
+        raise too_large
+    fingerprints = [content_fingerprint(item) for item in source_history]
+    facts = [
+        _source_facts(item, mark) for item, mark in zip(source_history, fingerprints, strict=True)
+    ]
+    if sum(fact.document_utf8_bytes for fact in facts) > 8_388_608:
+        raise too_large
+    return fingerprints, facts
+
+
+def _supplied_decision(
+    supplied: dict[UUID, ToolResultViewDecision],
+    item: Item,
+    policy: ToolResultViewPolicy,
+    *,
+    legacy: bool,
+) -> ToolResultViewDecision:
+    """取出随事件提交的新决定；它必须存在、绑定当前上限，且不重新裁剪旧历史。"""
+    decision = supplied.pop(item.item_id, None)
+    if decision is None or decision.limit_utf8_bytes != policy.max_inline_utf8_bytes:
+        raise KernelError("context_tool_result_decision_mismatch", "缺少新结果决定或预算错绑")
+    if legacy and decision.strategy != "inline":
+        raise KernelError("context_tool_result_decision_mismatch", "旧历史不可重新裁剪")
+    return decision
 
 
 def prepare_model_history_items(
@@ -365,15 +467,11 @@ def prepare_model_history_items(
     *,
     decisions: tuple[ToolResultViewDecision, ...] | None = None,
     require_all_prior_decisions: bool = False,
+    detached: bool = True,
 ) -> PreparedModelHistory:
-    """准备显式活动历史；调用方必须证明被省略的旧事实来自已发布窗口。"""
-    if not source_history:
-        raise KernelError("empty_transcript", "模型历史不能为空")
-    if (
-        len(source_history) > 8192
-        or sum(len(history_document(i).encode()) for i in source_history) > 8_388_608
-    ):
-        raise KernelError("context_budget_exceeded", "模型历史超过8192项或8 MiB准备上限")
+    """准备显式活动历史；调用方必须证明被省略的旧事实来自已发布窗口。detached为False时未改写的
+    视图Item就是传入的Item本身，只供读完即弃的核对使用：不得修改、保留或交给模型请求。"""
+    fingerprints, facts = _bounded_sources(source_history)
     prior = [
         *(thread.fork_snapshot.tool_result_view_decisions if thread.fork_snapshot else ()),
         *(decision for turn in thread.turns for decision in turn.tool_result_view_decisions),
@@ -392,63 +490,58 @@ def prepare_model_history_items(
     supplied = {decision.item_id: decision for decision in decisions or ()}
     if len(supplied) != len(decisions or ()) or set(supplied) & set(decisions_by_item):
         raise KernelError("context_tool_result_decision_mismatch", "新模型视图决定重复")
-    calls: dict[UUID, ToolCallContent | ToolCallRejectionContent] = {}
+    policy_fingerprint = content_fingerprint(policy)
+    calls: dict[UUID, tuple[ToolCallContent | ToolCallRejectionContent, bytes | None]] = {}
     settled: set[UUID] = set()
 
     prepared: list[Item] = []
+    view_json: list[bytes] = []
     used: list[ToolResultViewDecision] = []
+    used_json: list[bytes] = []
     created: list[ToolResultViewDecision] = []
-    for item in source_history:
+    for item, mark, fact in zip(source_history, fingerprints, facts, strict=True):
         if isinstance(item.content, ToolCallContent | ToolCallRejectionContent):
             if item.content.call_id in calls:
                 raise KernelError("context_tool_result_decision_mismatch", "历史调用身份重复")
-            calls[item.content.call_id] = item.content
+            calls[item.content.call_id] = (item.content, mark)
         if not isinstance(item.content, ToolResultContent):
-            prepared.append(item.model_copy(deep=True))
+            prepared.append(item.model_copy(deep=True) if detached else item)
+            # 视图与原Item内容相同，规范JSON也相同。
+            view_json.append(fact.canonical_json)
             continue
-        call = calls.get(item.content.call_id)
+        call, call_mark = calls.get(item.content.call_id, (None, None))
         if call is None or item.content.call_id in settled:
             raise KernelError("context_tool_result_decision_mismatch", "历史结果缺少唯一前置调用")
         settled.add(item.content.call_id)
         decision = decisions_by_item.get(item.item_id)
-        if decision is None:
-            if decisions is None:
-                decision, view = _new_decision(
-                    item, call, policy, legacy=item.item_id in legacy_ids
-                )
-            else:
-                decision = supplied.pop(item.item_id, None)
-                if decision is None or decision.limit_utf8_bytes != policy.max_inline_utf8_bytes:
-                    raise KernelError(
-                        "context_tool_result_decision_mismatch", "缺少新结果决定或预算错绑"
-                    )
-                if item.item_id in legacy_ids and decision.strategy != "inline":
-                    raise KernelError("context_tool_result_decision_mismatch", "旧历史不可重新裁剪")
-                view = _apply_decision(item, call, decision, policy)
+        if decision is None and decisions is None:
+            decision, content = _new_decision(item, call, policy, legacy=item.item_id in legacy_ids)
             created.append(decision)
+            view, encoded = _view_item(item, content)
+            used_json.append(_canonical(decision.model_dump(mode="json")))
         else:
-            view = _apply_decision(item, call, decision, policy)
+            fresh = decision is None
+            if decision is None:
+                decision = _supplied_decision(
+                    supplied, item, policy, legacy=item.item_id in legacy_ids
+                )
+            view, verified = _frozen_view(
+                item, call, decision, policy, (mark, call_mark, policy_fingerprint), detached
+            )
+            encoded = verified.view_canonical_json
+            used_json.append(verified.decision_canonical_json)
+            if fresh:
+                created.append(decision)
         used.append(decision)
-        prepared.append(item.model_copy(deep=True, update={"content": view}))
+        prepared.append(view)
+        view_json.append(encoded)
     if supplied or (
         require_all_prior_decisions
         and not set(decisions_by_item).issubset({i.item_id for i in source_history})
     ):
         raise KernelError("context_tool_result_decision_mismatch", "模型视图决定引用未知Item")
 
-    prepared_history = tuple(prepared)
-    source_result_bytes = sum(decision.source_utf8_bytes for decision in used)
-    view_result_bytes = sum(decision.view_utf8_bytes for decision in used)
-    references = tuple(
-        ModelHistoryArtifactReference(
-            decision.call_id,
-            binding,
-            _omitted_field(decision) if binding.purpose == "tool_result" else None,
-            _artifact_owner(thread, binding.artifact.artifact_id),
-        )
-        for decision in used
-        for binding in decision.references
-    )
+    references = _references(thread, used)
     inspection = ModelHistoryInspection(
         model_step=model_step,
         policy=policy,
@@ -459,17 +552,32 @@ def prepare_model_history_items(
             decision.strategy == "artifact_reference" for decision in used
         ),
         artifact_bindings=len(references),
-        source_tool_result_utf8_bytes=source_result_bytes,
-        view_tool_result_utf8_bytes=view_result_bytes,
-        source_history_sha256=_digest([item.model_dump(mode="json") for item in source_history]),
-        view_history_sha256=view_history_sha256(prepared_history),
-        decisions_sha256=_digest([decision.model_dump(mode="json") for decision in used]),
+        source_tool_result_utf8_bytes=sum(decision.source_utf8_bytes for decision in used),
+        view_tool_result_utf8_bytes=sum(decision.view_utf8_bytes for decision in used),
+        source_history_sha256=_array_digest([fact.canonical_json for fact in facts]),
+        view_history_sha256=_array_digest(view_json),
+        decisions_sha256=_array_digest(used_json),
     )
     return PreparedModelHistory(
-        history=prepared_history,
+        history=tuple(prepared),
         inspection=inspection,
         new_decisions=tuple(created),
         references=references,
+    )
+
+
+def _references(
+    thread: Thread, used: list[ToolResultViewDecision]
+) -> tuple[ModelHistoryArtifactReference, ...]:
+    return tuple(
+        ModelHistoryArtifactReference(
+            decision.call_id,
+            binding,
+            _omitted_field(decision) if binding.purpose == "tool_result" else None,
+            _artifact_owner(thread, binding.artifact.artifact_id),
+        )
+        for decision in used
+        for binding in decision.references
     )
 
 

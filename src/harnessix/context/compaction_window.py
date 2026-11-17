@@ -123,6 +123,8 @@ def _window_source(thread: Thread, window: CompactionWindow) -> tuple[Item, ...]
         window.model_step,
         record.plan.tool_result_view_policy,
         require_all_prior_decisions=False,
+        # 这份视图只用来核对窗口摘要，核对完即丢弃。
+        detached=False,
     )
     if (
         prepared.new_decisions
@@ -140,12 +142,15 @@ def prepare_active_model_history(
     policy: ToolResultViewPolicy,
     *,
     decisions: tuple[ToolResultViewDecision, ...] | None = None,
+    detached: bool = True,
 ) -> PreparedModelHistory:
     window = active_window(thread)
     if window is None:
         from harnessix.context.tool_result_view import prepare_model_history
 
-        return prepare_model_history(thread, model_step, policy, decisions=decisions)
+        return prepare_model_history(
+            thread, model_step, policy, decisions=decisions, detached=detached
+        )
     source = _window_source(thread, window)
     prepared = prepare_model_history_items(
         thread,
@@ -154,6 +159,7 @@ def prepare_active_model_history(
         policy,
         decisions=decisions,
         require_all_prior_decisions=False,
+        detached=detached,
     )
     inspection = ModelHistoryInspectionV2(
         **prepared.inspection.model_dump(exclude={"spec_version"}),

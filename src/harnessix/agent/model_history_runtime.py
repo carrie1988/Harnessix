@@ -311,9 +311,15 @@ async def plan_history_compaction(
     )
 
 
-def _model_view(host: ModelHistoryHost, thread: Thread, model_step: int) -> PreparedModelHistory:
+def _model_view(
+    host: ModelHistoryHost, thread: Thread, model_step: int, *, detached: bool = True
+) -> PreparedModelHistory:
     return prepare_model_view(
-        thread, model_step, host._tool_result_view_policy, host._working_set_result_groups
+        thread,
+        model_step,
+        host._tool_result_view_policy,
+        host._working_set_result_groups,
+        detached=detached,
     )
 
 
@@ -331,7 +337,8 @@ async def _commit_if_current(
         turn = get_turn(thread, turn_id)
         if turn.status in {TurnStatus.CANCELLING, TurnStatus.CANCELLED}:
             raise TurnCancelled
-        current = _model_view(host, thread, model_step)
+        # 只用来确认Session在准备之后没有变化，比对完即丢弃。
+        current = _model_view(host, thread, model_step, detached=False)
         if current != prepared:
             return None
         return await (host._batch_diffs or host.store).append(
