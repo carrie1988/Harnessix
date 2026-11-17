@@ -63,6 +63,7 @@ _LINES_PER_FUNCTION = 11
 _TEXT_DELTAS = 12
 # 评测中的工具占比约为：命令39%、grep 27%、read_file 22%、补丁11%。
 _STEP_CYCLE = ("grep", "read", "exec", "grep", "read", "exec", "patch", "exec", "grep")
+_INSTRUCTION = "Reconcile the inventory markers and verify the affected modules."
 
 
 @dataclass(frozen=True)
@@ -181,10 +182,15 @@ def narration(step: int, text: str) -> list[ProviderEvent]:
     ]
 
 
-def model_step(step: int, events: Sequence[ProviderEvent]) -> list[ProviderEvent]:
-    """按真实Provider的顺序包上尝试、用量与回复终态。"""
+def model_step(
+    step: int, events: Sequence[ProviderEvent], *, input_tokens: int | None = None
+) -> list[ProviderEvent]:
+    """按真实Provider的顺序包上尝试、用量与回复终态；input_tokens缺省时随步骤线性增长。"""
     attempt = uuid4()
-    usage = Usage(input_tokens=2_000 + 600 * step, output_tokens=180)
+    usage = Usage(
+        input_tokens=2_000 + 600 * step if input_tokens is None else input_tokens,
+        output_tokens=180,
+    )
     calls = any(isinstance(event, ToolCallCompleted) for event in events)
     return [
         ModelAttemptStarted(
@@ -226,18 +232,35 @@ def build_script(steps: int) -> tuple[list[list[ProviderEvent]], list[str]]:
     return script, tools
 
 
+_SUMMARY = (
+    "Goal: implement the package from the specification.\n"
+    "Progress: earlier modules and their tests were created, read back and verified.\n"
+    "Next: continue with the next module in the specification order."
+)
+
+
 class ClockedScriptedProvider(ScriptedProvider):
-    """记下每个模型步骤开始时的进程CPU时间；不保留请求副本，深拷贝整个请求会算进宿主开销。"""
+    """记下每个模型步骤开始时的进程CPU时间；不保留请求副本，深拷贝整个请求会算进宿主开销。
+
+    不带工具的请求是压缩摘要请求：回一段固定摘要，不计入模型步骤，也不记CPU时间。
+    """
 
     def __init__(self, steps: Sequence[Sequence[ProviderEvent]], *, delay_seconds: float) -> None:
         super().__init__(steps, delay_seconds=delay_seconds)
         self.cpu_marks: list[float] = []
+        self.summaries = 0
+
+    def events_for(self, request: ModelRequest) -> Sequence[ProviderEvent]:
+        if request.tools:
+            self.cpu_marks.append(process_time())
+            return self.steps[request.step - 1]
+        self.summaries += 1
+        return model_step(request.step, narration(request.step, _SUMMARY))
 
     async def stream(
         self, request: ModelRequest, cancel: CancelToken
     ) -> AsyncGenerator[ProviderEvent, None]:
-        self.cpu_marks.append(process_time())
-        for event in self.steps[request.step - 1]:
+        for event in self.events_for(request):
             cancel.checkpoint()
             if self.delay_seconds:
                 await cancel.run(asyncio.sleep(self.delay_seconds))
@@ -310,6 +333,7 @@ class ScriptedTurn:
     wall_seconds: float
     reason: str
     state: Path
+    summaries: int = 0
 
 
 async def run_scripted_turn(
@@ -317,22 +341,26 @@ async def run_scripted_turn(
     script: Sequence[Sequence[ProviderEvent]],
     *,
     delta_interval_seconds: float = 0.0,
+    instruction: str = _INSTRUCTION,
+    seed: Callable[[Path], None] = seed_workspace,
+    provider_type: type[ClockedScriptedProvider] = ClockedScriptedProvider,
 ) -> ScriptedTurn:
     """在root下建工作区与状态目录，以评测同款装配跑完script描述的一个Turn。
 
     root须为已存在的空目录，且不在任何工作区内。delta_interval_seconds大于0时脚本在每个模型事件前
-    等待这么久，用来观察流式输出期间客户端轮询对宿主的占用。
+    等待这么久，用来观察流式输出期间客户端轮询对宿主的占用。seed在空工作区里生成任务需要的文件；
+    provider_type可换成按请求改写回复的子类。
     """
     workspace, state = root / "workspace", root / "state"
     workspace.mkdir()
-    seed_workspace(workspace)
+    seed(workspace)
     config, actions = root / "product.json", root / "actions.json"
     config.write_text(product_config(8000), encoding="utf-8")
     environment = (("HOME", str(root)), ("PATH", os.environ.get("PATH", "/usr/bin:/bin")))
     actions.write_text(action_config(environment=environment), encoding="utf-8")
     for path in (config, actions):
         path.chmod(0o600)
-    provider = ClockedScriptedProvider(script, delay_seconds=delta_interval_seconds)
+    provider = provider_type(script, delay_seconds=delta_interval_seconds)
     events: list[PublicEvent] = []
     receipts: list[dict[str, object]] = []
 
@@ -348,7 +376,7 @@ async def run_scripted_turn(
                 await drive_protocol_trial(
                     client,
                     workspace=str(workspace),
-                    instruction="Reconcile the inventory markers and verify the affected modules.",
+                    instruction=instruction,
                     budget=PublicBudget(
                         max_steps=len(script) + 7,
                         max_tokens=50_000_000,
@@ -396,6 +424,7 @@ async def run_scripted_turn(
         wall_seconds=wall,
         reason=str(receipt["reason"]),
         state=state,
+        summaries=provider.summaries,
     )
 
 
