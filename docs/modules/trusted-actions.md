@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 52
+version: 53
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -22,6 +22,7 @@ related_adrs:
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
 related_tests:
+  - tests/product_config/test_patch_protected_paths.py
   - tests/product_config/test_stale_approved_plan.py
   - tests/trusted_actions/test_process_preview_projection.py
   - tests/product_config/test_git_review_fresh_owner.py
@@ -56,6 +57,12 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：规划时写受保护路径只拒绝这次调用（NL2RepoBench冒烟，2026-11-17）
+
+- [`planning._capture_workspace`](../../src/harnessix/trusted_actions/planning.py)：规划时按工作区读取策略观察Workspace，保护名称与后缀（`.ssh`、`.env`、`.key`、`.pem`、`.p12`、`.pfx`等）以`ReadToolError("path_denied")`失败。此前这个异常没有转换，`apply_patch_batch`新建`sample_bogo_server.key`时整轮以`runtime_error`→`uncertain_effect`中断（0.10.0b48同样复现）。现在转换为`delivery_path_denied`，经`workspace_patch_planning_rejection`成为可修正的失败结果：整批不写入，Turn继续。
+- 写给模型的说明补上密钥与证书文件，并建议示例密钥在运行时生成（[`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)）。其他读取错误的处理不变。
+- 回归：`tests/product_config/test_patch_protected_paths.py`（两代快照 × 密钥、同批混合、.p12、.ssh目录）。
 
 ## 当前增量：Patch父路径拒绝的可改正说明（ADR 0137）
 
