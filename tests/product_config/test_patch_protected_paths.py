@@ -3,11 +3,12 @@
 工作区读取策略按名称与后缀保护.ssh、.env、.key、.pem等路径。规划时观察Workspace以这类路径失败，
 此前未转换为可修正的拒绝，整轮以runtime_error中断（2026-11-17 NL2RepoBench冒烟：wsgidav新建
 sample_bogo_server.key）。现在与Delivery层的保护路径一样报告delivery_path_denied，整批不写入，
-模型据说明改用其他做法，Turn继续。
+模型据说明改用其他做法，Turn继续。只涉及POSIX：Windows规划只规范路径语法，不按文件名保护。
 """
 
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -31,6 +32,8 @@ PEM = "PRIVATE" + " KEY"
 KEY = f"-----BEGIN {PEM}-----\nAAAA\n-----END {PEM}-----\n"
 
 
+# 只有POSIX规划附带执行读取策略；Windows上补丁照旧写入这类文件，是否禁止待负责人决定。
+@pytest.mark.skipif(os.name != "posix", reason="Windows规划不按文件名保护密钥与证书文件")
 @GENERATIONS
 @pytest.mark.parametrize(
     "files",

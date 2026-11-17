@@ -20,7 +20,7 @@ supersedes: []
 
 模型用`apply_patch_batch`新建受保护的文件时，整轮任务此前会被中断。受保护的文件指密钥、证书或凭据类文件，
 例如`.key`、`.pem`、`.p12`、`.pfx`，以及`.ssh`、`.env`下的文件。现在这次调用以`delivery_path_denied`失败，整批不写入，
-模型收到原因说明，任务继续。
+模型收到原因说明，任务继续。只涉及macOS与Linux：Windows规划不按文件名保护这类路径，补丁照常写入，本次不改变（见第11节）。
 
 ## 2. 需求背景
 
@@ -30,12 +30,13 @@ Web服务类项目常有示例证书与测试密钥，真实用户同样会遇�
 
 ## 3. 设计目标与非目标
 
-- 目标：受保护路径只拒绝这一次调用，并给出可操作的说明；三个平台行为一致。
-- 非目标：放开受保护路径的写入；改变命令工具的行为。
+- 目标：在macOS与Linux上，受保护路径只拒绝这一次调用，并给出可操作的说明。
+- 非目标：放开受保护路径的写入；改变命令工具的行为；改变Windows上的行为（密钥与证书文件是否一律禁止补丁写入，由负责人另行决定）。
 
 ## 4. 总体架构
 
-可信操作规划（`trusted_actions/planning.py`）先按工作区读取策略观察要写的路径。策略拒绝的路径以
+可信操作规划（`trusted_actions/planning.py`）先观察要写的路径。POSIX的观察根（`workspace/snapshot.py`的`_PosixRoot`）复用读取工具的Workspace，
+因此附带执行了读取策略（ADR 0137称之为附带行为）；Windows的`WindowsWorkspaceRoot`只规范路径语法。策略拒绝的路径以
 `ReadToolError("path_denied")`失败，而规划没有转换这一类错误（其余步骤都经`sanitize_plan_exception`），
 异常一直冒到运行循环。网关`prepare_action`现在把规划失败一律交给`workspace_patch_planning_rejection`：
 对内置Patch，`path_denied`的读取错误折算为Delivery层已有的`delivery_path_denied`，与原有的规划拒绝一样
@@ -62,7 +63,7 @@ Web服务类项目常有示例证书与测试密钥，真实用户同样会遇�
 
 ## 9. 安全与信任边界
 
-受保护路径照旧不能由补丁写入；改变的只是失败的报告方式。
+macOS与Linux上受保护路径照旧不能由补丁写入，改变的只是失败的报告方式。Windows上补丁照旧可以写入这类文件（0.10.0b48起即如此），本次不改变。
 
 ## 10. 可观测与错误分类
 
@@ -70,7 +71,7 @@ Web服务类项目常有示例证书与测试密钥，真实用户同样会遇�
 
 ## 11. 部署、兼容与回退
 
-撤销提交即可；三个平台使用同一段规划代码。
+撤销提交即可。网关的转换三个平台相同，但只有POSIX规划会报出`path_denied`，Windows上走不到这条转换。
 
 ## 12. 限制与风险
 
@@ -78,8 +79,8 @@ Web服务类项目常有示例证书与测试密钥，真实用户同样会遇�
 
 ## 13. 验证
 
-- `tests/product_config/test_patch_protected_paths.py`覆盖两代快照，以及密钥、同批混合、.p12、.ssh目录四种情况。
-  修复前失败，修复后通过。
+- `tests/product_config/test_patch_protected_paths.py`覆盖两代快照，以及密钥、同批混合、.p12、.ssh目录四种情况，只在POSIX运行。
+  修复前失败，修复后通过。只对内置Patch转换的单元测试在任何宿主运行。
 - 全量回归与b48对比。
 
 ## 14. 源码与测试映射
