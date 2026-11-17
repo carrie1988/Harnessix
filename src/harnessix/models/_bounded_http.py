@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from contextlib import aclosing
+from contextvars import ContextVar
 from typing import Protocol
 
 import httpx
@@ -18,6 +19,12 @@ class ByteStream(Protocol):
 
 FrameValidator = Callable[[bytes, bytes], None]
 
+# 一次模型请求的传输活动回调（ADR 0166）：适配器只在执行这次请求的子Task里设置；传输层在请求交给
+# 下层发送时与响应每收到一批字节时调用，不接触内容。
+TRANSFER_ACTIVITY: ContextVar[Callable[[], None] | None] = ContextVar(
+    "harnessix_transfer_activity", default=None
+)
+
 
 class InvalidWireData(ValueError):
     """只携带固定诊断，不包含不可信服务端数据。"""
@@ -30,12 +37,14 @@ class BoundedStream(httpx.AsyncByteStream):
         config: ModelHTTPConfig,
         *,
         validate_frame: FrameValidator | None = None,
+        on_receive: Callable[[], None] | None = None,
     ) -> None:
         self._source = source
         self._config = config
         self.seen_done = False
         self._closed = False
         self._validate_frame = validate_frame
+        self._on_receive = on_receive
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         try:
@@ -52,7 +61,7 @@ class BoundedStream(httpx.AsyncByteStream):
         data_lines: list[bytes] = []
         event_name = b""
         previous_cr = False
-        async for chunk in self._source:
+        async for chunk in self._received():
             total += len(chunk)
             chunks += 1
             if total > self._config.max_response_bytes or chunks > self._config.max_chunks:
@@ -94,6 +103,12 @@ class BoundedStream(httpx.AsyncByteStream):
                 line.clear()
             yield chunk
 
+    async def _received(self) -> AsyncGenerator[bytes, None]:
+        async for chunk in self._source:
+            if self._on_receive is not None:
+                self._on_receive()
+            yield chunk
+
     async def aclose(self) -> None:
         if not self._closed:
             await self._source.aclose()
@@ -113,6 +128,9 @@ class BoundedTransport(httpx.AsyncBaseTransport):
         self._validate_frame = validate_frame
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        activity = TRANSFER_ACTIVITY.get()
+        if activity is not None:
+            activity()
         response = await self._inner.handle_async_request(request)
         if response.headers.get("content-encoding", "identity").lower() != "identity":
             await response.aclose()
@@ -127,6 +145,7 @@ class BoundedTransport(httpx.AsyncBaseTransport):
             if response.headers.get("content-type", "").split(";")[0].strip().lower()
             == "text/event-stream"
             else None,
+            on_receive=activity,
         )
         response.stream = bounded
         response.extensions["harnessix_stream"] = bounded

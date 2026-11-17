@@ -89,6 +89,11 @@ class AnthropicStream:
         self._billing = ResponseBillingMetadata()
         self._last_observed: tuple[UsageObservation, ResponseBillingMetadata] | None = None
 
+    @property
+    def tool_call_started(self) -> bool:
+        """已开始工具调用块；参数可能在服务端攒到写完才发出（ADR 0166）。"""
+        return bool(self._call_ids) or any(b.type == "tool_use" for b in self._blocks.values())
+
     def feed(self, value: RawMessageStreamEvent) -> list[ProviderEvent]:
         event = validate_event(value.model_dump(warnings="error"))
         if self._stopped:

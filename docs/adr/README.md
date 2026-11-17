@@ -296,6 +296,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0164：过期Artifact正文自动回收，Tombstone不再占全局件数](0164-expired-artifacts-are-reclaimed-automatically.md)：产品从未调用`collect`，过期正文一直计入32 MiB全局配额，回收后的Tombstone仍计入10000份上限，同一工作区用满后此后每次归档都撞线；改为Runtime打开时回收一轮、此后每小时一轮，Tombstone不再占全局件数，无法核对的行保留并跳过而不中止回收。
 
 - [ADR 0165：Glob与Grep同一组整仓库上限，只进入可能有命中的目录](0165-glob-uses-whole-repository-limits.md)：Prettier的`tests/format`下就有约1.1万个条目，Glob沿用原字面量合同的10,000个条目上限而失败、没有结果（Beta Issue #35）；快照与正则搜索模式下Glob改用整仓库上限，按模式跳过不可能有命中的目录，执行合同v11；超限说明不再建议先用glob。原Glob不变。
+- [ADR 0166：工具调用开始之后，流式响应的静默只受本次请求的总期限约束](0166-silence-after-a-tool-call-starts-is-bounded-by-the-request-deadline.md)：本机vLLM只边生成边发送字符串参数，`apply_patch_batch`的数组参数写完才整段发出，连接上几分钟没有字节，NL2RepoBench回归里35次请求在第300秒被判读取超时、整段作废（平均每题约4.5分钟）；工具调用开始之前仍按`io_timeout_seconds`判断静默，开始之后只受`timeout_seconds`约束，字节到达由传输层回调。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 

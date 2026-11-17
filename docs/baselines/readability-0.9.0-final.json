@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 655,
-    "physical_lines": 137332,
-    "logical_lines": 118881,
+    "physical_lines": 137471,
+    "logical_lines": 118988,
     "documented_modules": 655,
-    "classes": 1262,
-    "documented_classes": 662,
-    "functions": 5493,
-    "documented_functions": 1961,
+    "classes": 1263,
+    "documented_classes": 663,
+    "functions": 5506,
+    "documented_functions": 1968,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1021,7 +1021,7 @@
       "qualname": "AnthropicStream",
       "kind": "class",
       "line": 69,
-      "lines": 213,
+      "lines": 218,
       "documented": false
     },
     {
@@ -1030,7 +1030,7 @@
       "path": "src/harnessix/models/_anthropic_stream.py",
       "qualname": "AnthropicStream.feed",
       "kind": "function",
-      "line": 92,
+      "line": 97,
       "lines": 89,
       "documented": false,
       "decision_complexity": 46
@@ -1041,7 +1041,7 @@
       "path": "src/harnessix/models/_bounded_http.py",
       "qualname": "BoundedStream._iterate",
       "kind": "function",
-      "line": 49,
+      "line": 58,
       "lines": 47,
       "documented": false,
       "decision_complexity": 22
@@ -1064,7 +1064,7 @@
       "qualname": "ChatStream",
       "kind": "class",
       "line": 183,
-      "lines": 158,
+      "lines": 163,
       "documented": false
     },
     {
@@ -1073,7 +1073,7 @@
       "path": "src/harnessix/models/_chat_stream.py",
       "qualname": "ChatStream.feed",
       "kind": "function",
-      "line": 213,
+      "line": 218,
       "lines": 73,
       "documented": false,
       "decision_complexity": 38
@@ -1095,8 +1095,8 @@
       "path": "src/harnessix/models/anthropic.py",
       "qualname": "AnthropicProvider",
       "kind": "class",
-      "line": 80,
-      "lines": 155,
+      "line": 91,
+      "lines": 152,
       "documented": true
     },
     {
@@ -1105,10 +1105,10 @@
       "path": "src/harnessix/models/anthropic.py",
       "qualname": "AnthropicProvider.stream",
       "kind": "function",
-      "line": 136,
-      "lines": 99,
+      "line": 148,
+      "lines": 95,
       "documented": false,
-      "decision_complexity": 26
+      "decision_complexity": 25
     },
     {
       "id": "harnessix.models.billing:resolve_billing_context",
@@ -1149,8 +1149,8 @@
       "path": "src/harnessix/models/openai_chat.py",
       "qualname": "OpenAIChatProvider",
       "kind": "class",
-      "line": 95,
-      "lines": 254,
+      "line": 106,
+      "lines": 251,
       "documented": true
     },
     {
@@ -1159,10 +1159,10 @@
       "path": "src/harnessix/models/openai_chat.py",
       "qualname": "OpenAIChatProvider.stream",
       "kind": "function",
-      "line": 237,
-      "lines": 112,
+      "line": 249,
+      "lines": 108,
       "documented": false,
-      "decision_complexity": 28
+      "decision_complexity": 27
     },
     {
       "id": "harnessix.observability.opentelemetry:OpenTelemetryObservability",

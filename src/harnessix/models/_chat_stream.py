@@ -210,6 +210,11 @@ class ChatStream:
         self._observation = UsageObservation()
         self._last_observed: tuple[UsageObservation, ResponseBillingMetadata] | None = None
 
+    @property
+    def tool_call_started(self) -> bool:
+        """已收到任何工具调用分片；参数可能在服务端攒到写完才发出（ADR 0166）。"""
+        return bool(self._calls)
+
     def feed(self, value: ChatCompletionChunk) -> list[ProviderEvent]:
         chunk = ChatCompletionChunk.model_validate(value.model_dump(warnings="error"), strict=True)
         events: list[ProviderEvent] = []

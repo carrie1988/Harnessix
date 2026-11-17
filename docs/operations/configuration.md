@@ -160,7 +160,7 @@ export MODEL_API_KEY='<由Secret系统注入>'
 | `max_output_tokens` | 4096，1～1,000,000 | 单响应输出参数 |
 | `context_window_tokens` | 空（不序列化），8192～2,097,152 | 模型上下文窗口；声明后输入上限与压缩阈值按窗口换算（默认窗口一半时压缩、压到四分之一，见下文`compaction`），换算结果不超过出站请求扫描容量的四分之三（约262144 Token），未声明沿用固定上限 |
 | `timeout_seconds` | 120，最大3600 | Provider总Timeout |
-| `io_timeout_seconds` | 30，最大300 | 连接/读取Timeout |
+| `io_timeout_seconds` | 30，最大300 | 连接/写入Timeout，以及流式响应的静默上限：工具调用开始之前连续这么久没有任何字节按读取超时重试；工具调用开始之后服务端可能把参数写完才整段发出，只受`timeout_seconds`约束（ADR 0166） |
 | `max_attempts` | 2，1～5 | 单Profile尝试上限；链总和不超过32 |
 | `retry_delay_seconds` | 0.5，0～10 | 尝试间延迟 |
 | `max_request_bytes` | 2 MiB，最大16 MiB | 出站请求上限 |

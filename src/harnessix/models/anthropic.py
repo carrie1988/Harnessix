@@ -20,6 +20,7 @@ from harnessix.models._anthropic_mapping import build_request
 from harnessix.models._anthropic_stream import AnthropicStream
 from harnessix.models._bounded_http import InvalidWireData
 from harnessix.models._provider_io import (
+    StreamSilence,
     finish_attempt,
     persistent_output,
     read_key,
@@ -63,6 +64,16 @@ def _failure(error: Exception) -> ResponseFailed:
     return ResponseFailed(code="invalid_provider_output")
 
 
+def _silence(config: AnthropicConfig, deadline: float, state: AnthropicStream) -> StreamSilence:
+    """静默超过读取期限按HTTP客户端的读取超时处理，可重试（ADR 0166）。"""
+    return StreamSilence(
+        config.io_timeout_seconds,
+        deadline,
+        lambda: httpx2.ReadTimeout("流式响应静默超过读取期限"),
+        lambda: state.tool_call_started,
+    )
+
+
 def _is_unbilled(error: Exception) -> bool:
     """收到HTTP错误响应，或TCP/TLS连接未建立：请求没有被模型处理。"""
 
@@ -103,7 +114,7 @@ class AnthropicProvider:
             ),
             trust_env=False,
             follow_redirects=False,
-            timeout=config.io_timeout_seconds,
+            timeout=httpx2.Timeout(config.io_timeout_seconds, read=None),
         )
         self._client = AsyncAnthropic(
             api_key=key,
@@ -111,7 +122,8 @@ class AnthropicProvider:
             base_url=config.base_url,
             max_retries=0,
             http_client=client,
-            timeout=config.io_timeout_seconds,
+            # 读取静默由StreamSilence判断（ADR 0166）；连接、写入与连接池期限不变。
+            timeout=httpx2.Timeout(config.io_timeout_seconds, read=None),
             default_headers={"Accept-Encoding": "identity"},
         )
         self._closed = False
@@ -163,25 +175,21 @@ class AnthropicProvider:
             retry_after = 0.0
             try:
                 cancel.checkpoint()
-                stream = await wait_for_io(
-                    self._client.messages.create(**cast(MessageCreateParamsStreaming, body)),
-                    cancel,
-                    deadline,
-                )
-                content_type = stream.response.headers.get("content-type", "").split(";")[0]
-                if content_type.strip().lower() != "text/event-stream":
-                    raise InvalidWireData("响应不是 SSE")
                 state = AnthropicStream(
                     request,
                     names,
                     parallel=self.config.capabilities.parallel_tool_calls,
                     attempt_id=attempt_id,
                 )
-                while True:
-                    try:
-                        chunk = await wait_for_io(anext(stream), cancel, deadline)
-                    except StopAsyncIteration:
-                        break
+                silence = _silence(self.config, deadline, state)
+                stream = await silence.wait(
+                    self._client.messages.create(**cast(MessageCreateParamsStreaming, body)),
+                    cancel,
+                )
+                content_type = stream.response.headers.get("content-type", "").split(";")[0]
+                if content_type.strip().lower() != "text/event-stream":
+                    raise InvalidWireData("响应不是 SSE")
+                async for chunk in silence.chunks(stream, cancel):
                     for event in state.feed(chunk):
                         cancel.checkpoint()
                         exposed = exposed or persistent_output(event)
