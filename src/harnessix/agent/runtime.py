@@ -31,6 +31,7 @@ from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
 from harnessix.agent.compaction_calibration import calibrated_limit
 from harnessix.agent.compaction_reducer import compaction_source
+from harnessix.agent.compaction_summary_request import summary_request, summary_tool_call_error
 from harnessix.agent.completion_guard import (
     CompletionGuardMode,
     completion_guard_mode,
@@ -176,14 +177,11 @@ from harnessix.agent.turn_budget_compaction import (
     STOP_ON_UNKNOWN_USAGE,
     UnknownUsagePolicy,
     covered_through_step,
-    pressure_summary_instructions,
     remaining_request_slots,
     require_context_unchanged,
     require_request_slots,
     require_reserved_unknown_usage,
     require_summary_slot,
-    summary_output_limit,
-    summary_request_item,
     summary_stamp,
     summary_stamp_bytes,
 )
@@ -371,6 +369,7 @@ class AgentRuntime:
         self._budget_pressure_compaction = budget_pressure_compaction
         # 主动压缩摘要截断后的退避点（Turn → 当时历史UTF-8字节）；仅调度用，不进入事件。
         self._compaction_backoff: dict[UUID, int] = {}
+        self._isolated_summary_turns: set[UUID] = set()
         if working_set_result_groups is not None and (
             type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
         ):
@@ -1909,11 +1908,8 @@ class AgentRuntime:
                                 "context_compaction_summary_overflow", "摘要正文超过候选预留"
                             )
                         text_finished = True
-                elif isinstance(event, ToolCallCompleted):
-                    raise KernelError(
-                        "context_compaction_summary_tool_forbidden",
-                        "摘要Provider不得产生工具调用",
-                    )
+                elif isinstance(event, ToolCallCompleted | ToolCallRejected):
+                    raise summary_tool_call_error(request, event)
                 elif isinstance(event, ResponseCompleted):
                     thread = await self.store.get_thread(request.thread_id)
                     turn = get_turn(thread, request.turn_id)
@@ -2051,8 +2047,13 @@ class AgentRuntime:
         prepared_history: PreparedModelHistory,
         token: CancelToken,
         planned: PreparedCompaction | None = None,
+        *,
+        shared_prefix: bool = False,
     ) -> Thread:
-        """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。"""
+        """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。
+
+        shared_prefix：主动压缩时摘要请求沿用主请求的前缀（ADR 0167）。
+        """
         assert self._compaction is not None and self._summary_provider is not None
         budget_planned = planned is not None
         require_summary_slot(turn, allow_unknown_usage=self._unknown_usage.continues(turn))
@@ -2091,37 +2092,16 @@ class AgentRuntime:
                 remaining = current.budget.max_tokens - current.usage.total_tokens
                 if remaining <= 0:
                     raise KernelError("budget_exceeded", "摘要请求的已知Token预算耗尽")
-                source_item = summary_request_item(planned)
-                summary_instructions = (
-                    pressure_summary_instructions(SUMMARY_INSTRUCTIONS, self._compaction, planned)
-                    if budget_planned
-                    else SUMMARY_INSTRUCTIONS
-                )
-                estimated_input_tokens = _estimated_model_input_tokens(
-                    (source_item,), (), summary_instructions
-                )
-                allowed_output_tokens = min(
-                    remaining - estimated_input_tokens,
-                    (
-                        summary_output_limit(self._compaction, planned)
-                        if budget_planned
-                        else self._compaction.max_summary_output_tokens
-                    ),
-                )
-                if allowed_output_tokens <= 0:
-                    raise KernelError(
-                        "budget_exceeded",
-                        "摘要请求的保守输入与最小输出超过剩余Token预算",
-                    )
-                request = ModelRequest(
-                    thread_id=thread.thread_id,
-                    turn_id=turn.turn_id,
-                    step=model_step,
-                    history=(source_item,),
-                    tools=(),
-                    instructions=summary_instructions,
-                    budget=current.budget,
-                    remaining_tokens=allowed_output_tokens,
+                request = await summary_request(
+                    self,
+                    persisted,
+                    current,
+                    planned,
+                    model_step,
+                    token,
+                    summary_instructions=SUMMARY_INSTRUCTIONS,
+                    budget_planned=budget_planned,
+                    shared_prefix=shared_prefix,
                 )
                 # 宿主说明头与时点写在正文前并从正文预留中扣除；说明头使摘要按纯文本投影。
                 # 预算压力压缩的容量已按带说明头、无时点的单段摘要精确预付。

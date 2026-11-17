@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 69
+version: 70
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0135-command-ledger-step-notices.md
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0131-session-baseline-for-pre-existing-workspace-changes.md
+  - docs/adr/0167-proactive-summary-request-reuses-the-main-request-prefix.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -52,10 +53,19 @@ related_tests:
   - tests/agent/test_pressure_compaction_loop.py
   - tests/context/test_turn_budget_compaction.py
   - tests/context/test_compaction_runtime.py
+  - tests/context/test_shared_prefix_summary.py
   - tests/product_config/test_native_sandbox_profile.py
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：主动压缩的摘要请求沿用主请求的前缀（ADR 0167）
+
+- [`compaction_summary_request.summary_request`](../../src/harnessix/agent/compaction_summary_request.py)替代`_run_compaction`里内联的请求构造。主动压缩时请求包含：与下一次主请求相同的Context准备得到的系统指令、与主请求相同的线上工具（`catalog_tools`：有稳定目录时是整份目录，否则是本步视图选出的工具；本步不可执行任何工具）、压缩计划的模型历史视图，末尾再加一条宿主说明`SHARED_PREFIX_SUMMARY_NOTE`。请求开头与上一次主请求逐字相同，服务端前缀缓存可以复用。
+- 以下情况沿用原独立请求（ADR 0058，逐字不变）：被动压缩、预算压力压缩、Context准备放不下，或剩余Token预算放不下。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)按“非被动压缩且本Turn未退回”传入`shared_prefix`。
+- 共用前缀的摘要回复里出现工具调用：`summary_tool_call_error`报`provider_summary_tool_call`，归入主动压缩可跳过的失败，`_isolated_summary_turns`记下这个Turn，之后的压缩改用独立请求。独立请求里的工具调用仍按原规则报`context_compaction_summary_tool_forbidden`或`invalid_provider_output`。
+- 压缩计划、账本事件、预留、校验、激活与投影不变。原因：NL2RepoBench回归里摘要请求平均等148秒才收到第一个字（全部重算）。
+- 回归：`tests/context/test_shared_prefix_summary.py`；`tests/context/test_compaction_runtime.py`原有用例不变。
 
 ## 当前增量：同一步骤作废半截正文后接受新的尝试（ADR 0144第5版）
 

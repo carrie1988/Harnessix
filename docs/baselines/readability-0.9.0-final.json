@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 655,
-    "physical_lines": 137332,
-    "logical_lines": 118881,
-    "documented_modules": 655,
-    "classes": 1262,
+    "source_files": 656,
+    "physical_lines": 137506,
+    "logical_lines": 119017,
+    "documented_modules": 656,
+    "classes": 1263,
     "documented_classes": 662,
-    "functions": 5493,
-    "documented_functions": 1961,
+    "functions": 5500,
+    "documented_functions": 1963,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -204,7 +204,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3550
+      "lines": 3530
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -352,8 +352,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 309,
-      "lines": 3242,
+      "line": 307,
+      "lines": 3224,
       "documented": true
     },
     {
@@ -362,8 +362,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 312,
-      "lines": 202,
+      "line": 310,
+      "lines": 203,
       "documented": false,
       "decision_complexity": 47
     },
@@ -373,7 +373,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2340,
+      "line": 2320,
       "lines": 264,
       "documented": true,
       "decision_complexity": 49
@@ -384,7 +384,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2605,
+      "line": 2585,
       "lines": 243,
       "documented": true,
       "decision_complexity": 51
@@ -395,7 +395,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3384,
+      "line": 3364,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -406,7 +406,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._reply_approval",
       "kind": "function",
-      "line": 1517,
+      "line": 1516,
       "lines": 102,
       "documented": true,
       "decision_complexity": 21
@@ -417,10 +417,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._run_compaction",
       "kind": "function",
-      "line": 2047,
-      "lines": 166,
+      "line": 2043,
+      "lines": 150,
       "documented": true,
-      "decision_complexity": 19
+      "decision_complexity": 16
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._sample_events",
@@ -428,7 +428,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 3093,
+      "line": 3073,
       "lines": 279,
       "documented": true,
       "decision_complexity": 83
@@ -439,7 +439,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._select_model_tools",
       "kind": "function",
-      "line": 2292,
+      "line": 2272,
       "lines": 47,
       "documented": true,
       "decision_complexity": 23
@@ -450,8 +450,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._summary_text",
       "kind": "function",
-      "line": 1722,
-      "lines": 238,
+      "line": 1721,
+      "lines": 235,
       "documented": false,
       "decision_complexity": 53
     },
