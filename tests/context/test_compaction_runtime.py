@@ -9,10 +9,11 @@ from pathlib import Path
 import pytest
 
 from harnessix.agent.cancellation import CancelToken
+from harnessix.agent.compaction_summary_request import SHARED_PREFIX_SUMMARY_NOTE
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import Budget, TextContent, Usage
 from harnessix.agent.reducer import replay
-from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
+from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.usage import ModelAttemptFinished
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
 from harnessix.context.compaction_contracts import CompactionPolicy
@@ -149,19 +150,20 @@ async def test_proactive_compaction_uses_accounted_toolless_request_and_active_w
 
     assert len(summary.requests) == 1 and summary.closed_streams == 1
     summary_request = summary.requests[0]
+    # 主动压缩沿用主请求的前缀，末尾一条宿主说明（ADR 0167）；独立请求的形态见
+    # tests/context/test_shared_prefix_summary.py的回退用例。
     assert summary_request.tools == ()
-    assert summary_request.instructions == SUMMARY_INSTRUCTIONS
+    assert summary_request.instructions == normal.requests[0].instructions
     assert summary_request.remaining_tokens == 128
-    assert len(summary_request.history) == 1
-    assert isinstance(summary_request.history[0].content, TextContent)
-    assert summary_request.history[0].content.kind == "user_message"
-    source = json.loads(summary_request.history[0].content.text)
-    assert source["trust"] == "untrusted_history" and source["authority"] == "none"
+    assert summary_request.history[: len(normal.requests[0].history)] == (
+        normal.requests[0].history
+    )
+    last = summary_request.history[-1].content
+    assert isinstance(last, TextContent) and last.kind == "user_message"
+    assert last.text == SHARED_PREFIX_SUMMARY_NOTE
     chat, _ = chat_request(summary_request, OpenAIChatConfig(model="fixture"))
     anthropic, _ = anthropic_request(summary_request, AnthropicConfig(model="fixture"))
     assert "tools" not in chat and "tools" not in anthropic
-    assert chat["messages"][0] == {"role": "system", "content": SUMMARY_INSTRUCTIONS}
-    assert anthropic["system"] == SUMMARY_INSTRUCTIONS
     assert chat["messages"][-1]["role"] == anthropic["messages"][-1]["role"] == "user"
 
     assert len(normal.requests) == 2
@@ -230,6 +232,8 @@ async def test_summary_provider_without_first_intent_fails_with_unknown_charge_r
 
 
 async def test_summary_tool_call_is_rejected_without_execution(tmp_path: Path):
+    # 请求里没有任何工具时，摘要回复里的工具调用仍是Provider违约，整轮失败。
+    # 带工具目录的共用前缀请求见tests/context/test_shared_prefix_summary.py。
     start = attempt_start()
     summary = ScriptedProvider(
         [
@@ -240,15 +244,14 @@ async def test_summary_tool_call_is_rejected_without_execution(tmp_path: Path):
             ]
         ]
     )
-    tools = RecordingTools()
-    _, normal, turn = await run_seeded(tmp_path, summary, tools=tools)
+    _, normal, turn = await run_seeded(tmp_path, summary)
     record = turn.compactions[0]
 
     assert turn.status == "failed"
     assert turn.error.code == "context_compaction_summary_tool_forbidden"
     assert record.status == "failed" and record.attempt.status == "failed"
     assert not record.unaccounted_request_possible
-    assert not tools.calls and len(normal.requests) == 1
+    assert len(normal.requests) == 1
     assert summary.closed_streams == 1
 
 

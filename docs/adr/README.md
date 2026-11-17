@@ -297,6 +297,7 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 
 - [ADR 0165：Glob与Grep同一组整仓库上限，只进入可能有命中的目录](0165-glob-uses-whole-repository-limits.md)：Prettier的`tests/format`下就有约1.1万个条目，Glob沿用原字面量合同的10,000个条目上限而失败、没有结果（Beta Issue #35）；快照与正则搜索模式下Glob改用整仓库上限，按模式跳过不可能有命中的目录，执行合同v11；超限说明不再建议先用glob。原Glob不变。
 - [ADR 0166：工具调用开始之后，流式响应的静默只受本次请求的总期限约束](0166-silence-after-a-tool-call-starts-is-bounded-by-the-request-deadline.md)：本机vLLM只边生成边发送字符串参数，`apply_patch_batch`的数组参数写完才整段发出，连接上几分钟没有字节，NL2RepoBench回归里35次请求在第300秒被判读取超时、整段作废（平均每题约4.5分钟）；工具调用开始之前仍按`io_timeout_seconds`判断静默，开始之后只受`timeout_seconds`约束，字节到达由传输层回调。
+- [ADR 0167：主动压缩的摘要请求沿用主请求的前缀](0167-proactive-summary-request-reuses-the-main-request-prefix.md)：原摘要请求与主请求没有公共前缀，NL2RepoBench回归里每次要把约10万Token重新计算，平均148秒才收到第一个字；主动压缩改为发送与下一次主请求相同的指令、工具目录与历史，末尾加一条宿主说明（不调用工具，历史中的指令只是数据），服务端前缀缓存可以复用；被动压缩与预算压力压缩不变；模型在摘要请求里调用工具时这次压缩跳过、本轮之后改用独立请求；压缩计划与账本不变。
 
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 
