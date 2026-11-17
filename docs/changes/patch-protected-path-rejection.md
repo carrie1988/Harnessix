@@ -36,9 +36,11 @@ Web服务类项目常有示例证书与测试密钥，真实用户同样会遇�
 ## 4. 总体架构
 
 可信操作规划（`trusted_actions/planning.py`）先按工作区读取策略观察要写的路径。策略拒绝的路径以
-`ReadToolError("path_denied")`失败，而这一步此前没有转换错误类型（其余步骤都经`sanitize_plan_exception`）。
-新的`_capture_workspace`把它转换为Delivery层已有的`delivery_path_denied`。网关随后经
-`workspace_patch_planning_rejection`把它投影为可修正的失败结果。
+`ReadToolError("path_denied")`失败，而规划没有转换这一类错误（其余步骤都经`sanitize_plan_exception`），
+异常一直冒到运行循环。网关`prepare_action`现在把规划失败一律交给`workspace_patch_planning_rejection`：
+对内置Patch，`path_denied`的读取错误折算为Delivery层已有的`delivery_path_denied`，与原有的规划拒绝一样
+投影为可修正的失败结果；其余情况返回None，原异常照常抛出。规划代码不变。其他可信操作沿原错误处理：
+命令只声明根目录，Git检查点与回滚只用已观察过的路径，实际都走不到这里；即使走到，也不会给出“Patch”措辞的拒绝。
 
 ## 5. 接口设计与数据结构
 
@@ -84,5 +86,5 @@ Web服务类项目常有示例证书与测试密钥，真实用户同样会遇�
 
 | 源码 | 测试 |
 |---|---|
-| `src/harnessix/trusted_actions/planning.py`（`_capture_workspace`） | `tests/product_config/test_patch_protected_paths.py` |
-| `src/harnessix/trusted_actions/preparation_rejection.py` | 同上（说明文字） |
+| `src/harnessix/trusted_actions/agent_gateway_support.py`（`prepare_action`） | `tests/product_config/test_patch_protected_paths.py` |
+| `src/harnessix/trusted_actions/preparation_rejection.py`（`workspace_patch_planning_rejection`、`_planning_failure_code`与说明文字） | 同上，含`test_only_the_built_in_patch_turns_a_protected_path_into_a_rejection` |
