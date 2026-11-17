@@ -117,8 +117,36 @@ def test_anthropic_stream_reports_progress_while_tool_input_arrives() -> None:
         payload = frame.split(b"data: ", 1)[1]
         events.extend(state.feed(validate_event(json.loads(payload))))
     reported = [event for event in events if isinstance(event, ToolArgumentsProgress)]
+    # 工具块一开始就报工具名（0字节）：Anthropic按完整键值发出参数，
+    # 大参数到齐前没有片段（ADR 0166）。
     assert [(event.utf8_bytes, event.tool) for event in reported] == [
-        (len('{"path": "中文.txt"}'.encode()), "test.read")
+        (0, "test.read"),
+        (len('{"path": "中文.txt"}'.encode()), "test.read"),
+    ]
+
+
+def test_chat_stream_announces_the_tool_before_held_back_arguments() -> None:
+    """服务端先发工具名与空参数、写完才发数组参数（vLLM、百炼实测）：先报0字节与工具名。"""
+    state = ChatStream(model_request(with_tools=True), NAMES, parallel=True, attempt_id=uuid4())
+    events = []
+    for value in (
+        wire.chunk(
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {**wire.call(), "function": {"name": wire.call()["function"]["name"]}}
+                ],
+            }
+        ),
+        wire.chunk({"tool_calls": [{"index": 0, "function": {"arguments": '{"path": "a"}'}}]}),
+        wire.chunk(finish="tool_calls"),
+        wire.chunk(usage=True),
+    ):
+        events.extend(state.feed(ChatCompletionChunk.model_validate(value, strict=True)))
+    reported = [event for event in events if isinstance(event, ToolArgumentsProgress)]
+    assert [(event.utf8_bytes, event.tool) for event in reported] == [
+        (0, "test.read"),
+        (13, "test.read"),
     ]
 
 
@@ -355,6 +383,32 @@ def test_the_tui_names_the_phase_and_estimates_what_was_generated() -> None:
     assert activity_text("calling_model", 3, 0, streaming=False, silent_seconds=3) == (
         "⠋ 思考中 · 已运行 3 秒"
     )
+    # 服务端在攒工具参数（工具调用已开始、只到了开头几个字节）：这是正常情况，说明这一阶段已用时，
+    # 不说“未返回新内容”（ADR 0166）。逐段返回参数后又停住的，仍按上面的说法提示。
+    held = apply_events_next(state, _page(_delta(turn_id, 1, 1, "0 0 10 apply_patch_batch\n")))
+    request = in_flight_request(held)
+    assert (request.phase, request.arguments_held_back) == ("editing", True)
+    assert request.label == "正在生成修改内容 · 约 10 tokens"
+    assert activity_text(
+        "calling_model",
+        130,
+        0,
+        streaming=False,
+        generation=request,
+        silent_seconds=47.6,
+        phase_seconds=48.2,
+    ) == ("⠋ 正在生成修改内容 · 已用时 48 秒，模型服务写完才会返回 · 已运行 2 分 10 秒")
+    announced = apply_events_next(state, _page(_delta(turn_id, 1, 1, "0 0 0 apply_patch_batch\n")))
+    request = in_flight_request(announced)
+    assert (request.phase, request.label) == ("editing", "正在生成修改内容")
+    streamed = apply_events_next(
+        state, _page(_delta(turn_id, 1, 1, "0 0 6000 apply_patch_batch\n"))
+    )
+    request = in_flight_request(streamed)
+    assert not request.arguments_held_back
+    assert activity_text(
+        "calling_model", 60, 0, streaming=False, generation=request, silent_seconds=9.1
+    ) == ("⠋ 正在生成修改内容 · 模型服务 9 秒未返回新内容 · 已运行 1 分 00 秒")
     # 其他状态（执行工具、准备上下文）不受影响。
     assert activity_text("executing_tools", 90, 0, streaming=False, silent_seconds=90) == (
         "⠋ 执行中 · 已运行 1 分 30 秒"

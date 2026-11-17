@@ -4,7 +4,7 @@ status: reviewing
 version: 1
 code_revision: pending
 owners: [core]
-modules: [models]
+modules: [models, agent, product_ui]
 related_adrs:
   - docs/adr/0144-automatic-retry-after-service-failures-in-interactive-mode.md
   - docs/adr/0156-generation-progress-and-live-usage-estimate.md
@@ -13,6 +13,7 @@ related_tests:
   - tests/models/test_stream_silence.py
   - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_attempt_usage.py
+  - tests/agent/test_generation_progress.py
 supersedes: []
 ---
 
@@ -57,6 +58,17 @@ mini-swe-agent不受影响：它的唯一工具参数`command`是字符串，而
    连接、写入与连接池期限不变；读取静默统一由第1条判断。模型目录预检本来就由`wait_for_io`把总时长限制在
    `io_timeout_seconds`内，行为不变。
 
+4. **界面如实说明“在生成、写完才返回”**（负责人2026-11-17选定，要求从产品角度考虑用户体验）。
+   - 工具调用一开始就告诉界面：参数还没有字节时，适配器先报一次0字节与工具名（`ToolArgumentsProgress`的
+     `utf8_bytes`下限由1改为0，`spec/provider-event-v4`相应放宽，向后兼容）。OpenAI兼容端点在工具调用的
+     第一个分片（名称与空参数）时报，Anthropic在工具块开始时报。此前要等第一个参数字节才切换，Anthropic
+     这类按完整键值发出参数的服务会一直显示“思考中”。
+   - 运行提示据此立即切到“正在生成修改内容”（其他工具为“正在生成操作内容”）。还没有任何输出时不写Token估算。
+   - 工具调用已开始、参数只到了开头不超过64字节（`HELD_BACK_PREFIX_BYTES`）时，判定为服务端在攒参数。
+     进度5秒没有变化后，运行提示写“正在生成修改内容 · 已用时 48 秒，模型服务写完才会返回”，秒数从进入这一阶段算起。
+     此前写的是“模型服务 18 秒未返回新内容”，把正常情况说成了异常。
+   - 参数原本在逐段到达、后来停住的（逐段返回的服务真的停顿），以及思考、回复阶段，仍写“模型服务 N 秒未返回新内容”。
+
 ## 没有改变的
 
 - 总期限`timeout_seconds`、尝试次数、退避、按尝试记账，以及什么情况下还可以作废重来（ADR 0144）。
@@ -66,6 +78,8 @@ mini-swe-agent不受影响：它的唯一工具参数`command`是字符串，而
 - 三个平台相同；这里只用Python的asyncio与HTTPX，不涉及平台差异。
 
 ## 后果
+
+- 终端界面：写大段修改时先显示“正在生成修改内容”，随后显示这一阶段已用时，不再像卡住或报错。
 
 - 本机vLLM上，写多个文件的长工具调用不再在第300秒被截断、整段作废。2026-11-17在247上做了对照（阈值设为5秒，
   同一请求）：0.10.0b48两次尝试都在静默约5秒后失败；本版一次完成，用时20～25秒，拿到完整参数。

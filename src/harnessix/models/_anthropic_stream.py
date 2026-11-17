@@ -142,10 +142,9 @@ class AnthropicStream:
                 ):
                     raise InvalidWireData("工具数量超过能力或预算")
                 # 名称为空或超长的调用不在这里失败：结束时只拒绝这一次调用（ADR 0157）。
-                self._blocks[event.index] = Block(
-                    type="tool_use", call_id=content.id, name=usable_tool_name(content.name)
-                )
-                return []
+                name = usable_tool_name(content.name)
+                self._blocks[event.index] = Block(type="tool_use", call_id=content.id, name=name)
+                return self._progress.add("", self._names.get(name))
             raise InvalidWireData("不支持的内容 Block；不丢弃私有签名或推理后继续")
         if isinstance(event, RawContentBlockDeltaEvent | RawContentBlockStopEvent):
             block = self._blocks.get(event.index)

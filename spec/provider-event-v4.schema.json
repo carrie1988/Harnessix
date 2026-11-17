@@ -463,7 +463,7 @@
     },
     "ToolArgumentsProgress": {
       "additionalProperties": false,
-      "description": "工具调用参数的生成进度：只有累计UTF-8字节数与工具名，供界面显示；不进入Item、模型历史或输出计量。",
+      "description": "工具调用参数的生成进度：只有累计UTF-8字节数与工具名，供界面显示；不进入Item、模型历史或输出计量。\n\n工具调用刚开始、还没有参数字节时上报0：有的服务把参数写完才整段发出（ADR 0166）。",
       "properties": {
         "type": {
           "const": "tool_arguments_progress",
@@ -473,7 +473,7 @@
         },
         "utf8_bytes": {
           "maximum": 1000000000,
-          "minimum": 1,
+          "minimum": 0,
           "title": "Utf8 Bytes",
           "type": "integer"
         },

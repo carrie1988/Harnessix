@@ -47,6 +47,7 @@ def activity_text(
     streaming: bool,
     generation: InFlightRequest | None = None,
     silent_seconds: float = 0.0,
+    phase_seconds: float = 0.0,
     retry: RequestRetry | None = None,
 ) -> str:
     """一行运行提示，例如“⠹ 思考中 · 已运行 23 秒”。
@@ -54,6 +55,9 @@ def activity_text(
     有生成进度时写明模型正在做什么、已经生成了多少：
     “⠹ 正在生成修改内容 · 约 3,400 tokens · 已运行 2 分 05 秒”。
     进度有一阵没有变化时改为说明等了多久：“⠹ 正在生成修改内容 · 模型服务 18 秒未返回新内容 · …”。
+    工具调用已开始、服务端在攒参数（只到了开头几个字节）时，这是正常情况，改为说明这一阶段已用时
+    （phase_seconds从进入这一阶段算起，ADR 0166）：
+    “⠹ 正在生成修改内容 · 已用时 48 秒，模型服务写完才会返回 · …”。
     请求发出后还没有收到任何内容（等首帧，或读超时后正在重试）时同样说明：
     “⠹ 等待模型服务响应 · 已等待 3 分 01 秒 · …”。
     silent_seconds从最近一次有新内容、或这一步开始调用模型算起。请求失败后正在重试时立即说明：
@@ -65,16 +69,22 @@ def activity_text(
         attempt = "" if retry is None else f" · {retry.text}"
         label = f"等待模型服务响应{attempt} · 已等待 {_duration(silent_seconds)}"
     elif generation is not None and status == "calling_model":
-        label = (
-            generation.label
-            if not waiting
-            else f"{generation.phase_label} · 模型服务 {int(silent_seconds)} 秒未返回新内容"
-        )
+        if not waiting:
+            label = generation.label
+        elif generation.arguments_held_back:
+            elapsed = _duration(phase_seconds)
+            label = f"{generation.phase_label} · 已用时 {elapsed}，模型服务写完才会返回"
+        else:
+            label = f"{generation.phase_label} · 模型服务 {int(silent_seconds)} 秒未返回新内容"
     else:
         label = (
             "生成回复中" if streaming and status == "calling_model" else turn_status_label(status)
         )
     return f"{_FRAMES[frame % len(_FRAMES)]} {label} · 已运行 {_duration(elapsed_seconds)}"
+
+
+def _phase(generation: InFlightRequest | None) -> str | None:
+    return None if generation is None else generation.phase
 
 
 def _duration(seconds: float) -> str:
@@ -102,6 +112,8 @@ class ActivityIndicator(Static):
         self._retry: RequestRetry | None = None
         # 最近一次有新内容（生成进度变化），或进入当前状态的时刻；等待提示从这里算起。
         self._generation_at = 0.0
+        # 进入当前生成阶段（思考、生成修改内容……）的时刻；攒参数时的“已用时”从这里算起。
+        self._phase_at = 0.0
         self._frame = 0
 
     def on_mount(self) -> None:
@@ -135,6 +147,8 @@ class ActivityIndicator(Static):
         )
         generation, retry = in_flight_request(view), request_retry(view)
         if (generation, retry) != (self._generation, self._retry):
+            if _phase(generation) != _phase(self._generation):
+                self._phase_at = monotonic()
             self._generation, self._retry = generation, retry
             self._generation_at = monotonic()
         self.display = True
@@ -155,6 +169,7 @@ class ActivityIndicator(Static):
                 streaming=self._streaming,
                 generation=self._generation,
                 silent_seconds=monotonic() - self._generation_at,
+                phase_seconds=monotonic() - self._phase_at,
                 retry=self._retry,
             )
         )

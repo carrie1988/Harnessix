@@ -58,6 +58,7 @@ supersedes: []
 - [`_provider_io.StreamSilence`](../../src/harnessix/models/_provider_io.py)替代流式请求里的HTTP读取期限：从请求交给传输层发送起计时，工具调用开始之前连续`io_timeout_seconds`没有任何字节（含SSE注释、心跳）按读取超时处理，异常类型、错误分类与诊断原因`httpx_read_timeout`都不变；收到任何工具调用分片之后只受`timeout_seconds`约束。`chunks`逐个取分片，每次等待都受这两条约束。
 - 字节到达由[`_bounded_http.TRANSFER_ACTIVITY`](../../src/harnessix/models/_bounded_http.py)回调：上下文变量只在执行这次IO的子Task里设置，`BoundedTransport`/`AnthropicTransport`发送时调用一次，`BoundedStream`每收到一批字节调用一次，不接触内容；工具调用是否开始由`ChatStream.tool_call_started`、`AnthropicStream.tool_call_started`判断。两个适配器的SDK与HTTPX客户端改为`Timeout(io_timeout_seconds, read=None)`，连接、写入与连接池期限不变，模型目录预检仍由`wait_for_io`限制在`io_timeout_seconds`内。
 - 原因：本机vLLM的Qwen工具解析器只边生成边发送字符串参数，`apply_patch_batch`的数组参数写完才整段发出；2026-11-15/16 NL2RepoBench回归中35次请求在第302秒被判读取超时、整段作废。2026-11-17在真实副本上对照（阈值5秒）：0.10.0b48两次尝试都失败，本版一次完成（20～25秒）。
+- 工具调用开始、参数还没有字节时，[`_progress.ArgumentProgress`](../../src/harnessix/models/_progress.py)先报一次`ToolArgumentsProgress(utf8_bytes=0, tool=…)`（契约下限由1改为0）：OpenAI兼容端点在名称与空参数的第一个分片时报，Anthropic在工具块开始时报，界面据此立即说明在生成哪类内容。
 - 回归：`tests/models/test_stream_silence.py`（两个适配器：参数晚到不重试、工具调用前静默仍重试、心跳算活动、总期限仍然有效）；`tests/models/test_chat_transport_diagnostics.py`、`tests/models/test_attempt_usage.py`的期限用例不变。
 
 ## 当前增量：正文写到一半断开的请求同样重试（ADR 0144第5版）

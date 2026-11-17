@@ -84,10 +84,13 @@ class ReasoningDelta(ContractModel):
 
 
 class ToolArgumentsProgress(ContractModel):
-    """工具调用参数的生成进度：只有累计UTF-8字节数与工具名，供界面显示；不进入Item、模型历史或输出计量。"""
+    """工具调用参数的生成进度：只有累计UTF-8字节数与工具名，供界面显示；不进入Item、模型历史或输出计量。
+
+    工具调用刚开始、还没有参数字节时上报0：有的服务把参数写完才整段发出（ADR 0166）。
+    """
 
     type: Literal["tool_arguments_progress"] = "tool_arguments_progress"
-    utf8_bytes: int = Field(ge=1, le=1_000_000_000, strict=True)
+    utf8_bytes: int = Field(ge=0, le=1_000_000_000, strict=True)
     tool: str | None = Field(default=None, min_length=1, max_length=256)
 
 

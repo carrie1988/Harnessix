@@ -174,7 +174,11 @@ def _at_output_limit(
 
 
 def _append_arguments(stream: ChatStream, call: CallParts, fragment: str) -> list[ProviderEvent]:
-    """累计一段工具参数，并按节流上报已收到的字节数。"""
+    """累计一段工具参数，并按节流上报已收到的字节数。
+
+    只有名称、参数为空的首个分片也经过这里：先通告一次0字节与工具名，有的服务写完参数才整段发出
+    （ADR 0166）。
+    """
     stream._characters += len(fragment)
     call.arguments += fragment
     return stream._progress.add(fragment, stream._names.get(call.name or ""))
@@ -276,8 +280,7 @@ class ChatStream:
                     if call.name is not None and call.name != name:
                         raise ChatProtocolError(ChatProtocolReason.TOOL_NAME_CHANGED)
                     call.name = name
-                if part.function.arguments is not None:
-                    events.extend(_append_arguments(self, call, part.function.arguments))
+                events.extend(_append_arguments(self, call, part.function.arguments or ""))
         if self._characters > self._request.budget.max_output_chars:
             raise ChatProtocolError(ChatProtocolReason.OUTPUT_CHAR_LIMIT_EXCEEDED)
         if choice.finish_reason is not None:
