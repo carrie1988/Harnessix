@@ -1,4 +1,5 @@
-"""Thread投影解析缓存（ADR 0133）：原字节不变时只解析一次，每次读取的存储侧校验一项不少。"""
+"""Thread投影解析缓存（ADR 0133）：原字节不变时只解析一次，每次读取的存储侧校验一项不少；
+提交成功后由写入方预填（ADR 0168 D1）。"""
 
 from __future__ import annotations
 
@@ -91,37 +92,35 @@ async def test_unchanged_projection_is_parsed_once_while_every_read_rechecks_byt
         assert len(seals) == 3
 
 
-async def test_each_committed_projection_is_parsed_once_by_the_reads_that_follow(tmp_path, parses):
+async def test_reads_after_a_commit_reuse_the_writer_thread_and_only_sampled_checks_parse(
+    tmp_path, parses
+):
+    """ADR 0168 D1推翻ADR 0133决策1第3条：提交成功后用写入方的Thread预填，提交后的读取不再解析；
+    每个缓存的第1次及此后每第N次预填先解析一次提交的原字节核对。"""
     with binding() as proof:
         store, tid, _ = await seed(tmp_path / "state.db", proof)
+        store._parsed_projections = cache = ParsedProjectionCache(check_every=3)
         await store.get_thread(tid)
         parses.clear()
         turn_id = uuid4()
-        started = await store.append(
-            tid,
-            [
-                EventDraft(
-                    turn_id=turn_id,
-                    payload=TurnStarted(
-                        request_id="fixture", request_fingerprint="1" * 64, budget=Budget()
-                    ),
-                )
-            ],
-            expected_sequence=1,
-        )
-        # 追加在事务内读取的是已缓存的旧投影；新投影要等下一次读取才解析。
-        assert parses == []
-        assert await store.get_thread(tid) == started
-        item = EventDraft(
-            turn_id=turn_id,
-            payload=ItemStarted(
-                item_id=uuid4(), content=TextContent(kind="user_message", text="fact")
-            ),
-        )
-        appended = await store.append(tid, [item], expected_sequence=2)
-        assert await store.get_thread(tid) == appended
+        start = TurnStarted(request_id="fixture", request_fingerprint="1" * 64, budget=Budget())
+        drafts = [EventDraft(turn_id=turn_id, payload=start)]
+        committed: list[str] = []
+        for sequence in range(1, 8):
+            appended = await store.append(tid, drafts, expected_sequence=sequence)
+            with closing(sqlite3.connect(store.path)) as db:
+                (body,) = db.execute("SELECT snapshot_json FROM agent_threads").fetchone()
+            committed.append(body)
+            assert await store.get_thread(tid) is appended
+            message = TextContent(kind="user_message", text=f"fact {sequence}")
+            drafts = [
+                EventDraft(turn_id=turn_id, payload=ItemStarted(item_id=uuid4(), content=message))
+            ]
+
+        # 第1、4、7次预填各解析一次刚提交的原字节；读取与追加事务内的核对都命中预填，不再解析。
+        assert parses == [committed[0], committed[3], committed[6]]
+        assert (cache.prefills, cache.prefill_checks, cache.prefill_mismatches) == (7, 3, 0)
         assert await store.get_thread(tid) == replay(await store.events(tid))
-        assert len(parses) == 2
 
 
 async def test_cached_thread_never_answers_for_bytes_the_seal_does_not_cover(tmp_path, parses):
@@ -163,6 +162,7 @@ async def test_structurally_invalid_projection_fails_on_every_read_and_is_not_ca
     tmp_path, parses
 ):
     store, tid, _ = await seed(tmp_path / "legacy.db", None)
+    parses.clear()  # 建Thread那次预填的核对也解析过一次
     rewrite_projection(store.path, "{}", hashlib.sha256(b"{}").hexdigest())
 
     for _ in range(2):

@@ -22,6 +22,7 @@ from harnessix.session import publication_seal as event_publication_module
 from harnessix.session import sqlite as sqlite_module
 from harnessix.session import sqlite_publication as publication_module
 from harnessix.session import store_publication as store_publication_module
+from harnessix.session.sqlite import SQLiteSessionStore
 from harnessix.session.store_publication import EMPTY_PREFIX
 from tests.session.test_authenticated_history import binding, business_rows, read, seed
 
@@ -51,6 +52,8 @@ async def test_same_row_is_encoded_hashed_and_parsed_once_per_read(
                     lambda self, *a, **kw: noncanonical_json(thread_json(self, *a, **kw)),
                 )
             store, tid, expected = await seed(tmp_path / "中文🦉" / "state.db", proof)
+        # 新的Store实例没有写入方预填（ADR 0168 D1），读取要从原字节解析。
+        store = SQLiteSessionStore(store.path, publication=proof)
         with closing(sqlite3.connect(store.path)) as db:
             event_text = db.execute("SELECT event_json FROM agent_events").fetchone()[0]
             snapshot_text = db.execute("SELECT snapshot_json FROM agent_threads").fetchone()[0]
@@ -297,6 +300,8 @@ async def test_snapshot_returns_bytes_only_after_all_original_authentication_che
 ):
     with binding() as proof:
         store, tid, _ = await seed(tmp_path / "state.db", proof)
+        # 新的Store实例没有写入方预填（ADR 0168 D1），检查顺序与原来一样从解析原字节开始。
+        store = SQLiteSessionStore(store.path, publication=proof)
         with closing(sqlite3.connect(store.path)) as db, db:
             if fault == "sha":
                 db.execute("UPDATE agent_threads SET snapshot_json='{}'")

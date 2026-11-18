@@ -465,7 +465,8 @@ class SQLiteSessionStore:
         prefix: str | None = None,
         history_bytes: int | None = None,
     ) -> None:
-        await save_projection(database, self._publication, thread, prefix, history_bytes)
+        written = await save_projection(database, self._publication, thread, prefix, history_bytes)
+        self._parsed_projections.stage_written(thread, written)
 
     async def append(
         self,
@@ -485,9 +486,11 @@ class SQLiteSessionStore:
             return await self._commit(database, thread, changed)
 
     async def _commit(self, database: aiosqlite.Connection, thread: Thread, new: bool) -> Thread:
-        """提交事务；确有新事件（new）时先过故障注入点，再通知订阅者重读。"""
+        """提交事务；确有新事件（new）时用写入的投影预填解析缓存（ADR 0168 D1），再过故障注入点、
+        通知订阅者重读。"""
         await database.commit()
         if new:
+            self._parsed_projections.confirm_written(thread)
             self._fault("session.after_commit")
             self.appends.notify(thread)
         return thread

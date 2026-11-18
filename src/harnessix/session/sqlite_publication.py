@@ -15,7 +15,11 @@ from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, Thread
 from harnessix.agent.tool_rejections import require_closed_rejections
 from harnessix.session.event_body_refs import EventBodyRef
-from harnessix.session.parsed_projection_cache import ParsedProjectionCache, parse_projection
+from harnessix.session.parsed_projection_cache import (
+    ParsedProjectionCache,
+    WrittenProjection,
+    parse_projection,
+)
 from harnessix.session.store_publication import (
     EMPTY_PREFIX,
     MAX_HISTORY_BYTES,
@@ -351,14 +355,16 @@ async def save_projection(
     thread: Thread,
     prefix: str | None,
     history_bytes: int | None,
-) -> None:
-    """原投影与认证Checkpoint共用调用方事务；Rebuild复用已认证原前缀。"""
+) -> WrittenProjection:
+    """原投影与认证Checkpoint共用调用方事务；Rebuild复用已认证原前缀。返回写下的原文与行内摘要，
+    供提交成功后预填解析缓存（ADR 0168 D1）。"""
     require_closed_rejections(thread)
     encoded = thread.model_dump_json()
+    written = WrittenProjection(encoded, hashlib.sha256(encoded.encode()).hexdigest(), 22)
     await database.execute(
         "INSERT INTO agent_threads "
         "(thread_id, sequence, snapshot_json, snapshot_sha256, projection_version) "
-        "VALUES (?, ?, ?, ?, 22) "
+        "VALUES (?, ?, ?, ?, ?) "
         "ON CONFLICT(thread_id) DO UPDATE SET sequence = excluded.sequence, "
         "snapshot_json = excluded.snapshot_json, snapshot_sha256 = excluded.snapshot_sha256, "
         "projection_version = excluded.projection_version",
@@ -366,7 +372,8 @@ async def save_projection(
             str(thread.thread_id),
             thread.sequence,
             encoded,
-            hashlib.sha256(encoded.encode()).hexdigest(),
+            written.snapshot_sha256,
+            written.projection_version,
         ),
     )
     if publication is not None:
@@ -376,3 +383,4 @@ async def save_projection(
                 raise unproven()
             prefix, history_bytes = proof.prefix_sha256, proof.history_bytes
         await persist_projection(database, publication, thread, encoded, prefix, history_bytes)
+    return written
