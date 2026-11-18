@@ -23,7 +23,7 @@ supersedes: []
 
 # Harnessix Code 用户手册
 
-适用版本：`0.10.0b51`（预览版）
+适用版本：`0.10.0b52`（预览版）
 
 > **当前是预览版，不是正式商用版本，不提供任何担保。** 请只在可以通过 Git 回退的仓库里使用，并且只处理你有权发送给模型服务商的代码。
 
@@ -134,8 +134,8 @@ uv tool install --python 3.12 harnessix
 一条命令会装好终端界面和模型接口所需的全部依赖，并把 `harnessix` 命令放到 uv 的工具目录（通常是 `~/.local/bin`）。如果提示找不到命令，运行 `uv tool update-shell` 后重新打开终端。
 
 - **国内网络：** 使用镜像，`uv tool install --python 3.12 harnessix --index-url https://mirrors.huaweicloud.com/repository/pypi/simple`。镜像同步新版本可能有数小时延迟，刚发布时可能还装不到最新版。
-- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b51`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
-- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b51-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
+- **指定版本：** `uv tool install --python 3.12 harnessix==0.10.0b52`。预览期内所有版本都是预发布版本，不指定时安装最新的预览版。
+- **离线或内网：** 从 GitHub 仓库的 Releases 页面下载 wheel 文件（附有 `SHA256SUMS` 可核对），再运行 `uv tool install --python 3.12 ./harnessix-0.10.0b52-py3-none-any.whl`。依赖仍需从 PyPI 或镜像下载。
 
 **从源码构建（开发者）：**
 
@@ -761,7 +761,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 
 ### 11.5 摘要内容
 
-摘要（`harnessix.exec-summary/v1`）包含：`status`、`error`、`model_steps`、`usage`（Token 用量）、`cost`（费用或上限）、`approval_mode`、`approvals`（每次审批的类型、结果和决定者：审批模式自动做的决定记 `harnessix-exec:<模式>`，你在终端提示处输入的记 `harnessix-exec:<模式>:interactive`）、`final_answer`（最后的回复）、`changed_paths`（改动的文件）、`commands`（运行过的命令）、`verification`（最后一次修改之后是否运行过检查：`passed_after_last_edit`、`failed_after_last_edit`、`unverified` 或 `no_changes`；Windows 上检查命令本身退出 0、但其中最后一个外部程序失败时（例如测试之后又打印了一行），记为 `failed_after_last_edit`，并给出 `last_native_returncode`；一条检查失败后，只有同一条命令重新运行并通过才算解决，之后清理临时文件等其他命令的成功不会把状态改成通过，失败时 `failed_check` 写明是哪条检查，`last_check` 是最后运行的检查）、`elapsed_seconds`，以及用于恢复的 `thread_id` 和 `turn_id`。
+摘要（`harnessix.exec-summary/v1`）包含：`status`、`error`、`model_steps`、`usage`（Token 用量）、`cost`（费用或上限）、`approval_mode`、`approvals`（每次审批的类型、结果和决定者：审批模式自动做的决定记 `harnessix-exec:<模式>`，你在终端提示处输入的记 `harnessix-exec:<模式>:interactive`）、`final_answer`（最后的回复）、`changed_paths`（改动的文件）、`commands`（运行过的命令）、`verification`（最后一次修改之后是否运行过检查：`passed_after_last_edit`、`failed_after_last_edit`、`unverified` 或 `no_changes`；Windows 上检查命令本身退出 0、但其中最后一个外部程序失败时（例如测试之后又打印了一行），记为 `failed_after_last_edit`，并给出 `last_native_returncode`；一条检查失败后，只有同一条命令重新运行并通过才算解决，之后清理临时文件等其他命令的成功不会把状态改成通过，失败时 `failed_check` 写明是哪条检查，`last_check` 是最后运行的检查。只读或只做搜索的命令（如 `ls`、`cat`、`git status`、`Select-String … | Select-Object`、`grep … | head`）不算检查；`commands_after_last_edit` 按顺序列出最后一次修改之后运行的每条命令、是否通过以及是否算作检查（最多最近 50 条，更早的条数见 `commands_omitted`），需要严格验收时请据此核对实际运行的测试）、`elapsed_seconds`，以及用于恢复的 `thread_id` 和 `turn_id`。
 
 ---
 

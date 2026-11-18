@@ -19,6 +19,15 @@ NOW = datetime(2026, 11, 13, tzinfo=UTC)
 RUN = ("exec_command.native", {"cmd": "python -B -m unittest -v"})
 
 
+def _status(summary: dict) -> dict:
+    """判定字段；运行过的命令列表（commands_after_last_edit）另有用例核对。"""
+    return {
+        k: v
+        for k, v in summary.items()
+        if k not in {"commands_after_last_edit", "commands_omitted"}
+    }
+
+
 def _item(content: dict[str, object]) -> PublicItem:
     return PublicItem.model_validate(
         {"item_id": uuid4(), "status": "completed", "content": content}
@@ -74,7 +83,7 @@ def _red_then_fix() -> list[PublicItem]:
 
 
 def test_a_completed_turn_without_a_check_after_its_last_edit_is_flagged() -> None:
-    assert verification_summary(_red_then_fix()) == {"status": "unverified"}
+    assert _status(verification_summary(_red_then_fix())) == {"status": "unverified"}
     last = transcript_lines(_view(_red_then_fix()))[-1]
     assert last.role == "提示" and not last.final
     assert last.text.startswith("本轮最后一次修改之后没有运行过测试或其他检查")
@@ -122,7 +131,7 @@ def test_a_check_run_outside_the_sandbox_counts_as_a_check() -> None:
         _result(check, "succeeded"),
         _answer("完成。"),
     ]
-    assert verification_summary(checked) == {
+    assert _status(verification_summary(checked)) == {
         "status": "passed_after_last_edit",
         "last_check": "python -m unittest",
     }
@@ -154,7 +163,7 @@ def _after_a_fix(*runs: tuple[tuple[str, dict[str, object]], str]) -> list[Publi
 def test_a_successful_cleanup_does_not_hide_a_failed_test() -> None:
     """Beta Issue #36：失败的测试之后一条成功的清理命令，此前把状态翻成“修改后检查通过”。"""
     items = _after_a_fix((VITEST, "failed"), (CLEANUP, "succeeded"))
-    assert verification_summary(items) == {
+    assert _status(verification_summary(items)) == {
         "status": "failed_after_last_edit",
         "last_check": CLEANUP[1]["cmd"],
         "failed_check": VITEST[1]["cmd"],
@@ -166,7 +175,7 @@ def test_a_successful_cleanup_does_not_hide_a_failed_test() -> None:
 
 def test_a_failed_check_is_resolved_only_by_the_same_command_passing() -> None:
     rerun = _after_a_fix((VITEST, "failed"), (VITEST, "succeeded"), (CLEANUP, "succeeded"))
-    assert verification_summary(rerun) == {
+    assert _status(verification_summary(rerun)) == {
         "status": "passed_after_last_edit",
         "last_check": CLEANUP[1]["cmd"],
     }
@@ -184,3 +193,71 @@ def test_the_most_recent_unresolved_failure_is_named() -> None:
     assert verification_summary(items)["failed_check"] == VITEST[1]["cmd"]
     resolved = _after_a_fix((RUN, "failed"), (VITEST, "failed"), (VITEST, "succeeded"))
     assert verification_summary(resolved)["failed_check"] == RUN[1]["cmd"]
+
+
+SEARCH = (
+    "host_command.host-shell",
+    {
+        "cmd": "Select-String -Path test\\specs\\gfm\\*.html"
+        ' -Pattern \'<a href="[^"]*"[^>]*><code>\''
+        " | Select-Object -First 30 Line"
+    },
+)
+PROBE = (
+    "host_command.host-shell",
+    {"cmd": "python tmp_probe.py 2>&1 | Select-String -NotMatch plugin"},
+)
+
+
+def test_a_read_only_search_after_the_edit_is_not_a_passing_check() -> None:
+    """Beta Issue #36的后续（0.10.0b50 marked）：没修好的任务最后一条命令是Select-String搜索，
+    完成证据却是“修改后检查通过”。只读或搜索命令不算检查；修改前这里是passed_after_last_edit。"""
+    items = _after_a_fix((SEARCH, "succeeded"))
+    summary = verification_summary(items)
+    assert summary["status"] == "unverified" and "last_check" not in summary
+    assert summary["commands_after_last_edit"] == [
+        {"command": SEARCH[1]["cmd"], "passed": True, "counted_as_check": False}
+    ]
+    assert "只读或搜索命令不算" in transcript_lines(_view(items))[-1].text
+    # 搜索不覆盖之前的失败，也不替检查作证。
+    failed = verification_summary(_after_a_fix((VITEST, "failed"), (SEARCH, "succeeded")))
+    assert failed["status"] == "failed_after_last_edit"
+    assert failed["last_check"] == VITEST[1]["cmd"]
+
+
+def test_commands_that_may_run_project_code_still_count() -> None:
+    """判定不了的命令仍算检查：探针脚本、带重定向或串联的命令。"""
+    for run in (
+        PROBE,
+        ("host_command.host-shell", {"cmd": "cat out.txt > copy.txt"}),
+        ("host_command.host-shell", {"cmd": "grep x a.txt; pytest -q"}),
+        ("host_command.host-shell", {"cmd": "grep x a.txt || pytest -q"}),
+        ("exec_command.native", {"cmd": "rg needle src | python check.py"}),
+    ):
+        summary = verification_summary(_after_a_fix((run, "succeeded")))
+        assert summary["status"] == "passed_after_last_edit", run
+        assert summary["commands_after_last_edit"][0]["counted_as_check"] is True
+
+
+def test_the_summary_lists_every_command_after_the_last_edit_in_order() -> None:
+    items = _after_a_fix((VITEST, "failed"), (SEARCH, "succeeded"), (CLEANUP, "succeeded"))
+    listed = verification_summary(items)["commands_after_last_edit"]
+    assert [(entry["command"], entry["passed"]) for entry in listed] == [
+        (VITEST[1]["cmd"], False),
+        (SEARCH[1]["cmd"], True),
+        (CLEANUP[1]["cmd"], True),
+    ]
+    assert [entry["counted_as_check"] for entry in listed] == [True, False, True]
+
+
+def test_only_the_most_recent_commands_are_listed(monkeypatch) -> None:
+    from harnessix.product_ui import verification
+
+    monkeypatch.setattr(verification, "MAX_LISTED_COMMANDS", 2)
+    items = _after_a_fix((RUN, "succeeded"), (VITEST, "succeeded"), (CLEANUP, "succeeded"))
+    summary = verification_summary(items)
+    assert [e["command"] for e in summary["commands_after_last_edit"]] == [
+        VITEST[1]["cmd"],
+        CLEANUP[1]["cmd"],
+    ]
+    assert summary["commands_omitted"] == 1

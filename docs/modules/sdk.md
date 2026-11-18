@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 14
+version: 15
 code_revision: dad55d32d59b9ae14ac37f9760a1d617d31f2847
 owners:
   - core
@@ -25,6 +25,11 @@ supersedes: []
 ---
 
 # SDK模块设计
+
+## 当前增量：审批过期时续跑同一Turn收尾（Beta Issue #39）
+
+- [`approval_response.respond_approval_or_close_expired`](../../src/harnessix/sdk/approval_response.py)提交审批决定；服务端以`approval_expired`拒绝（决定晚于Turn截止时间）时，用派生请求ID（原ID加`-expired`）续跑同一Turn。服务端的续跑把等待审批且时限已过的Turn记为`time_budget_exceeded`失败（与重启后的恢复相同），客户端随后照常跟随到终态。其他拒绝原样抛出。
+- 无人值守客户端（`agent_cli.ThinAgentCLI`，`harnessix exec`）与终端界面（`product_ui.interaction_service`）共用它。此前这一轮停在`waiting_approval`，事件没有终态，`exec`以退出码4写只有错误码的摘要，缺少会话、Turn、用量与完成证据。回归见`tests/app_server/test_agent_cli.py`、`tests/app_server/test_approval_response.py`。
 
 ## 当前增量：事件页被拒时缩小页长重读（0.10.0b17）
 
@@ -517,7 +522,7 @@ sequenceDiagram
 |---|---|---|
 | `protocolVersion` | 固定`AGENT_PROTOCOL_VERSION` | 只发送2.0，无版本范围协商 |
 | `clientInfo.name` | 构造参数，默认`harnessix-python-sdk` | 由Protocol模型校验 |
-| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与包版本（当前0.10.0b51）独立，不自动读取安装版本 |
+| `clientInfo.version` | 构造参数，默认`0.8.0` | 默认客户端应用身份版本仍为0.8.0，与包版本（当前0.10.0b52）独立，不自动读取安装版本 |
 | `clientInstanceId` | 注入或`uuid4()` | SDK不持久；调用方负责重连复用 |
 | `capabilities.itemDeltas` | 硬编码`true` | 调用方不能关闭；其他能力使用模型默认值 |
 | `limits` | `InitializeParams`默认 | 构造接口不允许调用方自定义 |
@@ -1261,6 +1266,7 @@ SDK不能根据预览、工具名称或平台自行推断写权限；初始化�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 15 | `ec4f0312` 增量 | 2026-11-18 | `approval_response.respond_approval_or_close_expired`：审批过期（`approval_expired`）时续跑同一Turn，按`time_budget_exceeded`收尾；`ThinAgentCLI`与终端界面共用（Beta Issue #39） |
 | 14 | `a22e64ee` 增量 | 2026-11-13 | `AgentClient(generation_progress=...)`：握手时是否声明生成进度能力，默认不声明；终端界面声明（ADR 0156） |
 | 13 | `95421ad6` 增量 | 2026-11-11 | 新增`read_event_page`：事件页被以超限拒绝时减半页长重读，终端界面与无人值守客户端共用（0.10.0b17） |
 | 12 | `dad55d32` 增量 | 2026-11-11 | 服务端退出时带上它在stderr最后一行报告的公开错误（0.10.0b14） |

@@ -124,3 +124,45 @@ def test_native_instructions_route_requested_commits_through_host_commands() -> 
     assert "run git add and git commit through host_command" in _NATIVE_EXECUTION_INSTRUCTIONS
     assert "unless the user asks" in _NATIVE_EXECUTION_INSTRUCTIONS
     assert "Never push." in _NATIVE_EXECUTION_INSTRUCTIONS
+
+
+async def test_an_overdue_host_command_approval_ends_the_turn_on_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Beta Issue #39：审批晚于截止时间（approval_expired）后客户端续跑同一Turn。宿主命令的审批
+    此前原样返回等待，exec一直等下去；现在与重启恢复相同，按时限失败收尾，命令不执行。"""
+    from datetime import timedelta
+
+    from harnessix.agent.errors import KernelError
+    from harnessix.agent.models import TurnStatus
+    from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
+
+    async with _native_case(
+        tmp_path,
+        "echo outside > outside.txt",
+        host_profile(),
+        environ={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)},
+    ) as case:
+        thread = await case.agent.store.get_thread(case.thread_id)
+        created = thread.turns[-1].created_at
+        monkeypatch.setattr(
+            "harnessix.agent.approvals.utc_now", lambda: created + timedelta(days=1)
+        )
+        with pytest.raises(KernelError) as late:
+            await case.agent.reply_approval(
+                case.thread_id,
+                case.turn_id,
+                case.approval.approval_id,
+                fingerprint=case.approval.request_fingerprint,
+                decision=ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="late"),
+            )
+        assert late.value.code == "approval_expired"
+        finished = await case.agent.resume_turn(case.thread_id, case.turn_id)
+        assert finished.status is TurnStatus.FAILED
+        assert finished.error is not None and finished.error.code == "time_budget_exceeded"
+        assert not (case.workspace / "outside.txt").exists()
+        # 计划从未获批：系统拒绝，调用记为未执行，而不是未知效果。
+        result = _result(finished)
+        assert result.outcome == "cancelled"
+        assert result.error is not None and result.error.code == "time_budget_exceeded"
+        assert case.router.status(case.approval.plan_id).state == "denied"

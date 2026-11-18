@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 72
+version: 74
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -55,6 +55,15 @@ supersedes: []
 - [`generation_estimate.in_flight_request`](../../src/harnessix/product_ui/generation_estimate.py)：进度行带工具名、参数还是0字节时也给出阶段（“正在生成修改内容”/“正在生成操作内容”）；还没有任何输出时`label`只写阶段，不写Token估算。工具调用已开始、参数不超过`HELD_BACK_PREFIX_BYTES`（64字节）时`arguments_held_back`为真。
 - [`activity_indicator`](../../src/harnessix/product_ui/activity_indicator.py)：进度5秒没有变化且`arguments_held_back`时，运行提示写“正在生成修改内容 · 已用时 48 秒，模型服务写完才会返回”，秒数从进入这一阶段算起（`_phase_at`）。参数已经逐段到达后停住、以及思考或回复阶段，仍写“模型服务 N 秒未返回新内容”。
 - 原因：vLLM、百炼的Qwen工具解析只先发出工具名与`{"files": `，写完才整段发出补丁内容；O1之后这属于正常情况，原文案把它说成了异常。回归见`tests/agent/test_generation_progress.py::test_the_tui_names_the_phase_and_estimates_what_was_generated`。
+
+## 当前增量：只读和搜索命令不算检查，摘要列出修改后运行的命令（Beta Issue #36的后续）
+
+- [`read_only_commands.is_read_only_command`](../../src/harnessix/product_ui/read_only_commands.py)认出两类命令：沙箱外命令免询问规则（ADR 0128，`command_rules.simple_command`与`read_only_paths`）认定的内置只读命令；管道第一个程序是搜索或读取程序（`Select-String`、`grep`、`rg`、`findstr`、`Get-Content`等）、其后只有整理输出的程序。末尾为带出退出码追加的`; exit $?`先去掉；有串联、重定向、子命令或引号不闭合时判定不了，仍算检查。
+- `verification.verification_summary`：这类命令不算检查，不改变`last_check`、`failed_check`，修改后只运行过这类命令时为`unverified`。新增`commands_after_last_edit`（命令、是否通过、`counted_as_check`、原生退出码），最多列最近50条（`MAX_LISTED_COMMANDS`），更早的条数为`commands_omitted`。负责人2026-11-18选方案1与方案2；按测试程序前缀化解失败（方案3）未采用。
+
+## 当前增量：审批跨过时限后这一轮按时限结束（Beta Issue #39）
+
+- `interaction_service._respond_approval`经[`sdk.approval_response`](../../src/harnessix/sdk/approval_response.py)提交决定：审批窗口停留到Turn截止之后再批准或拒绝，服务端拒绝这个决定，客户端随即续跑同一Turn，它以`time_budget_exceeded`失败结束，界面显示“已达到本轮的时间上限”。此前这一轮停在等待审批，直到重启才收尾。
 
 ## 当前增量：作废的半截回复不留空行（ADR 0144第5版）
 
@@ -1288,6 +1297,10 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 74 | ADR 0167增量 | 2026-11-17 | 压缩较早的对话时运行提示与底栏写“正在压缩较早的对话”和已用时（`projection`的`TransientItemStream.compaction`、`generation_estimate.compacting`） |
+| 73 | ADR 0166增量 | 2026-11-17 | 服务端攒工具参数时进度行带工具名，参数0字节也显示阶段；运行提示写“已用时N秒，模型服务写完才会返回”（`arguments_held_back`） |
+| 72 | `f1744c7a` 增量 | 2026-11-18 | 完成证据：只读与搜索命令不算检查（`read_only_commands`，复用ADR 0128的只读判定），摘要新增`commands_after_last_edit`与`commands_omitted`（Beta Issue #36的后续） |
+| 71 | `ec4f0312` 增量 | 2026-11-18 | 审批晚于Turn截止时间时续跑同一Turn，按时限失败收尾（`sdk.approval_response`，Beta Issue #39） |
 | 70 | `39e1e1bf` 增量 | 2026-11-15 | 失败且没有正文的回复（断开后作废的半截回复、整轮失败时的收尾）不显示空行（ADR 0144第5版） |
 | 69 | `9d17f702` 增量 | 2026-11-15 | 审批窗口里按`Ctrl+F`同样收尾：窗口关闭，这条审批按收尾规则拒绝；此前窗口自动弹出后`Ctrl+F`落到原因输入框或按钮上而悄无声息（`ApprovalScreen.action_wrap_up`、`WrapUpFromApproval`，ADR 0148第5版，Beta Issue #4） |
 | 68 | `7d2e735d` 增量 | 2026-11-15 | 完成证据：失败的检查只有同一命令重新运行并通过才算解决，其他命令的成功不再覆盖它；失败时给出`failed_check`，`last_native_returncode`取自该检查（`verification._Check`，Beta Issue #36） |

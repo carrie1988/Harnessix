@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 54
+version: 55
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -59,6 +59,10 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：时限已过仍未获批的Action以系统拒绝结束（Beta Issue #39）
+
+- [`preparation_rejection.cancel_pending_approval`](../../src/harnessix/trusted_actions/preparation_rejection.py)：除取消中的Turn外，Turn时限已过（`remaining_seconds(turn) <= 0`）而Route仍为`pending_approval`时，同样以`system.cancel`拒绝（原因`turn_time_budget_exceeded`），调用结果为`cancelled`、`time_budget_exceeded`（“审批超过本轮时限，Action没有执行”）。计划从未获批，未执行可以证明；此前收尾时记为未知效果，整轮以`uncertain_effect`中断。适用于审批晚于截止时间后的续跑与重启恢复。
 
 ## 当前增量：Patch拒绝说明提到8.3短名称（ADR 0170）
 
@@ -1680,6 +1684,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 55 | `d69bdb2a` 增量 | 2026-11-18 | Turn时限已过而仍未获批的Route以系统拒绝结束，调用记为未执行（`cancelled`、`time_budget_exceeded`），不再记为未知效果（Beta Issue #39） |
 | 52 | `2d72f2c0` 增量 | 2026-11-15 | 命令存档存不下时结果按审计终态照常提交并带`artifact_omitted`，不再记为未知效果中断本轮；Review存不下时关闭原Route并以失败结果说明改动未执行（ADR 0163） |
 | 51 | 第二轮合入 | 2026-11-14 | 命令非零退出与超时给模型英文说明（ADR 0136）；内置Patch规划期拒绝的说明改为写给模型的英文表并附整批未应用的事实（ADR 0129），父路径两类拒绝不再经`sanitize_plan_exception`重建；预留的文档版本47未另行使用 |
 | 50 | `33f91ad7` 增量 | 2026-11-13 | `workspace_parent_missing`的规划期说明只剩没有补建能力的端口会出现：Windows事务端口自ADR 0137第2版起同样补建父目录（Beta Issue #16），码表与说明文字不变 |

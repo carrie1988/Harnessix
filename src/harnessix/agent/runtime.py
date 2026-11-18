@@ -20,6 +20,7 @@ from harnessix.agent.approvals import (
     approval_for,
     approval_matches,
     approval_was_decided,
+    overdue_wait,
     remaining_seconds,
     request_fingerprint,
     tool_fingerprint,
@@ -1112,7 +1113,6 @@ class AgentRuntime:
         token = CancelToken()
         task = asyncio.current_task()
         assert task is not None
-        expire_waiting_input = False
         async with self._lock(thread_id):
             turn = get_turn(await self.store.get_thread(thread_id), turn_id)
             if turn.status in TERMINAL_TURNS:
@@ -1128,10 +1128,10 @@ class AgentRuntime:
                     "legacy_process_state_archived",
                     "历史Process Action审批仅供读取，不能在当前版本恢复执行",
                 )
+            expire_waiting_input = overdue_wait(turn)  # 含审批过期后的续跑（Beta Issue #39）
             if turn.status == TurnStatus.WAITING_INPUT:
-                if remaining_seconds(turn) > 0:
+                if not expire_waiting_input:
                     return turn
-                expire_waiting_input = True
             elif turn.status not in {
                 TurnStatus.ACCEPTED,
                 TurnStatus.EXECUTING_TOOLS,
