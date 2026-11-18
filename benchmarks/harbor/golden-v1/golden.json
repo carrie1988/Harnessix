@@ -146,6 +146,16 @@
       "part_id": "verified-dev23",
       "date": "2026-11-14",
       "use": "Regression run of the round-2 candidate; aggregate results only."
+    },
+    {
+      "part_id": "multilingual-test28",
+      "date": "2026-11-18",
+      "use": "Speed-round guard run: candidate 0.10.0b48+speed.4150532e against released 0.10.0b48, three attempts each, run at the same time with 4 concurrent trials each (8 in total instead of the golden 4; user decision 2026-11-18), so the numbers compare only with each other, not with the baselines. Afterwards: aggregate results with paired bootstrap, review of every non-normal end (budget and deadline ends), and a per-task look at the time difference in tokio-4867 and valkey-790 (commands the model left running into the 900 s limit). No product change was derived from per-task results."
+    },
+    {
+      "part_id": "verified-dev23",
+      "date": "2026-11-18",
+      "use": "Speed-round guard run, same pairing and concurrency as multilingual-test28 on this date. Six candidate trials hit an official-grader container-name collision because both runs graded at once under the same run id; they were regraded alone from the same predictions (run id golden-dev23-speed-regrade). Aggregate results and review of non-normal ends only (b48 scikit-learn-12682 ended with trusted_action_output_timeout during a host stall)."
     }
   ]
 }
