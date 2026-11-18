@@ -17,7 +17,7 @@
   },
   "summary": {
     "source_files": 655,
-    "physical_lines": 137375,
+    "physical_lines": 137378,
     "logical_lines": 118909,
     "documented_modules": 655,
     "classes": 1262,
@@ -1759,7 +1759,7 @@
       "path": "src/harnessix/secrets/publication.py",
       "qualname": "SecretPublicationScope",
       "kind": "class",
-      "line": 258,
+      "line": 261,
       "lines": 107,
       "documented": true
     },

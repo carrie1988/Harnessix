@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 52
+version: 53
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -135,9 +135,10 @@ supersedes: []
 | 四十六 | 失败的测试之后一条成功的清理命令把完成证据翻成“修改后检查通过”（0.10.0b46 Windows，Issue #36） | 失败的检查只有同一命令重新运行并通过才算解决，失败时给出`failed_check` | 本文第60节 |
 | 四十七 | Windows PowerShell 5.1把`harnessix exec`的输出重定向到文件，JSON摘要无法解析（0.10.0b43～b45 Windows正式测试，发布会话复测#26发现） | 标准输出不是终端时摘要只写ASCII | 本文第61节 |
 | 四十八 | 审批窗口已经弹出时按`Ctrl+F`没有收尾，之后的命令照样执行（0.10.0b46 Windows正式测试3次中2次，Issue #4的剩余部分） | 审批窗口里的`Ctrl+F`同样收尾，这条审批按收尾规则拒绝 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第5版、本文第62节 |
+| 四十九 | 普通Grep的存档在长凭据下超过公开保护的工作量上限，整轮开发以`public_output_limit`终止（0.10.0b50 Windows，Issue #37；三个平台相同） | 工作量只计实际比较，比模式短的文本计1 | 本文第63节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至四十九项在第61～63节。
 
 ## 2. 需求背景
 
@@ -1511,3 +1512,13 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 修改：审批窗口自己绑定`Ctrl+F`，关闭窗口并发送与主界面相同的收尾说明，这条审批随后按收尾规则拒绝；窗口底部提示加上
 “Ctrl+F 让它收尾”。设计见[ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第5版。验证：
 `tests/product_ui/test_wrap_up.py::test_wrap_up_from_inside_the_approval_dialog`（修复前该轮一直停在等待审批）；Windows真机复测由发布会话完成。
+
+## 63. 第四十九项：长凭据下Grep存档超过保护工作量（Issue #37）
+
+0.10.0b50 Windows：date-fns修复任务第38步的`grep`（`include=package.json`、`query="test|"types|vitest`、`max_results=6`）生成1,487条、约1 MB的完整存档，公开保护以`trusted_action_output_limit`拒绝，映射为`public_output_limit`后整个Turn终止。报告人用合成凭据复现：51、83字节通过，116字节5/5失败，`max_results=1`同样失败（存档大小不变）。
+
+根因：`secrets.publication._ScanBudget.scan_bytes`对每个节点、每个模式计“文本长度+模式长度”。存档约5.8万个短节点（路径、行号、上下文行），116字节凭据产生6个模式、最长232字节，仅模式长度就计入约50 MiB，合计达到64 MiB上限；正文实际只有1 MB。三个平台走同一保护代码，macOS用POSIX Grep复现：工作量64.0 MiB、失败。
+
+修改：比模式短的文本不可能包含该模式，`in`查找立即结束，计1；文本不短于模式时仍计“文本+模式”。每个节点、每个模式照旧逐一检查，扫描范围与泄漏判定不变。同一存档工作量降到约13 MiB并通过。验证：`tests/secrets/test_publication.py`（短节点不再按长凭据计费，修改前失败；节点内的凭据仍被拒绝；长正文仍受工作量上限约束），报告人的脚本在macOS的POSIX版本上51/83/116字节均通过。
+
+剩余边界：完整存档上限1 MiB，整份正文约被比较三遍（原字节、逐条解码、规范JSON），工作量约为“模式数×3 MiB”。同时保护超过约20个模式（多个凭据）时，接近上限的存档仍可能超限并终止整个Turn；超限改为工具级失败需要另行设计，未在本次修改中处理。

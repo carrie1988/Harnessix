@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 8
+version: 9
 code_revision: 33a2fd25bf6f529d1019cf584e02673734369299
 owners:
   - core
@@ -1093,6 +1093,7 @@ Material清零描述成所有副本的安全擦除。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 9 | `3540dc72` 增量 | 2026-11-18 | 公开保护的工作量只计实际比较：比模式短的文本不可能包含模式，计1而不是“文本+模式”；每个节点、每个模式仍逐一检查（Beta Issue #37） |
 | 2 | `991b6f267671f5a86870672e9c97a5fbb3991a39` | 2026-09-13 | DOC-1.6完成后修正统一Secret Guard缺口的路线图归属；运行合同不变 |
 | 1 | `d655c60f54f94823f671d18080573e1b56c433d9` | 2026-09-12 | 建立Secrets现行模块设计，覆盖引用合同、环境Provider、作用域、流式脱敏、结构化Guard、跨模块消费路径及生产缺口 |
 
@@ -1103,6 +1104,8 @@ Material清零描述成所有副本的安全擦除。
 ## 原生JSON与完整JSONL保护
 
 SecretPublicationScope接受仅name/version的结构引用，保留原Process绑定兼容；实现`assert_public_json`与`assert_public_jsonl`纯保护端口。JSONL原字节、每条唯一键解码记录与规范JSON共用预算，不以预览授权全文。原值/有限编码命中、无效结构、取消、期限、字节/深度/工作量失败均默认拒绝，不替换原Hash或持久化原值。
+
+工作量（`MAX_SCAN_WORK`，64 MiB）计实际比较量：文本不短于模式时计“文本+模式”，比模式短时查找立即结束、计1。此前每个短键、短值都按“文本+模式”计：116字节凭据（6个模式，最长232字节）下，一个约5.8万个节点、不到1 MiB的Grep存档计到64 MiB，整个Turn以`public_output_limit`终止；修改后同一存档约13 MiB。扫描范围不变（Beta Issue #37）。
 
 完整架构、接口、数据与失败语义见[产品公开边界详细设计](../changes/m09-4a-product-publication-boundary.md)，对应[ADR-0096](../adr/0096-product-credential-and-artifact-publication-boundary.md)。
 
