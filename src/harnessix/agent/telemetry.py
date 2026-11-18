@@ -316,3 +316,25 @@ class KernelTelemetry:
                     inherited_items,
                 )
             )
+
+
+class AccountedUsage:
+    """已上报遥测的Turn用量：record按新提交的Turn把用量增量上报，再记下新的已上报用量。"""
+
+    def __init__(self, telemetry: KernelTelemetry, usage: Usage) -> None:
+        self._telemetry = telemetry
+        self.usage = usage
+
+    @property
+    def total_tokens(self) -> int:
+        return self.usage.total_tokens
+
+    def record(self, turn: Turn) -> None:
+        current = turn.usage
+        self._telemetry.usage(
+            Usage(
+                input_tokens=current.input_tokens - self.usage.input_tokens,
+                output_tokens=current.output_tokens - self.usage.output_tokens,
+            )
+        )
+        self.usage = current

@@ -150,7 +150,7 @@ from harnessix.agent.session_baseline import (
     recorded_baseline,
 )
 from harnessix.agent.step_notices import append_step_notice
-from harnessix.agent.telemetry import KernelTelemetry
+from harnessix.agent.telemetry import AccountedUsage, KernelTelemetry
 from harnessix.agent.tool_call_groups import (
     require_exclusive_tool_calls,
     validate_exclusive_tool_groups,
@@ -840,11 +840,11 @@ class AgentRuntime:
     async def _commit(
         self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
     ) -> Thread:
-        """公开检查完成后在Thread锁内CAS追加；原事件与正文不做替换。
+        """公开检查完成后在Thread锁内CAS追加；原事件与正文不做替换。"""
+        await self._protect_payloads(turn_id, payloads)
+        return await self._append_payloads(thread_id, turn_id, payloads)
 
-        期望序号取自投影行（ADR 0168 D4）：追加事务内仍完整认证投影并比对序号，
-        提交前不再另读一次Thread。
-        """
+    async def _protect_payloads(self, turn_id: UUID, payloads: Sequence[EventPayload]) -> None:
         if self._public_output_protection is not None:
             active = self._active.get(turn_id)
             await protect_json(
@@ -852,6 +852,11 @@ class AgentRuntime:
                 [payload.model_dump(mode="json") for payload in payloads],
                 active[1] if active else CancelToken(),
             )
+
+    async def _append_payloads(
+        self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
+    ) -> Thread:
+        """已过公开检查的事实在Thread锁内CAS追加；期望序号取自投影行（ADR 0168 D4）。"""
         async with self._lock(thread_id):
             expected = await self.store.committed_sequence(thread_id)
             return await (self._batch_diffs or self.store).append(
@@ -1731,18 +1736,10 @@ class AgentRuntime:
         token: CancelToken,
     ) -> str:
         assert self._summary_provider is not None
-        accounted = get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage
-
-        def record_usage(thread: Thread) -> None:
-            nonlocal accounted
-            current = get_turn(thread, request.turn_id).usage
-            self._telemetry.usage(
-                Usage(
-                    input_tokens=current.input_tokens - accounted.input_tokens,
-                    output_tokens=current.output_tokens - accounted.output_tokens,
-                )
-            )
-            accounted = current
+        accounted = AccountedUsage(
+            self._telemetry,
+            get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage,
+        )
 
         await protect_request(request, self._public_output_protection, token)
         announce_compaction(request, self._emit_delta)
@@ -1859,7 +1856,7 @@ class AgentRuntime:
                             ) from None
                         raise
                     if isinstance(event, ModelUsageObserved):
-                        record_usage(snapshot)
+                        accounted.record(get_turn(snapshot, request.turn_id))
                         self._fault("runtime.after_compaction_usage_observed")
                     else:
                         self._fault("runtime.after_compaction_attempt_finished")
@@ -3097,22 +3094,14 @@ class AgentRuntime:
         open_attempt: UUID | None = None
         attempt_response_id: str | None = None
         response_id: str | None = None
-        accounted = get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage
+        accounted = AccountedUsage(
+            self._telemetry,
+            get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage,
+        )
         unreported_reservations = 0
         unreported_attempts: list[ModelAttempt] = []
         assert request.remaining_tokens is not None
         request_reservation = estimated_input_tokens + request.remaining_tokens
-
-        def record_usage(thread: Thread) -> None:
-            nonlocal accounted
-            current = get_turn(thread, request.turn_id).usage
-            self._telemetry.usage(
-                Usage(
-                    input_tokens=current.input_tokens - accounted.input_tokens,
-                    output_tokens=current.output_tokens - accounted.output_tokens,
-                )
-            )
-            accounted = current
 
         async with aclosing(texts.watch(self.provider.stream(request, token))) as stream:
             while True:
@@ -3178,7 +3167,7 @@ class AgentRuntime:
                         self._fault("runtime.after_model_attempt_started")
                     elif isinstance(event, ModelUsageObserved):
                         attempt_response_id = event.response_id or attempt_response_id
-                        record_usage(snapshot)
+                        accounted.record(get_turn(snapshot, request.turn_id))
                         self._fault("runtime.after_model_usage_observed")
                     else:
                         open_attempt = None
@@ -3241,7 +3230,7 @@ class AgentRuntime:
                             ) from None
                         raise
                     if not attempt_mode:
-                        record_usage(snapshot)
+                        accounted.record(get_turn(snapshot, request.turn_id))
                     recovery = settle_reply(
                         event.finish_reason,
                         call_ids,

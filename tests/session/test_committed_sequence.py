@@ -22,11 +22,11 @@ def _archive(reason: str = "done") -> list[EventDraft]:
     return [EventDraft(payload=ThreadArchived(reason=reason))]
 
 
-def _called_from_runtime_commit() -> bool:
-    """调用栈（含await链）里是否有AgentRuntime._commit。"""
+def _called_from_runtime_append() -> bool:
+    """调用栈（含await链）里是否有AgentRuntime的锁内追加（_commit与尝试事实的合并提交都经过它）。"""
     frame = sys._getframe(1)
     while frame is not None:
-        if frame.f_code is AgentRuntime._commit.__code__:
+        if frame.f_code is AgentRuntime._append_payloads.__code__:
             return True
         frame = frame.f_back
     return False
@@ -98,7 +98,7 @@ async def test_runtime_commits_with_the_light_sequence_and_it_always_equals_a_fu
     tmp_path, monkeypatch
 ):
     """产品运行中每次提交前都另做一次完整读取比对：轻查询给出的期望序号与完整读取的序号逐次相同，
-    且AgentRuntime._commit本身不再调用get_thread。"""
+    且AgentRuntime的锁内追加不再调用get_thread。"""
     with binding() as proof:
         store = SQLiteSessionStore(tmp_path / "state.db", publication=proof)
         await store.initialize()
@@ -114,7 +114,7 @@ async def test_runtime_commits_with_the_light_sequence_and_it_always_equals_a_fu
             return sequence
 
         async def get_thread(thread_id):
-            if _called_from_runtime_commit():
+            if _called_from_runtime_append():
                 full_reads_in_commit.append(1)
             return await full(store, thread_id)
 
