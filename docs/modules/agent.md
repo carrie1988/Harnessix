@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 73
+version: 74
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -56,6 +56,13 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：保护检查做不完只让那一次调用失败（ADR 0174，Beta Issue #37遗留）
+
+- [`tool_result_protection.protect_tool_result`](../../src/harnessix/agent/tool_result_protection.py)：`_record_tool_result`提交前的公开保护
+  报`public_output_limit`或`public_output_timeout`（`publication.PROTECTION_LIMIT_FAILURES`），且调用只读、结果不带效果元数据时，
+  换成这一次调用的`failed`结果（错误码沿用检查码，英文说明请模型缩小请求），原正文不公开；Turn与同批其他调用照常继续。
+  搜索的完整存档检查不了时由Artifact Store改为不带存档提交。发现Secret等其他拒绝、带效果的结果照旧失败关闭。
 
 ## 当前增量：宿主说明的身份登记（ADR 0173，Beta Issue #46）
 
@@ -1163,6 +1170,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 74 | `d82e71cc` 增量 | 2026-11-18 | 只读结果的保护检查做不完时只让那一次调用失败，Turn与同批调用继续（`tool_result_protection`，ADR 0174，Beta Issue #37遗留） |
 | 73 | `3a97841b` 增量 | 2026-11-18 | `host_notice_identity`：宿主说明身份的统一登记，供公开投影标注用户消息来源（ADR 0173，Beta Issue #46） |
 | 72 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断时补发说明（`truncated_call`，不计入连续补发、不使Turn失败）；非法参数反馈补上拆小建议 |
 | 71 | `493a8f14` 增量 | 2026-11-18 | 工具调用写成正文的回复补发提示继续，连续第三次失败，不再记为完成（`truncation_recovery.tool_call_text`，ADR 0109第8版，Beta Issue #40） |

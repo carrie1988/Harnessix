@@ -35,10 +35,12 @@ type HistoryArtifactPurpose = Literal[
 ]
 type ArtifactOmittedField = Literal["preview", "matches", "paths"]
 
-# 存储配额不足时结果照常提交、不带完整存档：公开输出用这个键代替"artifact"，
-# 告诉模型与客户端完整正文没有保存（ADR 0163）。
+# 存储配额不足（ADR 0163）或完整正文太大、保护检查做不完（ADR 0174）时结果照常提交、不带完整存档：
+# 公开输出用这个键代替"artifact"，值说明原因，告诉模型与客户端完整正文没有保存。
 ARTIFACT_OMITTED_KEY = "artifact_omitted"
 ARTIFACT_STORAGE_FULL = "storage_full"
+ARTIFACT_PROTECTION_LIMIT = "protection_limit"
+ARTIFACT_OMISSIONS = frozenset({ARTIFACT_STORAGE_FULL, ARTIFACT_PROTECTION_LIMIT})
 
 
 class ArtifactContract(ContractModel):

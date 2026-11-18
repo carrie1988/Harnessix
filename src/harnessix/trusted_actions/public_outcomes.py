@@ -12,8 +12,8 @@ from pydantic import JsonValue
 from harnessix.agent.cancellation import TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.artifacts.contracts import (
+    ARTIFACT_OMISSIONS,
     ARTIFACT_OMITTED_KEY,
-    ARTIFACT_STORAGE_FULL,
     ArtifactRef,
 )
 from harnessix.domain.models import ToolDescriptor
@@ -342,7 +342,8 @@ def validate_public_projection(
 ) -> None:
     """所有Owner投影都绑定双摘要；成功也不能授权追加任意正文。
 
-    存储已满时以``artifact_omitted``代替``artifact``，二者恰有其一（ADR 0163）。
+    存储已满或完整输出太大、检查做不完时以``artifact_omitted``代替``artifact``，二者恰有其一
+    （ADR 0163、0174）。
     """
 
     try:
@@ -363,7 +364,7 @@ def validate_public_projection(
         ):
             raise ValueError
         if ARTIFACT_OMITTED_KEY in projected:
-            if projected[ARTIFACT_OMITTED_KEY] != ARTIFACT_STORAGE_FULL:
+            if projected[ARTIFACT_OMITTED_KEY] not in ARTIFACT_OMISSIONS:
                 raise ValueError
             return
         # AwareDatetime在严格JSON模式验证；其他字段仍禁止强制类型转换。

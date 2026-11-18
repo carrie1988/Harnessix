@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 27
+version: 28
 code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
@@ -156,6 +156,8 @@ flowchart LR
 Process正文属于附加展示证据，准备、预算或配额失败时允许只提交原审批/结果事实。该降级不改变原效果。
 存储配额不足时（ADR 0163）只读结果与命令输出照常提交、不带存档，公开输出以`artifact_omitted: "storage_full"`
 代替`artifact`；审批Review存不下时原Route被拒绝，结果为失败并说明改动未执行。三者都不中断本轮。
+正文太大、插入前的保护检查超出资源上限或期限时（ADR 0174）同样处理，原因为`"protection_limit"`：只读结果的预览已单独
+通过检查，照常提交；命令输出只在`public_output_limit`时省略（检查超时同时用完了输出投影期限）；Review检查不了时原Route被拒绝。
 
 ### 5.1 信任边界
 
@@ -851,6 +853,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 28 | `d82e71cc` 增量 | 2026-11-18 | 存档正文的保护检查做不完时不保存存档、结果照常提交，`artifact_omitted`新增取值`protection_limit`（ADR 0174，Beta Issue #37遗留） |
 | 27 | `2d72f2c0` 增量 | 2026-11-15 | 存储配额不足时只读结果与命令输出照常提交、带`artifact_omitted`不带存档，Review存不下时关闭原Route并以失败结果说明，均不中断本轮（ADR 0163） |
 | 26 | `3e2f83d8` 增量 | 2026-11-15 | 过期正文由Runtime打开时与每小时一轮自动回收；Tombstone不再占全局件数；无法核对的行不再中止回收（ADR 0164） |
 | 25 | `f0ed1716` 增量 | 2026-11-14 | 单Turn默认配额改为1000件/32 MiB，长任务不再在约150步或五六次大输出时被`artifact_quota_exceeded`中断 |

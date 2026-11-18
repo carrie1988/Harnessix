@@ -39,7 +39,13 @@ from tests.delivery.test_trusted_action_patch import (
 
 @asynccontextmanager
 async def product(
-    tmp_path, *, enabled=True, model_tool_view=None, normalize_arguments=False, policy=None
+    tmp_path,
+    *,
+    enabled=True,
+    model_tool_view=None,
+    normalize_arguments=False,
+    policy=None,
+    protection=None,
 ):
     root = tmp_path / "workspace"
     root.mkdir(exist_ok=True)
@@ -54,7 +60,7 @@ async def product(
     transactions = SQLiteWorkspaceTransactionStore(tmp_path / "state/delivery")
     leases = WorkspaceLeaseStore(tmp_path / "state/leases.db")
     sessions = SQLiteSessionStore(tmp_path / "state/sessions.db")
-    artifacts = SQLiteArtifactStore(sessions, policy=policy)
+    artifacts = SQLiteArtifactStore(sessions, policy=policy, public_output_protection=protection)
     router = TrustedActionRouter(
         plans=plans, audit=audit, workspace_root=environment.workspace_root
     )
@@ -78,6 +84,7 @@ async def product(
                 scoped_tools=tools,
                 model_tool_view=model_tool_view,
                 normalize_stringified_arguments=normalize_arguments,
+                public_output_protection=protection,
             ) as runtime:
                 yield root, runtime, provider, router, transactions, composition, artifacts
         finally:

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -24,6 +24,7 @@ from harnessix.agent.models import (
     Turn,
     TurnStatus,
 )
+from harnessix.agent.publication import PublicOutputProtection
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.artifacts.contracts import ArtifactPolicy
@@ -118,12 +119,20 @@ class _CommandRun:
 
 @asynccontextmanager
 async def _approved_command(
-    tmp_path: Path, process_type: type, *, policy: ArtifactPolicy | None = None
+    tmp_path: Path,
+    process_type: Callable[[Any], Any],
+    *,
+    policy: ArtifactPolicy | None = None,
+    protection: PublicOutputProtection | None = None,
+    first_step: list[Any] = _RUN_TESTS,
 ) -> AsyncIterator[_CommandRun]:
-    """真实产品装配下，模型请求运行单元测试且用户已批准；进程由测试替身控制。"""
+    """真实产品装配下，模型请求运行单元测试且用户已批准；进程由测试替身控制。
+
+    工作区可由测试预先创建；``first_step``可在同一步里附加其他调用，``protection``开启公开保护。
+    """
 
     workspace = tmp_path / "workspace"
-    workspace.mkdir()
+    workspace.mkdir(exist_ok=True)
     profile = _profile(_fake_engine(tmp_path))
     secrets = _NoSecrets()
     async with PosixProcessSupervisor(tmp_path / "probe-owner") as supervisor:
@@ -135,7 +144,7 @@ async def _approved_command(
         verified = replace(probe.verified, runtime=cast(Any, process))
 
     sessions = SQLiteSessionStore(tmp_path / "sessions.db")
-    artifacts = SQLiteArtifactStore(sessions, policy=policy)
+    artifacts = SQLiteArtifactStore(sessions, policy=policy, public_output_protection=protection)
     environment = build_fixed_product_action_environment(workspace)
     plans = SQLiteExecutionPlanStore(tmp_path / "plans.db")
     audit = SQLiteActionAuditStore(tmp_path / "audit.db")
@@ -144,7 +153,7 @@ async def _approved_command(
     router = TrustedActionRouter(
         plans=plans, audit=audit, workspace_root=environment.workspace_root
     )
-    provider = ScriptedProvider([_RUN_TESTS, answer("测试完成")])
+    provider = ScriptedProvider([first_step, answer("测试完成")])
     try:
         async with CodingToolRuntime(workspace, artifacts=artifacts) as tools:
             composition = build_product_action_composition(
@@ -171,6 +180,7 @@ async def _approved_command(
                 scoped_tools=tools,
                 artifacts=artifacts,
                 trusted_actions=composition.gateway,
+                public_output_protection=protection,
             ) as agent:
                 thread = await agent.create_thread(str(workspace))
                 waiting = await agent.run_turn(thread.thread_id, "运行单元测试", request_id="run")
