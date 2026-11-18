@@ -99,8 +99,9 @@ async def test_runtime_crash_never_reissues_model_request(tmp_path: Path, point)
     assert exists == (point != "runtime.after_model_attempt_started")
     turn = await recover(store, thread)
     assert len(turn.model_attempts) == 1
+    # 成功尝试的完整用量与“尝试完成”同一事务落盘（ADR 0168 D3）：用量之后崩溃时尝试已完成。
     assert turn.model_attempts[0].status == (
-        "completed" if point.endswith("finished") else "interrupted"
+        "interrupted" if point.endswith("started") else "completed"
     )
     assert turn.usage.total_tokens == (0 if point.endswith("started") else 13)
     if exists:

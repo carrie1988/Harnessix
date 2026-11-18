@@ -27,6 +27,7 @@ from harnessix.agent.approvals import (
     with_rejection_reason,
 )
 from harnessix.agent.argument_normalization import normalize_proposal
+from harnessix.agent.attempt_fact_commits import AttemptFact, AttemptFactCommits
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
@@ -3103,7 +3104,41 @@ class AgentRuntime:
         assert request.remaining_tokens is not None
         request_reservation = estimated_input_tokens + request.remaining_tokens
 
-        async with aclosing(texts.watch(self.provider.stream(request, token))) as stream:
+        def attempt_fact_durable(fact: AttemptFact, snapshot: Thread) -> None:
+            nonlocal attempt_mode, open_attempt, attempt_response_id, unreported_reservations
+            if isinstance(fact, ModelAttemptStarted):
+                attempt_mode = True
+                open_attempt = fact.attempt_id
+                attempt_response_id = None
+                # 提交后才继续消费：Provider 必须在下次 anext 才发起 HTTP。
+                self._fault("runtime.after_model_attempt_started")
+            elif isinstance(fact, ModelUsageObserved):
+                attempt_response_id = fact.response_id or attempt_response_id
+                accounted.record(get_turn(snapshot, request.turn_id))
+                self._fault("runtime.after_model_usage_observed")
+            else:
+                open_attempt = None
+                attempt = next(
+                    attempt
+                    for attempt in get_turn(snapshot, request.turn_id).model_attempts
+                    if attempt.attempt_id == fact.attempt_id
+                )
+                if attempt.usage.completeness != "complete":
+                    known_tokens = (attempt.usage.input_tokens or 0) + (
+                        attempt.usage.output_tokens or 0
+                    )
+                    unreported_reservations += max(0, request_reservation - known_tokens)
+                    unreported_attempts.append(attempt)
+                self._fault("runtime.after_model_attempt_finished")
+
+        # 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（ADR 0168 D3）。
+        facts = AttemptFactCommits(
+            lambda payloads: self._protect_payloads(request.turn_id, payloads),
+            lambda payloads: self._append_payloads(request.thread_id, request.turn_id, payloads),
+            attempt_fact_durable,
+        )
+        events = facts.flushing(texts.watch(self.provider.stream(request, token)))
+        async with aclosing(events) as stream:
             while True:
                 token.checkpoint()
                 try:
@@ -3115,6 +3150,7 @@ class AgentRuntime:
                 event_count += 1
                 if event_count > 10000:
                     raise KernelError("provider_event_limit", "模型步骤事件数超过上限")
+                await facts.before(event)
                 if isinstance(
                     event, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
                 ):
@@ -3151,38 +3187,7 @@ class AgentRuntime:
                         and event.response_id != response_id
                     ):
                         raise KernelError("invalid_provider_output", "用量响应身份与当前响应不一致")
-                    try:
-                        snapshot = await self._commit(request.thread_id, request.turn_id, [event])
-                    except KernelError as error:
-                        if error.code == "invalid_event":
-                            raise KernelError(
-                                "invalid_provider_output", "模型尝试事实不符合契约"
-                            ) from None
-                        raise
-                    if isinstance(event, ModelAttemptStarted):
-                        attempt_mode = True
-                        open_attempt = event.attempt_id
-                        attempt_response_id = None
-                        # 提交后才继续消费：Provider 必须在下次 anext 才发起 HTTP。
-                        self._fault("runtime.after_model_attempt_started")
-                    elif isinstance(event, ModelUsageObserved):
-                        attempt_response_id = event.response_id or attempt_response_id
-                        accounted.record(get_turn(snapshot, request.turn_id))
-                        self._fault("runtime.after_model_usage_observed")
-                    else:
-                        open_attempt = None
-                        attempt = next(
-                            attempt
-                            for attempt in get_turn(snapshot, request.turn_id).model_attempts
-                            if attempt.attempt_id == event.attempt_id
-                        )
-                        if attempt.usage.completeness != "complete":
-                            known_tokens = (attempt.usage.input_tokens or 0) + (
-                                attempt.usage.output_tokens or 0
-                            )
-                            unreported_reservations += max(0, request_reservation - known_tokens)
-                            unreported_attempts.append(attempt)
-                        self._fault("runtime.after_model_attempt_finished")
+                    await facts.record(event)
                     continue
                 if isinstance(event, ResponseFailed):
                     raise KernelError(
@@ -3218,11 +3223,8 @@ class AgentRuntime:
                     if not texts.all_completed:
                         raise KernelError("invalid_provider_output", "响应结束时文本块尚未完成")
                     try:
-                        snapshot = await self._commit(
-                            request.thread_id,
-                            request.turn_id,
-                            [UsageRecorded(step=request.step, usage=event.usage)],
-                        )
+                        terminal = UsageRecorded(step=request.step, usage=event.usage)
+                        snapshot = await facts.commit_with_terminal(terminal)
                     except KernelError as error:
                         if attempt_mode and error.code == "invalid_event":
                             raise KernelError(
