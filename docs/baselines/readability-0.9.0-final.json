@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 657,
-    "physical_lines": 137554,
-    "logical_lines": 119031,
+    "physical_lines": 137589,
+    "logical_lines": 119057,
     "documented_modules": 657,
     "classes": 1263,
     "documented_classes": 662,
-    "functions": 5503,
-    "documented_functions": 1969,
+    "functions": 5504,
+    "documented_functions": 1970,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -204,7 +204,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3550
+      "lines": 3547
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -353,7 +353,7 @@
       "qualname": "AgentRuntime",
       "kind": "class",
       "line": 310,
-      "lines": 3241,
+      "lines": 3238,
       "documented": true
     },
     {
@@ -395,7 +395,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3384,
+      "line": 3381,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -429,7 +429,7 @@
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
       "line": 3093,
-      "lines": 279,
+      "lines": 276,
       "documented": true,
       "decision_complexity": 83
     },
@@ -1064,7 +1064,7 @@
       "qualname": "ChatStream",
       "kind": "class",
       "line": 183,
-      "lines": 158,
+      "lines": 159,
       "documented": false
     },
     {
