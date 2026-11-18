@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 7
+version: 8
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners: [core]
 modules: [agent, models, context, tools, product_config]
@@ -212,3 +212,29 @@ C：维持现状，由用户发送“继续”——已完成的修改都保留�
 - 被跳过的那个调用不会执行，也不出现在历史里；模型看到的是实际成组的调用与它们的结果。
 - 主循环里没有任何正文和调用的响应由第6版处理（补发提示继续）。
 - 不新增事件类型、拒绝原因或配置字段。回归见`tests/models/test_tool_argument_repair.py`。
+
+## 8. v8修订（2026-11-18）：工具调用写成正文补发提示继续
+
+**背景。** Beta Issue #40（0.10.0b51 macOS TUI，百炼qwen3.8-flash，思考low）：chi修复任务第8步，模型没有发起工具调用，
+而是把调用写进了正文：`<previous_tool_call>`、`{"name": "exec_command_shell", "arguments": {...}}`，结尾还有
+`</parameter>`、`</function>`。这一步正常结束、没有工具调用、有正文，运行时把它当作最终答复，Turn记为`completed`，
+界面显示“已完成”；实际什么也没执行，计划停在第一步，工作区没有改动。
+
+**决策。** 第6版的恢复机制增加第三种情况“工具调用写成正文”（`tool_call_text`），开关、计数与身份不变：
+- 判定（`truncation_recovery.tool_call_written_as_text`）：正常结束、没有工具调用、有正文，并且正文里有带本步工具名的
+  `"name": "<工具名>", "arguments"/"parameters":`对象；或者有工具调用标记（`<tool_call>`、`<previous_tool_call>`、
+  `<function=…>`、`</function>`、`<invoke name=…>`、`<|tool_call`）且提到本步工具名。工具名同时认原名与线上别名
+  （不合法字符换成下划线，如`exec_command.shell`→`exec_command_shell`）。
+- 补发英文提示：上一条回复把工具调用写成了正文，什么也没执行；不要再写成文字，通过工具调用接口发起；
+  任务已做完就给出简短总结、不带工具调用文字。
+- 与截断、空回复合并计数，连续最多两次；第三次或预算用尽时以`invalid_provider_output`（“模型把工具调用写成了正文，
+  没有执行”）失败，不再记为完成。这一步的正文照常作为助手消息落账。
+- 终端界面对这条补发提示显示“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”。
+
+**误判边界。** 只提到工具名、贴出代码或普通JSON的总结都不算（见测试表）。用本机40个Beta会话库里的570条真实助手消息
+核对，只认出#40那一条。
+
+**依据与验证。** 属易用性与可用性问题（假的“已完成”），按用户规则直接修复。`tests/agent/test_truncation_recovery.py`：
+写成正文的调用补发提示后真正调用并完成；连续三次后失败（修改前以`completed`结束）；开关关闭时不变；判定表（Hermes、
+Qwen、Anthropic标记与JSON形式为真，普通总结为假）。
+

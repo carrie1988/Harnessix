@@ -770,7 +770,7 @@ harnessix exec --workspace /path/to/repo --trust-workspace \
 | 命令 | 作用 |
 |---|---|
 | `harnessix data list` | 列出各工作区的数据（目录指纹、大小、修改时间） |
-| `harnessix data export [仓库] --output 文件` | 导出该工作区的完整会话。导出内容包含代码和对话，请妥善保管 |
+| `harnessix data export [仓库] --output 文件` | 导出该工作区的完整会话。导出内容包含代码和对话，请妥善保管。这个工作区的 `harnessix code` 还开着时会提示 `data_workspace_busy`：先在那里按 Ctrl+Q 退出再导出（`data diagnostics` 照常生成，会话部分记为 `data_workspace_busy`） |
 | `harnessix data delete --workspace 仓库 --confirm 指纹` | 删除该工作区的全部会话数据 |
 | `harnessix data diagnostics [仓库] --output 文件` | 生成不含代码、提示词和路径的诊断文件，适合用于反馈。启动时用过 `--state-directory` 的话，这里加上同一个目录（`export` 同理）；一个会话也没读到时，回执会写明查的是哪个目录 |
 

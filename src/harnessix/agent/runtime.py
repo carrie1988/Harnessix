@@ -3259,7 +3259,7 @@ class AgentRuntime:
                     recovery = settle_reply(
                         event.finish_reason,
                         call_ids,
-                        texts.has_content,
+                        texts,
                         self._recover_truncated_replies,
                     )
                     completed = event
