@@ -12,7 +12,6 @@ from harnessix.exec_cli import (
     NeedsHumanInput,
     _commands,
     _parser,
-    _stdout_is_terminal,
     _write_summary,
     approval_policy,
 )
@@ -376,11 +375,12 @@ def test_the_summary_on_stdout_is_ascii_only_unless_it_is_a_terminal(monkeypatch
     assert text.isascii() is not terminal
 
 
-def test_a_closed_stdout_counts_as_not_a_terminal(monkeypatch):
+def test_a_closed_stdout_counts_as_not_a_terminal():
+    from harnessix.product_config.cli_json import is_terminal
+
     stream = io.StringIO()
     stream.close()
-    monkeypatch.setattr("sys.stdout", stream)
-    assert not _stdout_is_terminal()
+    assert not is_terminal(stream)
 
 
 def test_the_summary_file_keeps_utf8_text(tmp_path, monkeypatch):

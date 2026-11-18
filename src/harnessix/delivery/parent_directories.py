@@ -63,7 +63,8 @@ def remove_empty_directories(root: Path, directories: Sequence[str]) -> None:
 
         remove_empty_windows_directories(root, directories)
         return
-    with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+    # 补建的目录可以带密钥或证书后缀（如certs.pem/），按写目标策略打开（ADR 0172）。
+    with Workspace(root, path_max_bytes=4096, path_max_parts=128, patch_targets=True) as workspace:
         for directory in sorted(directories, reverse=True):
             try:
                 with _parent(workspace, directory) as (parent, name):

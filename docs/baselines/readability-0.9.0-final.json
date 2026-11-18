@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 661,
-    "physical_lines": 138340,
-    "logical_lines": 119594,
-    "documented_modules": 661,
-    "classes": 1271,
-    "documented_classes": 669,
-    "functions": 5552,
-    "documented_functions": 1995,
+    "source_files": 662,
+    "physical_lines": 138658,
+    "logical_lines": 119808,
+    "documented_modules": 662,
+    "classes": 1275,
+    "documented_classes": 672,
+    "functions": 5563,
+    "documented_functions": 2004,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -204,7 +204,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3532
+      "lines": 3527
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -357,7 +357,7 @@
       "qualname": "AgentRuntime",
       "kind": "class",
       "line": 309,
-      "lines": 3224,
+      "lines": 3219,
       "documented": true
     },
     {
@@ -399,7 +399,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3366,
+      "line": 3361,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -433,7 +433,7 @@
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
       "line": 3075,
-      "lines": 279,
+      "lines": 274,
       "documented": true,
       "decision_complexity": 83
     },
@@ -707,7 +707,7 @@
       "path": "src/harnessix/delivery/filesystem.py",
       "qualname": "WorkspaceTransactionRuntime",
       "kind": "class",
-      "line": 53,
+      "line": 55,
       "lines": 132,
       "documented": true
     },
@@ -1068,7 +1068,7 @@
       "qualname": "ChatStream",
       "kind": "class",
       "line": 187,
-      "lines": 162,
+      "lines": 163,
       "documented": false
     },
     {
@@ -1868,8 +1868,8 @@
       "path": "src/harnessix/tools/workspace.py",
       "qualname": "Workspace",
       "kind": "class",
-      "line": 171,
-      "lines": 136,
+      "line": 190,
+      "lines": 137,
       "documented": true
     },
     {
@@ -1878,8 +1878,8 @@
       "path": "src/harnessix/trusted_actions/router.py",
       "qualname": "TrustedActionRouter",
       "kind": "class",
-      "line": 182,
-      "lines": 217,
+      "line": 185,
+      "lines": 214,
       "documented": true
     },
     {
@@ -1909,7 +1909,7 @@
       "qualname": "_PosixRoot",
       "kind": "class",
       "line": 105,
-      "lines": 113,
+      "lines": 115,
       "documented": false
     },
     {
@@ -1918,7 +1918,7 @@
       "path": "src/harnessix/workspace/snapshot.py",
       "qualname": "capture_workspace_snapshot",
       "kind": "function",
-      "line": 438,
+      "line": 441,
       "lines": 124,
       "documented": true,
       "decision_complexity": 27

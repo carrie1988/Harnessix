@@ -150,7 +150,26 @@ def refresh_thread_snapshot(state: ProductViewState, thread: ThreadView) -> Prod
         raise ProductUIError("projection_thread_mismatch", "Thread投影身份不匹配")
     if thread.cursor < state.durable_cursor:
         raise ProductUIError("projection_cursor_rollback", "Thread持久游标发生回退")
-    return replace(state, thread=thread, current_turn=_turn_from_snapshot(thread))
+    return replace(state, thread=thread, current_turn=_carry_interruption(state, thread))
+
+
+def _carry_interruption(state: ProductViewState, thread: ThreadView) -> TurnProjection | None:
+    """快照换下同一Turn时保留“模型请求中途结束”：与按事件投影同一规则。
+
+    取消后界面暖刷新，快照里的已取消Turn不带这个标记，随后的状态事件又是从已取消开始，
+    费用栏丢掉“另有中断的请求可能已计费”；重新打开从头重放才有（Beta Issue #42）。
+    """
+    refreshed, previous = _turn_from_snapshot(thread), state.current_turn
+    if refreshed is None or previous is None or previous.turn_id != refreshed.turn_id:
+        return refreshed
+    interrupted = previous.interrupted_model_call or (
+        previous.status == "calling_model"
+        and refreshed.status in _ENDED_DURING_MODEL_CALL
+        and not _known_unbilled(refreshed.error)
+    )
+    return replace(
+        refreshed, interrupted_model_call=refreshed.interrupted_model_call or interrupted
+    )
 
 
 def _replace_item(

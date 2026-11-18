@@ -132,6 +132,7 @@ def _plan_normalized_action(
             resources=resolved.workspace_resources,
             external_roots=context.external_roots,
             platform=context.capabilities.platform,
+            patch_targets=definition.patch_targets,
         )
     else:
         workspace = capture_workspace_snapshot_v2(
@@ -143,6 +144,7 @@ def _plan_normalized_action(
             checkpoint=_planning_checkpoint(context),
             write_blob=context.snapshot_ports.write_blob,
             read_blob=context.snapshot_ports.read_blob,
+            patch_targets=definition.patch_targets,
         )
     if resolved.expected_workspace is not None and workspace != resolved.expected_workspace:
         raise KernelError(

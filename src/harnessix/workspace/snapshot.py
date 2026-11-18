@@ -105,9 +105,11 @@ def _read_operation(
 class _PosixRoot:
     root_identity: tuple[object, ...]
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, patch_targets: bool = False) -> None:
         try:
-            self._workspace = Workspace(path, path_max_bytes=4096, path_max_parts=128)
+            self._workspace = Workspace(
+                path, path_max_bytes=4096, path_max_parts=128, patch_targets=patch_targets
+            )
             self.path = self._workspace.root
             with self._workspace.open(".", ReadOperation(), directory=True) as descriptor:
                 info = os.fstat(descriptor)
@@ -246,9 +248,10 @@ def _native_platform() -> PlatformKind:
     raise KernelError("workspace_platform_unsupported", "当前Workspace平台不受支持")
 
 
-def _open_native(path: Path, platform: PlatformKind) -> _NativeRoot:
+def _open_native(path: Path, platform: PlatformKind, *, patch_targets: bool = False) -> _NativeRoot:
+    """patch_targets只由补丁与回滚传True：POSIX根用写目标策略（ADR 0172）。"""
     if platform == "posix" and os.name == "posix":
-        return _PosixRoot(path)
+        return _PosixRoot(path, patch_targets=patch_targets)
     if platform == "windows" and os.name == "nt":
         from harnessix.workspace.windows import WindowsWorkspaceRoot
 
@@ -442,16 +445,16 @@ def capture_workspace_snapshot(
     resources: Sequence[WorkspaceResourceRequest] = (),
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
     platform: PlatformKind | None = None,
+    patch_targets: bool = False,
 ) -> WorkspaceSnapshot:
-    """对计划涉及的根、cwd和资源生成有界内容快照。"""
-
+    """对计划涉及的根、cwd和资源生成有界内容快照；patch_targets见_open_native。"""
     selected_platform = platform or _native_platform()
     normalized_cwd = normalize_workspace_path(cwd, selected_platform)
     if len(resources) > 256 or len(external_roots or {}) > 16:
         raise KernelError("workspace_snapshot_limit", "Workspace快照资源超过上限")
     with ExitStack() as stack:
         roots: dict[str, _NativeRoot] = {}
-        workspace = _open_native(Path(root), selected_platform)
+        workspace = _open_native(Path(root), selected_platform, patch_targets=patch_targets)
         roots["workspace"] = workspace
         stack.callback(workspace.close)
         external_contracts: list[ExternalRoot] = []
@@ -566,6 +569,7 @@ def verify_workspace_snapshot(
     root: str | Path,
     *,
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
+    patch_targets: bool = False,
 ) -> WorkspaceSnapshot:
     requests = tuple(
         WorkspaceResourceRequest(location=item.location, path=item.path, access=item.access)
@@ -580,6 +584,7 @@ def verify_workspace_snapshot(
         resources=requests,
         external_roots=external_roots,
         platform=expected.platform,
+        patch_targets=patch_targets,
     )
     if current != expected:
         raise KernelError("execution_plan_stale", "Workspace Snapshot已变化")

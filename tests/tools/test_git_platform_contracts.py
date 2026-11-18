@@ -52,7 +52,9 @@ def _simulated_read_plan(
         observe=lambda _path, **_kwargs: observation,
         close=lambda: None,
     )
-    monkeypatch.setattr("harnessix.workspace.snapshot._open_native", lambda _path, _platform: root)
+    monkeypatch.setattr(
+        "harnessix.workspace.snapshot._open_native", lambda _path, _platform, **_kwargs: root
+    )
     capability = build_process_capability(
         platform="windows",
         supports_pty=False,

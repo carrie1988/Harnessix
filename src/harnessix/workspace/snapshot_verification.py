@@ -20,15 +20,23 @@ def verify_host_workspace_snapshot(
     ports: WorkspaceSnapshotPorts | None,
     *,
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
+    patch_targets: bool = False,
 ) -> None:
-    """一次复核共用原读取期限；端口只读验证，不捕获写入或修复历史。"""
+    """一次复核共用原读取期限；端口只读验证，不捕获写入或修复历史。
+
+    patch_targets随Action定义（补丁与回滚为True，ADR 0172），与规划时的捕获一致。
+    """
     root = workspace_root(expected.workspace_id)
     if isinstance(expected, WorkspaceSnapshotV2):
         if ports is None:
             raise KernelError("workspace_closure_unavailable", "完整Workspace历史端口不可用")
         if external_roots is None:
             verify_workspace_snapshot_v2(
-                expected, root, checkpoint=ReadOperation().checkpoint, read_blob=ports.read_blob
+                expected,
+                root,
+                checkpoint=ReadOperation().checkpoint,
+                read_blob=ports.read_blob,
+                patch_targets=patch_targets,
             )
         else:
             verify_workspace_snapshot_v2(
@@ -37,9 +45,12 @@ def verify_host_workspace_snapshot(
                 checkpoint=ReadOperation().checkpoint,
                 read_blob=ports.read_blob,
                 external_roots=external_roots,
+                patch_targets=patch_targets,
             )
     else:
         if external_roots is None:
-            verify_workspace_snapshot(expected, root)
+            verify_workspace_snapshot(expected, root, patch_targets=patch_targets)
         else:
-            verify_workspace_snapshot(expected, root, external_roots=external_roots)
+            verify_workspace_snapshot(
+                expected, root, external_roots=external_roots, patch_targets=patch_targets
+            )

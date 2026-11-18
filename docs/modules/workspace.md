@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 26
+version: 27
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
 modules:
   - workspace
 related_adrs:
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
   - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
@@ -16,6 +17,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0137-create-with-missing-parent-directories.md
 related_tests:
+  - tests/product_config/test_patch_key_certificate_files.py
   - tests/delivery/test_windows_short_names.py
   - tests/workspace/test_snapshot_missing_parents.py
   - tests/workspace/test_snapshot_v2_capture_progress.py
@@ -50,6 +52,11 @@ supersedes: []
 ---
 
 # Workspace模块设计
+
+## 当前增量：补丁与回滚的快照用写目标策略（ADR 0172）
+
+- `capture_workspace_snapshot`、`verify_workspace_snapshot`、[`capture_snapshot_facts`](../../src/harnessix/workspace/snapshot_capture.py)、[`capture_workspace_snapshot_v2`/`verify_workspace_snapshot_v2`](../../src/harnessix/workspace/snapshot_v2.py)与[`verify_host_workspace_snapshot`](../../src/harnessix/workspace/snapshot_verification.py)新增`patch_targets`（默认False）。为True时工作区根经[`_open_native(..., patch_targets=True)`](../../src/harnessix/workspace/snapshot.py)以`_PosixRoot(patch_targets=True)`（`PatchTargetPolicy`）打开，写目标与父目录（如`certs.pem/`）可以带密钥或证书后缀，敏感名称照旧拒绝；不按访问模式推断。
+- 外部根、Windows根（不按文件名过滤）与其余调用方（技能、预检、编解码、进程与评测快照、Git检查点与交付来源）不变。快照合同与身份不变。
 
 ## 当前增量：8.3短名称形状判断（ADR 0170）
 

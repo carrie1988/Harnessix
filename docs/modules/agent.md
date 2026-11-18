@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 73
+version: 75
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -75,6 +75,17 @@ supersedes: []
   共享其余对象的浅副本；其余视图照旧拿到独立的深拷贝。`admit_call`与`step_notice`本来就拿共享的Turn与Thread，这里与它们一致。
 - 选择结果、请求字节与持久事件不变；深拷贝在160步基准的第121–160步每次约30毫秒、每步两次。运行时主文件只改一行（调用名），
   行数不变。回归见`tests/agent/test_tool_view_turn.py`（含产品运行中每次选择都与深拷贝路径比对）。
+
+## 当前增量：工具调用被输出上限截断时告诉模型拆小（ADR 0171）
+
+- [`truncation_recovery.settle_reply`](../../src/harnessix/agent/truncation_recovery.py)改为接收终态事件与本步正文（`StepTexts`，与ADR 0109第8版合并）；截断恢复开启且`ResponseCompleted.tool_call_truncated`为真时返回`truncated_call`。本步没有待执行调用时，`_close_model_step`补发`TRUNCATED_CALL_NOTICE`（身份`truncated_call_notice_item_id`，`harnessix.truncated-tool-call-notice/v1`），不计入连续补发次数、不使Turn失败。
+- [`tool_rejections`](../../src/harnessix/agent/tool_rejections.py)：`invalid_arguments_json`的英文反馈补上“调用很长时多半被输出上限截断，应拆成更小的调用”；固定拒绝结果不变。
+- 回归：`tests/agent/test_truncation_recovery.py`（单次、连续三次、关闭恢复、同一响应里有完整调用）、`tests/models/test_rejection_feedback.py`。
+
+## 当前增量：把工具调用写成正文的回复不算完成（ADR 0109第8版，Beta Issue #40）
+
+- [`truncation_recovery`](../../src/harnessix/agent/truncation_recovery.py)新增第三种可恢复回复`tool_call_text`：正常结束、没有工具调用，正文却是一次工具调用的文字形式（`tool_call_written_as_text`，见ADR 0109第8版）。宿主补发`TOOL_CALL_TEXT_NOTICE`继续，与截断、空回复合并计数；连续第三次以`invalid_provider_output`失败。
+- `settle_reply`改收本步的正文状态（`StepTexts`协议，即`model_text.ModelTextPublication`），由`Reply.of`取出正文与可调用的工具名；`runtime.py`只把`texts.has_content`换成`texts`。
 
 ## 当前增量：续跑等待审批且时限已过的Turn时按时限收尾（Beta Issue #39）
 
@@ -1172,9 +1183,11 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 73 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
-| 72 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
-| 71 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
+| 75 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
+| 74 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
+| 73 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
+| 72 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断时补发说明（`truncated_call`，不计入连续补发、不使Turn失败）；非法参数反馈补上拆小建议 |
+| 71 | `493a8f14` 增量 | 2026-11-18 | 工具调用写成正文的回复补发提示继续，连续第三次失败，不再记为完成（`truncation_recovery.tool_call_text`，ADR 0109第8版，Beta Issue #40） |
 | 70 | `d69bdb2a` 增量 | 2026-11-18 | 续跑等待审批且时限已过的Turn按`time_budget_exceeded`收尾（`approvals.overdue_wait`）（Beta Issue #39） |
 | 69 | `39e1e1bf` 增量 | 2026-11-15 | 正文写到一半断开时，同一步骤作废半截正文（`ItemFinished(FAILED)`，`provider_attempt_discarded`）并接受新的尝试，新正文换公开保护身份（ADR 0144第5版） |
 | 68 | `3e2f83d8` 增量 | 2026-11-15 | `AgentRuntime`打开时启动过期Artifact正文回收（`artifacts.reclaim.start_artifact_reclaim`：打开时回收一轮，最多2秒，余下转后台，之后每小时一轮），关闭时停止；回收失败只记日志，不影响Turn（ADR 0164） |

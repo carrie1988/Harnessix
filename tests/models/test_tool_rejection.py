@@ -757,8 +757,11 @@ async def test_unsuccessful_terminal_never_releases_unknown_or_known_calls(
         rejected, completed = [event for event in events if isinstance(event, PROPOSALS)]
         assert isinstance(rejected, ToolCallRejected) and rejected.reason == "unregistered_tool"
         assert isinstance(completed, ToolCallCompleted) and completed.tool == "test.read"
+        # 被截断的调用已按拒绝形成：终态带标记，运行时据此告诉模型拆小重发（ADR 0171）。
         assert events[-1] == ResponseCompleted(
-            finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=2)
+            finish_reason="tool_calls",
+            usage=Usage(input_tokens=10, output_tokens=2),
+            tool_call_truncated=True,
         )
         return
     assert not any(isinstance(event, PROPOSALS) for event in events)

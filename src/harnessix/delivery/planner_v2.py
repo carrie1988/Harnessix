@@ -60,6 +60,7 @@ def prepare_workspace_transaction_v2(
         checkpoint=checkpoint,
         write_blob=write_blob,
         read_blob=read_blob,
+        patch_targets=True,
     )
     observations = {
         (item.path, item.access): item
@@ -69,7 +70,9 @@ def prepare_workspace_transaction_v2(
     mutations, blobs = _prepare_mutations(
         Path(root), normalized, observations, selected, checkpoint=checkpoint
     )
-    verify_workspace_snapshot_v2(snapshot, root, checkpoint=checkpoint, read_blob=read_blob)
+    verify_workspace_snapshot_v2(
+        snapshot, root, checkpoint=checkpoint, read_blob=read_blob, patch_targets=True
+    )
     # 涉及0644/0755以外的权限时才用保留权限代际v4（ADR 0068第2版），否则仍是v2。
     plan_type: type[WorkspaceTransactionPlanV2] = (
         WorkspaceTransactionPlanV4

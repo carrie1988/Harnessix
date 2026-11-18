@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners:
   - core
@@ -9,12 +9,18 @@ modules:
   - trusted_actions
 related_adrs:
   - docs/adr/0137-create-with-missing-parent-directories.md
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
 related_tests:
   - tests/product_config/test_patch_protected_paths.py
 supersedes: []
 ---
 
 # 规划时写受保护路径只拒绝这次调用
+
+> 第2版（2026-11-18，ADR 0172）：密钥与证书文件（`.key`、`.pem`、`.p12`、`.pfx`）在所有平台上都可以由补丁写入，
+> 内容从不显示，见[补丁可以写密钥与证书文件](key-certificate-patch-writes.md)。受保护的只剩凭据目录与文件名
+> （`.git`、`.harnessix`、`.codex`、`.ssh`、`.aws`、`.gnupg`、`.env*`、`id_rsa`等），两个平台规则相同。
+> 本文其余部分描述第1版的修复：受保护路径只拒绝这次调用，这一点不变；写给模型的说明不再列出密钥与证书文件。
 
 ## 1. 文档摘要
 
@@ -79,8 +85,9 @@ macOS与Linux上受保护路径照旧不能由补丁写入，改变的只是失�
 
 ## 13. 验证
 
-- `tests/product_config/test_patch_protected_paths.py`覆盖两代快照，以及密钥、同批混合、.p12、.ssh目录四种情况，只在POSIX运行。
-  修复前失败，修复后通过。只对内置Patch转换的单元测试在任何宿主运行。
+- `tests/product_config/test_patch_protected_paths.py`覆盖两代快照。第1版是密钥、同批混合、.p12、.ssh目录四种情况，只在POSIX运行；
+  第2版改为`.ssh`目录、同批混合`.env`、`.env.local`、`id_rsa`、`.aws`目录、证书与`.gnupg`同批六种情况，不再限于POSIX，
+  并断言说明不再列出密钥与证书文件。只对内置Patch转换的单元测试在任何宿主运行。
 - 全量回归与b48对比。
 
 ## 14. 源码与测试映射

@@ -65,8 +65,12 @@ def capture_workspace_snapshot_v2(
     platform: PlatformKind | None = None,
     native_progress: AbstractContextManager[Callable[[], None]] | None = None,
     pure_progress: WorkspacePureProgressFactory | None = None,
+    patch_targets: bool = False,
 ) -> WorkspaceSnapshotV2:
-    """原耐久写入后完整回读；取消或确认丢失不产生业务事务成功。"""
+    """原耐久写入后完整回读；取消或确认丢失不产生业务事务成功。
+
+    patch_targets只由补丁与回滚传True（ADR 0172），见capture_snapshot_facts。
+    """
     capture_progress = native_progress if native_progress is not None else nullcontext(checkpoint)
     with capture_progress as native_check:
         facts = capture_snapshot_facts(
@@ -76,6 +80,7 @@ def capture_workspace_snapshot_v2(
             external_roots=external_roots,
             platform=platform,
             checkpoint=native_check,
+            patch_targets=patch_targets,
         )
     with pure_progress() if pure_progress is not None else nullcontext(checkpoint) as pure_check:
         snapshot, blobs = _encode_snapshot(facts, pure_check)
@@ -108,6 +113,7 @@ def verify_workspace_snapshot_v2(
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None = None,
     native_progress: AbstractContextManager[Callable[[], None]] | None = None,
     pure_progress: WorkspacePureProgressFactory | None = None,
+    patch_targets: bool = False,
 ) -> WorkspaceSnapshotV2:
     """先验证完整旧历史，再只观察当前事实；没有 CAS 写入或补签端口。"""
     if pure_progress is None:
@@ -125,6 +131,7 @@ def verify_workspace_snapshot_v2(
             external_roots=external_roots,
             platform=expected.platform,
             checkpoint=native_check,
+            patch_targets=patch_targets,
         )
     # 原生捕获已经结束；新纯段只重编码事实，不读取或追加 CAS。
     with pure_progress() if pure_progress is not None else nullcontext(checkpoint) as pure_check:

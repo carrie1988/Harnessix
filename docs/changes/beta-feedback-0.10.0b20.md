@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 56
+version: 61
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -138,9 +138,14 @@ supersedes: []
 | 四十九 | 普通Grep的存档在长凭据下超过公开保护的工作量上限，整轮开发以`public_output_limit`终止（0.10.0b50 Windows，Issue #37；三个平台相同） | 工作量只计实际比较，比模式短的文本计1 | 本文第63节 |
 | 五十 | 审批跨过Turn时限后，`harnessix exec`摘要只剩错误码，事件停在等待审批（0.10.0b50 Windows，Issue #39，4次；三个平台相同） | 审批过期时客户端续跑同一Turn，按时限失败收尾 | 本文第64节 |
 | 五十一 | 没修好的任务最后一条命令是只读搜索，完成证据却是“修改后检查通过”（0.10.0b50 Windows，Issue #36的后续） | 只读与搜索命令不算检查，摘要列出修改后运行的全部命令 | 本文第65节 |
+| 五十二 | `harnessix code`开着时`data export`只报`server_closed`并建议运行doctor，doctor却全部通过（0.10.0b51 macOS，Issue #41；三个平台相同） | 会话被占用时直接说明先按Ctrl+Q退出 | 本文第66节 |
+| 五十三 | 模型把工具调用写成了正文，界面显示“已完成”，其实什么也没执行（0.10.0b51 macOS，Issue #40；三个平台相同） | 补发提示让它真正调用，连续第三次失败而不是记为完成 | [ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版、本文第67节 |
+| 五十四 | 退出TUI后`data export`对多份真实会话以`public_output_limit`失败（0.10.0b51 macOS，Issue #43，5/8；三个平台相同） | 导出时被拒的事件页减半重读 | 本文第68节 |
+| 五十五 | 生成中取消后费用栏没有注明中断的请求可能已计费，重新打开才有（0.10.0b51 Windows，Issue #42；三个平台相同） | 暖刷新保留“模型请求中途结束” | 本文第69节 |
+| 五十六 | Windows未开UTF-8模式时，`data export`等子命令经管道输出的JSON按控制台代码页编码，调用方解析成乱码（0.10.0b53 Windows正式测试，发布会话发现） | 输出流不是终端时只写ASCII，与`exec`相同 | 本文第70节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十一项在第61～65节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十六项在第61～70节。
 
 ## 2. 需求背景
 
@@ -1552,3 +1557,40 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 2. 只读或只做搜索的命令不算检查（`product_ui.read_only_commands`）：复用沙箱外命令免询问规则（ADR 0128）的内置只读判定，另认出“第一个程序是搜索或读取程序、其后只有整理输出的程序”的管道；判定不了的仍算检查，所以清单不全只会少改善、不会误判。修改后只运行过这类命令时为`unverified`，对话末尾的提示注明“只读或搜索命令不算”。
 
 `python 探针脚本`这类命令无法与测试区分，仍算检查；按测试程序前缀化解失败（方案3）会重新引入假的“通过”，未采用。三个平台共用一处判定（PowerShell与POSIX按宿主平台选择规则）。验证：`tests/product_ui/test_read_only_commands.py`、`tests/product_ui/test_unverified_completion.py`（marked的命令修改前为通过；探针、重定向、串联、管道到解释器仍算检查；命令列表与截断）。
+
+## 66. 第五十二项：会话被占用时导出的说明（Issue #41）
+
+0.10.0b51 macOS：真实任务结束后`harnessix code`仍开着，另一个终端用同一配置与状态目录`harnessix data export`，退出2：`{"code": "server_closed", "message": "无法读取会话，请先运行 harnessix code doctor"}`；doctor为`ready=true`，再导出仍失败；退出TUI后导出成功。
+
+根因：导出启动一个读取会话的App Server，它要取得状态目录的宿主独占锁（`product_state_owner`），锁被TUI持有，服务端以`product_state_busy`立即退出；导出把任何协议错误都换成“请先运行doctor”，doctor不取这把锁，所以全部通过。诊断同样启动服务端，会话部分只记`server_closed`。三个平台相同。
+
+修改：导出与诊断读取会话前先试一下这把锁（`data_cli._ensure_not_in_use`），被占用时不启动服务端：导出以`data_workspace_busy`退出2，说明“这个工作区的会话正被另一个 Harnessix 使用（例如仍打开着的 harnessix code）。请先在那里按 Ctrl+Q 退出，再重新运行这个命令”；诊断照常生成，`threads_error`为`data_workspace_busy`；删除沿用同一说明。TUI开着时读取会话需要服务端与TUI共享状态，不在本次修改范围。验证：`tests/product_ui/test_data_cli.py::test_export_and_diagnostics_say_to_quit_the_running_session_first`（修改前失败）；本机真实CLI：未占用时导出退出0，另一进程持锁时退出2并给出上述说明。
+
+## 67. 第五十三项：工具调用写成正文却显示“已完成”（Issue #40）
+
+见[ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版。0.10.0b51 macOS TUI（qwen3.8-flash，思考low）：chi修复任务约225秒、8次模型尝试后显示“已完成”，末条回复以`<previous_tool_call>`开头、内含`{"name": "exec_command_shell", "arguments": {...}}`与`</function>`，没有真正的工具调用；工作区没有改动，计划停在第一步。运行时把“正常结束、没有工具调用、有正文”的回复一律当作最终答复。判定在运行时一处，三个平台相同。
+
+修改：这种回复按第6版的机制补发提示继续（第三种情况`tool_call_text`），连续第三次以`invalid_provider_output`失败。判定要求带本步工具名的调用对象，或调用标记加工具名；本机40个Beta会话库的570条真实助手消息里只认出#40这一条。验证见ADR。
+
+## 68. 第五十四项：导出大会话时事件页超过保护上限（Issue #43）
+
+0.10.0b51 macOS：requests、afero、chi、zod、clap五个真实修复会话正常退出TUI后`harnessix data export`都退出2：`{"code": "public_output_limit", ...}`；doctor通过；rich、cobra、fast-xml-parser三个会话能导出（约35～82万字节）。
+
+根因：导出固定每页256个事件读取，服务端对每页做公开结果保护扫描（1 MiB字节上限与工作量上限），工具输出大的会话一页超限即被拒绝；终端界面读历史时会减半页长重读（`sdk.event_pages.read_event_page`），导出没有用它。三个平台相同。
+
+修改：`data_cli._thread_events`经`read_event_page`读事件，被拒的页减半重读并沿用缩小的页长；单个事件仍被拒绝时照旧失败。验证：`tests/product_ui/test_data_cli.py`（256→128→64后读完100个事件，修改前抛出`public_output_limit`；单个事件被拒仍失败）；用报告人五份会话状态目录的副本、同一配置与原工作区路径真实导出：修改前requests以`public_output_limit`失败，修改后五份都退出0（约48万～171万字节）。
+
+## 69. 第五十五项：取消后费用栏少了附注（Issue #42）
+
+0.10.0b51 Windows TUI：Cobra任务在模型请求“思考中/正在生成”时按Ctrl+X，界面显示“已取消”，费用栏为“本轮 71,935 tokens · 费用≤¥0.0688”；退出后`--resume`重新打开，同一轮显示“已知费用≤¥0.0688 · 另有中断的请求可能已计费”。
+
+根因：取消命令完成后界面暖刷新（`hydrate_thread`→`refresh_thread_snapshot`），用快照重建当前Turn；快照规则只对以服务错误结束的失败或中断Turn加这个标记，已取消的Turn没有。随后重放的`cancelling`、`cancelled`状态事件面对的已是快照里的取消状态，按事件的规则（原状态为`calling_model`）也不再成立。重新打开从头重放，事件规则生效，所以有附注。三个平台相同。
+
+修改：暖刷新换下同一Turn时保留标记，并按事件投影的同一规则补判：原状态是`calling_model`而快照已结束（确定不计费的鉴权失败与限流除外）。验证：`tests/product_ui/test_usage_projection.py`（生成中取消后暖刷新保留附注，与从头重放一致，修改前失败；工具执行中取消不加附注）。
+
+## 70. 第五十六项：管道里的JSON输出按代码页编码（b53正式测试发现）
+
+0.10.0b53 Windows正式测试（发布会话，check41）：未开UTF-8模式时，`harnessix data export`的错误说明经管道写出，按控制台代码页cp936编码，按UTF-8解码得到乱码。`exec`的摘要早按Issue #26方案A处理（输出流不是终端时只写ASCII），其余打印JSON的子命令没有跟上。
+
+修改：新增`cli_json`（`is_terminal`、`print_json`），`exec`、`data`、`code doctor --json`与其错误说明、`config`、`state`统一经它打印：输出流不是终端时非ASCII字符写成`\uXXXX`，解析出的内容不变；终端里照写原文。只改JSON输出，给人看的纯文本（如`approvals`、`mcp`列表）不变。三个平台共用。验证：`tests/test_cli_json_output.py`（管道里只写ASCII、终端照写原文、`data`的错误说明在管道里为ASCII，修改前失败）、`tests/test_exec_cli.py`。
+
