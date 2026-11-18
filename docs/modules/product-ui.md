@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 72
+version: 73
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：截断工具调用的说明显示为一行提示（ADR 0171）
+
+- [`rendering._HOST_NOTICE_TEXT`](../../src/harnessix/product_ui/rendering.py)新增`truncated_call_notice_item_id`：显示“模型写工具调用时用满了输出上限，调用被截断未执行，已提示它拆小重发”，不显示英文正文。回归见`tests/product_ui/test_rendering_host_notices.py`。
 
 ## 当前增量：只读和搜索命令不算检查，摘要列出修改后运行的命令（Beta Issue #36的后续）
 
@@ -1285,6 +1289,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 73 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断的宿主说明显示为一行“提示” |
 | 72 | `f1744c7a` 增量 | 2026-11-18 | 完成证据：只读与搜索命令不算检查（`read_only_commands`，复用ADR 0128的只读判定），摘要新增`commands_after_last_edit`与`commands_omitted`（Beta Issue #36的后续） |
 | 71 | `ec4f0312` 增量 | 2026-11-18 | 审批晚于Turn截止时间时续跑同一Turn，按时限失败收尾（`sdk.approval_response`，Beta Issue #39） |
 | 70 | `39e1e1bf` 增量 | 2026-11-15 | 失败且没有正文的回复（断开后作废的半截回复、整轮失败时的收尾）不显示空行（ADR 0144第5版） |

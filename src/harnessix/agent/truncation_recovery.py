@@ -15,6 +15,10 @@
 
 被剩余预算压低的输出上限造成的截断仍归为预算耗尽（budget_capped_truncation），不在此恢复。
 判定只读本Turn已持久化的补发Item，补发Item身份由Turn与步骤派生，重放确定；不新增事件类型。
+
+第三种情况（ADR 0171）：输出在工具调用中途用满上限。被截断的调用已按非法参数拒绝、Turn照常继续
+（ADR 0109第5版），这里只补发一条说明：原因是输出上限，原样重发会再次被截断，应拆成更小的调用。
+它不计入连续补发次数，也从不使Turn失败。
 """
 
 from __future__ import annotations
@@ -25,12 +29,14 @@ from uuid import UUID, uuid5
 from harnessix.agent.completion_guard import host_notice_events
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import EventDraft, Turn
+from harnessix.models.contracts import ResponseCompleted
 
 # 身份串沿用第3版的名字：已持久化的补发Item由它派生，改名会使重放得到不同的Item。
 TRUNCATION_RECOVERY_VERSION = "harnessix.truncation-recovery/v1"
+TRUNCATED_CALL_NOTICE_VERSION = "harnessix.truncated-tool-call-notice/v1"
 MAX_CONSECUTIVE_RECOVERY_NOTICES = 2
 
-RecoverableReply = Literal["truncated", "empty"]
+RecoverableReply = Literal["truncated", "empty", "truncated_call"]
 
 TRUNCATED_REPLY_NOTICE = (
     "[Harnessix host notice] Your last response reached the output token limit and was cut off "
@@ -42,6 +48,13 @@ EMPTY_REPLY_NOTICE = (
     "[Harnessix host notice] Your last response was empty: it had no text and no tool call, so "
     "nothing ran. If the task is finished, reply now with a short final summary of what you did "
     "and the result. Otherwise continue with the next tool call."
+)
+TRUNCATED_CALL_NOTICE = (
+    "[Harnessix host notice] Your last response reached the output token limit while it was "
+    "still writing a tool call, so that call was cut off and not executed (its result says the "
+    "arguments were not valid JSON). Do not send the same call again: it would be cut off again. "
+    "Split the work into smaller calls, for example put fewer files in one patch call, or write a "
+    "large file in several smaller edits."
 )
 _NOTICES: dict[RecoverableReply, str] = {
     "truncated": TRUNCATED_REPLY_NOTICE,
@@ -58,6 +71,11 @@ _UNRECOVERED: dict[RecoverableReply, tuple[str, str]] = {
 def recovery_notice_item_id(turn_id: UUID, step: int) -> UUID:
     """第step个模型步骤补发提示的稳定身份；一步至多补发一次，两种情况共用。"""
     return uuid5(turn_id, f"{TRUNCATION_RECOVERY_VERSION}:{step}")
+
+
+def truncated_call_notice_item_id(turn_id: UUID, step: int) -> UUID:
+    """第step步“工具调用被输出上限截断”说明的稳定身份；与上面的补发身份互不相交，不计入连续次数。"""
+    return uuid5(turn_id, f"{TRUNCATED_CALL_NOTICE_VERSION}:{step}")
 
 
 def recovery_notice(turn: Turn, step: int, reply: RecoverableReply) -> str | None:
@@ -80,6 +98,9 @@ def recovery_notice(turn: Turn, step: int, reply: RecoverableReply) -> str | Non
 
 def recovery_notice_events(turn: Turn, step: int, reply: RecoverableReply) -> list[EventDraft]:
     """第step步补发提示的事件；补发次数或预算用尽时按该情况原有的错误失败。"""
+    if reply == "truncated_call":
+        item_id = truncated_call_notice_item_id(turn.turn_id, step)
+        return host_notice_events(turn.turn_id, item_id, TRUNCATED_CALL_NOTICE)
     notice = recovery_notice(turn, step, reply)
     if notice is None:
         raise KernelError(*_UNRECOVERED[reply])
@@ -109,9 +130,10 @@ def recoverable_reply(
 
 
 def settle_reply(
-    finish_reason: str, call_ids: object, has_text: bool, recovery_enabled: bool
+    completed: ResponseCompleted, call_ids: object, has_text: bool, recovery_enabled: bool
 ) -> RecoverableReply | None:
     """判定一个模型步骤的终态：回复可用时返回None，可补发提示继续时返回其情况，否则失败。"""
+    finish_reason = completed.finish_reason
     recovery = recoverable_reply(finish_reason, call_ids, has_text, recovery_enabled)
     if finish_reason not in {"completed", "tool_calls"} and not recovery:
         raise KernelError("provider_" + finish_reason, _NOT_COMPLETED)
@@ -119,4 +141,6 @@ def settle_reply(
         raise KernelError("invalid_provider_output", "停止原因与 Tool Call 不一致")
     if not call_ids and not has_text and not recovery:
         raise KernelError(*_NO_CONTENT)
+    if recovery_enabled and completed.tool_call_truncated:
+        return "truncated_call"
     return recovery

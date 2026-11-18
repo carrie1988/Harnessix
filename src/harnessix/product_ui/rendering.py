@@ -12,7 +12,10 @@ from harnessix.agent.completion_guard import completion_notice_item_id
 from harnessix.agent.request_notes import request_note_ids
 from harnessix.agent.session_baseline import is_session_baseline_notice
 from harnessix.agent.step_notices import step_notice_item_id
-from harnessix.agent.truncation_recovery import recovery_notice_item_id
+from harnessix.agent.truncation_recovery import (
+    recovery_notice_item_id,
+    truncated_call_notice_item_id,
+)
 from harnessix.product_ui.projection import ProductViewState, ProjectedItem, TransientItemStream
 from harnessix.product_ui.tool_summary import approval_text, tool_call_text, tool_result_text
 from harnessix.product_ui.verification import unverified_notice
@@ -45,6 +48,10 @@ _HOST_NOTICE_TEXT: Final = (
     (completion_notice_item_id, "模型停下时任务还没有做完，已提示它继续"),
     (recovery_notice_item_id, "模型的回复被截断或没有内容，已提示它继续"),
     (step_notice_item_id, "已把重复或前后结果不一致的命令、修改告知模型"),
+    (
+        truncated_call_notice_item_id,
+        "模型写工具调用时用满了输出上限，调用被截断未执行，已提示它拆小重发",
+    ),
 )
 # 常见失败的白话说明与处理办法；其余失败显示原始说明并附错误码。
 _FAILURE_TEXT: Final = {

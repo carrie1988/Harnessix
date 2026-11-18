@@ -5,12 +5,21 @@ from __future__ import annotations
 import pytest
 
 from harnessix.agent.errors import KernelError
-from harnessix.agent.models import Budget, TextContent, ToolCallContent, TurnStatus, Usage
+from harnessix.agent.models import (
+    Budget,
+    TextContent,
+    ToolCallContent,
+    ToolCallRejectionContent,
+    TurnStatus,
+    Usage,
+)
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.truncation_recovery import (
     EMPTY_REPLY_NOTICE,
+    TRUNCATED_CALL_NOTICE,
     TRUNCATED_REPLY_NOTICE,
     recovery_notice_item_id,
+    truncated_call_notice_item_id,
 )
 from harnessix.models.contracts import (
     ResponseCompleted,
@@ -19,6 +28,7 @@ from harnessix.models.contracts import (
     TextDelta,
     TextStarted,
     ToolCallCompleted,
+    ToolCallRejected,
 )
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.session.sqlite import SQLiteSessionStore
@@ -189,3 +199,61 @@ def test_switch_requires_literal_boolean(tmp_path, value):
             ScriptedProvider([]),
             recover_truncated_replies=value,
         )
+
+
+def truncated_call(*, with_complete_call: bool = False):
+    """输出在工具调用中途用满上限：被截断的调用已按非法参数拒绝，终态改记tool_calls并带标记。"""
+    complete = (
+        [ToolCallCompleted(call_id="read", tool="test.read", arguments={})]
+        if with_complete_call
+        else []
+    )
+    return [
+        ResponseStarted(response_id="cut-call"),
+        *complete,
+        ToolCallRejected(call_id="patch", reason="invalid_arguments_json", argument_chars=256),
+        ResponseCompleted(
+            finish_reason="tool_calls",
+            usage=Usage(input_tokens=10, output_tokens=64),
+            tool_call_truncated=True,
+        ),
+    ]
+
+
+async def test_a_tool_call_cut_off_by_the_output_limit_gets_a_notice_to_split_it(tmp_path):
+    """ADR 0171：被截断的调用照旧拒绝、不执行；另补发一条说明原因与做法的宿主提示，Turn继续。"""
+    provider = ScriptedProvider([truncated_call(), answer("done")])
+    turn = await run(tmp_path, provider)
+    assert turn.status is TurnStatus.COMPLETED
+    (notice,) = notices(turn, TRUNCATED_CALL_NOTICE)
+    assert notice.item_id == truncated_call_notice_item_id(turn.turn_id, 1)
+    (rejection,) = [i for i in turn.items if isinstance(i.content, ToolCallRejectionContent)]
+    assert rejection.content.reason == "invalid_arguments_json"
+    # 第二次请求的历史以这条说明结尾：模型先看到拒绝结果，再看到原因与做法。
+    assert provider.requests[1].history[-1].content.text == TRUNCATED_CALL_NOTICE
+
+
+async def test_repeated_cut_off_calls_never_fail_the_turn(tmp_path):
+    """这条说明不计入连续补发次数：被截断的调用本来就在原预算内继续（ADR 0109第5版）。"""
+    provider = ScriptedProvider([truncated_call(), truncated_call(), truncated_call(), answer()])
+    turn = await run(tmp_path, provider)
+    assert turn.status is TurnStatus.COMPLETED
+    assert len(notices(turn, TRUNCATED_CALL_NOTICE)) == 3
+    assert notices(turn) == []
+
+
+async def test_without_recovery_a_cut_off_call_is_only_rejected_as_before(tmp_path):
+    provider = ScriptedProvider([truncated_call(), answer("done")])
+    turn = await run(tmp_path, provider, recover=False)
+    assert turn.status is TurnStatus.COMPLETED
+    assert notices(turn, TRUNCATED_CALL_NOTICE) == []
+
+
+async def test_complete_calls_beside_a_cut_off_call_still_run(tmp_path):
+    """同一响应里完整的调用照常执行；这时只有拒绝结果里的通用说明提到输出上限，不另补发提示。"""
+    tools = RecordingTools()
+    provider = ScriptedProvider([truncated_call(with_complete_call=True), answer("done")])
+    turn = await run(tmp_path, provider, tools=tools)
+    assert turn.status is TurnStatus.COMPLETED
+    assert [call.tool for call in tools.calls] == ["test.read"]
+    assert notices(turn, TRUNCATED_CALL_NOTICE) == []

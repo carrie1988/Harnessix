@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 70
+version: 71
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -56,6 +56,12 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：工具调用被输出上限截断时告诉模型拆小（ADR 0171）
+
+- [`truncation_recovery.settle_reply`](../../src/harnessix/agent/truncation_recovery.py)改为接收终态事件；截断恢复开启且`ResponseCompleted.tool_call_truncated`为真时返回`truncated_call`。本步没有待执行调用时，`_close_model_step`补发`TRUNCATED_CALL_NOTICE`（身份`truncated_call_notice_item_id`，`harnessix.truncated-tool-call-notice/v1`），不计入连续补发次数、不使Turn失败。
+- [`tool_rejections`](../../src/harnessix/agent/tool_rejections.py)：`invalid_arguments_json`的英文反馈补上“调用很长时多半被输出上限截断，应拆成更小的调用”；固定拒绝结果不变。
+- 回归：`tests/agent/test_truncation_recovery.py`（单次、连续三次、关闭恢复、同一响应里有完整调用）、`tests/models/test_rejection_feedback.py`。
 
 ## 当前增量：续跑等待审批且时限已过的Turn时按时限收尾（Beta Issue #39）
 
@@ -1148,6 +1154,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 71 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断时补发说明（`truncated_call`，不计入连续补发、不使Turn失败）；非法参数反馈补上拆小建议 |
 | 70 | `d69bdb2a` 增量 | 2026-11-18 | 续跑等待审批且时限已过的Turn按`time_budget_exceeded`收尾（`approvals.overdue_wait`）（Beta Issue #39） |
 | 69 | `39e1e1bf` 增量 | 2026-11-15 | 正文写到一半断开时，同一步骤作废半截正文（`ItemFinished(FAILED)`，`provider_attempt_discarded`）并接受新的尝试，新正文换公开保护身份（ADR 0144第5版） |
 | 68 | `3e2f83d8` 增量 | 2026-11-15 | `AgentRuntime`打开时启动过期Artifact正文回收（`artifacts.reclaim.start_artifact_reclaim`：打开时回收一轮，最多2秒，余下转后台，之后每小时一轮），关闭时停止；回收失败只记日志，不影响Turn（ADR 0164） |

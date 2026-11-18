@@ -3257,10 +3257,7 @@ class AgentRuntime:
                     if not attempt_mode:
                         record_usage(snapshot)
                     recovery = settle_reply(
-                        event.finish_reason,
-                        call_ids,
-                        texts.has_content,
-                        self._recover_truncated_replies,
+                        event, call_ids, texts.has_content, self._recover_truncated_replies
                     )
                     completed = event
                 else:

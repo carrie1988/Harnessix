@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 39
+version: 40
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -50,6 +50,11 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：标出被输出上限截断的工具调用（ADR 0171）
+
+- [`_chat_stream.ChatStream.finish`](../../src/harnessix/models/_chat_stream.py)：以`length`结束、已形成调用组且组内有被拒绝的调用时（ADR 0109第5版改记`tool_calls`的情况），`ResponseCompleted.tool_call_truncated`为真，其余情况恒为假；Provider事件Schema `provider-event-v4`只新增这个带默认值的字段。Anthropic的`max_tokens`半截调用仍按原规则失败。
+- 回归：`tests/models/test_tool_rejection.py::test_unsuccessful_terminal_never_releases_unknown_or_known_calls`。
 
 ## 当前增量：正文写到一半断开的请求同样重试（ADR 0144第5版）
 
@@ -884,6 +889,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 40 | ADR 0171增量 | 2026-11-18 | `ResponseCompleted.tool_call_truncated`标出输出上限截断的工具调用（`_chat_stream.finish`） |
 | 39 | `39e1e1bf` 增量 | 2026-11-15 | 正文开始与正文增量也算可作废事件，正文写到一半断开的请求照常有界重试（ADR 0144第5版） |
 | 38 | `2d72f2c0` 增量 | 2026-11-15 | 文本渲染对带`artifact_omitted`的截断结果说明完整正文未保存（ADR 0163） |
 | 37 | 第二轮合入 | 2026-11-14 | 文档版本27～29随第二轮分支合入主线，与第30～36版并存：可读工具别名、目录拒绝在模型线协议上的英文反馈、说明随历史持久化（ADR 0136、0132）；序号空缺按到达的调用成组（第29版）保留，没有正文的响应沿用第31版，第二轮不另作处理 |

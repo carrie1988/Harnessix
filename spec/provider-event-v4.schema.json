@@ -318,6 +318,11 @@
         },
         "usage": {
           "$ref": "#/$defs/Usage"
+        },
+        "tool_call_truncated": {
+          "default": false,
+          "title": "Tool Call Truncated",
+          "type": "boolean"
         }
       },
       "title": "ResponseCompleted",
