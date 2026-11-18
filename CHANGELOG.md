@@ -6,6 +6,7 @@
 
 - 使用较长的模型凭据时，一次结果较多的 grep 不再让整轮任务以 public_output_limit 终止（#37）：公开结果保护按实际比较量计算工作量
 - 审批停留到本轮时间上限之后再作决定时，这一轮按时间上限正常结束（#39）：`harnessix exec` 的摘要保留会话、Turn、用量和完成证据，退出码为 1，事件流也有失败终态；此前只剩 `approval_expired` 错误码、退出码 4，这一轮停在等待审批
+- 完成证据不再把只读或搜索命令（如 `Select-String … | Select-Object`、`grep … | head`、`git status`）当作检查（#36 后续）：修改后只运行过这类命令时为 `unverified`；`harnessix exec` 摘要新增 `commands_after_last_edit`，列出修改后运行的每条命令及结果
 
 ## 0.10.0b50（2026-11-17）
 

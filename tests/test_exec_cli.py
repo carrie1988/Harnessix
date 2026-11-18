@@ -20,6 +20,15 @@ from harnessix.product_ui.verification import verification_summary as _verificat
 from harnessix.protocol.contracts import PublicApprovalRequestContent, PublicItem
 
 
+def _status(summary: dict) -> dict:
+    """判定字段；运行过的命令列表（commands_after_last_edit）另有用例核对。"""
+    return {
+        k: v
+        for k, v in summary.items()
+        if k not in {"commands_after_last_edit", "commands_omitted"}
+    }
+
+
 def _request(approval_type: str) -> PublicApprovalRequestContent:
     return PublicApprovalRequestContent.model_validate(
         {
@@ -207,20 +216,23 @@ def _result(call_id, outcome):
 def test_verification_counts_only_checks_after_the_last_successful_edit():
     patch, check, later_patch, failed_patch = uuid4(), uuid4(), uuid4(), uuid4()
     run = ("exec_command.testbed", {"profile": "testbed", "cmd": "pytest -q"})
-    assert _verification([]) == {"status": "no_changes"}
+    assert _status(_verification([])) == {"status": "no_changes"}
     tested = [
         _call(patch, "apply_patch_batch"),
         _result(patch, "succeeded"),
         _call(check, *run),
         _result(check, "succeeded"),
     ]
-    assert _verification(tested) == {"status": "passed_after_last_edit", "last_check": "pytest -q"}
+    assert _status(_verification(tested)) == {
+        "status": "passed_after_last_edit",
+        "last_check": "pytest -q",
+    }
     edited_again = [
         *tested,
         _call(later_patch, "apply_patch_batch"),
         _result(later_patch, "succeeded"),
     ]
-    assert _verification(edited_again) == {"status": "unverified"}
+    assert _status(_verification(edited_again)) == {"status": "unverified"}
     # 失败的补丁不算改动；失败的检查如实报告。
     rejected = [
         *edited_again[:4],
@@ -318,7 +330,7 @@ def test_a_check_whose_last_native_program_failed_is_not_a_pass():
             }
         ),
     ]
-    assert _verification(items) == {
+    assert _status(_verification(items)) == {
         "status": "failed_after_last_edit",
         "last_check": "npm test; Write-Host done",
         "failed_check": "npm test; Write-Host done",
@@ -331,7 +343,7 @@ def test_a_check_whose_last_native_program_failed_is_not_a_pass():
         _call(cleanup, "host_command.host-shell", {"cmd": "Remove-Item tmp.txt"}),
         _result(cleanup, "succeeded"),
     ]
-    assert _verification(cleaned) == {
+    assert _status(_verification(cleaned)) == {
         "status": "failed_after_last_edit",
         "last_check": "Remove-Item tmp.txt",
         "failed_check": "npm test; Write-Host done",
