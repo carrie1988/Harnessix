@@ -840,7 +840,11 @@ class AgentRuntime:
     async def _commit(
         self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
     ) -> Thread:
-        """公开检查完成后在Thread锁内CAS追加；原事件与正文不做替换。"""
+        """公开检查完成后在Thread锁内CAS追加；原事件与正文不做替换。
+
+        期望序号取自投影行（ADR 0168 D4）：追加事务内仍完整认证投影并比对序号，
+        提交前不再另读一次Thread。
+        """
         if self._public_output_protection is not None:
             active = self._active.get(turn_id)
             await protect_json(
@@ -849,11 +853,11 @@ class AgentRuntime:
                 active[1] if active else CancelToken(),
             )
         async with self._lock(thread_id):
-            thread = await self.store.get_thread(thread_id)
+            expected = await self.store.committed_sequence(thread_id)
             return await (self._batch_diffs or self.store).append(
                 thread_id,
                 [EventDraft(turn_id=turn_id, payload=p) for p in payloads],
-                expected_sequence=thread.sequence,
+                expected_sequence=expected,
             )
 
     async def _state(

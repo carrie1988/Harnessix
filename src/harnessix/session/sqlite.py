@@ -370,6 +370,18 @@ class SQLiteSessionStore:
                 raise KernelError("thread_not_found", "Thread 不存在")
             return thread
 
+    async def committed_sequence(self, thread_id: UUID) -> int:
+        """投影行记录的序号，只作追加的期望序号：不核对投影，追加事务内仍完整认证并比对（ADR 0168
+        D4）。没有投影行或序号不是整数时改走get_thread，给出与它相同的结果或错误。"""
+        async with self._connection() as database:
+            cursor = await database.execute(
+                "SELECT sequence FROM agent_threads WHERE thread_id = ?", (str(thread_id),)
+            )
+            row = await cursor.fetchone()
+        if row is None or type(row[0]) is not int:
+            return (await self.get_thread(thread_id)).sequence
+        return row[0]
+
     async def authenticated_thread_history(
         self,
         thread_id: UUID,
