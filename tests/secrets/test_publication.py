@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 from urllib.parse import quote
 
 import pytest
@@ -196,3 +197,54 @@ def test_complete_native_json_credential_cannot_bypass_string_only_checks():
                 checkpoint=lambda: None,
             )
         assert caught.value.code == "trusted_action_secret_leak"
+
+
+def _long_key(length: int) -> object:
+    value = ("demo-" + "ABCDEFGHIJKLMNOPQRST0123456789" * 6)[:length].encode()
+
+    class Provider:
+        def resolve(self, name: str) -> SecretMaterial:
+            return SecretMaterial(name, BINDING.version, bytearray(value))
+
+    return Provider()
+
+
+def _grep_like_archive(records: int) -> bytes:
+    """Grep存档的形状：每条记录几十个短键、短值（路径、行号、上下文行）。"""
+    line = {
+        "path": "pkgs/core/package.json",
+        "line": 1,
+        "text": '"types": "./index.d.ts",',
+        "context": [{"line": n, "text": '"default": "./x.js"'} for n in range(8)],
+    }
+    return b"".join(
+        (json.dumps({**line, "line": n}, separators=(",", ":")) + "\n").encode()
+        for n in range(records)
+    )
+
+
+def test_short_nodes_are_not_charged_the_length_of_a_long_credential():
+    """Beta Issue #37：116字节凭据下，约5.8万个短节点的Grep存档（不到1 MiB）超过工作上限，
+    整个Turn以public_output_limit终止。比模式短的文本不可能包含它，只计1；修改前这里失败。"""
+    body = _grep_like_archive(2300)
+    assert len(body) < publication.MAX_SCAN_BYTES
+    with SecretPublicationScope((BINDING,), _long_key(116)) as scope:
+        assert max(map(len, scope._patterns)) > 200
+        scope.assert_public_jsonl(body, checkpoint=lambda: None)
+
+
+def test_long_texts_are_still_charged_and_secrets_in_any_node_are_still_found(monkeypatch):
+    secret = ("demo-" + "ABCDEFGHIJKLMNOPQRST0123456789" * 6)[:116]
+    leaked = (
+        _grep_like_archive(3)
+        + (json.dumps({"context": [{"text": f"key={secret}"}]}) + "\n").encode()
+    )
+    with SecretPublicationScope((BINDING,), _long_key(116)) as scope:
+        with pytest.raises(KernelError) as caught:
+            scope.assert_public_jsonl(leaked, checkpoint=lambda: None)
+        assert caught.value.code == "trusted_action_secret_leak"
+        # 能放下模式的文本仍按“文本+模式”计：工作上限照样约束长正文。
+        monkeypatch.setattr(publication, "MAX_SCAN_WORK", 300_000)
+        with pytest.raises(KernelError) as caught:
+            scope.assert_public_jsonl(_grep_like_archive(2300), checkpoint=lambda: None)
+        assert caught.value.code == "trusted_action_output_limit"
