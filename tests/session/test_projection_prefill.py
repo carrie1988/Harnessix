@@ -152,16 +152,17 @@ async def test_every_projection_of_a_product_run_round_trips_exactly(
     提交的原字节并逐层比较。"""
     from scripts.host_step_overhead_bench import format_report, run_benchmark
 
-    checked: list[bool] = []
+    checked: list[tuple[bool, int]] = []
     original = parsed_projection_cache._round_trips
 
     def recorded(thread, written):  # type: ignore[no-untyped-def]
-        checked.append(original(thread, written))
-        return checked[-1]
+        checked.append((original(thread, written), thread.sequence))
+        return checked[-1][0]
 
     monkeypatch.setattr(parsed_projection_cache, "_round_trips", recorded)
 
     report = await run_benchmark(tmp_path, steps=9)
 
     assert report.valid, format_report(report)
-    assert len(checked) > 9 * 8 and all(checked)
+    mismatched = [sequence for same, sequence in checked if not same]
+    assert len(checked) > 9 * 8 and mismatched == [], (len(checked), mismatched)
