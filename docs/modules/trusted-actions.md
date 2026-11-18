@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 55
+version: 56
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
 modules:
   - trusted_actions
 related_adrs:
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
   - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
@@ -23,6 +24,7 @@ related_adrs:
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
 related_tests:
+  - tests/product_config/test_patch_key_certificate_files.py
   - tests/delivery/test_windows_short_names.py
   - tests/product_config/test_patch_protected_paths.py
   - tests/product_config/test_stale_approved_plan.py
@@ -59,6 +61,12 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：补丁与回滚的快照选用写目标策略，说明不再列出密钥与证书（ADR 0172）
+
+- [`TrustedActionDefinition.patch_targets`](../../src/harnessix/trusted_actions/router.py)（默认False）：内置补丁与回滚为True。[`planning._plan_normalized_action`](../../src/harnessix/trusted_actions/planning.py)按它捕获两代快照，Router执行前按它复核（`verify_host_workspace_snapshot`），`_validated_definition`原样带上。
+- [`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)里`delivery_path_denied`的说明改为“protected (for example .git, .env, .ssh or id_rsa)”，删去密钥与证书文件和“运行时生成示例密钥”的建议，保留Windows 8.3短名称一句。下文“规划时写受保护路径只拒绝这次调用”的转换不变，密钥与证书文件已不会走到这里。
+- 回归：`tests/product_config/test_patch_protected_paths.py`、`tests/product_config/test_patch_key_certificate_files.py`。
 
 ## 当前增量：时限已过仍未获批的Action以系统拒绝结束（Beta Issue #39）
 

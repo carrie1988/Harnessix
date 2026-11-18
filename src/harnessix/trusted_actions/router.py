@@ -132,6 +132,9 @@ class TrustedActionDefinition:
         Callable[[ActionRoutePlan], Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]]]
         | None
     ) = None
+    # 写目标是补丁文件：规划与执行前复核的工作区快照用写目标策略（密钥与证书文件可写，ADR 0172）。
+    # 只有内置补丁与其回滚设为True。
+    patch_targets: bool = False
 
 
 _ReadCheckpoint = Callable[[], None] | None
@@ -358,18 +361,15 @@ class TrustedActionRouter(_ActionReadRouter):
         if persisted != plan.execution:
             raise KernelError("action_plan_mismatch", "Action Route与Execution Plan不一致")
         definition = self._matching_definition(plan)
-        if definition.external_roots is None:
-            verify_host_workspace_snapshot(
-                plan.execution.workspace, self._workspace_root, self._snapshot_ports
-            )
-        else:
-            # 外部根只能由已匹配的受信定义重建；模型参数不能直接指定宿主路径。
-            verify_host_workspace_snapshot(
-                plan.execution.workspace,
-                self._workspace_root,
-                self._snapshot_ports,
-                external_roots=definition.external_roots(plan),
-            )
+        # 外部根只能由已匹配的受信定义重建；模型参数不能直接指定宿主路径。
+        external = None if definition.external_roots is None else definition.external_roots(plan)
+        verify_host_workspace_snapshot(
+            plan.execution.workspace,
+            self._workspace_root,
+            self._snapshot_ports,
+            external_roots=external,
+            patch_targets=definition.patch_targets,
+        )
         approval = self._plans.load_approval(plan_id)
         if not execution_is_approved(plan.execution, approval):
             raise KernelError("action_not_approved", "Action Execution Plan尚未获得有效批准")
@@ -493,4 +493,5 @@ def _validated_definition(definition: TrustedActionDefinition) -> TrustedActionD
         decode_arguments=definition.decode_arguments,
         agent_prepare=definition.agent_prepare,
         external_roots=definition.external_roots,
+        patch_targets=definition.patch_targets,
     )

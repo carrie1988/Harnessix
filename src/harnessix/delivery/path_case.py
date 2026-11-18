@@ -32,8 +32,13 @@ _DIRECTORY_FLAGS = (
 
 
 def reject_case_aliases(root: str | Path, paths: Iterable[str]) -> None:
-    """路径须与磁盘上的名称逐段一致，且同批路径在各自目录的大小写语义下互不相同。"""
-    with Workspace(Path(root), path_max_bytes=4096, path_max_parts=128) as workspace:
+    """路径须与磁盘上的名称逐段一致，且同批路径在各自目录的大小写语义下互不相同。
+
+    只服务补丁与回滚的规划，按写目标策略逐段打开（密钥与证书文件可写，ADR 0172）。
+    """
+    with Workspace(
+        Path(root), path_max_bytes=4096, path_max_parts=128, patch_targets=True
+    ) as workspace:
         resolver = _Resolver(workspace)
         claimed: dict[tuple[tuple[int, int], str], str] = {}
         for path in paths:

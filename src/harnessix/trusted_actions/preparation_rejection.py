@@ -28,10 +28,9 @@ _WORKSPACE_PATCH_PLANNING_FAILURES = {
     ),
     "delivery_path_denied": (
         "A path in files cannot be written by a patch: it is the workspace root, repeats "
-        "another entry, or is protected (for example .git, .env, .ssh, or key and certificate "
-        "files such as .key, .pem, .p12 and .pfx), or on Windows is an 8.3 short name such as "
-        "GIT~1 (use the full name). Fix that path and resend; to ship sample keys or "
-        "certificates, generate them when the code runs instead of storing them"
+        "another entry, or is protected (for example .git, .env, .ssh or id_rsa), or on "
+        "Windows is an 8.3 short name such as GIT~1 (use the full name). Fix that path and "
+        "resend"
     ),
     "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
     # create会补建缺失的父目录（POSIX自ADR 0137，Windows自其第2版）；
@@ -87,10 +86,10 @@ def workspace_patch_planning_rejection(
 
 
 def _planning_failure_code(rejection: Exception) -> str | None:
-    """规划失败的公开码。规划按工作区读取策略观察要写的路径，保护名称与后缀（.ssh、.env、.key、
-    .pem等）以ReadToolError("path_denied")失败：它与Delivery层的保护路径同属“这个路径不能写”。
+    """规划失败的公开码。POSIX规划按写目标策略观察要写的路径，保护名称（.ssh、.env.*、id_rsa等）
+    以ReadToolError("path_denied")失败：它与Delivery层的保护路径同属“这个路径不能写”。
     此前未转换，整轮以runtime_error中断（2026-11-17 NL2RepoBench冒烟：wsgidav新建
-    sample_bogo_server.key）。"""
+    sample_bogo_server.key）。密钥与证书文件自ADR 0172起可写，不再走到这里。"""
     if isinstance(rejection, KernelError):
         return rejection.code
     if isinstance(rejection, ReadToolError) and rejection.code == "path_denied":

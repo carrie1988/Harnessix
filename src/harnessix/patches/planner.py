@@ -22,6 +22,15 @@ from harnessix.tools.files import _decode
 from harnessix.tools.workspace import ReadOperation, Workspace, digest, revision_state
 
 _LF, _CRLF = b"\n", b"\r\n"
+# 密钥与证书文件的内容从不显示（ADR 0172）：锚点拒绝不报行号、处数或片段，只给出可行的改法。
+_CONCEALED_ADVICE = (
+    "locations in key and certificate files are not reported; send the whole new content with "
+    "operation replace instead"
+)
+_CONCEALED_MISSING = f"old_text was not found in this key or certificate file; {_CONCEALED_ADVICE}"
+_CONCEALED_AMBIGUOUS = (
+    f"old_text matches more than one place in this key or certificate file; {_CONCEALED_ADVICE}"
+)
 
 
 def _checkpoint(operation: ReadOperation) -> None:
@@ -150,19 +159,21 @@ def _anchor_range(
     edit: tuple[bytes, bytes],
     *,
     newline_aware: bool,
+    conceal_content: bool = False,
 ) -> tuple[int, int]:
     """一条编辑要替换的原始字节区间：先逐字节匹配；一处也没有时忽略CRLF/LF差异再匹配一次。
 
     两步各自要求唯一：逐字节命中多处、或忽略换行后命中多处，都按锚点不唯一拒绝，不从中挑选。
+    conceal_content用于密钥与证书文件：拒绝只用通用说明。
     """
     old, new = edit
     start = before.find(old)
     if start >= 0:
         if before.find(old, start + 1) >= 0:
-            raise KernelError(
-                "patch_ambiguous_context",
-                f"edits[{index}]: {_ambiguous_anchor_message(before, old)}",
+            detail = (
+                _CONCEALED_AMBIGUOUS if conceal_content else _ambiguous_anchor_message(before, old)
             )
+            raise KernelError("patch_ambiguous_context", f"edits[{index}]: {detail}")
         # 以LF开头的old_text命中CRLF的后半时把\r一并纳入：区间不拆开换行，改写后不会留下孤立的\r。
         if newline_aware and old.startswith(_LF) and before[start - 1 : start] == b"\r":
             return start - 1, start + len(old)
@@ -170,15 +181,19 @@ def _anchor_range(
     needle = old.replace(_CRLF, _LF)
     start = folded.text.find(needle) if newline_aware else -1
     if start < 0:
-        raise KernelError(
-            "patch_context_not_found",
-            f"edits[{index}]: {_missing_anchor_message(folded.text, old, new)}",
+        detail = (
+            _CONCEALED_MISSING
+            if conceal_content
+            else _missing_anchor_message(folded.text, old, new)
         )
+        raise KernelError("patch_context_not_found", f"edits[{index}]: {detail}")
     if folded.text.find(needle, start + 1) >= 0:
-        raise KernelError(
-            "patch_ambiguous_context",
-            f"edits[{index}]: {_ambiguous_anchor_message(folded.text, needle)}",
+        detail = (
+            _CONCEALED_AMBIGUOUS
+            if conceal_content
+            else _ambiguous_anchor_message(folded.text, needle)
         )
+        raise KernelError("patch_ambiguous_context", f"edits[{index}]: {detail}")
     return folded.raw_offset(start), folded.raw_offset(start + len(needle))
 
 
@@ -220,6 +235,7 @@ def _located_ranges(
     max_bytes: int,
     *,
     newline_aware: bool,
+    conceal_content: bool = False,
 ) -> list[tuple[int, int, bytes]]:
     """每条拒绝以edits下标开头：模型只需改正这一处，其余编辑原样重发。
 
@@ -231,17 +247,28 @@ def _located_ranges(
     for index, edit in enumerate(edits):
         _checkpoint(operation)
         texts = edit.old_text.encode(), edit.new_text.encode()
-        start, stop = _anchor_range(before, folded, index, texts, newline_aware=newline_aware)
+        start, stop = _anchor_range(
+            before,
+            folded,
+            index,
+            texts,
+            newline_aware=newline_aware,
+            conceal_content=conceal_content,
+        )
         new = _written_text(before, start, stop, texts) if newline_aware else texts[1]
         located.append((start, stop, new, index))
     located.sort(key=lambda item: item[0])
     end, previous, size = 0, 0, len(before)
     for start, stop, new, index in located:
         if start < end:
+            where = (
+                ""
+                if conceal_content
+                else f": both old_text cover line {_line_number(before, start)}"
+            )
             raise KernelError(
                 "patch_overlapping_edits",
-                f"edits[{previous}] and edits[{index}] overlap: both old_text cover line "
-                f"{_line_number(before, start)}; merge them into one edit",
+                f"edits[{previous}] and edits[{index}] overlap{where}; merge them into one edit",
             )
         end, previous = stop, index
         size += len(new) - (stop - start)
@@ -273,6 +300,8 @@ def _edit_ranges(
     operation: ReadOperation,
     max_bytes: int,
     recorded_sha256: str | None = None,
+    *,
+    conceal_content: bool = False,
 ) -> list[tuple[int, int, bytes]]:
     """各条编辑的原始字节区间与写入文本，按起点排序。
 
@@ -289,7 +318,9 @@ def _edit_ranges(
         else:
             if hashlib.sha256(_spliced(before, ranges, operation)).hexdigest() == recorded_sha256:
                 return ranges
-    return _located_ranges(before, edits, operation, max_bytes, newline_aware=True)
+    return _located_ranges(
+        before, edits, operation, max_bytes, newline_aware=True, conceal_content=conceal_content
+    )
 
 
 def apply_exact_edits(
@@ -299,11 +330,18 @@ def apply_exact_edits(
     *,
     max_bytes: int | None = None,
     recorded_sha256: str | None = None,
+    conceal_content: bool = False,
 ) -> bytes:
-    """把唯一锚定且不重叠的精确编辑应用到完整UTF-8前镜像；recorded_sha256见_edit_ranges。"""
+    """把唯一锚定且不重叠的精确编辑应用到完整UTF-8前镜像；recorded_sha256见_edit_ranges。
+
+    conceal_content用于密钥与证书文件（ADR 0172）：锚点缺失、不唯一与重叠的拒绝
+    不含行号、处数或片段。
+    """
 
     limit = MAX_PATCH_BYTES if max_bytes is None else max_bytes
-    ranges = _edit_ranges(before, edits, operation, limit, recorded_sha256)
+    ranges = _edit_ranges(
+        before, edits, operation, limit, recorded_sha256, conceal_content=conceal_content
+    )
     after = _spliced(before, ranges, operation)
     if before == after:
         raise KernelError(
