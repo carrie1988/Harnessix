@@ -25,7 +25,11 @@ from harnessix.session import sqlite_history
 from harnessix.session.append_signal import AppendSignal
 from harnessix.session.errors import storage_errors
 from harnessix.session.parsed_projection_cache import ParsedProjectionCache, parse_projection
-from harnessix.session.sqlite_append import append_in_transaction
+from harnessix.session.sqlite_append import (
+    append_in_transaction,
+    freeze_batch,
+    parse_event_row,
+)
 from harnessix.session.sqlite_publication import (
     authenticated_events,
     save_projection,
@@ -519,18 +523,7 @@ class SQLiteSessionStore:
             )
             return await self._commit(database, thread, changed)
 
-    @staticmethod
-    def _freeze_batch(drafts: Sequence[EventDraft]) -> tuple[EventDraft, ...]:
-        # 先做值拷贝，冻结调用方可能持有的嵌套 arguments。
-        try:
-            batch = tuple(
-                EventDraft.model_validate_json(d.model_dump_json(warnings="error")) for d in drafts
-            )
-        except ValueError:
-            raise KernelError("invalid_batch", "事件批次不符合契约") from None
-        if not batch or len({d.event_id for d in batch}) != len(batch):
-            raise KernelError("invalid_batch", "事件批次为空或包含重复 ID")
-        return batch
+    _freeze_batch = staticmethod(freeze_batch)
 
     async def _append_in_transaction(
         self,
@@ -542,20 +535,6 @@ class SQLiteSessionStore:
     ) -> tuple[Thread, bool]:
         """接收私有冻结批次；调用方负责 BEGIN、COMMIT 和回滚。"""
         return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
-
-    @staticmethod
-    def _parse_event(row: aiosqlite.Row) -> AgentEvent:
-        try:
-            event = AgentEvent.model_validate_json(row["event_json"])
-        except ValidationError:
-            raise KernelError("event_corrupt", "事件结构损坏或版本不支持") from None
-        if (
-            str(event.thread_id) != row["thread_id"]
-            or event.sequence != row["sequence"]
-            or str(event.event_id) != row["event_id"]
-        ):
-            raise KernelError("event_corrupt", "事件载荷与索引不一致")
-        return event
 
     async def _events(
         self, database: aiosqlite.Connection, thread_id: UUID, after: int
@@ -571,7 +550,7 @@ class SQLiteSessionStore:
         )
         events = []
         for expected, row in enumerate(await cursor.fetchall(), after + 1):
-            event = self._parse_event(row)
+            event = parse_event_row(row)
             if row["sequence"] != expected:
                 raise KernelError("event_corrupt", "事件日志存在序号缺口")
             events.append(event)
