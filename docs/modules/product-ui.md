@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 73
+version: 74
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -226,7 +226,7 @@ supersedes: []
   界面上成了“你：[Harnessix host notice] …”，像是用户自己说的话。
 - [`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)现在按Item身份识别这三类说明
   （`completion_notice_item_id`、`recovery_notice_item_id`、`step_notice_item_id`，由Turn与步骤派生），各显示为一行弱化的“提示”
-  加一句中文（“模型停下时任务还没有做完，已提示它继续”“模型的回复被截断或没有内容，已提示它继续”“已把重复或前后结果不一致的命令、修改告知模型”），不显示英文正文。判定只按身份、不按正文前缀：用户自己输入同样的文字仍显示为“你”。
+  加一句中文（“模型停下时任务还没有做完，已提示它继续”“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”“已把重复或前后结果不一致的命令、修改告知模型”），不显示英文正文。判定只按身份、不按正文前缀：用户自己输入同样的文字仍显示为“你”。
 - 会话基线与预算、目录说明保持不显示（见下两节）。只有用户自己那一条输入的Turn不做身份派生；派生结果按Turn与步骤缓存。
   回归见[`test_rendering_host_notices.py`](../../tests/product_ui/test_rendering_host_notices.py)。
 
@@ -1289,6 +1289,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 74 | `493a8f14` 增量 | 2026-11-18 | 恢复补发提示的界面说明改为“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”（ADR 0109第8版，Beta Issue #40） |
 | 73 | `db4760cc` 增量 | 2026-11-18 | 会话被占用时导出与诊断不再启动服务端，导出以`data_workspace_busy`说明先按Ctrl+Q退出（`data_cli._ensure_not_in_use`，Beta Issue #41） |
 | 72 | `f1744c7a` 增量 | 2026-11-18 | 完成证据：只读与搜索命令不算检查（`read_only_commands`，复用ADR 0128的只读判定），摘要新增`commands_after_last_edit`与`commands_omitted`（Beta Issue #36的后续） |
 | 71 | `ec4f0312` 增量 | 2026-11-18 | 审批晚于Turn截止时间时续跑同一Turn，按时限失败收尾（`sdk.approval_response`，Beta Issue #39） |
