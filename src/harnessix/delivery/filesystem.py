@@ -21,6 +21,8 @@ from harnessix.delivery.contracts import (
 from harnessix.delivery.file_modes import observed_permission_mode
 from harnessix.delivery.preserved_mode_contracts import WorkspaceFileVersionV2
 from harnessix.delivery.store import SQLiteWorkspaceTransactionStore
+
+# 事务只服务内置补丁与回滚：成员观察与发布都按写目标策略，密钥与证书文件可写（ADR 0172）。
 from harnessix.tools.workspace import Workspace, identity, revision_state
 from harnessix.workspace.contracts import WorkspaceLease, WorkspaceSnapshot
 from harnessix.workspace.leases import WorkspaceLeaseStore
@@ -329,7 +331,9 @@ def _observe(
 
         return observe_windows_file(root, path, source=source)
     try:
-        with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+        with Workspace(
+            root, path_max_bytes=4096, path_max_parts=128, patch_targets=True
+        ) as workspace:
             with _parent(workspace, path) as (parent, name):
                 return _observe_at(parent, name)
     except KernelError:
@@ -414,7 +418,7 @@ def _apply(
             checkpoint=_fault,
         )
         return
-    with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+    with Workspace(root, path_max_bytes=4096, path_max_parts=128, patch_targets=True) as workspace:
         # 只有新建文件的成员补建父目录；修改与删除的目标必然已有父目录。
         creates_file = mutation.before.presence == "absent"
         with _parent(workspace, mutation.path, create_missing=creates_file) as (parent, name):
@@ -550,10 +554,14 @@ def _prepare_publication(
     if record.state == "prepared":
         if isinstance(record.plan.source, WorkspaceSnapshotV2):
             verify_workspace_snapshot_v2(
-                record.plan.source, root, checkpoint=checkpoint, read_blob=runtime._store.blob
+                record.plan.source,
+                root,
+                checkpoint=checkpoint,
+                read_blob=runtime._store.blob,
+                patch_targets=True,
             )
         else:
-            verify_workspace_snapshot(record.plan.source, root)
+            verify_workspace_snapshot(record.plan.source, root, patch_targets=True)
         record = runtime._advance(record, "publishing", 0)
     else:
         record = runtime.reconcile(transaction_id, root)

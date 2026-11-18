@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 5
+version: 6
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -11,6 +11,7 @@ modules:
   - artifacts
   - tools
 related_adrs:
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
   - docs/adr/0027-prepared-patch-and-write-admission.md
   - docs/adr/0028-managed-patch-execution.md
   - docs/adr/0029-managed-patch-agent-bridge.md
@@ -30,6 +31,7 @@ related_adrs:
   - docs/adr/0129-file-tool-leniency-and-correctable-rejections.md
   - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
+  - tests/delivery/test_key_certificate_patch_policy.py
   - tests/patches/test_planner.py
   - tests/patches/test_planner_newlines.py
   - tests/patches/test_managed.py
@@ -51,6 +53,11 @@ supersedes: []
 ---
 
 # Managed Patch Runtime模块设计
+
+## 当前增量：密钥与证书文件的锚点拒绝不透露位置（ADR 0172）
+
+- [`apply_exact_edits`](../../src/harnessix/patches/planner.py)新增`conceal_content`（默认False），经`_edit_ranges`、`_located_ranges`传到`_anchor_range`：锚点缺失、不唯一与编辑重叠的拒绝只用通用说明，不含行号、处数或片段，也不说改动是否已在文件里，建议改用`replace`整体发送新内容。错误码与`edits[j]`前缀不变。
+- Delivery的`_apply_workspace_exact_edits`对末段以`.key`、`.pem`、`.p12`、`.pfx`结尾的路径传True（规划与复核已保存计划时相同）；Managed Patch Runtime不变。
 
 ## 当前增量：CRLF与混合换行文件上的精确编辑（ADR 0141）
 

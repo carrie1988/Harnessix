@@ -15,6 +15,7 @@ from harnessix.delivery.preserved_mode_contracts import (
     WorkspaceDiffEntryV2,
     WorkspaceMutationV2,
 )
+from harnessix.tools.workspace import is_key_or_certificate_file
 
 
 class DiffContentLimitError(ValueError):
@@ -59,11 +60,14 @@ def build_diff_content(
     checkpoint: Callable[[], None],
     missing_newline_markers: bool = False,
     new_directories: tuple[str, ...] = (),
+    hide_key_files: bool = False,
 ) -> WorkspaceDiffContent:
     """消费宿主已核验的Mutation和只读正文端口；不替代路径、归属或CAS核验。
 
     new_directories是发布时会补建的父目录：目录不是文件成员，没有自己的Diff段，
     在全部文件段之前各占一行`new directory <路径>`，审阅者据此看到完整的文件系统效果。
+    hide_key_files只由Workspace事务传True：密钥与证书文件（.key、.pem、.p12、.pfx）的段只写前后摘要，
+    不写正文（ADR 0172）；Git树Diff不变。
     """
 
     if (
@@ -74,6 +78,7 @@ def build_diff_content(
             )
         )
         or type(missing_newline_markers) is not bool
+        or type(hide_key_files) is not bool
         or not callable(read_blob)
         or not callable(checkpoint)
     ):
@@ -109,7 +114,14 @@ def build_diff_content(
         if mutation.path in renamed_paths:
             continue
         entries.append(
-            _append_change(mutation, read_blob, output, checkpoint, missing_newline_markers)
+            _append_change(
+                mutation,
+                read_blob,
+                output,
+                checkpoint,
+                missing_newline_markers,
+                hide_key_files and is_key_or_certificate_file(mutation.path),
+            )
         )
     entries.sort(key=lambda item: (item.original_path or item.path, item.path))
     checkpoint()
@@ -147,8 +159,9 @@ def _append_change(
     output: _Output,
     checkpoint: Callable[[], None],
     markers: bool,
+    hidden: bool,
 ) -> WorkspaceDiffEntry:
-    """完整读取单项前后版本，逐片写入同一预算，再返回结构化条目。"""
+    """完整读取单项前后版本，逐片写入同一预算，再返回结构化条目；hidden时正文只以摘要表示。"""
     before = _blob(read_blob, mutation.before.sha256)
     checkpoint()
     after = _blob(read_blob, mutation.after.sha256)
@@ -169,7 +182,7 @@ def _append_change(
         after=mutation.after,
         binary=binary,
     )
-    for chunk in _section(mutation, before_text, after_text, markers):
+    for chunk in _section(mutation, before_text, after_text, markers, hidden=hidden):
         checkpoint()
         output.append(chunk)
     return entry
@@ -206,6 +219,8 @@ def _section(
     before: str | None,
     after: str | None,
     missing_newline_markers: bool,
+    *,
+    hidden: bool = False,
 ) -> Iterator[str]:
     yield f"diff --harnessix a/{mutation.path} b/{mutation.path}\n"
     if mutation.before.mode != mutation.after.mode:
@@ -218,6 +233,13 @@ def _section(
     elif mutation.before.mode is not None and mutation.before.mode not in GIT_REPRESENTABLE_MODES:
         # 只有保留权限代际会出现这类权限：审阅时明确告知修改后仍保持原权限。
         yield f"preserved mode {mutation.before.mode:o}\n"
+    if hidden:
+        yield (
+            "Content hidden (key or certificate file): "
+            f"before={mutation.before.sha256 or 'absent'} "
+            f"after={mutation.after.sha256 or 'absent'}\n"
+        )
+        return
     if before is None or after is None:
         yield (
             f"Binary files differ: before={mutation.before.sha256 or 'absent'} "

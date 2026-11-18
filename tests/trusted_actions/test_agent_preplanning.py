@@ -44,9 +44,12 @@ def test_new_fields_preserve_old_positional_contracts_and_async_entrypoint() -> 
         "decode_arguments",
         "agent_prepare",
         "external_roots",
+        "patch_targets",
     ]
+    assert definition_fields[-3].default is None
     assert definition_fields[-2].default is None
-    assert definition_fields[-1].default is None
+    # ADR 0172：写目标策略默认关闭，只有内置补丁与回滚显式打开。
+    assert definition_fields[-1].default is False
     assert [item.name for item in fields(ResolvedAction)][-1] == "expected_workspace"
     assert fields(ResolvedAction)[-1].default is None
     assert inspect.iscoroutinefunction(plan_agent_action)

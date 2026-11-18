@@ -32,7 +32,7 @@ from harnessix.delivery.preserved_mode_contracts import (
 )
 from harnessix.delivery.workspace_patch_errors import _no_change_error
 from harnessix.tools.contracts import ReadToolError
-from harnessix.tools.workspace import ReadOperation, Workspace
+from harnessix.tools.workspace import _DENIED_NAMES, ReadOperation, Workspace
 from harnessix.workspace.contracts import (
     PlatformKind,
     ResourceAccess,
@@ -95,6 +95,7 @@ def prepare_workspace_transaction(
         root,
         resources=tuple(resources[key] for key in sorted(resources)),
         platform=selected_platform,
+        patch_targets=True,
     )
     observations = {
         (item.path, item.access): item
@@ -102,7 +103,7 @@ def prepare_workspace_transaction(
         if item.location == "workspace"
     }
     mutations, blobs = _prepare_mutations(Path(root), normalized, observations, selected_platform)
-    verify_workspace_snapshot(snapshot, root)
+    verify_workspace_snapshot(snapshot, root, patch_targets=True)
     plan_type: type[WorkspaceTransactionPlan] = (
         WorkspaceTransactionPlanV3
         if type(mutations[0]) is WorkspaceMutationV2
@@ -154,7 +155,7 @@ def _prepare_mutations(
             raise KernelError("delivery_path_denied", "Workspace事务目标不能是目录")
         if observed.kind == "file":
             before_body, before_mode = _read_existing_file(
-                root, path, selected_platform, checkpoint=checkpoint
+                root, path, selected_platform, checkpoint=checkpoint, patch_targets=True
             )
             before = _file_version(before_body, before_mode)
             if before.sha256 != observed.content_sha256 or before.size != observed.size:
@@ -248,12 +249,23 @@ def _read_existing(
 
 
 def _read_existing_file(
-    root: Path, path: str, platform: PlatformKind, *, checkpoint: Callable[[], None] | None = None
+    root: Path,
+    path: str,
+    platform: PlatformKind,
+    *,
+    checkpoint: Callable[[], None] | None = None,
+    patch_targets: bool = False,
 ) -> tuple[bytes, int]:
-    """读取现有普通文件及其真实普通权限位；带setuid、setgid或sticky位的文件拒绝。"""
+    """读取现有普通文件及其真实普通权限位；带setuid、setgid或sticky位的文件拒绝。
+
+    patch_targets只由补丁与回滚传True：密钥与证书文件可以读出前镜像（ADR 0172）；
+    Git交付等其余调用方不变。
+    """
     if platform == "posix" and os.name == "posix":
         try:
-            with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+            with Workspace(
+                root, path_max_bytes=4096, path_max_parts=128, patch_targets=patch_targets
+            ) as workspace:
                 operation = (
                     ReadOperation() if checkpoint is None else NativeReadOperation(checkpoint)
                 )
@@ -296,11 +308,16 @@ def _read_existing_file(
 def _target_kind(
     root: Path, path: str, platform: PlatformKind
 ) -> Literal["file", "directory", "missing"] | None:
-    """目标是普通文件、目录还是不存在；其他类型、被拒路径、观察失败或平台与宿主不一致时返回None。"""
+    """补丁目标是普通文件、目录还是不存在；其他类型、被拒路径、观察失败或平台与宿主不一致时返回None。
+
+    只有补丁规划调用，按写目标策略观察（ADR 0172）。
+    """
 
     if platform == "posix" and os.name == "posix":
         try:
-            with Workspace(root, path_max_bytes=4096, path_max_parts=128) as workspace:
+            with Workspace(
+                root, path_max_bytes=4096, path_max_parts=128, patch_targets=True
+            ) as workspace:
                 try:
                     with workspace.open(path, ReadOperation(), directory=False):
                         return "file"
@@ -343,10 +360,15 @@ def _read_all(descriptor: int, *, checkpoint: Callable[[], None] | None = None) 
 
 
 def _protected(path: str, platform: PlatformKind) -> bool:
-    """保护组件、.env*；Windows上8.3短名称（GIT~1会落到.git，ADR 0170）也拒绝。"""
+    """补丁在两个平台上都不能写的路径：保护组件、凭据名称（.ssh、.aws、.gnupg、id_rsa等，与读取工具的
+    敏感名称相同）与.env*；Windows上8.3短名称（GIT~1会落到.git，ADR 0170）也拒绝。
+
+    POSIX的写目标策略同样拒绝凭据名称；Windows根不按文件名过滤，只靠这里（ADR 0172）。
+    PROTECTED_COMPONENTS本身不改：计划校验与Git树投影在用，已保存的计划必须仍能加载。
+    """
     return any(
-        component.casefold() in PROTECTED_COMPONENTS or component.casefold().startswith(".env")
-        for component in path.split("/")
+        folded in PROTECTED_COMPONENTS or folded in _DENIED_NAMES or folded.startswith(".env")
+        for folded in (component.casefold() for component in path.split("/"))
     ) or (platform == "windows" and has_windows_short_name(path))
 
 
