@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 72
+version: 73
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -56,6 +56,10 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：宿主说明的身份登记（ADR 0173，Beta Issue #46）
+
+- [`host_notice_identity.is_host_notice`](../../src/harnessix/agent/host_notice_identity.py)汇总全部宿主说明的身份派生规则（完成守卫、截断与空回复、截断的调用、重复命令、目录说明按步骤或序号，至多1000；会话基线、基线丢失、取消后的说明每Turn一条；预算说明按关口），按Turn缓存。公开投影据此给用户消息标`origin`。新增一种宿主说明须在这里登记，`tests/agent/test_host_notice_identity.py`核对每个调用`host_notice_events`的模块都已登记。
 
 ## 当前增量：工具调用被输出上限截断时告诉模型拆小（ADR 0171）
 
@@ -1159,6 +1163,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 73 | `3a97841b` 增量 | 2026-11-18 | `host_notice_identity`：宿主说明身份的统一登记，供公开投影标注用户消息来源（ADR 0173，Beta Issue #46） |
 | 72 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断时补发说明（`truncated_call`，不计入连续补发、不使Turn失败）；非法参数反馈补上拆小建议 |
 | 71 | `493a8f14` 增量 | 2026-11-18 | 工具调用写成正文的回复补发提示继续，连续第三次失败，不再记为完成（`truncation_recovery.tool_call_text`，ADR 0109第8版，Beta Issue #40） |
 | 70 | `d69bdb2a` 增量 | 2026-11-18 | 续跑等待审批且时限已过的Turn按`time_budget_exceeded`收尾（`approvals.overdue_wait`）（Beta Issue #39） |

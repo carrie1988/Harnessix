@@ -633,6 +633,22 @@
           "maxLength": 1000000,
           "title": "Text",
           "type": "string"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "enum": [
+                "user",
+                "harnessix"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origin"
         }
       },
       "required": [
