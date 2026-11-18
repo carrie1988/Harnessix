@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 661,
-    "physical_lines": 138340,
-    "logical_lines": 119594,
-    "documented_modules": 661,
-    "classes": 1271,
-    "documented_classes": 669,
-    "functions": 5552,
-    "documented_functions": 1995,
+    "source_files": 663,
+    "physical_lines": 138656,
+    "logical_lines": 119828,
+    "documented_modules": 663,
+    "classes": 1274,
+    "documented_classes": 672,
+    "functions": 5573,
+    "documented_functions": 2012,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -204,7 +204,7 @@
     },
     {
       "path": "src/harnessix/agent/runtime.py",
-      "lines": 3532
+      "lines": 3527
     },
     {
       "path": "src/harnessix/context/sources.py",
@@ -272,7 +272,7 @@
     },
     {
       "path": "src/harnessix/session/sqlite.py",
-      "lines": 620
+      "lines": 614
     },
     {
       "path": "src/harnessix/skills/runtime.py",
@@ -356,8 +356,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 309,
-      "lines": 3224,
+      "line": 310,
+      "lines": 3218,
       "documented": true
     },
     {
@@ -366,7 +366,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 312,
+      "line": 313,
       "lines": 203,
       "documented": false,
       "decision_complexity": 47
@@ -377,7 +377,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._drive",
       "kind": "function",
-      "line": 2322,
+      "line": 2324,
       "lines": 264,
       "documented": true,
       "decision_complexity": 49
@@ -388,7 +388,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._execute_calls",
       "kind": "function",
-      "line": 2587,
+      "line": 2589,
       "lines": 243,
       "documented": true,
       "decision_complexity": 51
@@ -399,7 +399,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._finish",
       "kind": "function",
-      "line": 3366,
+      "line": 3361,
       "lines": 154,
       "documented": true,
       "decision_complexity": 39
@@ -410,7 +410,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._reply_approval",
       "kind": "function",
-      "line": 1517,
+      "line": 1527,
       "lines": 102,
       "documented": true,
       "decision_complexity": 21
@@ -421,7 +421,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._run_compaction",
       "kind": "function",
-      "line": 2045,
+      "line": 2047,
       "lines": 150,
       "documented": true,
       "decision_complexity": 16
@@ -432,10 +432,10 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._sample_events",
       "kind": "function",
-      "line": 3075,
-      "lines": 279,
+      "line": 3077,
+      "lines": 272,
       "documented": true,
-      "decision_complexity": 83
+      "decision_complexity": 73
     },
     {
       "id": "harnessix.agent.runtime:AgentRuntime._select_model_tools",
@@ -443,7 +443,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._select_model_tools",
       "kind": "function",
-      "line": 2274,
+      "line": 2276,
       "lines": 47,
       "documented": true,
       "decision_complexity": 23
@@ -454,8 +454,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime._summary_text",
       "kind": "function",
-      "line": 1722,
-      "lines": 236,
+      "line": 1732,
+      "lines": 228,
       "documented": false,
       "decision_complexity": 53
     },
@@ -1773,8 +1773,8 @@
       "path": "src/harnessix/session/sqlite.py",
       "qualname": "SQLiteSessionStore",
       "kind": "class",
-      "line": 203,
-      "lines": 418,
+      "line": 207,
+      "lines": 408,
       "documented": true
     },
     {
