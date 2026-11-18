@@ -3256,9 +3256,7 @@ class AgentRuntime:
                         raise
                     if not attempt_mode:
                         record_usage(snapshot)
-                    recovery = settle_reply(
-                        event, call_ids, texts.has_content, self._recover_truncated_replies
-                    )
+                    recovery = settle_reply(event, call_ids, texts, self._recover_truncated_replies)
                     completed = event
                 else:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")

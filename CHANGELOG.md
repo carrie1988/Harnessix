@@ -12,6 +12,10 @@
 
 - 审批停留到本轮时间上限之后再作决定时，这一轮按时间上限正常结束（#39）：`harnessix exec` 的摘要保留会话、Turn、用量和完成证据，退出码为 1，事件流也有失败终态；此前只剩 `approval_expired` 错误码、退出码 4，这一轮停在等待审批
 - 完成证据不再把只读或搜索命令（如 `Select-String … | Select-Object`、`grep … | head`、`git status`）当作检查（#36 后续）：修改后只运行过这类命令时为 `unverified`；`harnessix exec` 摘要新增 `commands_after_last_edit`，列出修改后运行的每条命令及结果
+- 这个工作区的 `harnessix code` 还开着时，`harnessix data export` 直接说明会话正被占用、先按 Ctrl+Q 退出（#41）；此前只报 `server_closed` 并建议运行 doctor，而 doctor 全部通过
+- 模型把工具调用写成了一段文字（如 `<tool_call>{"name": …}`）而没有真正调用时，不再显示“已完成”（#40）：Harnessix 提示它改用真正的工具调用继续；连续三次仍如此时本轮以失败结束
+- 工具输出较多的会话也能用 `harnessix data export` 导出（#43）：此前以 `public_output_limit` 失败
+- 生成中按 Ctrl+X 取消后，终端界面的费用栏当场注明“另有中断的请求可能已计费”，与重新打开会话时一致（#42）
 
 ## 0.10.0b51（2026-11-18）
 

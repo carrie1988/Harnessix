@@ -46,7 +46,7 @@ _PLAN_MARKS: Final = {"completed": "✓", "in_progress": "▸", "pending": "○"
 # 界面各用一行中文交代发生了什么，不显示英文正文。按派生的Item身份识别，不看正文前缀。
 _HOST_NOTICE_TEXT: Final = (
     (completion_notice_item_id, "模型停下时任务还没有做完，已提示它继续"),
-    (recovery_notice_item_id, "模型的回复被截断或没有内容，已提示它继续"),
+    (recovery_notice_item_id, "模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续"),
     (step_notice_item_id, "已把重复或前后结果不一致的命令、修改告知模型"),
     (
         truncated_call_notice_item_id,

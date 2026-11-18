@@ -16,9 +16,12 @@ from harnessix.agent.models import (
 from harnessix.agent.runtime import AgentRuntime
 from harnessix.agent.truncation_recovery import (
     EMPTY_REPLY_NOTICE,
+    TOOL_CALL_TEXT_NOTICE,
     TRUNCATED_CALL_NOTICE,
     TRUNCATED_REPLY_NOTICE,
+    Reply,
     recovery_notice_item_id,
+    tool_call_written_as_text,
     truncated_call_notice_item_id,
 )
 from harnessix.models.contracts import (
@@ -220,6 +223,28 @@ def truncated_call(*, with_complete_call: bool = False):
     ]
 
 
+# Beta Issue #40（0.10.0b51 macOS，qwen3.8-flash）：末条回复把工具调用写成了正文，界面显示“已完成”。
+CALL_AS_TEXT = (
+    "Go is available. Let me reproduce with the exact script from the issue.\n"
+    "<previous_tool_call>\n"
+    '{"name": "test_read", "arguments": {"cmd": "cd /tmp && go run ."}}\n'
+    "</parameter>\n</function>"
+)
+
+
+def said(text: str):
+    """正常结束、只有正文的步骤。"""
+    return [
+        ResponseStarted(response_id="said"),
+        TextStarted(content_id="reply"),
+        TextDelta(content_id="reply", delta=text),
+        TextCompleted(content_id="reply", text=text),
+        ResponseCompleted(
+            finish_reason="completed", usage=Usage(input_tokens=10, output_tokens=64)
+        ),
+    ]
+
+
 async def test_a_tool_call_cut_off_by_the_output_limit_gets_a_notice_to_split_it(tmp_path):
     """ADR 0171：被截断的调用照旧拒绝、不执行；另补发一条说明原因与做法的宿主提示，Turn继续。"""
     provider = ScriptedProvider([truncated_call(), answer("done")])
@@ -257,3 +282,71 @@ async def test_complete_calls_beside_a_cut_off_call_still_run(tmp_path):
     assert turn.status is TurnStatus.COMPLETED
     assert [call.tool for call in tools.calls] == ["test.read"]
     assert notices(turn, TRUNCATED_CALL_NOTICE) == []
+
+
+async def test_a_tool_call_written_as_text_is_not_a_finished_turn(tmp_path):
+    provider = ScriptedProvider([said(CALL_AS_TEXT), tool_step("test.read"), answer("done")])
+    tools = RecordingTools()
+    turn = await run(tmp_path, provider, tools=tools)
+    assert turn.status is TurnStatus.COMPLETED
+    (notice,) = notices(turn, TOOL_CALL_TEXT_NOTICE)
+    assert notice.item_id == recovery_notice_item_id(turn.turn_id, 1)
+    assert len(tools.calls) == 1  # 补发提示之后才真正调用
+    assert provider.requests[1].history[-1].content.text == TOOL_CALL_TEXT_NOTICE
+
+
+async def test_a_tool_call_written_as_text_three_times_fails_instead_of_completing(tmp_path):
+    """修改前这里以completed结束。"""
+    provider = ScriptedProvider([said(CALL_AS_TEXT)] * 3)
+    turn = await run(tmp_path, provider, tools=RecordingTools())
+    assert turn.status is TurnStatus.FAILED
+    assert turn.error.code == "invalid_provider_output"
+    assert len(notices(turn, TOOL_CALL_TEXT_NOTICE)) == 2
+
+
+async def test_tool_call_text_recovery_is_off_with_the_other_recoveries(tmp_path):
+    turn = await run(tmp_path, ScriptedProvider([said(CALL_AS_TEXT)]), recover=False)
+    assert turn.status is TurnStatus.COMPLETED and notices(turn, TOOL_CALL_TEXT_NOTICE) == []
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (CALL_AS_TEXT, True),
+        ('{"name": "test.read", "arguments": {}}', True),
+        ('<tool_call>\n{"name": "test_read", "parameters": {}}\n</tool_call>', True),
+        ("<function=test_read>\n<parameter=path>a</parameter>\n</function>", True),
+        ('<invoke name="test_read"><parameter name="path">a</parameter></invoke>', True),
+        # 正常的总结：提到工具名、贴出代码或JSON，都不算。
+        ("I used test_read and grep to check the file; all tests pass.", False),
+        ("```html\n<script>function f() {}</script>\n```", False),
+        ('Example payload: {"name": "alice", "arguments": []}', False),
+        ("The fix wraps <function> in the template; test_read confirmed it.", False),
+        ("", False),
+    ],
+)
+def test_what_counts_as_a_tool_call_written_as_text(text: str, expected: bool) -> None:
+    assert tool_call_written_as_text(Reply(text, ("test.read",))) is expected
+
+
+async def test_a_cut_off_call_neither_counts_toward_nor_resets_into_a_text_call_failure(tmp_path):
+    """两条路径互不混用：截断调用的说明不计入连续补发（否则第3步就该失败），
+    写成正文的工具调用仍按自己的计数补发并在用尽后失败。"""
+    provider = ScriptedProvider(
+        [truncated_call(), said(CALL_AS_TEXT), said(CALL_AS_TEXT), answer("done")]
+    )
+    turn = await run(tmp_path, provider, tools=RecordingTools())
+    assert turn.status is TurnStatus.COMPLETED
+    (cut_notice,) = notices(turn, TRUNCATED_CALL_NOTICE)
+    assert cut_notice.item_id == truncated_call_notice_item_id(turn.turn_id, 1)
+    text_notices = notices(turn, TOOL_CALL_TEXT_NOTICE)
+    assert [item.item_id for item in text_notices] == [
+        recovery_notice_item_id(turn.turn_id, step) for step in (2, 3)
+    ]
+
+    failing = ScriptedProvider([said(CALL_AS_TEXT), said(CALL_AS_TEXT), said(CALL_AS_TEXT)])
+    (tmp_path / "again").mkdir()
+    failed = await run(tmp_path / "again", failing, tools=RecordingTools())
+    assert failed.status is TurnStatus.FAILED
+    assert failed.error.code == "invalid_provider_output"
+    assert notices(failed, TRUNCATED_CALL_NOTICE) == []
