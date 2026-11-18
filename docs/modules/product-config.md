@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 169
+version: 170
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - core
@@ -126,6 +126,10 @@ related_tests:
   - tests/product_config/test_command_ledger.py
 supersedes: []
 ---
+
+## 当前增量：`config`与`state`的JSON输出在管道里只写ASCII
+
+- `product_config.cli`（`config diagnose/migrate`）与`state_backup_cli`经`cli_json.print_json`打印结果与错误：输出流不是终端时只写ASCII，与`exec`、`data`相同（见Product UI模块）。
 
 ## 当前增量：收尾由宿主保证（ADR 0148第2版，Beta Issue #4）
 
@@ -2420,6 +2424,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 170 | `ef3e467e` 增量 | 2026-11-18 | `config`、`state`的JSON输出经`cli_json.print_json`，输出流不是终端时只写ASCII |
 | 169 | `3e2f83d8` 增量 | 2026-11-15 | 沙箱内与宿主Process输出改经`archive_action_output`归档：存得下时公开输出照旧带`artifact`，Artifact存储已满时改为`"artifact_omitted": "storage_full"`，结果按审计终态如实提交，本轮不再以`uncertain_effect`中断（ADR 0163） |
 | 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为30秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
 | 167 | 第二轮合入 | 2026-11-14 | 文档版本160～166即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |

@@ -1,5 +1,11 @@
 # 更新记录
 
+## 未发布
+
+### 修复
+
+- Windows 上把 `harnessix data`、`code doctor --json`、`config`、`state` 的 JSON 输出接到管道或文件时不再出现乱码：输出不是终端时只写 ASCII，与 `exec` 相同
+
 ## 0.10.0b53（2026-11-18）
 
 ### 修复

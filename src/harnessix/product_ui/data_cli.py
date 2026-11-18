@@ -12,13 +12,13 @@ import json
 import os
 import platform
 import shutil
-import sys
 from collections.abc import Awaitable, Iterable, Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.cli_json import print_json
 from harnessix.product_config.preflight import run_product_preflight
 from harnessix.product_config.state_owner import product_state_owner, state_owner_anchor
 from harnessix.product_ui.cli import (
@@ -334,17 +334,12 @@ def data_main(argv: Sequence[str] | None = None) -> None:
     try:
         result = _run(arguments)
     except ProductUIError as error:
-        print(json.dumps({"code": error.code, "message": error.message}, ensure_ascii=False))
+        print_json({"code": error.code, "message": error.message})
         raise SystemExit(2) from None
     except FileExistsError:
-        print(json.dumps({"code": "data_output_exists", "message": "输出文件已存在"}))
+        print_json({"code": "data_output_exists", "message": "输出文件已存在"})
         raise SystemExit(2) from None
     except AgentSDKError as error:
-        print(
-            json.dumps(
-                {"code": error.code, "message": "无法读取会话，请先运行 harnessix code doctor"},
-                ensure_ascii=False,
-            )
-        )
+        print_json({"code": error.code, "message": "无法读取会话，请先运行 harnessix code doctor"})
         raise SystemExit(2) from None
-    print(json.dumps(result, ensure_ascii=False, indent=2), file=sys.stdout)
+    print_json(result, indent=2)
