@@ -1,4 +1,5 @@
-"""同次SQLite原字节复用；不减少认证，解析结果只在原字节摘要相同时复用（ADR 0133）。"""
+"""同次SQLite原字节复用；不减少认证，解析结果只在原字节摘要相同时复用（ADR 0133），
+一次认证读取只算一次投影摘要并分别与签名检查点、行内摘要比对（ADR 0168 D2）。"""
 
 from __future__ import annotations
 
@@ -31,7 +32,7 @@ def noncanonical_json(encoded):
 
 @pytest.mark.parametrize("noncanonical", [False, True])
 @pytest.mark.parametrize("surface", ["history", "get", "recovery"])
-async def test_same_row_encodes_once_keeps_both_snapshot_hashes_and_parses_the_bytes_once(
+async def test_same_row_is_encoded_hashed_and_parsed_once_per_read(
     tmp_path, monkeypatch, noncanonical, surface
 ):
     with binding() as proof:
@@ -133,17 +134,18 @@ async def test_same_row_encodes_once_keeps_both_snapshot_hashes_and_parses_the_b
             sys.setprofile(previous_profile)
         assert encodes == {event_text: int(surface == "history"), snapshot_text: 1}
         # 全库恢复扫描不经过解析缓存，两个校验器各自解析；单条读取由第二个校验器复用首次解析。
+        # 投影原字节只由认证校验器算一次摘要，第二个校验器拿同一摘要与行内摘要比对（ADR 0168 D2）。
         scan = surface == "recovery"
-        assert order == ["auth", "parse", "storage", *(["parse"] if scan else [])]
+        assert order == ["auth", "parse", *(["parse"] if scan else [])]
         assert [text for text, _ in parses] == [snapshot_text] * (2 if scan else 1)
         assert not scan or parses[0][1] is not parses[1][1]
-        assert hashes[0][1] is hashes[1][1]
-        assert hashes[0][1] == snapshot_body
+        assert [body for _, body in hashes].count(snapshot_body) == 1
+        assert hashes[0] == ("auth", snapshot_body)
         assert len(macs) == (5 if surface == "history" else 3)
-        assert len(hashes) == (4 if surface == "history" else 2)
+        assert len(hashes) == (3 if surface == "history" else 1)
         if surface == "history":
-            assert len(verified_bodies) == 1 and hashes[2][1] is verified_bodies[0]
-            assert hashes[3][1] is verified_bodies[0]
+            assert len(verified_bodies) == 1 and hashes[1][1] is verified_bodies[0]
+            assert hashes[2][1] is verified_bodies[0]
             assert verified_bodies[0] == event_body
             assert frame.body_refs[0].body_sha256 == hashlib.sha256(event_body).hexdigest()
             assert len(callbacks) == 8
@@ -161,9 +163,9 @@ async def test_snapshot_none_and_legacy_four_argument_validation_remain_compatib
         row = await cursor.fetchone()
         assert await publication_module.verify_snapshot(db, None, tid, row) is None
         assert sqlite_module._validated_snapshot(tid, row, 1, 1) == expected
-        assert sqlite_module._validated_snapshot(tid, row, 1, 1, snapshot_bytes=None) == expected
+        assert sqlite_module._validated_snapshot(tid, row, 1, 1, snapshot_sha256=None) == expected
         with pytest.raises(TypeError):
-            sqlite_module._validated_snapshot(tid, row, 1, 1, row["snapshot_json"].encode())
+            sqlite_module._validated_snapshot(tid, row, 1, 1, row["snapshot_sha256"])
     with binding() as proof:
         store, tid, _ = await seed(tmp_path / "authenticated.db", proof)
         async with store._connection() as db:
@@ -173,7 +175,7 @@ async def test_snapshot_none_and_legacy_four_argument_validation_remain_compatib
             assert caught.value.code == "publication_history_unproven"
 
 
-@pytest.mark.parametrize("supplied_bytes", [False, True])
+@pytest.mark.parametrize("supplied_digest", [False, True])
 @pytest.mark.parametrize(
     "fault,code,message",
     [
@@ -184,8 +186,8 @@ async def test_snapshot_none_and_legacy_four_argument_validation_remain_compatib
         ("sequence", "projection_corrupt", "投影序号"),
     ],
 )
-async def test_second_validator_preserves_error_order_with_or_without_original_bytes(
-    tmp_path, supplied_bytes, fault, code, message
+async def test_second_validator_preserves_error_order_with_or_without_the_authenticated_digest(
+    tmp_path, supplied_digest, fault, code, message
 ):
     store, tid, _ = await seed(tmp_path / "legacy.db", None)
     with closing(sqlite3.connect(store.path)) as db, db:
@@ -204,7 +206,8 @@ async def test_second_validator_preserves_error_order_with_or_without_original_b
             (body, digest, 23 if fault in ("gap", "version") else 22),
         )
         row = db.execute("SELECT * FROM agent_threads").fetchone()
-    kwargs = {"snapshot_bytes": body.encode()} if supplied_bytes else {}
+    supplied = {"snapshot_sha256": hashlib.sha256(body.encode()).hexdigest()}
+    kwargs = supplied if supplied_digest else {}
     with pytest.raises(KernelError, match=message) as caught:
         sqlite_module._validated_snapshot(tid, row, 2 if fault == "gap" else 1, 1, **kwargs)
     assert caught.value.code == code
@@ -327,7 +330,7 @@ async def test_snapshot_returns_bytes_only_after_all_original_authentication_che
             return original_parse(body, *args, **kwargs)
 
         def validate(*args, **kwargs):
-            validated.append(kwargs["snapshot_bytes"])
+            validated.append(kwargs["snapshot_sha256"])
             return original_validate(*args, **kwargs)
 
         monkeypatch.setattr(Thread, "model_validate_json", parse)
@@ -340,6 +343,51 @@ async def test_snapshot_returns_bytes_only_after_all_original_authentication_che
         assert len(parsed) == int(fault in ("count", "prefix", "local_sha"))
         assert len(validated) == int(fault == "local_sha")
         assert business_rows(store.path) == before
+
+
+@pytest.mark.parametrize(
+    "tamper,code",
+    [
+        (None, None),
+        ("checkpoint", "publication_history_unproven"),
+        ("row_digest", "projection_corrupt"),
+    ],
+)
+async def test_one_projection_digest_is_compared_with_both_the_checkpoint_and_the_row_digest(
+    tmp_path, monkeypatch, tamper, code
+):
+    """ADR 0168 D2：认证读取对投影原字节只算一次SHA-256，同一个摘要先与签名检查点、再与行内
+    摘要比对；任一处不符都按原错误码拒绝。"""
+    with binding() as proof:
+        store, tid, expected = await seed(tmp_path / "state.db", proof)
+        with closing(sqlite3.connect(store.path)) as db, db:
+            snapshot = db.execute("SELECT snapshot_json FROM agent_threads").fetchone()[0]
+            if tamper == "checkpoint":
+                raw = db.execute("SELECT seal FROM agent_projection_publications").fetchone()[0]
+                current = proof.verify_projection(raw, tid)
+                # 正文与行内摘要不动，只让签名检查点声明另一份原字节。
+                seal = proof.projection(
+                    expected, snapshot + " ", current.prefix_sha256, current.history_bytes
+                )
+                db.execute("UPDATE agent_projection_publications SET seal=?", (seal,))
+            elif tamper == "row_digest":
+                db.execute("UPDATE agent_threads SET snapshot_sha256=?", (EMPTY_PREFIX,))
+        body, digests = snapshot.encode(), []
+
+        def digest(value):
+            if value == body:
+                digests.append(value)
+            return hashlib.sha256(value)
+
+        for module in (publication_module, sqlite_module):
+            monkeypatch.setattr(module, "hashlib", SimpleNamespace(sha256=digest))
+        if code is None:
+            assert await store.get_thread(tid) == expected
+        else:
+            with pytest.raises(KernelError) as caught:
+                await store.get_thread(tid)
+            assert caught.value.code == code
+        assert len(digests) == 1
 
 
 async def test_next_read_reauthenticates_changed_terminal_thread_and_event_bytes(tmp_path):

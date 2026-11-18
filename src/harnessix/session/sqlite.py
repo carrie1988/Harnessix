@@ -123,10 +123,11 @@ def _validated_snapshot(
     last_sequence: int,
     event_count: int,
     *,
-    snapshot_bytes: bytes | None = None,
+    snapshot_sha256: str | None = None,
     parsed: ParsedProjectionCache | None = None,
 ) -> Thread | None:
-    """逐项校验投影与权威事件序列，供单条读取和批量恢复共用。"""
+    """逐项校验投影与权威事件序列，供单条读取和批量恢复共用；snapshot_sha256是认证读取对同一份原字节
+    算出并已与签名检查点比对过的摘要，给出时直接与行内摘要比对、不重算（ADR 0168 D2）。"""
 
     if last_sequence != event_count:
         raise KernelError("event_corrupt", "事件日志存在序号缺口")
@@ -137,8 +138,7 @@ def _validated_snapshot(
     encoded: str = row["snapshot_json"]
     if row["projection_version"] not in range(1, 23):
         raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
-    body = snapshot_bytes if snapshot_bytes is not None else encoded.encode()
-    digest = hashlib.sha256(body).hexdigest()
+    digest = snapshot_sha256 or hashlib.sha256(encoded.encode()).hexdigest()
     if digest != row["snapshot_sha256"]:
         raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
     try:
@@ -187,13 +187,13 @@ async def _scan_recovery_threads(
         except ValueError:
             raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
         projection = row if row["projection_thread_id"] is not None else None
-        snapshot_bytes = await verify_snapshot(database, publication, thread_id, projection)
+        digest = await verify_snapshot(database, publication, thread_id, projection)
         thread = _validated_snapshot(
             thread_id,
             projection,
             row["last_sequence"],
             row["event_count"],
-            snapshot_bytes=snapshot_bytes,
+            snapshot_sha256=digest,
         )
         if thread is not None and thread.active_turn_id is not None:
             active.append(thread)
@@ -355,8 +355,8 @@ class SQLiteSessionStore:
         last_row = await cursor.fetchone()
         assert last_row is not None
         cache = self._parsed_projections
-        body = await verify_snapshot(database, self._publication, thread_id, row, parsed=cache)
-        return _validated_snapshot(thread_id, row, *last_row, snapshot_bytes=body, parsed=cache)
+        digest = await verify_snapshot(database, self._publication, thread_id, row, parsed=cache)
+        return _validated_snapshot(thread_id, row, *last_row, snapshot_sha256=digest, parsed=cache)
 
     async def get_thread(self, thread_id: UUID) -> Thread:
         async with self._connection() as database:

@@ -86,7 +86,8 @@ async def test_unchanged_projection_is_parsed_once_while_every_read_rechecks_byt
         assert first == expected
         assert second is first and third is first
         assert len(parses) == 1
-        assert hashed == ["auth", "storage"] * 3
+        # 每次读取都重新取回原字节并算一次摘要，同一摘要再与行内摘要比对（ADR 0168 D2）。
+        assert hashed == ["auth"] * 3
         assert len(seals) == 3
 
 

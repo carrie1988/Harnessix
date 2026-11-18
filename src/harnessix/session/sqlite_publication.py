@@ -96,8 +96,12 @@ async def verify_snapshot(
     row: aiosqlite.Row | None,
     *,
     parsed: ParsedProjectionCache | None = None,
-) -> bytes | None:
-    """按签名检查点认证投影原字节并返回它；parsed只省去对同一份原字节的重复解析（ADR 0133）。"""
+) -> str | None:
+    """按签名检查点认证投影原字节，返回已与检查点比对过的原字节SHA-256。
+
+    同一次读取的行内摘要核对复用这个摘要，不再对同一份原字节重算（ADR 0168 D2）；parsed只省去对
+    同一份原字节的重复解析（ADR 0133）。
+    """
     if publication is None:
         return None
     await verify_store(database, publication)
@@ -136,7 +140,7 @@ async def verify_snapshot(
     tail = await cursor.fetchone()
     if tail is None or tail[0] != proof.prefix_sha256:
         raise unproven()
-    return body
+    return digest
 
 
 async def verified_event(
