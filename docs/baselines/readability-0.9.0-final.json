@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 661,
-    "physical_lines": 138340,
-    "logical_lines": 119594,
-    "documented_modules": 661,
-    "classes": 1271,
-    "documented_classes": 669,
-    "functions": 5552,
-    "documented_functions": 1995,
+    "source_files": 662,
+    "physical_lines": 138609,
+    "logical_lines": 119794,
+    "documented_modules": 662,
+    "classes": 1274,
+    "documented_classes": 672,
+    "functions": 5570,
+    "documented_functions": 2008,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -244,7 +244,7 @@
     },
     {
       "path": "src/harnessix/processes/supervisor.py",
-      "lines": 729
+      "lines": 719
     },
     {
       "path": "src/harnessix/product_config/action_composition.py",
@@ -1363,8 +1363,8 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor",
       "kind": "class",
-      "line": 332,
-      "lines": 304,
+      "line": 340,
+      "lines": 286,
       "documented": false
     },
     {
@@ -1373,10 +1373,10 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "PosixProcessSupervisor._start_bound",
       "kind": "function",
-      "line": 421,
-      "lines": 126,
+      "line": 436,
+      "lines": 117,
       "documented": false,
-      "decision_complexity": 23
+      "decision_complexity": 20
     },
     {
       "id": "harnessix.processes.supervisor:SupervisedProcess",
@@ -1384,7 +1384,7 @@
       "path": "src/harnessix/processes/supervisor.py",
       "qualname": "SupervisedProcess",
       "kind": "class",
-      "line": 85,
+      "line": 91,
       "lines": 215,
       "documented": false
     },
@@ -1426,7 +1426,7 @@
       "path": "src/harnessix/product_config/action_runtime.py",
       "qualname": "open_default_product_action_runtime",
       "kind": "function",
-      "line": 275,
+      "line": 281,
       "lines": 120,
       "documented": true,
       "decision_complexity": 8
