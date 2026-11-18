@@ -25,6 +25,7 @@ def posix_process_implementation_digest() -> str:
             "owner_protocol.py",
             "owner_output.py",
             "owner_receipt.py",
+            "owner_standby.py",
             "posix_owner.py",
             "supervision_contracts.py",
             "supervision_planner.py",

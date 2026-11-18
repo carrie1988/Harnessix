@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 1
+version: 2
 code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners:
   - core
@@ -25,6 +25,7 @@ related_tests:
   - tests/app_server/test_events_wake.py
   - tests/session/test_append_signal.py
   - tests/processes/test_receipt_polling.py
+  - tests/processes/test_owner_standby.py
 supersedes: []
 ---
 
@@ -48,7 +49,7 @@ NL2Repo正式评测（Linux，0.10.0b48）每步宿主时间：`preparing_contex
 - 目标：第121–160步每步宿主时间可测地下降；请求字节、持久事件、摘要与检查结论逐字节不变；有本地基准能复现与
   验证。
 - 非目标：改变Session提交次数或崩溃恢复点、去掉重复的核对、改变协议客户端的轮询方式、待命Owner（都列在ADR 0168
-  “需要决定的事项”）。
+  “需要决定的事项”）。第2版按负责人2026-11-18的决定加入待命Owner（D6），见第16节。
 
 ## 4. 总体架构
 
@@ -132,3 +133,22 @@ Session、Lease、审计与执行计划的持久化内容、顺序与事务边�
 - 每步宿主时间仍随历史增长：主要剩在每次提交后的投影解析与序列化、每次认证读取的取回与核对，以及每步约15次提交；
   继续下降需要负责人在ADR 0168列出的D1–D8中取舍。
 - 本地基准的工具结果是确定的小文件与命令输出，与真实任务的分布不同；绝对值以评测机为准，本地只用于前后对比。
+
+## 16. 第2版：待命Owner（D6，2026-11-18）
+
+- 决定：产品负责人2026-11-18批准D6，条件是在macOS、Linux、Windows三个平台正式验证；D5、D7未批准。决策、
+  设计、安全论证与测得的数字见[ADR 0168](../adr/0168-host-overhead-per-model-step.md)“修订（第2版）”。
+- 变化：Processes新增[`processes/owner_standby.py`](../../src/harnessix/processes/owner_standby.py)（`OwnerStandby`、
+  `deliver_owner_start`），`posix_owner.py`接受`--runs-directory`并在读到Start帧后定位运行目录，`supervisor.py`经
+  `deliver_owner_start`交出Start帧；Product Config的[`action_runtime._process_supervisor`](../../src/harnessix/product_config/action_runtime.py)
+  在POSIX上开启。协议、事件、配置、Schema与持久化不变；Windows不变。
+- 失败与恢复：待命Owner任何一次不可用（启动失败、交接前退出、能力摘要不符、写Start帧时管道断开）都回收它、本条
+  现场启动，此后不再准备；其他交接异常与现场启动同一规则。宿主崩溃时它读到控制EOF自行退出。
+- 测试：`tests/processes/test_owner_standby.py`；`tests/benchmarks/test_command_path_bench.py`核对产品运行时三条命令只有
+  第一条现场启动Owner；`tests/processes/test_windows_supervisor.py::test_windows_supervisor_starts_every_owner_on_the_spot`
+  在Windows实机核对没有待命Owner。三平台验证清单见[Process Runtime模块设计](../modules/processes.md)开头的增量小节。
+- 全量：本机（Homebrew Git，`-n 8`）分支与0.10.0b52基线的失败集合相同，各102项，都来自本机环境（禁止执行`ps`、
+  回环网络与代理等）；Owner经共享可编辑安装导入基线源码的一轮，与Owner导入分支源码、待命Owner真正生效的一轮
+  结果一致。Linux开发服务器上（宿主直接运行）`tests/processes`与命令、原生进程、进程Action、Git共享进程等相关
+  产品测试，基线与分支都没有失败；分支多出的是新增的待命Owner测试。
+- 回退：`_process_supervisor`不再传`standby_owner=True`。

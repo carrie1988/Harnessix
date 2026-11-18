@@ -7,6 +7,8 @@ import sys
 import time
 from pathlib import Path
 
+import harnessix
+from harnessix.processes import owner_standby
 from harnessix.processes.contracts import ProcessRequest
 from harnessix.processes.runtime import HostProcessRuntime
 
@@ -85,3 +87,16 @@ def zombie_leader() -> subprocess.Popen[bytes]:
     os.close(read_end)
     time.sleep(0.2)
     return process
+
+
+def owner_imports_this_checkout(monkeypatch) -> None:
+    """让真实POSIX Owner进程导入与测试进程同一份harnessix。
+
+    Owner以固定环境启动，经解释器的site-packages找到harnessix；几个工作树共用一个可编辑安装时，
+    那里指向的可能是另一棵树，Owner一侧的改动就没有被测到。这里只为测试补上PYTHONPATH，
+    产品启动Owner的方式不变；Owner交给目标进程的仍是Start帧里的环境。
+    """
+
+    source = str(Path(harnessix.__file__).resolve().parents[1])
+    environment = {**owner_standby._OWNER_ENVIRONMENT, "PYTHONPATH": source}
+    monkeypatch.setattr(owner_standby, "_OWNER_ENVIRONMENT", environment)

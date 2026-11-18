@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [agent, context, app_server, session, processes, product_config]
@@ -19,6 +19,7 @@ related_tests:
   - tests/app_server/test_events_wake.py
   - tests/session/test_append_signal.py
   - tests/processes/test_receipt_polling.py
+  - tests/processes/test_owner_standby.py
 supersedes: []
 ---
 
@@ -26,7 +27,8 @@ supersedes: []
 
 - 状态：评审中。产品负责人2026-11-17批准O4a：在不去掉、不减弱任何检查，不改变模型看到的内容（请求字节、
   持久事件、摘要与检查结论）的前提下降低每步宿主开销。本文的四项决策都满足这一前提；“需要决定的事项”一节
-  列出超出这一前提、需要负责人另行决定的做法与测得的代价
+  列出超出这一前提、需要负责人另行决定的做法与测得的代价。第2版（2026-11-18）：负责人批准其中的D6（待命Owner），
+  条件是在macOS、Linux、Windows三个平台正式验证，见“修订（第2版）”；D5、D7未批准，没有做
 - 日期：2026-11-16
 - 编号说明：原`feat/r2-cmdpath`分支上的“ADR 0146 命令路径的宿主开销”与主线ADR 0146（思考强度档位）重号，
   其中移植过来的部分归入本文；模型视图的逐项复用仍是[ADR 0155](0155-model-view-item-reuse.md)
@@ -103,7 +105,8 @@ Thread的长轮询信号。
 
 `SupervisedProcess.wait`与POSIX启动后等待启动结果的轮询，间隔改为1、2、4、8……毫秒，到原来的20毫秒与
 10毫秒为止（`processes/receipt_polling.py`）。启动结果仍最多轮询500次（约4.975秒，原为5秒）。回执的读取、
-认证与Lease迁移不变，Owner进程与其能力摘要不变。原分支同一提交里的待命Owner没有移植（见“需要决定的事项”）。
+认证与Lease迁移不变，Owner进程与其能力摘要不变。原分支同一提交里的待命Owner第1版没有移植，第2版按负责人
+决定移植（见“修订（第2版）”）。
 
 ## 等价性与检查
 
@@ -128,7 +131,7 @@ Thread的长轮询信号。
 | D3 | `calling_model`内的模型尝试事实（开始、用量、结束、响应终态）合并提交 | 每少一次提交约30毫秒，至多约200毫秒 | 改变崩溃恢复点（原ADR 0146草案已写明需要负责人决定） |
 | D4 | `AgentRuntime._commit`不在追加前另读一次Thread，期望序号取自更轻的查询 | 60毫秒 | 追加事务内仍完整核对同一投影，但提交前那一次独立核对没有了；ADR 0133把它列为后续 |
 | D5 | Session存储复用SQLite连接 | 约65毫秒（与历史无关） | 存储需要关闭生命周期与事务隔离保证，影响所有构造存储的调用方与Windows目录清理 |
-| D6 | 待命Owner（原`feat/r2-cmdpath`第1项） | 每条命令约0.2秒（Linux实测进程启动215毫秒，原分支本机测得启动由115降到5.5毫秒） | 改变Owner进程的创建时机；原草案建议负责人单独确认 |
+| D6 | 待命Owner（原`feat/r2-cmdpath`第1项） | 每条命令约0.2秒（Linux实测进程启动215毫秒，原分支本机测得启动由115降到5.5毫秒） | 改变Owner进程的创建时机；原草案建议负责人单独确认。2026-11-18已批准，见“修订（第2版）” |
 | D7 | POSIX Owner发布终态回执后以`os._exit`退出 | 每条命令约12毫秒（原分支本机测得；Linux上取回结果共35毫秒） | 跳过解释器收尾，需要逐条核实所有返回路径都已关闭并落盘（启动失败的路径不经`_close_all`） |
 | D8 | 编码阶段视图（`CodingWorkflowToolView`，非通用执行）也声明只读 | 63毫秒（只在该装配下） | 需要逐个审计约1000行的选择逻辑不修改传入的Turn |
 
@@ -208,3 +211,104 @@ Linux上第121–160步的各阶段与NL2Repo实测在同一量级（`preparing_
 
 四项互不依赖。第1项见ADR 0155；第2项去掉`ThreadSignals`对`AppendSignal`的订阅；第3项去掉`WrapUpToolView`
 的`reads_turn_in_place`；第4项把`receipt_poll_delays`换回常数。都不涉及数据库、协议、配置或Schema。
+第2版的待命Owner单独回退：`action_runtime._process_supervisor`不再传`standby_owner=True`，产品即回到每条命令
+现场启动Owner；同样不涉及数据库、协议、配置或Schema。
+
+## 修订（第2版，2026-11-18）：待命Owner（D6）
+
+### 负责人决定
+
+产品负责人2026-11-18批准D6，条件是在macOS、Linux、Windows三个平台正式验证。D5（Session存储复用连接）与D7
+（POSIX Owner以`os._exit`退出）不在批准范围内，没有做：Owner仍经解释器正常退出。
+
+### 设计
+
+1. **提前的只是Owner进程。** `PosixProcessSupervisor(standby_owner=True)`每次把Start帧交给Owner之后，在后台线程里
+   为下一条命令启动一个Owner（[`owner_standby.py`](../../src/harnessix/processes/owner_standby.py)的`OwnerStandby`）。
+   它以`--runs-directory <状态根>/runs`启动，阻塞在控制管道上；读到以换行结尾的完整Start帧后，按其中的Process ID
+   定位运行目录，做与现场启动相同的检查（绝对路径、是目录、不是符号链接、属主为当前用户、组与其他用户无权限），
+   然后才创建目标进程。“Lease `prepared`、运行目录、Lease `starting`、Start帧、目标”的顺序不变。
+2. **待命Owner不带任何一条命令的配置。** argv（含沙箱前缀`sandbox-exec`/`bwrap`）、cwd、环境、凭据、终端与stdin
+   模式、期限、输入输出预算与输出保护都只在Start帧里，Owner身份与令牌按命令生成。启动Owner本身用到的东西——
+   解释器、状态根、固定的三项环境变量、新会话、只传入控制管道读端——对一个Supervisor是常量，与现场启动的
+   Owner完全相同（两者共用`spawn_posix_owner`）。命令Profile、原生沙箱Profile或环境在两条命令之间变化，只改变
+   下一份Start帧。
+3. **一个待命Owner只用一次。** 下一条命令开始时先把它从待命位置取走、再等它启动完成，并发的两条命令只有一条
+   拿到它；收到Start帧的Owner就是这条命令的Owner，随命令结束而退出，不回到待命位置。取走之后核对：后台启动
+   成功、进程仍在运行、启动前测得的能力摘要（含Owner源码与解释器）等于Supervisor冻结的能力摘要。任何一项不满足，
+   或者写Start帧时管道已断开，就终止并回收它，本条命令现场启动，并且这个Supervisor此后不再准备待命Owner，
+   回到原来的行为。
+4. **至多一个待命Owner。** Supervisor关闭时先终止并回收它（还在启动的先等它启动完）；取走后等待被取消的，
+   启动完成即回收，不交给别的命令。控制管道写端只在宿主进程内、不可继承；宿主崩溃或持有者未关闭即被回收时，
+   写端关闭，待命Owner读到EOF后以2退出，不创建任何东西。
+5. **范围。** 只有产品运行时的Supervisor开启（[`action_runtime._process_supervisor`](../../src/harnessix/product_config/action_runtime.py)，
+   POSIX）：命令Profile、原生命令Profile与借用它的Git进程宿主都经过它。直接构造的Supervisor（独立Git、评测
+   检查Profile、测试）默认关闭；每次产品启动的第一条命令仍现场启动。没有新增配置字段、Schema或协议版本；
+   `owner_standby.py`加入POSIX Owner能力摘要的模块清单。
+
+### 安全论证
+
+| 关注点 | 为什么成立 | 测试（`tests/processes/test_owner_standby.py`，另注明的除外） |
+|---|---|---|
+| 先有Lease与运行目录，再有目标 | 待命Owner读到完整Start帧之前不创建目标；运行目录在Start帧之后检查，检查不过不创建任何东西 | `test_standby_owner_checks_the_run_directory_before_creating_anything`、`test_standby_owner_runs_the_command_in_the_directory_named_by_the_start_frame` |
+| 配置不在命令之间串用 | 命令的配置只在Start帧；换了工作区、环境、终端模式与期限的第二条命令只看到自己的，Owner身份与令牌各不相同 | `test_each_command_gets_only_its_own_configuration_from_a_standby_owner` |
+| 一个待命Owner只用一次、至多一个 | 先取走再等待；用过的随命令退出 | `test_only_the_first_command_starts_an_owner_on_the_spot`、`test_concurrent_starts_never_share_one_standby_owner` |
+| 待命Owner在使用前崩溃 | 取走时已退出：回收、现场启动、不再准备；存活检查之后、写完之前退出：写入得到EPIPE，换行是最后一个字节，它不可能读到完整的Start帧，改为现场启动不构成重放 | `test_a_standby_owner_that_died_before_use_is_never_used_again`、`test_broken_pipe_at_handoff_falls_back_without_sending_the_frame_twice` |
+| 为另一份实现准备的待命Owner | 启动前测得的能力摘要与冻结的不同即丢弃；磁盘上的实现在命令开始时与冻结能力不同，照旧以`process_capability_mismatch`拒绝 | `test_a_standby_owner_for_another_owner_implementation_is_discarded` |
+| 启动失败、资源不足 | 后台启动失败：本条现场启动，此后不再准备 | `test_a_failed_standby_spawn_falls_back_and_stops_preparing` |
+| 交接时的其他异常 | 与现场启动同一规则：终止并回收用到的Owner，Lease记为`failed/launch_failed`，同一Process ID不重放 | `test_handoff_failure_other_than_a_gone_owner_settles_as_launch_failed` |
+| 取消与关闭 | 待命Owner接手的命令照常取消、整组终止；关闭Supervisor停止运行中的命令并回收下一个待命Owner；被取消的取走不复用它 | `test_cancelling_a_command_on_a_standby_owner_stops_its_process_tree`、`test_closing_the_supervisor_stops_a_command_on_a_standby_owner_and_the_next_standby`、`test_a_cancelled_take_discards_the_standby_owner_instead_of_reusing_it`、`test_closing_waits_for_a_standby_owner_still_starting` |
+| 宿主崩溃 | 宿主被强杀后待命Owner读到EOF自行退出 | `test_a_standby_owner_does_not_outlive_a_host_killed_without_cleanup`、`test_standby_owner_exits_by_itself_when_the_host_side_of_the_pipe_is_gone`、`test_an_unclosed_holder_releases_its_standby_owner` |
+| 产品运行时 | 三条命令只有第一条现场启动Owner | `tests/benchmarks/test_command_path_bench.py` |
+| Windows不变 | 每条命令现场启动，没有待命Owner | `tests/processes/test_windows_supervisor.py::test_windows_supervisor_starts_every_owner_on_the_spot`（Windows实机） |
+
+待命Owner与现场启动的Owner都是宿主进程的子进程、各自处于新会话，终端的Ctrl+C不送到它们；两者继承同样的
+umask与资源限制，产品不修改这两项。
+
+### Windows
+
+Windows保持每条命令现场启动Owner：`WindowsProcessSupervisor`没有这个选项，`windows_owner.py`不变，共用的交接
+函数在Windows上只走现场启动一支。Windows Owner的控制句柄经`handle_list`临时继承，Job Object与ConPTY在Owner内
+建立，控制台事件发给同一控制台上的所有进程；这些在没有Windows机器的条件下无法逐项验证，按“不能证明安全就
+保持原行为”不做。正式验证核对的是这一点没有变化（核对清单见[Process Runtime模块设计](../modules/processes.md)
+的D6增量小节）。
+
+### 测得的效果
+
+`scripts/command_path_bench.py`，40条简单只读命令，改动前（`b6509177`）与改动后交替各跑三轮，每格是三轮各自
+中位数的中位数（毫秒/条）；“进程启动”是审计记为running到Owner报告目标启动。
+
+Linux（开发服务器，Intel Xeon Gold 6330，112核，测量时平均负载约1–2；在宿主上直接运行，不在容器内；
+三轮之间的波动在±1%以内）：
+
+| 阶段 | 改动前 | 改动后 |
+|---|---|---|
+| 审批往返 | 36.8 | 36.1 |
+| 恢复执行 | 61.8 | 62.0 |
+| 进程启动 | 208.1 | 7.4 |
+| 取回结果 | 29.2 | 30.9 |
+| 发布结果 | 17.2 | 15.8 |
+| 每条命令的宿主开销 | 402.5（三轮400.8、402.5、404.8） | 207.8（209.9、207.8、205.9） |
+| 每步合计（含下一步的准备上下文） | 728.8 | 535.7 |
+| 每步宿主进程CPU | 570.0 | 555.3 |
+
+40条命令的整个Turn：改动前31.7、31.6、31.5秒，改动后23.9、23.9、23.9秒。
+
+macOS（Apple M3 Max；测量期间本机有其他会话的负载，平均负载11–16，改动前第3轮受干扰明显）：
+
+| 阶段 | 改动前 | 改动后 |
+|---|---|---|
+| 进程启动 | 144.4 | 8.2 |
+| 取回结果 | 18.0 | 18.1 |
+| 发布结果 | 14.8 | 19.6 |
+| 每条命令的宿主开销 | 336.4（三轮336.4、323.2、480.6） | 182.2（188.6、179.5、182.2） |
+| 每步合计 | 634.3 | 462.1 |
+| 每步宿主进程CPU | 533.0 | 468.8 |
+
+- 进程启动从约0.2秒降到几毫秒，剩下的是写Start帧与Owner发布第一份回执；每条命令的宿主开销下降约一半
+  （Linux约195毫秒，macOS约155毫秒）。第一条命令仍现场启动，不在上表的中位数里显出来。
+- 待命Owner的解释器启动与导入仍要花同样的CPU，只是挪到上一条命令运行期间、在另一个进程里；它与命令的取回、
+  发布重叠，Linux上取回结果多1.7毫秒，macOS上发布多约5毫秒（负载下），都远小于省下的时间。每步宿主进程CPU
+  不含Owner进程，Linux上基本不变；macOS上的差别在负载噪声之内。
+- 每条命令仍是一个Owner进程，用过即退出；空闲时多一个阻塞在管道上的待命Owner进程（Linux上实测常驻内存33 MB，
+  其中匿名内存19 MB，其余是与其他Python进程共享的文件页）。
