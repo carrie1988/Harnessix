@@ -2,6 +2,10 @@
 
 ## 未发布
 
+### 修复
+
+- Windows 上把 `harnessix data`、`code doctor --json`、`config`、`state` 的 JSON 输出接到管道或文件时不再出现乱码：输出不是终端时只写 ASCII，与 `exec` 相同
+
 ### 改进
 
 - 修改工具现在可以在 macOS、Linux 与 Windows 上新建、修改、删除和撤销 `.key`、`.pem`、`.p12`、`.pfx` 等密钥与证书文件（例如项目自带的示例证书）。这类文件的内容不会出现在审批窗口、修改结果或撤销记录里，只显示修改前后的摘要；读取工具照旧不能读取它们

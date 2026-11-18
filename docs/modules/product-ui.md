@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 77
+version: 78
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：管道里的JSON输出只写ASCII（Beta Issue #26的做法推广）
+
+- 命令行的JSON输出（`code doctor --json`与错误说明、`data`、`config`、`state`、`exec`的摘要）统一经[`cli_json.print_json`](../../src/harnessix/product_config/cli_json.py)：输出流不是终端时只写ASCII（非ASCII字符写成`\uXXXX`，解析出的内容不变），终端里照写原文。Windows未开UTF-8模式时，管道与重定向的输出按控制台代码页（如cp936）编码，调用方按UTF-8解析成了乱码（0.10.0b53 Windows正式测试，`data export`）；`exec`早按Beta Issue #26方案A这样做。
 
 ## 当前增量：截断工具调用的说明显示为一行提示（ADR 0171）
 
@@ -1301,6 +1305,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 78 | `ef3e467e` 增量 | 2026-11-18 | `data`、`code doctor --json`与错误说明经`cli_json.print_json`：输出流不是终端时只写ASCII（#26做法推广，b53 Windows正式测试发现） |
 | 77 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断的宿主说明显示为一行“提示” |
 | 76 | `3aa6c0da` 增量 | 2026-11-18 | 暖刷新保留“模型请求中途结束”，生成中取消后费用栏与重新打开一致（`projection._carry_interruption`，Beta Issue #42） |
 | 75 | `20bc1983` 增量 | 2026-11-18 | 导出读事件时被拒的页减半重读并沿用（`data_cli._thread_events`经`read_event_page`，Beta Issue #43） |

@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 60
+version: 61
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -142,9 +142,10 @@ supersedes: []
 | 五十三 | 模型把工具调用写成了正文，界面显示“已完成”，其实什么也没执行（0.10.0b51 macOS，Issue #40；三个平台相同） | 补发提示让它真正调用，连续第三次失败而不是记为完成 | [ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版、本文第67节 |
 | 五十四 | 退出TUI后`data export`对多份真实会话以`public_output_limit`失败（0.10.0b51 macOS，Issue #43，5/8；三个平台相同） | 导出时被拒的事件页减半重读 | 本文第68节 |
 | 五十五 | 生成中取消后费用栏没有注明中断的请求可能已计费，重新打开才有（0.10.0b51 Windows，Issue #42；三个平台相同） | 暖刷新保留“模型请求中途结束” | 本文第69节 |
+| 五十六 | Windows未开UTF-8模式时，`data export`等子命令经管道输出的JSON按控制台代码页编码，调用方解析成乱码（0.10.0b53 Windows正式测试，发布会话发现） | 输出流不是终端时只写ASCII，与`exec`相同 | 本文第70节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十五项在第61～69节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十六项在第61～70节。
 
 ## 2. 需求背景
 
@@ -1586,4 +1587,10 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 根因：取消命令完成后界面暖刷新（`hydrate_thread`→`refresh_thread_snapshot`），用快照重建当前Turn；快照规则只对以服务错误结束的失败或中断Turn加这个标记，已取消的Turn没有。随后重放的`cancelling`、`cancelled`状态事件面对的已是快照里的取消状态，按事件的规则（原状态为`calling_model`）也不再成立。重新打开从头重放，事件规则生效，所以有附注。三个平台相同。
 
 修改：暖刷新换下同一Turn时保留标记，并按事件投影的同一规则补判：原状态是`calling_model`而快照已结束（确定不计费的鉴权失败与限流除外）。验证：`tests/product_ui/test_usage_projection.py`（生成中取消后暖刷新保留附注，与从头重放一致，修改前失败；工具执行中取消不加附注）。
+
+## 70. 第五十六项：管道里的JSON输出按代码页编码（b53正式测试发现）
+
+0.10.0b53 Windows正式测试（发布会话，check41）：未开UTF-8模式时，`harnessix data export`的错误说明经管道写出，按控制台代码页cp936编码，按UTF-8解码得到乱码。`exec`的摘要早按Issue #26方案A处理（输出流不是终端时只写ASCII），其余打印JSON的子命令没有跟上。
+
+修改：新增`cli_json`（`is_terminal`、`print_json`），`exec`、`data`、`code doctor --json`与其错误说明、`config`、`state`统一经它打印：输出流不是终端时非ASCII字符写成`\uXXXX`，解析出的内容不变；终端里照写原文。只改JSON输出，给人看的纯文本（如`approvals`、`mcp`列表）不变。三个平台共用。验证：`tests/test_cli_json_output.py`（管道里只写ASCII、终端照写原文、`data`的错误说明在管道里为ASCII，修改前失败）、`tests/test_exec_cli.py`。
 

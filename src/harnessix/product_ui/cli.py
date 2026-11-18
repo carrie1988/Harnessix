@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.cli_json import print_json
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.endpoint_probe import EndpointProbe, probe_provider_endpoint
@@ -222,14 +223,11 @@ def _product_app_type() -> type[ProductApp]:
 
 
 def _emit_error(error: ProductUIError) -> None:
-    print(
-        json.dumps(
-            {"code": error.code, "message": error.message, "retryable": error.retryable},
-            ensure_ascii=False,
-            sort_keys=True,
-            allow_nan=False,
-        ),
+    print_json(
+        {"code": error.code, "message": error.message, "retryable": error.retryable},
         file=sys.stderr,
+        sort_keys=True,
+        allow_nan=False,
     )
 
 
@@ -306,7 +304,7 @@ def _doctor(argv: Sequence[str]) -> None:
             document = json.loads(_report_json(report))
             if arguments.probe_model:
                 document["model_probe"] = [asdict(item) for item in probes]
-            print(json.dumps(document, ensure_ascii=False, sort_keys=True))
+            print_json(document, sort_keys=True)
         else:
             print(_render_preflight(report))
             for item in probes:
