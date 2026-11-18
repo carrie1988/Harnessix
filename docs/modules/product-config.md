@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 170
+version: 171
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - core
@@ -126,6 +126,10 @@ related_tests:
   - tests/product_config/test_command_ledger.py
 supersedes: []
 ---
+
+## 当前增量：Seatbelt沙箱可写入macOS用户临时目录（ADR 0111第2版，Beta Issue #44）
+
+- `native_sandbox.attest_native_sandbox`在Seatbelt下把`darwin_user_temp_dir()`加入`write_roots`（`_seatbelt_user_temp`）；HOME、工作区或受保护的状态目录位于其中、或取不到该目录时不加，策略与此前相同。负责人2026-11-18选方案A。
 
 ## 当前增量：`config`与`state`的JSON输出在管道里只写ASCII
 
@@ -2424,6 +2428,7 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 171 | `e2d758ef` 增量 | 2026-11-18 | Seatbelt沙箱的可写目录加入macOS用户临时目录（`_seatbelt_user_temp`，ADR 0111第2版，Beta Issue #44） |
 | 170 | `ef3e467e` 增量 | 2026-11-18 | `config`、`state`的JSON输出经`cli_json.print_json`，输出流不是终端时只写ASCII |
 | 169 | `3e2f83d8` 增量 | 2026-11-15 | 沙箱内与宿主Process输出改经`archive_action_output`归档：存得下时公开输出照旧带`artifact`，Artifact存储已满时改为`"artifact_omitted": "storage_full"`，结果按审计终态如实提交，本轮不再以`uncertain_effect`中断（ADR 0163） |
 | 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为30秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |

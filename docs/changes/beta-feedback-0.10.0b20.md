@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 61
+version: 63
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -143,9 +143,11 @@ supersedes: []
 | 五十四 | 退出TUI后`data export`对多份真实会话以`public_output_limit`失败（0.10.0b51 macOS，Issue #43，5/8；三个平台相同） | 导出时被拒的事件页减半重读 | 本文第68节 |
 | 五十五 | 生成中取消后费用栏没有注明中断的请求可能已计费，重新打开才有（0.10.0b51 Windows，Issue #42；三个平台相同） | 暖刷新保留“模型请求中途结束” | 本文第69节 |
 | 五十六 | Windows未开UTF-8模式时，`data export`等子命令经管道输出的JSON按控制台代码页编码，调用方解析成乱码（0.10.0b53 Windows正式测试，发布会话发现） | 输出流不是终端时只写ASCII，与`exec`相同 | 本文第70节 |
+| 五十七 | macOS沙箱里Java项目的Maven Wrapper在`mktemp -d`一步失败（0.10.0b53，Issue #44；只影响macOS） | Seatbelt放行macOS用户临时目录的写入 | [ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版、本文第71节 |
+| 五十八 | 导出与事件里宿主自动说明和操作者输入都是`user_message`，无法按结构区分（0.10.0b53，Issue #46；三个平台相同） | 公开用户消息新增`origin`（user/harnessix），按派生身份判定 | [ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)、本文第72节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十六项在第61～70节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十八项在第61～72节。
 
 ## 2. 需求背景
 
@@ -1593,4 +1595,14 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 0.10.0b53 Windows正式测试（发布会话，check41）：未开UTF-8模式时，`harnessix data export`的错误说明经管道写出，按控制台代码页cp936编码，按UTF-8解码得到乱码。`exec`的摘要早按Issue #26方案A处理（输出流不是终端时只写ASCII），其余打印JSON的子命令没有跟上。
 
 修改：新增`cli_json`（`is_terminal`、`print_json`），`exec`、`data`、`code doctor --json`与其错误说明、`config`、`state`统一经它打印：输出流不是终端时非ASCII字符写成`\uXXXX`，解析出的内容不变；终端里照写原文。只改JSON输出，给人看的纯文本（如`approvals`、`mcp`列表）不变。三个平台共用。验证：`tests/test_cli_json_output.py`（管道里只写ASCII、终端照写原文、`data`的错误说明在管道里为ASCII，修改前失败）、`tests/test_exec_cli.py`。
+
+## 71. 第五十七项：macOS沙箱里`mktemp -d`失败（Issue #44）
+
+见[ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版8.3节。0.10.0b53 macOS（Seatbelt）：jackson-databind任务里`./mvnw -v`退出1，`mktemp: mkdtemp failed on /var/folders/…/T/tmp.…: Operation not permitted`；宿主机同一命令正常。macOS自带`mktemp`不读`TMPDIR`（本机核实：设了`TMPDIR`、加`-t`都仍建在`/var/folders/…/T`），那里不在Seatbelt的可写范围内。只影响macOS：Linux的`/tmp`是私有tmpfs，Windows没有Seatbelt沙箱。
+
+负责人2026-11-18选方案A：Seatbelt放行这个目录的写入（整机本来可读）。HOME、工作区或受保护目录位于其中时不放行。验证：`tests/product_config/test_native_sandbox_profile.py`；真机Seatbelt下`./mvnw -v`由发布会话在macOS正式测试中验证（本会话处于嵌套沙箱，不能运行sandbox-exec）。
+
+## 72. 第五十八项：导出里分不清宿主说明与人工输入（Issue #46）
+
+见[ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)。0.10.0b53：fast-xml-parser任务的导出里，操作者的原始任务（游标4）与Harnessix的重复命令提示（游标1035）都是只有`kind`与`text`的`user_message`，按结构统计人工介入得到2次，实际1次。负责人2026-11-18选方案A：公开的用户消息新增`origin`（`user`或`harnessix`），按宿主说明的派生身份判定，持久化不变，旧会话同样适用。验证：用报告人会话状态目录的副本真实导出，游标4为`user`、游标1035为`harnessix`。
 

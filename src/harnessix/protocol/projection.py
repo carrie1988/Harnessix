@@ -6,6 +6,7 @@ from typing import Literal
 from uuid import UUID
 
 from harnessix.agent.errors import AgentFailure
+from harnessix.agent.host_notice_identity import is_host_notice
 from harnessix.agent.models import (
     AgentEvent,
     ApprovalRequestContent,
@@ -141,11 +142,21 @@ def _approval(value: object) -> PublicApprovalRequestContent:
     )
 
 
-def project_item(item: Item) -> PublicItem:
+def _origin(item: Item, turn_id: UUID | None) -> Literal["user", "harnessix"] | None:
+    """用户消息的来源：按身份认出Harnessix的自动说明（ADR 0173）；其他种类的文本不标。"""
+    content = item.content
+    if not isinstance(content, TextContent) or content.kind != "user_message":
+        return None
+    return "harnessix" if is_host_notice(turn_id, item.item_id) else "user"
+
+
+def project_item(item: Item, turn_id: UUID | None = None) -> PublicItem:
     content = item.content
     public: PublicItemContent
     if isinstance(content, TextContent):
-        public = PublicTextContent(kind=content.kind, text=content.text)
+        public = PublicTextContent(
+            kind=content.kind, text=content.text, origin=_origin(item, turn_id)
+        )
     elif isinstance(content, ToolCallRejectionContent):
         public = PublicToolCallRejectionContent(
             call_id=content.call_id,
@@ -301,7 +312,8 @@ def project_event(thread_id: UUID, event: AgentEvent) -> PublicEvent | None:
         data = ItemPublicEvent(
             type="item_started",
             item=project_item(
-                Item(item_id=payload.item_id, status=ItemStatus.STARTED, content=payload.content)
+                Item(item_id=payload.item_id, status=ItemStatus.STARTED, content=payload.content),
+                event.turn_id,
             ),
         )
     elif isinstance(payload, ItemFinished):
@@ -313,7 +325,8 @@ def project_event(thread_id: UUID, event: AgentEvent) -> PublicEvent | None:
                     status=payload.status,
                     content=payload.content,
                     error=payload.error,
-                )
+                ),
+                event.turn_id,
             ),
         )
     elif isinstance(payload, UsageRecorded):

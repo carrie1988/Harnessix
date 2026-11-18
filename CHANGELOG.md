@@ -1,5 +1,12 @@
 # 更新记录
 
+## 未发布
+
+### 修复
+
+- macOS 沙箱里 Java 项目自带的 Maven Wrapper（`./mvnw`）不再在 `mktemp -d` 一步失败（#44）：沙箱放行 macOS 给当前用户的临时目录的写入
+- 导出数据（`data export`）与 `exec --events-file` 的事件里，用户消息新增 `origin` 字段：操作者输入为 `user`，Harnessix 自动发出的说明（如重复命令提示）为 `harnessix`（#46）；旧会话导出同样适用
+
 ## 0.10.0b54（2026-11-18）
 
 ### 修复
