@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 2
+version: 3
 code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners:
   - core
@@ -152,3 +152,10 @@ Session、Lease、审计与执行计划的持久化内容、顺序与事务边�
   结果一致。Linux开发服务器上（宿主直接运行）`tests/processes`与命令、原生进程、进程Action、Git共享进程等相关
   产品测试，基线与分支都没有失败；分支多出的是新增的待命Owner测试。
 - 回退：`_process_supervisor`不再传`standby_owner=True`。
+
+## 17. 第3版：D1–D4（2026-11-18）
+
+负责人批准D1–D4（D1带抽样核对，D3保留“尝试开始”单独提交）。设计、等价性证明与测量见ADR 0168第3版。
+跨包改动：`session`（`projection_identity`、`parsed_projection_cache`、`sqlite`、`sqlite_append`、
+`sqlite_publication`、`ports`）与`agent`（`attempt_fact_commits`、`runtime`、`telemetry`）。
+160步基准第121–160步宿主合计：Linux 1852→1255毫秒/步，macOS 952→651毫秒/步。

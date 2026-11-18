@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 73
+version: 74
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -58,6 +58,13 @@ related_tests:
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：成功尝试的终态事实与响应终态合并提交（ADR 0168第3版D3、D4）
+
+- D3：[`attempt_fact_commits`](../../src/harnessix/agent/attempt_fact_commits.py)决定模型尝试事实各在哪次提交里落盘。“尝试开始”仍单独、最先提交；成功尝试的完整用量与“尝试完成”收到时照原样检查，留到与`UsageRecorded`同一事务提交，遇到其他Provider事件或步骤以任何方式结束时先按原顺序提交。
+- D4：`AgentRuntime._commit`拆成`_protect_payloads`（公开输出检查，不变）与`_append_payloads`（加锁追加，期望序号取自`SessionStore.committed_sequence`）；`_summary_text`与`_sample_events`共用`telemetry.AccountedUsage`。
+- 新的崩溃恢复点：成功尝试的用量与“尝试完成”要么一起落盘、要么都没有。
+- 回归：`tests/agent/test_attempt_fact_commits.py`（六种情形合并与逐个提交结果相同）、`tests/agent/test_attempt_crash_recovery.py`、`tests/models/test_attempt_crash_recovery.py`。
 
 ## 当前增量：主动压缩的摘要请求沿用主请求的前缀（ADR 0167）
 
@@ -1172,6 +1179,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 74 | ADR 0168第3版增量 | 2026-11-18 | 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（尝试开始仍单独先提交）；`_commit`拆成检查与追加，期望序号走轻查询（D3、D4） |
 | 73 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
 | 72 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
 | 71 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |

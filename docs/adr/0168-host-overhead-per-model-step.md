@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 2
+version: 3
 code_revision: pending
 owners: [core]
 modules: [agent, context, app_server, session, processes, product_config]
@@ -198,6 +198,39 @@ Linux上第121–160步的各阶段与NL2Repo实测在同一量级（`preparing_
 - 每步宿主时间仍随历史增长，剩下的主要是“需要决定的事项”表中的提交、解析与认证读取。按Linux上的降幅估算，
   NL2Repo每题约161步、`preparing_context`平均0.8秒，约省每题40–55秒，即每100分钟的任务不到1分钟（估算，
   未在评测中测量）。
+
+## 修订（第3版，2026-11-18）：D1–D4
+
+### 负责人决定
+
+产品负责人2026-11-18批准（“按推荐”）：D2、D4直接做；D1做，但要有往返一致的测试与运行中的抽样核对；D3只做一部分，
+“尝试开始”仍单独、最先提交；D5、D7、D8不做（D6见第2版）。
+
+### 做法与等价性
+
+| 项 | 做法 | 没有改变的 | 证明 |
+|---|---|---|---|
+| D2 | 一次认证读取只算一次投影SHA-256，同一摘要分别与签名检查点、行内摘要比对（[`projection_identity`](../../src/harnessix/session/projection_identity.py)） | 两处比对、MAC与SQL核对、错误码 | `tests/session/test_read_original_bytes.py`改为钉住“算一次、比两处”，任一处不符仍以原错误失败 |
+| D4 | `AgentRuntime._commit`拆成公开输出检查（`_protect_payloads`）与追加（`_append_payloads`）；追加前的期望序号取自投影行记录的序号（`SessionStore.committed_sequence`），没有投影行时改走`get_thread` | 追加事务内仍完整认证、解析并比对投影；损坏的投影仍以原错误码失败、什么也不写 | `tests/session/test_committed_sequence.py`：产品Turn的每次提交都与完整读取的序号比对，并钉住错误一致 |
+| D1 | 追加提交后，存储把Reducer刚得到的Thread记作本次写入字节（按行摘要为键）的解析结果，提交后的第一次读取不再解析（推翻ADR 0133决策1第3条） | 每次读取仍重读行、重算摘要并做全部MAC、摘要与SQL核对，只省去解析 | 运行中抽样：每个缓存的第一次预填及其后每第16次（`PREFILL_CHECK_EVERY`）真的解析写入的字节，按类型、值、键序、浮点符号与时区对象严格比对（`projection_identity.identical`）；不符时不预填、丢弃该项、记录警告并停止预填，之后的读取重新解析。根`conftest`在整个测试集里核对每一次预填，任何不符都使测试失败；`tests/session/test_projection_prefill.py`核对评测形态产品运行的每次提交，并钉住不符时从不交出、回滚的追加从不预填 |
+| D3 | `calling_model`内，成功尝试的完整用量与“尝试完成”在收到时照原样做公开输出检查，但留到与响应终态（`UsageRecorded`）同一事务提交（[`attempt_fact_commits`](../../src/harnessix/agent/attempt_fact_commits.py)）。收到其他Provider事件（正文、思考、下一次尝试、失败）、事件流结束或步骤以错误或取消离开时，先按原顺序把留存的事实提交 | “尝试开始”仍单独、最先提交，在向Provider要下一个事件之前落盘；部分用量、失败或取消的尝试结束仍立即提交；Reducer拒绝合并批次时逐个重做，得到与此前相同的持久结果与错误码 | `tests/agent/test_attempt_fact_commits.py`：六种情形（正文先于用量、OpenAI顺序、失败后重试、用量被Reducer拒绝、留存期间出错、流没有终态结束）分别合并与逐个提交，要求持久事件及其顺序、模型请求与结果都相同 |
+
+**新的崩溃恢复点（D3）。** 成功尝试的完整用量之后崩溃时，用量与“尝试完成”要么一起落盘、要么都没有：此前可能只落下
+用量。一起落盘时这次尝试按已完成恢复；都没有时与“只落下尝试开始”相同，按进行中的尝试结算（ADR 0144）。两处崩溃点
+测试（`tests/agent/test_attempt_crash_recovery.py`、`tests/models/test_attempt_crash_recovery.py`）按此改写。
+
+### 测得的数字
+
+160步长历史基准（`scripts/host_step_overhead_bench.py --steps 160`），改动前（`b6509177`，已含本ADR第1版与O1、O2）
+与改动后交替各跑三轮，毫秒/步：
+
+| 机器 | 第121–160步宿主合计 | 其中模型调用内 | 全程每步 | CPU每步 |
+|---|---|---|---|---|
+| Linux（Intel Xeon Gold 6330，112核，开发服务器，负载约1） | 1852 → 1255（−32%） | 699 → 360 | 1166 → 833（−29%） | 1214 → 857 |
+| macOS（Apple M3 Max，本机有其他会话负载） | 952 → 651（−32%） | 356 → 190 | 606 → 437（−28%） | 599 → 418 |
+
+三轮之间的波动：Linux在±1%以内，macOS在±2%以内；每一轮都下降，工具失败为0。下降几乎都在模型调用内（D1、D3）与
+准备上下文（D1、D2、D4）。Linux测量不在NL2Repo评测机上（那台机器在跑正式评测），评测里的实际收益待下一次评测核对。
 
 ## 考虑过的其他做法
 
