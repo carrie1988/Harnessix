@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 53
+version: 54
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -136,9 +136,10 @@ supersedes: []
 | 四十七 | Windows PowerShell 5.1把`harnessix exec`的输出重定向到文件，JSON摘要无法解析（0.10.0b43～b45 Windows正式测试，发布会话复测#26发现） | 标准输出不是终端时摘要只写ASCII | 本文第61节 |
 | 四十八 | 审批窗口已经弹出时按`Ctrl+F`没有收尾，之后的命令照样执行（0.10.0b46 Windows正式测试3次中2次，Issue #4的剩余部分） | 审批窗口里的`Ctrl+F`同样收尾，这条审批按收尾规则拒绝 | [ADR 0148](../adr/0148-interactive-run-time-checkpoint-and-wrap-up.md)第5版、本文第62节 |
 | 四十九 | 普通Grep的存档在长凭据下超过公开保护的工作量上限，整轮开发以`public_output_limit`终止（0.10.0b50 Windows，Issue #37；三个平台相同） | 工作量只计实际比较，比模式短的文本计1 | 本文第63节 |
+| 五十 | 审批跨过Turn时限后，`harnessix exec`摘要只剩错误码，事件停在等待审批（0.10.0b50 Windows，Issue #39，4次；三个平台相同） | 审批过期时客户端续跑同一Turn，按时限失败收尾 | 本文第64节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至四十九项在第61～63节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十项在第61～64节。
 
 ## 2. 需求背景
 
@@ -1522,3 +1523,11 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 修改：比模式短的文本不可能包含该模式，`in`查找立即结束，计1；文本不短于模式时仍计“文本+模式”。每个节点、每个模式照旧逐一检查，扫描范围与泄漏判定不变。同一存档工作量降到约13 MiB并通过。验证：`tests/secrets/test_publication.py`（短节点不再按长凭据计费，修改前失败；节点内的凭据仍被拒绝；长正文仍受工作量上限约束），报告人的脚本在macOS的POSIX版本上51/83/116字节均通过。
 
 剩余边界：完整存档上限1 MiB，整份正文约被比较三遍（原字节、逐条解码、规范JSON），工作量约为“模式数×3 MiB”。同时保护超过约20个模式（多个凭据）时，接近上限的存档仍可能超限并终止整个Turn；超限改为工具级失败需要另行设计，未在本次修改中处理。
+
+## 64. 第五十项：审批跨过Turn时限后没有终态（Issue #39）
+
+0.10.0b50 Windows，`harnessix exec --timeout-seconds 2600`：4个真实任务里，最后一条宿主命令的审批请求出现在2519～2586秒，人工审阅跨过了截止时间。决定提交后CLI退出码4，摘要只有`status=error`、`error.code=approval_expired`，没有`thread_id`、`turn_id`、用量与完成证据；事件最后停在`waiting_approval`。同版里在其他状态到期的任务都以`time_budget_exceeded`失败结束，摘要完整。
+
+根因：`AgentRuntime.submit_approval`在Turn时限已过时拒绝决定（`approval_expired`），不改写这一轮；约定由调用方续跑同一Turn，续跑把等待审批且时限已过的Turn记为`time_budget_exceeded`失败（与重启后的恢复相同，见`tests/agent/test_approvals.py::test_wall_clock_budget_includes_approval_wait`）。`ThinAgentCLI`与终端界面都没有续跑：`exec`把拒绝当作内部错误退出，终端界面显示错误后这一轮停在等待审批，直到重启。判定与客户端代码三个平台共用。
+
+修改：新增`sdk.approval_response.respond_approval_or_close_expired`，收到`approval_expired`后用派生请求ID续跑同一Turn，随后照常跟随到终态；`ThinAgentCLI`（`exec`）与终端界面共用。服务端行为与审批截止保护不变，晚到的决定仍不生效、命令不执行。`exec`此后与其他到期路径一致：状态`failed`、`time_budget_exceeded`、退出码1，摘要带会话、Turn、用量与完成证据，事件以`failed`终态结束。验证：`tests/app_server/test_agent_cli.py::test_an_approval_answered_after_the_deadline_ends_the_turn_on_its_time_limit`（真实Runtime与协议服务，修改前抛出`approval_expired`）、`tests/app_server/test_approval_response.py`。

@@ -43,6 +43,7 @@ from harnessix.protocol.contracts import (
     QuestionRespondParams,
 )
 from harnessix.sdk import AgentClient, AgentSDKError
+from harnessix.sdk.approval_response import respond_approval_or_close_expired
 
 LOCAL_APPROVAL_ACTOR: Final = "harnessix-code-local-user"
 
@@ -138,7 +139,8 @@ async def _respond_approval(
     command = session.prepare_command()
 
     async def respond(client: AgentClient, prepared: PreparedClientCommand) -> None:
-        await client.respond_approval(
+        await respond_approval_or_close_expired(
+            client,
             ApprovalRespondParams(
                 request_id=prepared.request_id,
                 thread_id=intent.binding.thread_id,
@@ -150,7 +152,7 @@ async def _respond_approval(
                     actor=LOCAL_APPROVAL_ACTOR,
                     reason=intent.reason,
                 ),
-            )
+            ),
         )
 
     await session.execute_prepared(command, respond)

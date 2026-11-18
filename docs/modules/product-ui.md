@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 70
+version: 71
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：审批跨过时限后这一轮按时限结束（Beta Issue #39）
+
+- `interaction_service._respond_approval`经[`sdk.approval_response`](../../src/harnessix/sdk/approval_response.py)提交决定：审批窗口停留到Turn截止之后再批准或拒绝，服务端拒绝这个决定，客户端随即续跑同一Turn，它以`time_budget_exceeded`失败结束，界面显示“已达到本轮的时间上限”。此前这一轮停在等待审批，直到重启才收尾。
 
 ## 当前增量：作废的半截回复不留空行（ADR 0144第5版）
 
@@ -1276,6 +1280,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 71 | `ec4f0312` 增量 | 2026-11-18 | 审批晚于Turn截止时间时续跑同一Turn，按时限失败收尾（`sdk.approval_response`，Beta Issue #39） |
 | 70 | `39e1e1bf` 增量 | 2026-11-15 | 失败且没有正文的回复（断开后作废的半截回复、整轮失败时的收尾）不显示空行（ADR 0144第5版） |
 | 69 | `9d17f702` 增量 | 2026-11-15 | 审批窗口里按`Ctrl+F`同样收尾：窗口关闭，这条审批按收尾规则拒绝；此前窗口自动弹出后`Ctrl+F`落到原因输入框或按钮上而悄无声息（`ApprovalScreen.action_wrap_up`、`WrapUpFromApproval`，ADR 0148第5版，Beta Issue #4） |
 | 68 | `7d2e735d` 增量 | 2026-11-15 | 完成证据：失败的检查只有同一命令重新运行并通过才算解决，其他命令的成功不再覆盖它；失败时给出`failed_check`，`last_native_returncode`取自该检查（`verification._Check`，Beta Issue #36） |
