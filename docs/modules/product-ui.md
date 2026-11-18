@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 75
+version: 76
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：生成中取消后费用栏照样注明中断的请求可能已计费（Beta Issue #42）
+
+- [`projection.refresh_thread_snapshot`](../../src/harnessix/product_ui/projection.py)换下同一Turn时经`_carry_interruption`保留“模型请求中途结束”：原投影已有该标记，或原状态是`calling_model`而快照已是失败、中断、取消中或已取消（确定不计费的鉴权失败与限流除外），与按事件投影同一规则。此前生成中按Ctrl+X后界面暖刷新，快照里的已取消Turn不带标记，随后重放的状态事件又从已取消开始，费用栏只显示“费用≤…”；重新打开从头重放才显示“已知费用≤… · 另有中断的请求可能已计费”。
 
 ## 当前增量：导出按服务端接受的页长读事件（Beta Issue #43）
 
@@ -1293,6 +1297,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 76 | `3aa6c0da` 增量 | 2026-11-18 | 暖刷新保留“模型请求中途结束”，生成中取消后费用栏与重新打开一致（`projection._carry_interruption`，Beta Issue #42） |
 | 75 | `20bc1983` 增量 | 2026-11-18 | 导出读事件时被拒的页减半重读并沿用（`data_cli._thread_events`经`read_event_page`，Beta Issue #43） |
 | 74 | `493a8f14` 增量 | 2026-11-18 | 恢复补发提示的界面说明改为“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”（ADR 0109第8版，Beta Issue #40） |
 | 73 | `db4760cc` 增量 | 2026-11-18 | 会话被占用时导出与诊断不再启动服务端，导出以`data_workspace_busy`说明先按Ctrl+Q退出（`data_cli._ensure_not_in_use`，Beta Issue #41） |

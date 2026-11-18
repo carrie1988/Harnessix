@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 59
+version: 60
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -141,9 +141,10 @@ supersedes: []
 | 五十二 | `harnessix code`开着时`data export`只报`server_closed`并建议运行doctor，doctor却全部通过（0.10.0b51 macOS，Issue #41；三个平台相同） | 会话被占用时直接说明先按Ctrl+Q退出 | 本文第66节 |
 | 五十三 | 模型把工具调用写成了正文，界面显示“已完成”，其实什么也没执行（0.10.0b51 macOS，Issue #40；三个平台相同） | 补发提示让它真正调用，连续第三次失败而不是记为完成 | [ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版、本文第67节 |
 | 五十四 | 退出TUI后`data export`对多份真实会话以`public_output_limit`失败（0.10.0b51 macOS，Issue #43，5/8；三个平台相同） | 导出时被拒的事件页减半重读 | 本文第68节 |
+| 五十五 | 生成中取消后费用栏没有注明中断的请求可能已计费，重新打开才有（0.10.0b51 Windows，Issue #42；三个平台相同） | 暖刷新保留“模型请求中途结束” | 本文第69节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十四项在第61～68节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十五项在第61～69节。
 
 ## 2. 需求背景
 
@@ -1577,4 +1578,12 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 根因：导出固定每页256个事件读取，服务端对每页做公开结果保护扫描（1 MiB字节上限与工作量上限），工具输出大的会话一页超限即被拒绝；终端界面读历史时会减半页长重读（`sdk.event_pages.read_event_page`），导出没有用它。三个平台相同。
 
 修改：`data_cli._thread_events`经`read_event_page`读事件，被拒的页减半重读并沿用缩小的页长；单个事件仍被拒绝时照旧失败。验证：`tests/product_ui/test_data_cli.py`（256→128→64后读完100个事件，修改前抛出`public_output_limit`；单个事件被拒仍失败）；用报告人五份会话状态目录的副本、同一配置与原工作区路径真实导出：修改前requests以`public_output_limit`失败，修改后五份都退出0（约48万～171万字节）。
+
+## 69. 第五十五项：取消后费用栏少了附注（Issue #42）
+
+0.10.0b51 Windows TUI：Cobra任务在模型请求“思考中/正在生成”时按Ctrl+X，界面显示“已取消”，费用栏为“本轮 71,935 tokens · 费用≤¥0.0688”；退出后`--resume`重新打开，同一轮显示“已知费用≤¥0.0688 · 另有中断的请求可能已计费”。
+
+根因：取消命令完成后界面暖刷新（`hydrate_thread`→`refresh_thread_snapshot`），用快照重建当前Turn；快照规则只对以服务错误结束的失败或中断Turn加这个标记，已取消的Turn没有。随后重放的`cancelling`、`cancelled`状态事件面对的已是快照里的取消状态，按事件的规则（原状态为`calling_model`）也不再成立。重新打开从头重放，事件规则生效，所以有附注。三个平台相同。
+
+修改：暖刷新换下同一Turn时保留标记，并按事件投影的同一规则补判：原状态是`calling_model`而快照已结束（确定不计费的鉴权失败与限流除外）。验证：`tests/product_ui/test_usage_projection.py`（生成中取消后暖刷新保留附注，与从头重放一致，修改前失败；工具执行中取消不加附注）。
 

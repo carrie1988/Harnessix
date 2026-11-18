@@ -10,6 +10,7 @@
 - 这个工作区的 `harnessix code` 还开着时，`harnessix data export` 直接说明会话正被占用、先按 Ctrl+Q 退出（#41）；此前只报 `server_closed` 并建议运行 doctor，而 doctor 全部通过
 - 模型把工具调用写成了一段文字（如 `<tool_call>{"name": …}`）而没有真正调用时，不再显示“已完成”（#40）：Harnessix 提示它改用真正的工具调用继续；连续三次仍如此时本轮以失败结束
 - 工具输出较多的会话也能用 `harnessix data export` 导出（#43）：此前以 `public_output_limit` 失败
+- 生成中按 Ctrl+X 取消后，终端界面的费用栏当场注明“另有中断的请求可能已计费”，与重新打开会话时一致（#42）
 
 ## 0.10.0b50（2026-11-17）
 
