@@ -13,7 +13,7 @@ import os
 import platform
 import shutil
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Awaitable, Iterable, Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
@@ -31,8 +31,9 @@ from harnessix.product_ui.cli import (
 from harnessix.product_ui.contracts import workspace_identity_fingerprint
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.git_detection import detected_git_executable
-from harnessix.protocol.contracts import ThreadView
+from harnessix.protocol.contracts import EventsReplayResult, ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError, SubprocessAgentTransport
+from harnessix.sdk.event_pages import read_event_page
 
 _REPLAY_PAGE = 256
 WORKSPACE_BUSY = (
@@ -142,10 +143,19 @@ async def _all_threads(client: AgentClient) -> list[ThreadView]:
 
 
 async def _thread_events(client: AgentClient, thread: ThreadView) -> list[dict[str, Any]]:
+    """逐页读出全部事件；服务端以超限拒绝一页时减半页长重读，此后沿用缩小的页长。
+
+    每页都经公开结果保护扫描（字节与工作量有上限），工具输出大的会话256个事件一页放不下，
+    此前导出以public_output_limit失败（Beta Issue #43）。终端界面一直按这个办法读历史。
+    """
     events: list[dict[str, Any]] = []
-    cursor = 0
+    cursor, limit = 0, _REPLAY_PAGE
     while True:
-        page = await client.replay_events(thread.thread_id, after_cursor=cursor, limit=_REPLAY_PAGE)
+
+        def fetch(size: int, after: int = cursor) -> Awaitable[EventsReplayResult]:
+            return client.replay_events(thread.thread_id, after_cursor=after, limit=size)
+
+        page, limit = await read_event_page(fetch, limit)
         events.extend(event.model_dump(mode="json", by_alias=True) for event in page.events)
         if not page.has_more or page.scanned_through <= cursor:
             return events

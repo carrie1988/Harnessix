@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 74
+version: 75
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：导出按服务端接受的页长读事件（Beta Issue #43）
+
+- [`data_cli._thread_events`](../../src/harnessix/product_ui/data_cli.py)经[`sdk.event_pages.read_event_page`](../../src/harnessix/sdk/event_pages.py)读事件：一页被以`public_output_limit`或`response_too_large`拒绝时减半页长重读，此后沿用缩小的页长（终端界面`ThinAgentCLI._paged`一直如此）。此前固定256个事件一页，工具输出大的会话超过每页的公开保护上限，导出以`public_output_limit`失败。单个事件仍被拒绝时照旧失败。
 
 ## 当前增量：会话被占用时导出直接说明先退出（Beta Issue #41）
 
@@ -1289,6 +1293,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 75 | `20bc1983` 增量 | 2026-11-18 | 导出读事件时被拒的页减半重读并沿用（`data_cli._thread_events`经`read_event_page`，Beta Issue #43） |
 | 74 | `493a8f14` 增量 | 2026-11-18 | 恢复补发提示的界面说明改为“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”（ADR 0109第8版，Beta Issue #40） |
 | 73 | `db4760cc` 增量 | 2026-11-18 | 会话被占用时导出与诊断不再启动服务端，导出以`data_workspace_busy`说明先按Ctrl+Q退出（`data_cli._ensure_not_in_use`，Beta Issue #41） |
 | 72 | `f1744c7a` 增量 | 2026-11-18 | 完成证据：只读与搜索命令不算检查（`read_only_commands`，复用ADR 0128的只读判定），摘要新增`commands_after_last_edit`与`commands_omitted`（Beta Issue #36的后续） |

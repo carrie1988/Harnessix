@@ -9,6 +9,7 @@
 - 完成证据不再把只读或搜索命令（如 `Select-String … | Select-Object`、`grep … | head`、`git status`）当作检查（#36 后续）：修改后只运行过这类命令时为 `unverified`；`harnessix exec` 摘要新增 `commands_after_last_edit`，列出修改后运行的每条命令及结果
 - 这个工作区的 `harnessix code` 还开着时，`harnessix data export` 直接说明会话正被占用、先按 Ctrl+Q 退出（#41）；此前只报 `server_closed` 并建议运行 doctor，而 doctor 全部通过
 - 模型把工具调用写成了一段文字（如 `<tool_call>{"name": …}`）而没有真正调用时，不再显示“已完成”（#40）：Harnessix 提示它改用真正的工具调用继续；连续三次仍如此时本轮以失败结束
+- 工具输出较多的会话也能用 `harnessix data export` 导出（#43）：此前以 `public_output_limit` 失败
 
 ## 0.10.0b50（2026-11-17）
 

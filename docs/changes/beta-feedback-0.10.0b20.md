@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 58
+version: 59
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -140,9 +140,10 @@ supersedes: []
 | 五十一 | 没修好的任务最后一条命令是只读搜索，完成证据却是“修改后检查通过”（0.10.0b50 Windows，Issue #36的后续） | 只读与搜索命令不算检查，摘要列出修改后运行的全部命令 | 本文第65节 |
 | 五十二 | `harnessix code`开着时`data export`只报`server_closed`并建议运行doctor，doctor却全部通过（0.10.0b51 macOS，Issue #41；三个平台相同） | 会话被占用时直接说明先按Ctrl+Q退出 | 本文第66节 |
 | 五十三 | 模型把工具调用写成了正文，界面显示“已完成”，其实什么也没执行（0.10.0b51 macOS，Issue #40；三个平台相同） | 补发提示让它真正调用，连续第三次失败而不是记为完成 | [ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版、本文第67节 |
+| 五十四 | 退出TUI后`data export`对多份真实会话以`public_output_limit`失败（0.10.0b51 macOS，Issue #43，5/8；三个平台相同） | 导出时被拒的事件页减半重读 | 本文第68节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十三项在第61～67节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十四项在第61～68节。
 
 ## 2. 需求背景
 
@@ -1568,4 +1569,12 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 见[ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版。0.10.0b51 macOS TUI（qwen3.8-flash，思考low）：chi修复任务约225秒、8次模型尝试后显示“已完成”，末条回复以`<previous_tool_call>`开头、内含`{"name": "exec_command_shell", "arguments": {...}}`与`</function>`，没有真正的工具调用；工作区没有改动，计划停在第一步。运行时把“正常结束、没有工具调用、有正文”的回复一律当作最终答复。判定在运行时一处，三个平台相同。
 
 修改：这种回复按第6版的机制补发提示继续（第三种情况`tool_call_text`），连续第三次以`invalid_provider_output`失败。判定要求带本步工具名的调用对象，或调用标记加工具名；本机40个Beta会话库的570条真实助手消息里只认出#40这一条。验证见ADR。
+
+## 68. 第五十四项：导出大会话时事件页超过保护上限（Issue #43）
+
+0.10.0b51 macOS：requests、afero、chi、zod、clap五个真实修复会话正常退出TUI后`harnessix data export`都退出2：`{"code": "public_output_limit", ...}`；doctor通过；rich、cobra、fast-xml-parser三个会话能导出（约35～82万字节）。
+
+根因：导出固定每页256个事件读取，服务端对每页做公开结果保护扫描（1 MiB字节上限与工作量上限），工具输出大的会话一页超限即被拒绝；终端界面读历史时会减半页长重读（`sdk.event_pages.read_event_page`），导出没有用它。三个平台相同。
+
+修改：`data_cli._thread_events`经`read_event_page`读事件，被拒的页减半重读并沿用缩小的页长；单个事件仍被拒绝时照旧失败。验证：`tests/product_ui/test_data_cli.py`（256→128→64后读完100个事件，修改前抛出`public_output_limit`；单个事件被拒仍失败）；用报告人五份会话状态目录的副本、同一配置与原工作区路径真实导出：修改前requests以`public_output_limit`失败，修改后五份都退出0（约48万～171万字节）。
 

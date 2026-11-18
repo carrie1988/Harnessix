@@ -255,3 +255,39 @@ def test_export_and_diagnostics_say_to_quit_the_running_session_first(
     assert "Ctrl+Q" in busy["message"] and "doctor" not in busy["message"]
     diagnostics = json.loads((tmp_path / "d.json").read_text(encoding="utf-8"))
     assert diagnostics["threads_error"] == "data_workspace_busy" and started == []
+
+
+async def test_export_shrinks_pages_the_server_rejects_as_too_large() -> None:
+    """Beta Issue #43：工具输出大的会话，256个事件一页超过公开保护上限，导出以public_output_limit
+    失败。现在与终端界面一样减半页长重读，此后沿用；修改前这里抛出public_output_limit。"""
+    from harnessix.sdk import AgentSDKError
+
+    asked: list[tuple[int, int]] = []
+
+    class Client:
+        async def replay_events(self, _thread_id, *, after_cursor, limit):
+            asked.append((after_cursor, limit))
+            if limit > 64:
+                raise AgentSDKError("public_output_limit", "公开结果未通过保护校验")
+            last = min(after_cursor + limit, 100)
+            events = tuple(
+                SimpleNamespace(model_dump=lambda n=n, **_: {"cursor": n})
+                for n in range(after_cursor + 1, last + 1)
+            )
+            return SimpleNamespace(events=events, scanned_through=last, has_more=last < 100)
+
+    events = await _thread_events(Client(), _thread())  # type: ignore[arg-type]
+    assert [item["cursor"] for item in events] == list(range(1, 101))
+    assert asked[:3] == [(0, 256), (0, 128), (0, 64)] and asked[3:] == [(64, 64)]
+
+
+async def test_a_single_event_too_large_still_fails() -> None:
+    from harnessix.sdk import AgentSDKError
+
+    class Client:
+        async def replay_events(self, _thread_id, *, after_cursor, limit):
+            raise AgentSDKError("public_output_limit", "公开结果未通过保护校验")
+
+    with pytest.raises(AgentSDKError) as caught:
+        await _thread_events(Client(), _thread())  # type: ignore[arg-type]
+    assert caught.value.code == "public_output_limit"
