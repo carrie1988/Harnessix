@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 657,
-    "physical_lines": 137535,
-    "logical_lines": 119023,
+    "physical_lines": 137554,
+    "logical_lines": 119031,
     "documented_modules": 657,
     "classes": 1263,
     "documented_classes": 662,
-    "functions": 5502,
-    "documented_functions": 1968,
+    "functions": 5503,
+    "documented_functions": 1969,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -352,8 +352,8 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime",
       "kind": "class",
-      "line": 309,
-      "lines": 3242,
+      "line": 310,
+      "lines": 3241,
       "documented": true
     },
     {
@@ -362,7 +362,7 @@
       "path": "src/harnessix/agent/runtime.py",
       "qualname": "AgentRuntime.__init__",
       "kind": "function",
-      "line": 312,
+      "line": 313,
       "lines": 202,
       "documented": false,
       "decision_complexity": 47

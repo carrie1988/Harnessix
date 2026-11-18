@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from harnessix.agent.approvals import remaining_seconds
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import ToolCallContent, ToolResultContent, Turn, TurnStatus
 from harnessix.delivery.workspace_patch_errors import (
@@ -255,20 +256,27 @@ def cancel_pending_approval(
     turn: Turn,
     call: ToolCallContent,
 ) -> ToolResultContent | None:
-    """仅CANCELLING且仍未批准时证明未执行；不冒充已完成的Session审批投影。"""
+    """CANCELLING或Turn时限已过、且仍未批准时证明未执行；不冒充已完成的Session审批投影。
 
-    if turn.status is not TurnStatus.CANCELLING or route.state != "pending_approval":
+    时限已过：审批晚于截止时间被拒绝（approval_expired）后续跑，或重启恢复时到期。
+    计划从未获批，系统以拒绝结束它，调用记为未执行；此前记为未知效果，
+    整轮以uncertain_effect中断（Beta Issue #39）。
+    """
+
+    if route.state != "pending_approval":
+        return None
+    if turn.status is TurnStatus.CANCELLING:
+        reason = "turn_cancelled"
+        failure = AgentFailure(code="cancelled", message="用户取消了尚未批准的Action")
+    elif remaining_seconds(turn) <= 0:
+        reason = "turn_time_budget_exceeded"
+        failure = AgentFailure(
+            code="time_budget_exceeded", message="审批超过本轮时限，Action没有执行"
+        )
+    else:
         return None
     router.decide(
         route.plan.execution.plan_id,
-        ApprovalDecision(
-            outcome=ApprovalOutcome.REJECTED,
-            actor="system.cancel",
-            reason="turn_cancelled",
-        ),
+        ApprovalDecision(outcome=ApprovalOutcome.REJECTED, actor="system.cancel", reason=reason),
     )
-    return ToolResultContent(
-        call_id=call.call_id,
-        outcome="cancelled",
-        error=AgentFailure(code="cancelled", message="用户取消了尚未批准的Action"),
-    )
+    return ToolResultContent(call_id=call.call_id, outcome="cancelled", error=failure)

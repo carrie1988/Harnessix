@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 55
+version: 56
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -1532,6 +1532,12 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 根因：`AgentRuntime.submit_approval`在Turn时限已过时拒绝决定（`approval_expired`），不改写这一轮；约定由调用方续跑同一Turn，续跑把等待审批且时限已过的Turn记为`time_budget_exceeded`失败（与重启后的恢复相同，见`tests/agent/test_approvals.py::test_wall_clock_budget_includes_approval_wait`）。`ThinAgentCLI`与终端界面都没有续跑：`exec`把拒绝当作内部错误退出，终端界面显示错误后这一轮停在等待审批，直到重启。判定与客户端代码三个平台共用。
 
 修改：新增`sdk.approval_response.respond_approval_or_close_expired`，收到`approval_expired`后用派生请求ID续跑同一Turn，随后照常跟随到终态；`ThinAgentCLI`（`exec`）与终端界面共用。服务端行为与审批截止保护不变，晚到的决定仍不生效、命令不执行。`exec`此后与其他到期路径一致：状态`failed`、`time_budget_exceeded`、退出码1，摘要带会话、Turn、用量与完成证据，事件以`failed`终态结束。验证：`tests/app_server/test_agent_cli.py::test_an_approval_answered_after_the_deadline_ends_the_turn_on_its_time_limit`（真实Runtime与协议服务，修改前抛出`approval_expired`）、`tests/app_server/test_approval_response.py`。
+
+### 64.1 宿主命令审批的续跑（候选包复测发现）
+
+第64节的客户端修复在真实的宿主命令审批上让`exec`一直等待：本机macOS用真实模型、`--timeout-seconds 60`、第75秒批准，`approval/respond`返回`approval_expired`，随后的`turn/resume`仍返回`waiting_approval`。`AgentRuntime._resume_turn`对等待审批的Turn先走`resume_after_approval`，可信动作在`sync_trusted_action`里原样返回等待中的Turn，没有时限判断；第64节的回归测试用普通工具审批，走`continue_turn`分支，没有覆盖到。b52发布前暂停。
+
+修改：`_resume_turn`遇到等待审批且时限已过的Turn（`approvals.overdue_wait`，与等待输入到期共用），与重启恢复相同，以`time_budget_exceeded`失败收尾；收尾时仍未获批的可信动作由`cancel_pending_approval`以系统拒绝结束，调用记为未执行（此前会记为未知效果，整轮以`uncertain_effect`中断）。验证：`tests/product_config/test_native_host_command.py::test_an_overdue_host_command_approval_ends_the_turn_on_resume`（宿主命令审批；修改前续跑后仍为`waiting_approval`，只改续跑时为`interrupted`/`uncertain_effect`）；本机macOS真实`exec`：退出码1，`failed`/`time_budget_exceeded`，摘要带会话与Turn，事件以`failed`结束。
 
 ## 65. 第五十一项：只读搜索被当作检查（Issue #36的后续）
 

@@ -22,6 +22,7 @@ from harnessix.agent.models import (
     ToolResultContent,
     TrustedActionApprovalRequestContent,
     Turn,
+    TurnStatus,
 )
 from harnessix.domain.models import (
     ApprovalDecision,
@@ -345,6 +346,16 @@ def remaining_seconds(turn: Turn) -> float:
     return (
         turn.created_at + timedelta(seconds=turn.budget.timeout_seconds) - utc_now()
     ).total_seconds()
+
+
+def overdue_wait(turn: Turn) -> bool:
+    """等待输入或审批且时限已过：续跑时以time_budget_exceeded收尾，与重启恢复相同。
+
+    等待审批：决定晚于截止时间被拒绝（approval_expired）后客户端续跑。此前宿主命令审批在续跑里
+    原样返回等待，exec一直跟随等待（Beta Issue #39）。
+    """
+    waiting = turn.status in {TurnStatus.WAITING_INPUT, TurnStatus.WAITING_APPROVAL}
+    return waiting and remaining_seconds(turn) <= 0
 
 
 def with_rejection_reason[ResultT](result: ResultT, approval: Item | None) -> ResultT:
