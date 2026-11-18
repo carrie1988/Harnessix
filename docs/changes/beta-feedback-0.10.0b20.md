@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 56
+version: 57
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -138,9 +138,10 @@ supersedes: []
 | 四十九 | 普通Grep的存档在长凭据下超过公开保护的工作量上限，整轮开发以`public_output_limit`终止（0.10.0b50 Windows，Issue #37；三个平台相同） | 工作量只计实际比较，比模式短的文本计1 | 本文第63节 |
 | 五十 | 审批跨过Turn时限后，`harnessix exec`摘要只剩错误码，事件停在等待审批（0.10.0b50 Windows，Issue #39，4次；三个平台相同） | 审批过期时客户端续跑同一Turn，按时限失败收尾 | 本文第64节 |
 | 五十一 | 没修好的任务最后一条命令是只读搜索，完成证据却是“修改后检查通过”（0.10.0b50 Windows，Issue #36的后续） | 只读与搜索命令不算检查，摘要列出修改后运行的全部命令 | 本文第65节 |
+| 五十二 | `harnessix code`开着时`data export`只报`server_closed`并建议运行doctor，doctor却全部通过（0.10.0b51 macOS，Issue #41；三个平台相同） | 会话被占用时直接说明先按Ctrl+Q退出 | 本文第66节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十一项在第61～65节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十二项在第61～66节。
 
 ## 2. 需求背景
 
@@ -1552,3 +1553,11 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 2. 只读或只做搜索的命令不算检查（`product_ui.read_only_commands`）：复用沙箱外命令免询问规则（ADR 0128）的内置只读判定，另认出“第一个程序是搜索或读取程序、其后只有整理输出的程序”的管道；判定不了的仍算检查，所以清单不全只会少改善、不会误判。修改后只运行过这类命令时为`unverified`，对话末尾的提示注明“只读或搜索命令不算”。
 
 `python 探针脚本`这类命令无法与测试区分，仍算检查；按测试程序前缀化解失败（方案3）会重新引入假的“通过”，未采用。三个平台共用一处判定（PowerShell与POSIX按宿主平台选择规则）。验证：`tests/product_ui/test_read_only_commands.py`、`tests/product_ui/test_unverified_completion.py`（marked的命令修改前为通过；探针、重定向、串联、管道到解释器仍算检查；命令列表与截断）。
+
+## 66. 第五十二项：会话被占用时导出的说明（Issue #41）
+
+0.10.0b51 macOS：真实任务结束后`harnessix code`仍开着，另一个终端用同一配置与状态目录`harnessix data export`，退出2：`{"code": "server_closed", "message": "无法读取会话，请先运行 harnessix code doctor"}`；doctor为`ready=true`，再导出仍失败；退出TUI后导出成功。
+
+根因：导出启动一个读取会话的App Server，它要取得状态目录的宿主独占锁（`product_state_owner`），锁被TUI持有，服务端以`product_state_busy`立即退出；导出把任何协议错误都换成“请先运行doctor”，doctor不取这把锁，所以全部通过。诊断同样启动服务端，会话部分只记`server_closed`。三个平台相同。
+
+修改：导出与诊断读取会话前先试一下这把锁（`data_cli._ensure_not_in_use`），被占用时不启动服务端：导出以`data_workspace_busy`退出2，说明“这个工作区的会话正被另一个 Harnessix 使用（例如仍打开着的 harnessix code）。请先在那里按 Ctrl+Q 退出，再重新运行这个命令”；诊断照常生成，`threads_error`为`data_workspace_busy`；删除沿用同一说明。TUI开着时读取会话需要服务端与TUI共享状态，不在本次修改范围。验证：`tests/product_ui/test_data_cli.py::test_export_and_diagnostics_say_to_quit_the_running_session_first`（修改前失败）；本机真实CLI：未占用时导出退出0，另一进程持锁时退出2并给出上述说明。

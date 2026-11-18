@@ -35,6 +35,10 @@ from harnessix.protocol.contracts import ThreadView
 from harnessix.sdk import AgentClient, AgentSDKError, SubprocessAgentTransport
 
 _REPLAY_PAGE = 256
+WORKSPACE_BUSY = (
+    "这个工作区的会话正被另一个 Harnessix 使用（例如仍打开着的 harnessix code）。"
+    "请先在那里按 Ctrl+Q 退出，再重新运行这个命令"
+)
 
 
 def workspaces_root() -> Path:
@@ -91,7 +95,7 @@ def delete_workspace_state(root: Path, fingerprint: str, *, confirm: str) -> Non
         shutil.rmtree(target)
     except KernelError as error:
         if error.code == "product_state_busy":
-            raise ProductUIError("data_workspace_busy", "该工作区正在运行，请先退出") from None
+            raise ProductUIError("data_workspace_busy", WORKSPACE_BUSY) from None
         raise ProductUIError("data_delete_failed", "无法锁定该工作区的状态") from None
     except OSError:
         raise ProductUIError("data_delete_failed", "删除数据时发生文件错误") from None
@@ -179,9 +183,26 @@ def _client(workspace: Path, arguments: argparse.Namespace) -> AgentClient:
     return AgentClient(SubprocessAgentTransport(command), client_name="harnessix-data")
 
 
+def _ensure_not_in_use(runtime: Path) -> None:
+    """会话由正在运行的宿主独占（如仍打开着的harnessix code）；此时读取会话的服务端启动即退出。
+
+    此前导出只报server_closed并建议运行doctor，doctor却全部通过（Beta Issue #41）。
+    """
+    if not runtime.is_dir():
+        return
+    try:
+        with product_state_owner(runtime):
+            pass
+    except KernelError as error:
+        if error.code == "product_state_busy":
+            raise ProductUIError("data_workspace_busy", WORKSPACE_BUSY) from None
+        raise
+
+
 async def _read_threads(
     workspace: Path, arguments: argparse.Namespace, *, with_events: bool
 ) -> list[dict[str, object]]:
+    _ensure_not_in_use(_state_directory(workspace, arguments) / "runtime")
     client = _client(workspace, arguments)
     try:
         await client.initialize()
@@ -230,7 +251,7 @@ def _diagnostics(arguments: argparse.Namespace) -> dict[str, object]:
     }
     try:
         result["threads"] = asyncio.run(_read_threads(workspace, arguments, with_events=False))
-    except AgentSDKError as error:
+    except (AgentSDKError, ProductUIError) as error:
         result["threads_error"] = error.code
     return result
 

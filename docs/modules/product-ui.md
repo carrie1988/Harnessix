@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 72
+version: 73
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,10 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：会话被占用时导出直接说明先退出（Beta Issue #41）
+
+- [`data_cli._ensure_not_in_use`](../../src/harnessix/product_ui/data_cli.py)：导出与诊断读取会话前先试一下状态目录的宿主独占锁（`product_state_owner`），被占用（`product_state_busy`，如仍打开着的`harnessix code`）时导出以`data_workspace_busy`退出2，说明“先在那里按Ctrl+Q退出”；诊断照常生成，`threads_error`为`data_workspace_busy`。删除沿用同一说明（`WORKSPACE_BUSY`）。此前导出启动读取会话的服务端，服务端因锁被占用立即退出，导出只报`server_closed`并建议运行doctor，而doctor全部通过。
 
 ## 当前增量：只读和搜索命令不算检查，摘要列出修改后运行的命令（Beta Issue #36的后续）
 
@@ -1285,6 +1289,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 73 | `db4760cc` 增量 | 2026-11-18 | 会话被占用时导出与诊断不再启动服务端，导出以`data_workspace_busy`说明先按Ctrl+Q退出（`data_cli._ensure_not_in_use`，Beta Issue #41） |
 | 72 | `f1744c7a` 增量 | 2026-11-18 | 完成证据：只读与搜索命令不算检查（`read_only_commands`，复用ADR 0128的只读判定），摘要新增`commands_after_last_edit`与`commands_omitted`（Beta Issue #36的后续） |
 | 71 | `ec4f0312` 增量 | 2026-11-18 | 审批晚于Turn截止时间时续跑同一Turn，按时限失败收尾（`sdk.approval_response`，Beta Issue #39） |
 | 70 | `39e1e1bf` 增量 | 2026-11-15 | 失败且没有正文的回复（断开后作废的半截回复、整轮失败时的收尾）不显示空行（ADR 0144第5版） |
