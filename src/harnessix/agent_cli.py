@@ -9,7 +9,7 @@ import sys
 import time
 import unicodedata
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 from uuid import UUID
 
 from harnessix.protocol.contracts import (
@@ -33,6 +33,7 @@ from harnessix.protocol.contracts import (
 )
 from harnessix.protocol.delta_streams import is_reasoning_delta
 from harnessix.sdk.agent_client import AgentClient, AgentSDKError, SubprocessAgentTransport
+from harnessix.sdk.approval_response import respond_approval_or_close_expired
 from harnessix.sdk.event_pages import read_event_page
 
 _TERMINAL = {"completed", "failed", "cancelled", "interrupted"}
@@ -319,8 +320,7 @@ class ThinAgentCLI:
             )
             if approval_item is None:
                 return False
-            content = approval_item.content
-            assert isinstance(content, PublicApprovalRequestContent)
+            content = cast(PublicApprovalRequestContent, approval_item.content)  # 上面已筛选
             outcome, actor = self._policy_decision(content), self.actor
             if outcome is None:
                 if _in_grace(self._pending_since, content.approval_id):
@@ -328,7 +328,8 @@ class ThinAgentCLI:
                 await self._render_artifact(thread.thread_id, approval_item)
                 reply = await self.console.prompt(approval_prompt(self._items, content))
                 outcome, actor = _typed_decision(reply), self.human_actor
-            await self.client.respond_approval(
+            await respond_approval_or_close_expired(
+                self.client,
                 ApprovalRespondParams(
                     request_id=f"cli-approval-{content.approval_id}",
                     thread_id=thread.thread_id,
@@ -336,7 +337,7 @@ class ThinAgentCLI:
                     approval_id=content.approval_id,
                     fingerprint=content.request_fingerprint,
                     decision=PublicApprovalDecision(outcome=outcome, actor=actor),
-                )
+                ),
             )
             self._submitted_approvals.add(content.approval_id)
             return True

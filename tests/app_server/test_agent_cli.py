@@ -295,3 +295,49 @@ async def test_thin_cli_waits_for_a_system_decision_before_asking_a_person(
     now[0] += 1.0
     assert await cli._answer_pending(thread) is True  # type: ignore[arg-type]
     assert client.respond_approval.await_count == 1
+
+
+async def test_an_approval_answered_after_the_deadline_ends_the_turn_on_its_time_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Beta Issue #39：审批跨过Turn时限后提交，服务端拒绝（approval_expired），这一轮停在等待审批，
+    事件没有终态，exec摘要只剩错误码。客户端续跑同一Turn，按时限失败收尾；修改前这里抛出approval_expired。"""
+    from datetime import timedelta
+
+    from harnessix.product_ui.turn_budget import PRODUCT_TURN_BUDGET
+    from tests.agent.helpers import RecordingTools, tool_step
+
+    store = SQLiteSessionStore(tmp_path / "session.db")
+    tools = RecordingTools(approval=True)
+    async with AgentRuntime(store, ScriptedProvider([tool_step("test.read")]), tools) as runtime:
+        service = AgentApplicationService(
+            runtime, store, SQLiteProtocolRequestStore(store.path), None
+        )
+        client = AgentClient(InProcessAgentTransport(AgentProtocolServer(service)))
+        await client.initialize()
+        thread = await client.create_thread(str(tmp_path), request_id="create-late")
+
+        class LateConsole(ScriptedConsole):
+            async def prompt(self, text: str) -> str:
+                turn = (await store.get_thread(thread.thread_id)).turns[-1]
+                monkeypatch.setattr(
+                    "harnessix.agent.approvals.utc_now",
+                    lambda: turn.created_at + timedelta(seconds=61),
+                )
+                return await super().prompt(text)
+
+        console = LateConsole(["y"])
+        result = await ThinAgentCLI(client, console=console).run_turn(
+            thread.thread_id,
+            "任务",
+            request_id="turn-late",
+            budget=PRODUCT_TURN_BUDGET.model_copy(update={"timeout_seconds": 60.0}),
+        )
+        assert result.latest_turn is not None
+        assert result.latest_turn.status == "failed"
+        assert result.latest_turn.error is not None
+        assert result.latest_turn.error.code == "time_budget_exceeded"
+        assert tools.calls == []
+        statuses = [line for line, _ in console.output if line.startswith("Turn状态")]
+        assert statuses[-1] == "Turn状态：failed"
+        await client.close()

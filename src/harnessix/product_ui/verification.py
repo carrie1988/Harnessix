@@ -4,7 +4,8 @@
 （Beta Issue #9），这里只看这一轮里真正发生过的工具调用与结果。
 
 一条检查失败后，只有同一条命令重新运行并通过才算解决；之后其他命令的成功（如清理临时文件）
-不覆盖它（Beta Issue #36）。
+不覆盖它（Beta Issue #36）。只读或只做搜索的命令（`read_only_commands`）不算检查；摘要另列出
+最后一次修改之后运行的全部命令及结果（`commands_after_last_edit`），由使用方自行核对。
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from harnessix.product_ui.read_only_commands import is_read_only_command
 from harnessix.protocol.contracts import PublicItem, PublicToolCallContent, PublicToolResultContent
 
 PATCH_TOOLS = ("apply_patch", "apply_patch_batch")
@@ -22,6 +24,8 @@ CHECK_TOOL_PREFIXES = ("exec_command.", "host_command.", "run_profile.")
 # Windows的PowerShell命令在最后一条语句成功、而最后一个原生程序失败时写到stderr末尾的一行
 # （product_config.native_shells.NATIVE_EXIT_NOTE，Beta Issue #27）。
 _NATIVE_EXIT = re.compile(r"harnessix: the last native program exited with (-?\d+)")
+# 摘要列出的命令条数上限：只保留最近的这些条，其余计入commands_omitted。
+MAX_LISTED_COMMANDS = 50
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,12 +35,24 @@ class _Check:
     command: str
     passed: bool
     native: int | None
+    counted: bool
+
+    def listed(self) -> dict[str, Any]:
+        entry: dict[str, Any] = {
+            "command": self.command,
+            "passed": self.passed,
+            "counted_as_check": self.counted,
+        }
+        if self.native:
+            entry["native_returncode"] = self.native
+        return entry
 
 
 def verification_summary(items: Sequence[PublicItem]) -> dict[str, Any]:
     """完成证据：最后一次成功改代码之后是否运行过检查，以及检查有没有全部通过。
 
     `last_check`是最后运行的检查；`failed_check`是仍未通过的检查中最近运行的一条（失败时才有）。
+    只读或只做搜索的命令不算检查，但与检查一起按运行顺序列在`commands_after_last_edit`里。
     """
 
     results = {
@@ -47,6 +63,7 @@ def verification_summary(items: Sequence[PublicItem]) -> dict[str, Any]:
     edited = False
     # 每条检查命令最近一次的结果，按最近运行的先后排列：同一命令再运行即取代原结果。
     checks: dict[str, _Check] = {}
+    ran: list[_Check] = []
     for item in items:
         call = item.content
         if not isinstance(call, PublicToolCallContent):
@@ -55,18 +72,25 @@ def verification_summary(items: Sequence[PublicItem]) -> dict[str, Any]:
         if call.tool in PATCH_TOOLS and result is not None and result.outcome == "succeeded":
             edited = True
             checks.clear()  # 之后的检查才算数
+            ran.clear()
         elif call.tool.startswith(CHECK_TOOL_PREFIXES) and edited:
             check = _check(call, result)
-            checks.pop(check.command, None)
-            checks[check.command] = check
+            ran.append(check)
+            if check.counted:
+                checks.pop(check.command, None)
+                checks[check.command] = check
     if not edited:
         return {"status": "no_changes"}
+    summary: dict[str, Any] = {"status": "unverified"}
+    if ran:
+        summary["commands_after_last_edit"] = [
+            check.listed() for check in ran[-MAX_LISTED_COMMANDS:]
+        ]
+        if len(ran) > MAX_LISTED_COMMANDS:
+            summary["commands_omitted"] = len(ran) - MAX_LISTED_COMMANDS
     if not checks:
-        return {"status": "unverified"}
-    summary: dict[str, Any] = {
-        "status": "passed_after_last_edit",
-        "last_check": list(checks)[-1],
-    }
+        return summary
+    summary.update(status="passed_after_last_edit", last_check=list(checks)[-1])
     failed = [check for check in checks.values() if not check.passed]
     if failed:
         summary.update(status="failed_after_last_edit", failed_check=failed[-1].command)
@@ -80,7 +104,9 @@ def _check(call: PublicToolCallContent, result: PublicToolResultContent | None) 
     native = _native_exit_code(result)
     # 命令本身成功、但其中最后一个原生程序失败（测试之后又打印了一行）不算通过。
     passed = result is not None and result.outcome == "succeeded" and not native
-    return _Check(command if isinstance(command, str) else call.tool, passed, native)
+    if not isinstance(command, str):
+        return _Check(call.tool, passed, native, counted=True)
+    return _Check(command, passed, native, counted=not is_read_only_command(command))
 
 
 def _native_exit_code(result: PublicToolResultContent | None) -> int | None:
@@ -100,7 +126,7 @@ def unverified_notice(items: Sequence[PublicItem]) -> str | None:
     summary = verification_summary(items)
     if summary["status"] == "unverified":
         return (
-            "本轮最后一次修改之后没有运行过测试或其他检查；"
+            "本轮最后一次修改之后没有运行过测试或其他检查（只读或搜索命令不算）；"
             "回复里提到的检查结果不是在这些修改之后得到的，请自行确认"
         )
     if summary["status"] == "failed_after_last_edit":
