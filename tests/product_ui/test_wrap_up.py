@@ -159,8 +159,13 @@ async def test_wrap_up_from_inside_the_approval_dialog(tmp_path: Path) -> None:
                 composer = app.query_one("#composer", Input)
                 await _wait_until(lambda: not composer.disabled)
                 await pilot.press("g", "o", "enter")
+                # 等窗口控件挂载完：屏幕先切换、控件随后挂载（0.10.0b50 CI曾在这之间查询）。
                 await _wait_until(
-                    lambda: isinstance(app.screen, ApprovalScreen), timeout_seconds=10
+                    lambda: (
+                        isinstance(app.screen, ApprovalScreen)
+                        and bool(app.screen.query("#approval-reason"))
+                    ),
+                    timeout_seconds=10,
                 )
                 # 最容易吞键的位置：焦点在原因输入框里。
                 app.screen.query_one("#approval-reason", Input).focus()

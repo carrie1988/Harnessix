@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 659,
-    "physical_lines": 138133,
-    "logical_lines": 119454,
+    "physical_lines": 138164,
+    "logical_lines": 119472,
     "documented_modules": 659,
     "classes": 1270,
     "documented_classes": 669,
-    "functions": 5543,
-    "documented_functions": 1988,
+    "functions": 5544,
+    "documented_functions": 1991,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -224,7 +224,7 @@
     },
     {
       "path": "src/harnessix/delivery/trusted_action.py",
-      "lines": 614
+      "lines": 619
     },
     {
       "path": "src/harnessix/evals/delivery.py",
@@ -1763,7 +1763,7 @@
       "path": "src/harnessix/secrets/publication.py",
       "qualname": "SecretPublicationScope",
       "kind": "class",
-      "line": 258,
+      "line": 261,
       "lines": 107,
       "documented": true
     },

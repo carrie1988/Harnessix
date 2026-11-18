@@ -15,6 +15,9 @@ _WINDOWS_RESERVED = frozenset(
     | {f"LPT{index}" for index in "¹²³"}
 )
 _DRIVE_PREFIX = re.compile(r"^[a-zA-Z]:")
+# Windows为长名称生成的8.3短名称（如.env的ENV~1、.git的GIT~1）都含“~数字”；
+# 按短名称打开会落到长名称上，绕过按名称的拒绝（ADR 0170）。
+_WINDOWS_SHORT_NAME = re.compile(r"~[0-9]")
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
 
 
@@ -52,6 +55,16 @@ def normalize_workspace_path(value: str, platform: PlatformKind) -> str:
                 raise KernelError("workspace_path_denied", "Windows路径包含保留名或超长段")
     # 全部段已拒绝空值、点与父引用；原输入就是规范形式，无需再构造路径对象。
     return value
+
+
+def has_windows_short_name(path: str) -> bool:
+    """模型提交的Windows路径是否有段形如8.3短名称（ADR 0170）。
+
+    只用于模型提交的读写路径入口：目录遍历得到的都是长名称；仓库里真名就含“~数字”的
+    文件在Windows上不能经读取工具和Patch按这个名称访问，改用命令工具。
+    """
+
+    return any(_WINDOWS_SHORT_NAME.search(part) for part in path.split("/"))
 
 
 def path_comparison_key(value: str, platform: PlatformKind) -> str:

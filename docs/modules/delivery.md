@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 63
+version: 64
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
 modules:
   - delivery
 related_adrs:
+  - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
   - docs/adr/0069-unified-coding-action-risk-route.md
@@ -17,6 +18,7 @@ related_adrs:
   - docs/adr/0137-create-with-missing-parent-directories.md
   - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
+  - tests/delivery/test_windows_short_names.py
   - tests/delivery/test_create_missing_parents.py
   - tests/product_config/test_patch_missing_parents.py
   - tests/delivery/test_preserved_file_modes.py
@@ -76,6 +78,12 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Delivery模块设计
+
+## 当前增量：Windows上8.3短名称按保护路径拒绝（ADR 0170）
+
+- 保护组件（`.git`、`.harnessix`、`.codex`、`.env*`等）按字符串比较；Windows上`GIT~1`会被系统解析到`.git`。2026-11-17在Windows 11真机上用0.10.0b48复现：Patch新建`GIT~1/hx-probe-83b.txt`写进了`.git\`。
+- [`trusted_action._normalized_files`](../../src/harnessix/delivery/trusted_action.py)与[`planner._normalized_targets`](../../src/harnessix/delivery/planner.py)的`_protected`带上平台：Windows上含“`~`数字”的段（[`has_windows_short_name`](../../src/harnessix/workspace/paths.py)）以`delivery_path_denied`拒绝，规划期可修正，本轮继续。POSIX不变。
+- 回归：`tests/delivery/test_windows_short_names.py`。
 
 ## 当前增量：Windows事务端口新建文件时补建父目录（ADR 0137第2版，Beta Issue #16）
 

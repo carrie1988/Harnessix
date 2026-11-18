@@ -97,6 +97,23 @@ def test_native_matrix_keeps_attribution_denominator_and_unknown_billing(tmp_pat
     assert "generation" not in export.model_dump_json()
 
 
+def test_harnessix_thread_is_the_langfuse_session(tmp_path: Path) -> None:
+    report = harbor_report(harbor_job(tmp_path / "job", MATRIX, agent_name="harnessix"), 6)
+    threads = [trial.system_refs.get("thread_id") for trial in report.trials]
+    assert all(threads[:-1]) and threads[-1] is None
+    assert [trial.system_refs.get("session_id") for trial in report.trials] == threads
+    raw = json.loads(build_export(report).model_dump_json())
+    sessions = [
+        {
+            item["key"]: item["value"]["stringValue"]
+            for item in span["attributes"]
+            if "stringValue" in item["value"]
+        }.get("langfuse.session.id")
+        for span in raw["resource_spans"][0]["scopeSpans"][0]["spans"]
+    ]
+    assert sessions == threads
+
+
 def test_runner_error_and_absorbed_read_errors_reach_system_refs(tmp_path: Path) -> None:
     trials = [
         Trial(

@@ -1,8 +1,8 @@
 ---
 doc_type: deployment-design
 status: current
-version: 8
-code_revision: 25f482e9dee8e1ef4ad7ec715626f4d17f18dbe9
+version: 10
+code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners: [core]
 modules: [evals, observability, sdk]
 related_adrs:
@@ -77,12 +77,15 @@ uv run --frozen python -m evalkit export \
 ```
 
 远端地址要求HTTPS，本机允许HTTP。自定义部署前缀保留；客户端不跟随重定向、不读取环境代理。
-Trace发送到api/public/otel/v1/traces；评分以score-create批次发送到api/public/ingestion。
+Trace发送到api/public/otel/v1/traces，按Span顺序分批，每次请求的JSON正文不超过5 MiB（单个Span超过时独自成批；
+2026-11-10一次66 MB的请求使Langfuse worker两次堆溢出、整次运行的Trace丢失）；全部批次被接受后，评分才以
+score-create批次发送到api/public/ingestion。
 后者保留源证据的时间戳，适用于仍支持score-create的Langfuse版本。
 每批必须逐项确认；错误、部分接收或超时返回非零，本地投影保留。
 省略--verify时，submitted仅表示传输响应已确认。
 使用--verify时通过v4公开Experiments和Experiment Items API读取真实根Observation及评分，
-核对全部试次、输入输出摘要、身份、原币种、数值、评分归属及重复项后才返回verified。
+核对全部试次、输入输出摘要、身份、原币种、数值、评分归属及重复项，再经v2 observations核对步骤
+与每个Observation的sessionId、userId，全部一致后才返回verified。
 不使用已经移除的旧Trace GET。默认读回预算120秒，可用--verify-timeout-seconds调整，最大600秒。
 API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据仅接受原整数或规范十进制字符串，
 布尔元数据仅接受布尔值或JSON规范的true/false字符串，不按数字或任意字符串推断真值。
@@ -91,6 +94,23 @@ API时间精度为毫秒，核验允许不足1毫秒的截断；整数元数据�
 同一报告重发使用相同实验、Trace、Span、评分ID与时间；不会重跑原任务。
 每个组别是一个实验；报告改变（例如补充判分）产生新的实验身份。
 同一数据集条目的同一重复序号在各组别、各报告间共享条目ID，可直接对照。
+
+会话、用户、名称与标签（2026-11-16用户决定，只对此后的导出生效，已导出的运行不补发）：
+
+- sessionId标识一次会话，同一会话的全部内容共用：被测系统自报的会话标识（`system_refs.session_id`，
+  Harnessix取`thread_id`）优先；没有会话概念的系统（mini-swe-agent）以Harbor为该试次分配的标识为会话；
+  没有执行的试次不设。
+- Trace名称为“系统@版本/题目/第几次”（从1数起），例如`harnessix@0.10.0b48/tinydb/attempt1`；
+  标签为运行名、系统@版本、题目和结果（passed、failed或invalid）。
+- userId为“系统@版本 · 智能体实际运行的系统 · 架构”，例如`harnessix@0.10.0b48 · Debian GNU/Linux 12 · x86_64`。
+  系统信息由适配器在安装阶段于任务容器内探测一次（`integrations/harbor/environment_facts.py`读`/etc/os-release`
+  与`uname`，不计入智能体耗时），连同评测主机系统写入`agent/environment.json`；导入时进入executor_refs
+  （`agent_os`、`agent_arch`、`environment_source`、`host_os`）并登记为制品。没有这份记录的试次
+  （对照组oracle与nop、没有执行的试次）不设userId。
+- 加入探测之前开跑的运行，导出前执行`python -m integrations.harbor.environment_facts --run-dir <运行目录>`，
+  用任务镜像在断网、用完即删的容器里执行同一探测补读，记为`environment_source=task_image`；已有记录的试次不动。
+- 这些字段写在试次的每个Observation（根与步骤）上：Langfuse v4按Observation存储这些字段，
+  分批发送时根与步骤也可能不在同一请求。名称与标签公开API读不到，只在界面核对。
 Suite报告未包含预算明细，不能仅凭此投影证明预算公平；对照实验仍需核对冻结的原始计划。
 
 导出只有真实试次的起止时间与结构化摘要。聚合Token不生成伪造的逐调用generation，
@@ -306,6 +326,8 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    - Harnessix：适配器打包的试次状态（`agent/harnessix-state.tar.gz`，会话库与独立密钥）登记为制品；
      逐步记录以只验真Binding只读打开其副本，每次上下文压缩记为一次`compaction`模型调用（摘要，或失败原因），
      成功的摘要计入其后那次调用的输入。状态包超过32 MiB时不登记，只缺压缩步骤。
+     长Turn结束后协议驱动在30秒内重读不完公开事件、没有事件文件时，从状态包的会话库按App Server回放的同一投影
+     （`protocol.projection.project_event`）还原本Turn公开事件，逐步记录与有事件文件时相同。
    - mini-swe-agent：命令取自`extra.actions`并按`tool_call_id`对应输出；系统提示与任务没有时间戳，
      首次调用从Harbor记录的智能体执行开始（`agent_execution.started_at`）起算，与Harnessix从Turn开始同一口径。
    - 公开基准（SWE-bench等）的运行规格设`content_policy: "full"`（2026-11-08用户决定，对此后冻结的运行生效；

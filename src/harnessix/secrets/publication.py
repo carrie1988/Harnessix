@@ -111,7 +111,10 @@ class _ScanBudget:
             self.reject()
         for pattern in patterns:
             self.checkpoint()
-            self.work += len(encoded) + len(pattern)
+            # 计入实际比较量：比模式短的文本不可能包含它，查找立即结束，只计1。此前每个短键、短值
+            # 都按“文本+模式”计，长凭据下约5.8万个节点的Grep存档（不到1 MiB）就超过工作上限，
+            # 整个Turn以public_output_limit终止（Beta Issue #37）。每个节点、每个模式仍逐一检查。
+            self.work += len(encoded) + len(pattern) if len(pattern) <= len(encoded) else 1
             if self.work > MAX_SCAN_WORK:
                 self.reject()
             if pattern in encoded:

@@ -6,7 +6,7 @@ network_isolation开启时智能体运行期间断开任务容器公网（networ
 task_command_environment开启时不上传固定的actions.json：外部边界命令只得到Profile声明的变量，
 不继承容器环境，所以安装阶段用容器内的集成包按容器自身环境（生成器这一docker exec进程的环境，
 去掉本适配器注入的变量）与任务语言标签生成本试次的actions.json（task_environment.py），
-副本写入/logs/agent供核对。
+副本写入/logs/agent供核对。安装末尾记录任务环境的系统信息（environment_facts.py）。
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
+    from integrations.harbor.environment_facts import record_environment
     from integrations.harbor.network_isolation import compose_project, offline_agent_run
     from integrations.harbor.patch_export import (
         parse_object_id,
@@ -33,6 +34,7 @@ try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
     from integrations.harbor.task_environment import task_language
     from integrations.harbor.workspace_modes import normalize_modes_command
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
+    from environment_facts import record_environment
     from network_isolation import compose_project, offline_agent_run
     from patch_export import parse_object_id, patch_command, workspace_tree_command
     from task_environment import task_language
@@ -207,6 +209,7 @@ class HarnessixAgent(BaseInstalledAgent):
         )
         await environment.upload_file(Path(__file__).with_name("protocol_runner.py"), _RUNNER)
         await environment.upload_file(Path(__file__).with_name("model_relay.py"), _RELAY)
+        await record_environment(environment, Path(self.logs_dir))
 
     async def _generate_action_config(self, environment: BaseEnvironment) -> None:
         """用容器内的集成包按容器自身环境与任务语言写出actions.json，并在日志目录留副本。"""

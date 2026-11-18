@@ -19,7 +19,7 @@ import json
 import shutil
 import tarfile
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Callable, Coroutine, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -44,6 +44,7 @@ from harnessix.protocol.contracts import (
     TurnStartedPublicEvent,
     UsagePublicEvent,
 )
+from harnessix.protocol.projection import project_event
 from harnessix.session.sqlite import SQLiteSessionStore
 from integrations.harnessix_eval.harbor_parser import (
     EVENTS_ARTIFACT,
@@ -270,8 +271,8 @@ def _compaction_step(record: CompactionRecord) -> Step | None:
     )
 
 
-def state_compactions(body: bytes, thread_id: UUID, turn_id: UUID) -> tuple[CompactionRecord, ...]:
-    """从试次状态包只读取该Turn的压缩记录：解压到私有临时目录，以只验真Binding打开会话库副本。"""
+def _read_state[T](body: bytes, read: Callable[[Path], Coroutine[object, object, T]]) -> T:
+    """解压试次状态包到私有临时目录，交给read以只验真Binding打开会话库副本。"""
     with tempfile.TemporaryDirectory(prefix="harnessix-state-") as temporary:
         with tarfile.open(fileobj=io.BytesIO(body), mode="r:gz") as archive:
             # tar过滤器同样拒绝绝对路径与越界成员，但保留目录权限；data过滤器会丢掉目录的0700，
@@ -280,7 +281,36 @@ def state_compactions(body: bytes, thread_id: UUID, turn_id: UUID) -> tuple[Comp
         databases = list(Path(temporary).glob("*/sessions.db"))
         if len(databases) != 1:
             raise ValueError("试次状态包应恰好包含一个会话库")
-        return asyncio.run(_turn_compactions(databases[0].parent, thread_id, turn_id))
+        return asyncio.run(read(databases[0].parent))
+
+
+def state_compactions(body: bytes, thread_id: UUID, turn_id: UUID) -> tuple[CompactionRecord, ...]:
+    """从试次状态包只读取该Turn的压缩记录。"""
+    return _read_state(body, lambda state: _turn_compactions(state, thread_id, turn_id))
+
+
+def state_turn_events(body: bytes, thread_id: UUID, turn_id: UUID) -> tuple[PublicEvent, ...]:
+    """从试次状态包的会话库按App Server回放的同一投影还原该Turn的公开事件。
+
+    长Turn结束后，评测脚本在限时内重读不完公开事件、事件文件缺失（2026-11-15 NL2RepoBench冒烟，
+    294步的tinydb）；会话库是同一份事实，投影结果与回放逐条相同。
+    """
+    return _read_state(body, lambda state: _turn_events(state, thread_id, turn_id))
+
+
+async def _turn_events(state: Path, thread_id: UUID, turn_id: UUID) -> tuple[PublicEvent, ...]:
+    with PrivateStateTree(state) as tree, verification_publication_binding(tree) as binding:
+        events = await SQLiteSessionStore(state / "sessions.db", publication=binding).events(
+            thread_id
+        )
+    projected = tuple(
+        public
+        for event in events
+        if event.turn_id == turn_id and (public := project_event(thread_id, event)) is not None
+    )
+    if not projected:
+        raise ValueError("试次状态包中没有该Turn")
+    return projected
 
 
 async def _turn_compactions(
@@ -305,26 +335,31 @@ def parse_protocol_events(body: bytes) -> tuple[PublicEvent, ...]:
 def export_protocol_steps(
     run_dir: Path, trials_path: Path, output: Path, *, model: str | None
 ) -> int:
-    """按试次登记的事件制品（核对摘要）生成逐步记录，每个试次一个0600文件。"""
+    """按试次登记的事件制品（核对摘要）生成逐步记录，每个试次一个0600文件。
+
+    没有事件制品而有状态包时，从状态包的会话库还原同一份公开事件（state_turn_events）。
+    """
     group = read_model(trials_path, ArmTrials, 64 * 1024 * 1024, require_private=True)
     output.mkdir(mode=0o700, parents=True, exist_ok=True)
     written = 0
     for trial in group.trials:
         ref = next((a for a in trial.artifacts if a.name == EVENTS_ARTIFACT), None)
-        if ref is None:
-            continue
-        events = parse_protocol_events(read_artifact(ref, run_dir, _MAX_EVENTS_BYTES))
         state = next((a for a in trial.artifacts if a.name == STATE_ARTIFACT), None)
         refs = trial.system_refs
-        compactions = (
-            state_compactions(
-                read_artifact(state, run_dir, STATE_ARTIFACT_MAX_BYTES),
-                UUID(refs["thread_id"]),
-                UUID(refs["turn_id"]),
+        if state is None or "thread_id" not in refs or "turn_id" not in refs:
+            if ref is None:
+                continue
+            events = parse_protocol_events(read_artifact(ref, run_dir, _MAX_EVENTS_BYTES))
+            compactions: tuple[CompactionRecord, ...] = ()
+        else:
+            body = read_artifact(state, run_dir, STATE_ARTIFACT_MAX_BYTES)
+            thread_id, turn_id = UUID(refs["thread_id"]), UUID(refs["turn_id"])
+            events = (
+                parse_protocol_events(read_artifact(ref, run_dir, _MAX_EVENTS_BYTES))
+                if ref is not None
+                else state_turn_events(body, thread_id, turn_id)
             )
-            if state is not None and "thread_id" in refs and "turn_id" in refs
-            else ()
-        )
+            compactions = state_compactions(body, thread_id, turn_id)
         steps = protocol_turn_steps(events, model=model, compactions=compactions)
         if not steps:
             continue

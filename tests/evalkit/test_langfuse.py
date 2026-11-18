@@ -30,6 +30,7 @@ from evalkit.contracts import (
 from evalkit.errors import EvalkitError
 from evalkit.files import write_model
 from evalkit.langfuse import LangfuseExport, build_export, read_back, send
+from evalkit.langfuse import transport as transport_module
 from evalkit.steps import Step, StepTrace
 
 from tests.evalkit.builders import CONFIG, PLAN_CREATED, task_digest
@@ -259,6 +260,73 @@ def test_transport_rejects_partial_acceptance_and_does_not_retry_or_leak(mode: s
         )
     assert "PRIVATE-SERVER-BODY" not in str(failure.value)
     assert len(calls) == (2 if mode == "partial_score" else 1)
+
+
+def test_trace_requests_split_spans_in_order_below_the_byte_limit() -> None:
+    # 2026-11-10一次66 MB的OTLP请求使Langfuse worker堆溢出、Trace丢失；按正文大小分批发送。
+    export = build_export(report())
+    (resource_spans,) = json.loads(export.model_dump_json())["resource_spans"]
+    spans = resource_spans["scopeSpans"][0]["spans"]
+    largest = max(len(json.dumps(span).encode()) for span in spans)
+    limit = 2 * largest + 400
+    requests = transport_module.trace_requests(export, limit)
+    assert len(requests) > 1
+    sent = [
+        span
+        for body in requests
+        for span in json.loads(json.dumps(body))["resourceSpans"][0]["scopeSpans"][0]["spans"]
+    ]
+    assert sent == spans
+    for body in requests:
+        assert len(json.dumps(body).encode()) <= limit
+        (part,) = body["resourceSpans"]
+        assert part["resource"] == resource_spans["resource"]
+        assert part["scopeSpans"][0]["scope"] == resource_spans["scopeSpans"][0]["scope"]
+    # 单个Span超过上限时独自成批，不丢弃也不拆开。
+    alone = transport_module.trace_requests(export, 1)
+    assert [len(body["resourceSpans"][0]["scopeSpans"][0]["spans"]) for body in alone] == [1] * len(
+        spans
+    )
+
+
+@pytest.mark.parametrize("reject_batch", [None, 1])
+def test_send_posts_every_trace_batch_before_any_score(
+    monkeypatch: pytest.MonkeyPatch, reject_batch: int | None
+) -> None:
+    export = build_export(report())
+    monkeypatch.setattr(transport_module, "MAX_TRACE_REQUEST_BYTES", 1)
+    paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.path)
+        traces = [p for p in paths if p.endswith("/traces")]
+        if request.url.path.endswith("/traces") and len(traces) - 1 == reject_batch:
+            return httpx.Response(200, json={"partialSuccess": {"rejectedSpans": "1"}})
+        return accept_all(request)
+
+    batches = len(transport_module.trace_requests(export, 1))
+    if reject_batch is None:
+        send(
+            export,
+            base_url="http://localhost:3000",
+            public_key="public",
+            secret_key="private",
+            transport=httpx.MockTransport(handler),
+        )
+        first_score = next(i for i, p in enumerate(paths) if not p.endswith("/traces"))
+        assert first_score == batches and all(p.endswith("/traces") for p in paths[:batches])
+    else:
+        with pytest.raises(EvalkitError) as failure:
+            send(
+                export,
+                base_url="http://localhost:3000",
+                public_key="public",
+                secret_key="private",
+                transport=httpx.MockTransport(handler),
+            )
+        assert failure.value.code == "langfuse_export_partial"
+        # 被拒收的批次之后不再发送Trace，也不发送评分。
+        assert len(paths) == reject_batch + 1 and all(p.endswith("/traces") for p in paths)
 
 
 @pytest.mark.parametrize(
@@ -665,6 +733,55 @@ def test_full_content_policy_exports_step_text() -> None:
     assert "PRIVATE-PROMPT" in body and "PRIVATE-REPLY" in body
 
 
+def with_sessions(source: EvalRunReport) -> EvalRunReport:
+    """槽位0由系统自报会话并记录了运行环境，槽位1只有Harbor试次标识，槽位2两者都没有，槽位3缺失。"""
+    refs = (
+        ({"session_id": "thread-0"}, {"agent_os": "Debian GNU/Linux 12", "agent_arch": "x86_64"}),
+        ({}, {"harbor_trial_id": "harbor-1"}),
+        ({}, {}),
+    )
+    trials = tuple(
+        trial.model_copy(
+            update={
+                "system_refs": {**trial.system_refs, **refs[trial.slot][0]},
+                "executor_refs": refs[trial.slot][1],
+            }
+        )
+        if trial.slot < len(refs)
+        else trial
+        for trial in source.trials
+    )
+    return source.model_copy(update={"trials": trials})
+
+
+def roots_of(export: LangfuseExport) -> list[dict[str, Any]]:
+    return [span for span in spans_of(export) if "langfuse.experiment.id" in attrs(span)]
+
+
+def test_every_observation_of_a_trial_carries_its_session_name_and_tags() -> None:
+    source = with_sessions(report())
+    export = build_export(source, (step_trace(source),))
+    by_trace: dict[str, list[dict[str, Any]]] = {}
+    for span in spans_of(export):
+        by_trace.setdefault(span["traceId"], []).append(attrs(span))
+    first, harbor_only, unreported, missing = by_trace.values()
+    assert len(first) == 3
+    assert {values["langfuse.session.id"] for values in first} == {"thread-0"}
+    assert {values["langfuse.trace.name"] for values in first} == {"harnessix@v1/case-0/attempt1"}
+    assert {
+        json.loads(values["langfuse.trace.tags"]) == ["smoke", "harnessix@v1", "case-0", "passed"]
+        for values in first
+    } == {True}
+    user = "harnessix@v1 · Debian GNU/Linux 12 · x86_64"
+    assert {values["langfuse.user.id"] for values in first} == {user}
+    assert harbor_only[0]["langfuse.session.id"] == "harbor-1"
+    assert "langfuse.user.id" not in harbor_only[0]
+    assert "langfuse.session.id" not in unreported[0]
+    assert "langfuse.session.id" not in missing[0]
+    assert missing[0]["langfuse.trace.name"] == "baseline@v1/case-1/attempt1"
+    assert json.loads(missing[0]["langfuse.trace.tags"])[-1] == "invalid"
+
+
 def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
     by_trace: dict[str, list[dict]] = {}
     for span in spans_of(export):
@@ -675,6 +792,8 @@ def remote_steps(export: LangfuseExport) -> dict[str, list[dict]]:
             "type": str(values["langfuse.observation.type"]).upper(),
             "name": span["name"],
             "parentObservationId": span.get("parentSpanId"),
+            "sessionId": values.get("langfuse.session.id", ""),
+            "userId": values.get("langfuse.user.id", ""),
         }
         if "langfuse.observation.model.name" in values:
             remote["model"] = values["langfuse.observation.model.name"]
@@ -720,4 +839,43 @@ def test_readback_verifies_step_observations(mode: str) -> None:
         verify(export, handler, timeout=0.05)
     assert error.value.code == (
         "langfuse_readback_timeout" if mode == "pending" else "langfuse_readback_mismatch"
+    )
+
+
+@pytest.mark.parametrize(
+    "mode", ["complete", "step_session", "root_session", "step_user", "root_pending"]
+)
+def test_readback_verifies_the_session_of_every_observation(mode: str) -> None:
+    source = with_sessions(report())
+    export = build_export(source, (step_trace(source),))
+    experiments, items = remote_view(export)
+    observations = remote_steps(export)
+    first, harbor_only = (root["traceId"] for root in roots_of(export)[:2])
+    if mode == "step_session":
+        observations[first][-1]["sessionId"] = "other-session"
+    elif mode == "root_session":
+        observations[harbor_only][0]["sessionId"] = ""
+    elif mode == "step_user":
+        observations[first][1]["userId"] = "someone-else"
+    elif mode == "root_pending":
+        observations[harbor_only] = []
+    requested = []
+    base = serve(experiments, items)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/v2/observations"):
+            requested.append(request.url.params["traceId"])
+            data = observations[request.url.params["traceId"]]
+            return httpx.Response(200, json={"data": data, "meta": {}})
+        return base(request)
+
+    if mode == "complete":
+        result = verify(export, handler)
+        assert (result.verified_trials, result.verified_steps) == (4, 2)
+        assert set(requested) == {first, harbor_only}
+        return
+    with pytest.raises(EvalkitError) as error:
+        verify(export, handler, timeout=0.05)
+    assert error.value.code == (
+        "langfuse_readback_timeout" if mode == "root_pending" else "langfuse_readback_mismatch"
     )

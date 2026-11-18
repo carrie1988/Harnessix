@@ -4,7 +4,7 @@
 - MiniSweAgentOffline：安装步骤与上游相同，但不从astral.sh或GitHub下载uv和Python，
   要求任务镜像已提供uv（派生镜像放在/root/.local/bin），包经镜像内配置的PyPI镜像安装，
   并把安装后的依赖清单写入/logs/agent以便复现；network_isolation开启时智能体运行期间断网
-  （network_isolation.py）。
+  （network_isolation.py）；安装末尾记录任务环境的系统信息（environment_facts.py）。
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from harbor.models.trial.paths import EnvironmentPaths, TrialPaths
 from pydantic import Field
 
 try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
+    from integrations.harbor.environment_facts import record_environment
     from integrations.harbor.network_isolation import compose_project, offline_agent_run
     from integrations.harbor.patch_export import (
         parse_object_id,
@@ -31,6 +32,7 @@ try:  # Harbor按import_path加载，仓库根目录在PYTHONPATH上
         workspace_tree_command,
     )
 except ImportError:  # pragma: no cover - 与本文件同目录直接运行
+    from environment_facts import record_environment
     from network_isolation import compose_project, offline_agent_run
     from patch_export import parse_object_id, patch_command, workspace_tree_command
 
@@ -157,3 +159,4 @@ class MiniSweAgentOffline(_PatchExport, MiniSweAgent):
                 f'uv pip freeze --python "$(uv tool dir)/mini-swe-agent/bin/python" > {freeze}'
             ),
         )
+        await record_environment(environment, Path(self.logs_dir))
