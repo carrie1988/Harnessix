@@ -129,13 +129,19 @@ class _ProductActionDependencies:
 def _process_supervisor(
     state_root: Path, output_redaction: OutputRedactionSource | None = None
 ) -> ProcessSupervisor:
-    """选择当前平台唯一受支持的Process Owner，不提供Host降级执行路径。"""
+    """选择当前平台唯一受支持的Process Owner，不提供Host降级执行路径。
+
+    这个Supervisor贯穿一次产品启动、连续执行命令，所以在POSIX上保有待命Owner（ADR 0168 D6）；
+    Windows每条命令现场启动Owner。
+    """
 
     if os.name == "nt":
         return WindowsProcessSupervisor(
             state_root / "process-owner", output_redaction=output_redaction
         )
-    return PosixProcessSupervisor(state_root / "process-owner", output_redaction=output_redaction)
+    return PosixProcessSupervisor(
+        state_root / "process-owner", output_redaction=output_redaction, standby_owner=True
+    )
 
 
 def _probe_process_profiles(

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from harnessix.models.contracts import ToolCallCompleted
+from harnessix.processes.supervisor import PosixProcessSupervisor
 from scripts.command_path_bench import (
     COMMAND_TOOL,
     FOLLOWING_PHASES,
@@ -19,6 +20,7 @@ from scripts.command_path_bench import (
     summary,
     trivial_command,
 )
+from tests.processes.helpers import owner_imports_this_checkout
 
 
 def test_script_is_one_patch_then_trivial_commands_then_a_text_only_step() -> None:
@@ -41,11 +43,22 @@ def test_quartiles_are_inclusive_and_degenerate_to_the_single_sample() -> None:
 
 @pytest.mark.skipif(os.name != "posix", reason="外部边界命令Profile只在POSIX上可用")
 async def test_three_commands_run_on_the_product_runtime_and_every_phase_is_timed(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    owner_imports_this_checkout(monkeypatch)
+    started_on_the_spot: list[str] = []
+    original = PosixProcessSupervisor._spawn_owner
+
+    def counted(supervisor, read_fd, run_directory):
+        started_on_the_spot.append(run_directory.name)
+        return original(supervisor, read_fd, run_directory)
+
+    monkeypatch.setattr(PosixProcessSupervisor, "_spawn_owner", counted)
     report = await run_command_bench(tmp_path, commands=3)
 
     assert report.valid, format_report(report)
+    # 产品运行时的Supervisor保有待命Owner（ADR 0168 D6）：三条命令只有第一条现场启动Owner。
+    assert len(started_on_the_spot) == 1
     assert [item.command for item in report.commands] == [trivial_command(n) for n in (2, 3, 4)]
     assert [item.tool for item in report.steps] == [COMMAND_TOOL] * 3
     for item in report.commands:
