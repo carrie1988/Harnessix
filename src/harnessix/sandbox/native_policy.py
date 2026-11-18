@@ -448,3 +448,28 @@ def resolved_directory(path: str | os.PathLike[str]) -> Path:
     if not resolved.is_dir():
         raise KernelError("sandbox_path_invalid", "沙箱目录不是目录")
     return resolved
+
+
+# confstr(_CS_DARWIN_USER_TEMP_DIR)，<unistd.h>中的值；Python的os.confstr_names不含它。
+_CS_DARWIN_USER_TEMP_DIR = 65537
+
+
+def darwin_user_temp_dir() -> Path | None:
+    """macOS给当前用户的临时目录（/var/folders/…/T，已解析符号链接）；取不到时为None。
+
+    macOS自带的`mktemp`不读TMPDIR，总在这里建临时文件，Maven Wrapper等项目脚本的第一步就是
+    `mktemp -d`；Seatbelt策略把它列入可写目录（负责人2026-11-18选方案A，Beta Issue #44）。
+    整机本来就可读，这里只多放行写入。
+    """
+    try:
+        import ctypes
+        import ctypes.util
+
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.dylib", use_errno=True)
+        buffer = ctypes.create_string_buffer(1024)
+        length = libc.confstr(_CS_DARWIN_USER_TEMP_DIR, buffer, len(buffer))
+        if length <= 0 or length > len(buffer):
+            return None
+        return resolved_directory(os.fsdecode(buffer.value))
+    except (OSError, AttributeError, KernelError):
+        return None

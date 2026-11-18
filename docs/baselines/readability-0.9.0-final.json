@@ -16,14 +16,14 @@
     "decision_complexity": 20
   },
   "summary": {
-    "source_files": 662,
-    "physical_lines": 138658,
-    "logical_lines": 119808,
-    "documented_modules": 662,
+    "source_files": 663,
+    "physical_lines": 138775,
+    "logical_lines": 119891,
+    "documented_modules": 663,
     "classes": 1275,
     "documented_classes": 672,
-    "functions": 5563,
-    "documented_functions": 2004,
+    "functions": 5569,
+    "documented_functions": 2008,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -264,7 +264,7 @@
     },
     {
       "path": "src/harnessix/protocol/contracts.py",
-      "lines": 647
+      "lines": 657
     },
     {
       "path": "src/harnessix/sandbox/container.py",

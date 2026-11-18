@@ -304,6 +304,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0171：输出在工具调用中途用满上限时，告诉模型拆成更小的调用](0171-a-tool-call-cut-off-by-the-output-limit-asks-to-split-it.md)：回复写满输出上限时被截断的工具调用按非法参数拒绝（ADR 0109第5版），模型只得到“请重发正确转义的JSON”而原样重写、再次被截断（NL2RepoBench wsgidav一次约9.5分钟）；适配器在终态标出截断，运行时补发一条说明（原因是输出上限，应拆成更小的调用），不计入连续补发次数、不使Turn失败；非法参数的英文反馈补上同样的建议；不新增事件类型或拒绝原因。
 - [ADR 0172：补丁可以写密钥与证书文件，其内容从不显示](0172-key-and-certificate-files-are-writable-with-hidden-diffs.md)：此前macOS与Linux上补丁写`.key/.pem/.p12/.pfx`被读取策略附带拒绝，Windows照常写入；负责人决定（B2）所有平台都可以写，补丁与回滚显式选用只放开这四个后缀的写目标策略，Review、`diff_preview`与回滚Diff只写前后摘要，锚点拒绝不报行号；`.ssh`、`.aws`、`.gnupg`、`.env*`、私钥文件名在两个平台都受保护；读取工具不变。
 
+- [ADR 0173：公开的用户消息注明是否由Harnessix发出](0173-public-user-messages-say-whether-harnessix-sent-them.md)：重复命令提示等宿主说明在导出与事件里和操作者输入都是只有kind与text的user_message，无法按结构区分（Beta Issue #46）；`PublicTextContent`新增`origin`（user/harnessix，只在user_message时出现），按派生身份判定，旧会话同样适用，持久化与其他文本的线上形状不变。
+
 - [ADR 0111：原生进程沙箱后端](0111-native-process-sandbox-backends.md)：macOS Seatbelt与Linux宿主机bubblewrap接入原生Profile的`backend`字段并零配置自动启用；全盘可读、拒读凭据与Harnessix状态、写入限于工作区与私有目录；Linux断网，macOS放行回环但拦截已配置代理端口并如实记为`full`；Landlock后置。
 
 - [ADR 0112：原生命令的工作区模式](0112-native-workspace-modes.md)：`read_only`与`read_write`（默认，改动保留）两种模式；`.git`只读、工作区`.env*`拒读；不做快照、撤销、改动记录与命令前清单，补丁前镜像核对兜底并发改动。
