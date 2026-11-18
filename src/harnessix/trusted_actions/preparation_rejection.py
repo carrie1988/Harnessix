@@ -5,6 +5,7 @@ from __future__ import annotations
 from harnessix.agent.approvals import remaining_seconds
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import ToolCallContent, ToolResultContent, Turn, TurnStatus
+from harnessix.agent.publication import PROTECTION_LIMIT_FAILURES
 from harnessix.delivery.workspace_patch_errors import (
     WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
@@ -164,11 +165,19 @@ def workspace_patch_preparation_rejection(
     return ToolResultContent(call_id=call.call_id, outcome="failed", error=failure)
 
 
-# Review存档存不下时改动没有执行；写给模型的英文说明（ADR 0163）。
-_REVIEW_STORAGE_FULL = (
-    "Artifact storage is full, so the review of this action could not be saved and the action "
-    "was not run; nothing changed. Storage is freed as old archives expire"
-)
+# Review存档存不下（ADR 0163）或太大、保护检查做不完（ADR 0174）时动作没有执行；写给模型的英文说明。
+_UNSAVED_REVIEW = {
+    "artifact_quota_exceeded": (
+        "Artifact storage is full, so the review of this action could not be saved and the "
+        "action was not run; nothing changed. Storage is freed as old archives expire"
+    ),
+    **dict.fromkeys(
+        PROTECTION_LIMIT_FAILURES,
+        "The review of this action was too large to check for protected values before it could "
+        "be shown for approval, so the action was not run; nothing changed. Split it into "
+        "smaller actions",
+    ),
+}
 
 
 def preparation_rejection_result(
@@ -178,9 +187,10 @@ def preparation_rejection_result(
     rejection: KernelError,
     route: ActionRouteSnapshot | None = None,
 ) -> ToolResultContent | None:
-    """尚未执行的准备期拒绝：任意Action的Review存档存不下，或内置回滚的授权/版本拒绝。"""
+    """尚未执行的准备期拒绝：任意Action的Review存档存不下或检查做不完，或内置回滚的授权/版本拒绝。"""
 
-    if rejection.code != "artifact_quota_exceeded" or route is None:
+    message = _UNSAVED_REVIEW.get(rejection.code)
+    if message is None or route is None:
         return rollback_preparation_rejection(router, binding, call, rejection, route)
     plan_id = route.plan.execution.plan_id
     current = router.status(plan_id)
@@ -202,7 +212,7 @@ def preparation_rejection_result(
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",
-        error=AgentFailure(code=rejection.code, message=_REVIEW_STORAGE_FULL),
+        error=AgentFailure(code=rejection.code, message=message),
     )
 
 

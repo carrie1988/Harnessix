@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 40
+version: 41
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -889,6 +889,7 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 41 | `d82e71cc` 增量 | 2026-11-18 | 文本渲染按`artifact_omitted`的原因说明完整正文未保存，新增`protection_limit`（ADR 0174） |
 | 40 | ADR 0171增量 | 2026-11-18 | `ResponseCompleted.tool_call_truncated`标出输出上限截断的工具调用（`_chat_stream.finish`） |
 | 39 | `39e1e1bf` 增量 | 2026-11-15 | 正文开始与正文增量也算可作废事件，正文写到一半断开的请求照常有界重试（ADR 0144第5版） |
 | 38 | `2d72f2c0` 增量 | 2026-11-15 | 文本渲染对带`artifact_omitted`的截断结果说明完整正文未保存（ADR 0163） |
@@ -983,7 +984,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   [`tool_result_text.py`](../../src/harnessix/models/tool_result_text.py)渲染——Grep为`行号:内容`/`行号-上下文`（同文件
   命中合并去重、不连续处`--`，每文件一次`content_sha256`与`revision`）、Glob为路径列表、read_file为一行范围与摘要加原始源码
   （不加行号前缀，避免被抄进补丁原文）、命令为退出状态加stdout/stderr预览；截断与存档以`read_artifact artifact_id=…`说明，存储已满没有存档时说明
-  “not saved (artifact storage full)”（ADR 0163）。
+  “not saved (artifact storage full)”（ADR 0163），太大、保护检查做不完时说明“not saved (too large to check for protected
+  values); narrow the request to see the rest”（ADR 0174）。
   失败、拒绝、带diff或形状不符的结果仍发规范JSON；持久历史、Artifact、审计与回放不变，渲染只由结果内容决定。
   Anthropic映射要求JSON结果正文，不提供该选项。holdout的4题实测线上字符约为原来的58%（Grep约26%，命令约35%）。
 - `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存
