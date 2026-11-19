@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from uuid import uuid4
 
+import pytest
+
 from harnessix.agent.models import (
     Item,
     ItemContent,
@@ -159,17 +161,29 @@ def test_process_output_keeps_exit_status_and_stream_text():
     )
 
 
-def test_results_without_archive_say_the_full_output_was_not_saved(tmp_path):
-    # 存储已满时结果不带存档（ADR 0163）：截断处说明完整正文没有保存，不给不存在的artifact_id。
+@pytest.mark.parametrize(
+    ("reason", "note"),
+    [
+        ("storage_full", "not saved (artifact storage full)"),
+        (
+            "protection_limit",
+            "not saved (too large to check for protected values); narrow the request to see the "
+            "rest",
+        ),
+    ],
+)
+def test_results_without_archive_say_the_full_output_was_not_saved(tmp_path, reason, note):
+    # 存储已满（ADR 0163）或太大、保护检查做不完（ADR 0174）时结果不带存档：截断处说明完整正文
+    # 没有保存及原因，不给不存在的artifact_id。
     body = b"x = f(1)\n" + b"pass\n" * 10 + b"y = f(1)\n"
     preview = grep_output(
         tmp_path, {"m.py": body}, RegexGrepInput(query="x =", context_lines=0, max_results=1)
     )
     truncated = {**preview, "truncated": True, "truncation_reason": "result_limit"}
-    omitted = {"artifact_omitted": "storage_full"}
+    omitted = {"artifact_omitted": reason}
     text = tool_result_text(succeeded({"preview": truncated, **omitted}))
     assert text.splitlines()[0] == (
-        "grep .: 1 match; truncated (result_limit); full results not saved (artifact storage full)"
+        f"grep .: 1 match; truncated (result_limit); full results {note}"
     )
     # 未截断时预览就是全部结果，不提存档。
     assert tool_result_text(succeeded({"preview": preview, **omitted})).splitlines()[0] == (
@@ -192,7 +206,7 @@ def test_results_without_archive_say_the_full_output_was_not_saved(tmp_path):
         **omitted,
     }
     assert tool_result_text(succeeded(process)).splitlines()[0] == (
-        "exit 0; stdout 9000 bytes; stderr 0 bytes; full output not saved (artifact storage full)"
+        f"exit 0; stdout 9000 bytes; stderr 0 bytes; full output {note}"
     )
 
 

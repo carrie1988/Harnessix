@@ -109,6 +109,9 @@ _GATEWAY_ERRORS: dict[PublicGatewayStage, dict[str, str]] = {
         "workspace_rollback_source_invalid": "Patch回滚来源不符合条件",
         "trusted_action_review_invalid": "Action审批预览不符合契约",
         "action_review_limit": "Action审批预览超过上限",
+        # Review存档的保护检查做不完时动作没有执行，保留码以便只让这一次调用失败（ADR 0174）。
+        "public_output_limit": "公开结果未通过保护校验",
+        "public_output_timeout": "公开结果未通过保护校验",
     },
     "output": {
         **_ARTIFACT_PUBLICATION_ERRORS,

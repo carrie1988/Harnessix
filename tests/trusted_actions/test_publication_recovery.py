@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from harnessix.agent.errors import KernelError
+from harnessix.agent.publication import PROTECTION_LIMIT_FAILURES
 from harnessix.trusted_actions.public_errors import (
     PUBLIC_OUTPUT_REJECTIONS,
     sanitize_gateway_exception,
@@ -55,5 +56,8 @@ async def test_public_rejection_keeps_fixed_code_or_recovers_only_verified_metad
 @pytest.mark.parametrize("code", sorted(PUBLIC_OUTPUT_REJECTIONS))
 def test_public_output_codes_do_not_escape_their_callback_stage(stage, code):
     sanitized = sanitize_gateway_exception(KernelError(code, CANARY), stage=stage)
-    assert sanitized.code == f"trusted_action_{stage}_failed"
+    # Review存档的保护检查做不完时保留码，原Route随后被系统拒绝、动作不执行（ADR 0174）；
+    # 其余公开保护拒绝码仍不越出输出阶段，消息一律重建。
+    kept = stage == "review" and code in PROTECTION_LIMIT_FAILURES
+    assert sanitized.code == (code if kept else f"trusted_action_{stage}_failed")
     assert CANARY not in str(sanitized)

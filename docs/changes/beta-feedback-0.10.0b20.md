@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 63
+version: 64
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -145,9 +145,10 @@ supersedes: []
 | 五十六 | Windows未开UTF-8模式时，`data export`等子命令经管道输出的JSON按控制台代码页编码，调用方解析成乱码（0.10.0b53 Windows正式测试，发布会话发现） | 输出流不是终端时只写ASCII，与`exec`相同 | 本文第70节 |
 | 五十七 | macOS沙箱里Java项目的Maven Wrapper在`mktemp -d`一步失败（0.10.0b53，Issue #44；只影响macOS） | Seatbelt放行macOS用户临时目录的写入 | [ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版、本文第71节 |
 | 五十八 | 导出与事件里宿主自动说明和操作者输入都是`user_message`，无法按结构区分（0.10.0b53，Issue #46；三个平台相同） | 公开用户消息新增`origin`（user/harnessix），按派生身份判定 | [ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)、本文第72节 |
+| 五十九 | 保护检查超出资源上限或时限时整轮失败，同批尚未准备的宿主命令被记为未知效果（0.10.0b50 Windows，Issue #37遗留；三个平台相同） | 只让那一次调用失败或不带存档，命令按审计终态提交，Review检查不了时动作不执行 | [ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)、本文第73节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十八项在第61～72节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十九项在第61～73节。
 
 ## 2. 需求背景
 
@@ -1600,9 +1601,12 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 
 见[ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版8.3节。0.10.0b53 macOS（Seatbelt）：jackson-databind任务里`./mvnw -v`退出1，`mktemp: mkdtemp failed on /var/folders/…/T/tmp.…: Operation not permitted`；宿主机同一命令正常。macOS自带`mktemp`不读`TMPDIR`（本机核实：设了`TMPDIR`、加`-t`都仍建在`/var/folders/…/T`），那里不在Seatbelt的可写范围内。只影响macOS：Linux的`/tmp`是私有tmpfs，Windows没有Seatbelt沙箱。
 
-负责人2026-11-18选方案A：Seatbelt放行这个目录的写入（整机本来可读）。HOME、工作区或受保护目录位于其中时不放行。验证：`tests/product_config/test_native_sandbox_profile.py`；真机Seatbelt下`./mvnw -v`由发布会话在macOS正式测试中验证（本会话处于嵌套沙箱，不能运行sandbox-exec）。
+负责人2026-11-18选方案A：Seatbelt放行这个目录的写入（整机本来可读）。HOME、工作区或受保护目录位于其中时不放行。验证：`tests/product_config/test_native_sandbox_profile.py`；负责人在自己的终端里做了真机Seatbelt检查（全新HOME、jackson工程、`exec --approval-mode auto`）：0.10.0b54上`mktemp -d`退出码1，0.10.0b55上为0。冷启动的`./mvnw -v`随后在创建`~/.m2`一步失败：首次运行要把Maven发行包下载到HOME，而沙箱按设计不能写HOME、不能联网，这需要宿主审批，不属于本项修复。
 
 ## 72. 第五十八项：导出里分不清宿主说明与人工输入（Issue #46）
 
 见[ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)。0.10.0b53：fast-xml-parser任务的导出里，操作者的原始任务（游标4）与Harnessix的重复命令提示（游标1035）都是只有`kind`与`text`的`user_message`，按结构统计人工介入得到2次，实际1次。负责人2026-11-18选方案A：公开的用户消息新增`origin`（`user`或`harnessix`），按宿主说明的派生身份判定，持久化不变，旧会话同样适用。验证：用报告人会话状态目录的副本真实导出，游标4为`user`、游标1035为`harnessix`。
 
+## 73. 第五十九项：保护检查做不完时整轮失败（Issue #37遗留）
+
+见[ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)。报告人补充的0.10.0b50 Fastify #7113会话里，grep与一条需要审批、尚未准备的宿主测试命令在同一步，grep的完整存档检查超限后两者都记为`uncertain_effect`，整轮以`interrupted`结束。第63节修复了这次的触发条件，但任何保护检查超出资源上限或10秒期限仍会让整轮失败。负责人2026-11-18决定只让那一次调用失败：只读结果的完整存档检查不了时不保存、预览照常（`artifact_omitted: "protection_limit"`），结果本身检查不了时该次调用`failed`并请模型缩小请求；命令已执行时按审计终态提交、不带存档；改动Review检查不了时原Route被系统拒绝、改动不执行。发现Secret仍使整轮失败。验证：在0.10.0b55上复现报告中的事件表（grep `failed`、命令`unknown`，均为`uncertain_effect`，触发原因`public_output_limit`），修改后grep带预览、命令照常审批并执行，整轮完成；三个平台判断相同，没有平台分支。

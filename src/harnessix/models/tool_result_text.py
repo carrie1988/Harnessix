@@ -23,9 +23,13 @@ _GAP_FIELDS = (
     "long_lines",
 )
 _SEARCH_FIELDS = {"path", "stats", "scan_complete", "truncated", "truncation_reason"}
-# 存储已满时结果不带存档（ADR 0163），截断处告诉模型完整正文没有保存、不能再读取。
-_STORAGE_FULL = {"artifact_omitted": "storage_full"}
-_NOT_SAVED = "not saved (artifact storage full)"
+# 存储已满（ADR 0163）或完整正文太大、保护检查做不完（ADR 0174）时结果不带存档，
+# 截断处按artifact_omitted的原因告诉模型完整正文没有保存、不能再读取。
+_NOT_SAVED = {
+    "storage_full": "not saved (artifact storage full)",
+    "protection_limit": "not saved (too large to check for protected values); narrow the request "
+    "to see the rest",
+}
 _READ_FIELDS = {
     "path",
     "text",
@@ -83,13 +87,13 @@ def _render(public: Mapping[str, Any]) -> str | None:
 
 
 def _archive_note(output: dict[str, Any], what: str) -> str:
-    """截断时说明完整正文去哪里读；存储已满时说明没有保存（ADR 0163）。"""
+    """截断时说明完整正文去哪里读；没有存档时说明没有保存及原因（ADR 0163、0174）。"""
     artifact = output.get("artifact")
     if isinstance(artifact, dict):
         return f"; full {what}: read_artifact artifact_id={artifact['artifact_id']}"
-    if output.get("artifact_omitted") == _STORAGE_FULL["artifact_omitted"]:
-        return f"; full {what} {_NOT_SAVED}"
-    return ""
+    reason = output.get("artifact_omitted")
+    note = _NOT_SAVED.get(reason) if isinstance(reason, str) else None
+    return "" if note is None else f"; full {what} {note}"
 
 
 def _search(output: dict[str, Any]) -> str | None:

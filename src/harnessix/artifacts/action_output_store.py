@@ -26,6 +26,7 @@ from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.action_publication_snapshot import action_publication_snapshot
 from harnessix.artifacts.contracts import (
     ARTIFACT_OMITTED_KEY,
+    ARTIFACT_PROTECTION_LIMIT,
     ARTIFACT_STORAGE_FULL,
     ArtifactPolicy,
     ArtifactRef,
@@ -42,6 +43,12 @@ from harnessix.session.sqlite import SQLiteSessionStore
 
 QuotaCheck = Callable[[aiosqlite.Connection, UUID, UUID, int], Awaitable[None]]
 FaultInjector = Callable[[str], None]
+# 命令已经执行时完整输出不保存的原因：存不下（ADR 0163），或太大、保护检查超出资源上限（ADR 0174）。
+# 检查超时同时用完了输出投影的期限，不在此列，仍按原样失败。
+_UNSAVED_OUTPUT = {
+    "artifact_quota_exceeded": ARTIFACT_STORAGE_FULL,
+    "public_output_limit": ARTIFACT_PROTECTION_LIMIT,
+}
 
 
 class ActionOutputArtifactMixin:
@@ -124,7 +131,7 @@ class ActionOutputArtifactMixin:
         workspace_scope: str,
         expected_sequence: int,
     ) -> dict[str, JsonValue]:
-        """返回公开输出的存档字段；存储已满时命令已经执行，结果照常提交、不带存档（ADR 0163）。"""
+        """返回公开输出的存档字段；命令已经执行，存不下或检查做不完时结果照常提交、不带存档。"""
 
         try:
             reference = await self.publish_action_output(
@@ -137,9 +144,9 @@ class ActionOutputArtifactMixin:
                 expected_sequence=expected_sequence,
             )
         except KernelError as error:
-            if error.code != "artifact_quota_exceeded":
+            if error.code not in _UNSAVED_OUTPUT:
                 raise
-            return {ARTIFACT_OMITTED_KEY: ARTIFACT_STORAGE_FULL}
+            return {ARTIFACT_OMITTED_KEY: _UNSAVED_OUTPUT[error.code]}
         return {"artifact": reference.model_dump(mode="json")}
 
 

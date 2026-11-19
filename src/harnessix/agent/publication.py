@@ -15,6 +15,8 @@ from harnessix.domain.review_text import review_text_for_protection
 
 PUBLIC_PROTECTION_POLICY = "harnessix.public-output-protection/v1"
 PUBLIC_PROTECTION_TIMEOUT = 10.0
+# 检查没有做完（资源上限或期限），而不是发现了Secret：正文不公开，只有这一次调用受影响（ADR 0174）。
+PROTECTION_LIMIT_FAILURES = frozenset({"public_output_limit", "public_output_timeout"})
 
 BinaryStreamDecoder = Callable[[bytes, Callable[[], None]], tuple[bytes, ...]]
 

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 76
+version: 77
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -75,6 +75,13 @@ supersedes: []
   共享其余对象的浅副本；其余视图照旧拿到独立的深拷贝。`admit_call`与`step_notice`本来就拿共享的Turn与Thread，这里与它们一致。
 - 选择结果、请求字节与持久事件不变；深拷贝在160步基准的第121–160步每次约30毫秒、每步两次。运行时主文件只改一行（调用名），
   行数不变。回归见`tests/agent/test_tool_view_turn.py`（含产品运行中每次选择都与深拷贝路径比对）。
+
+## 当前增量：保护检查做不完只让那一次调用失败（ADR 0174，Beta Issue #37遗留）
+
+- [`tool_result_protection.protect_tool_result`](../../src/harnessix/agent/tool_result_protection.py)：`_record_tool_result`提交前的公开保护
+  报`public_output_limit`或`public_output_timeout`（`publication.PROTECTION_LIMIT_FAILURES`），且调用只读、结果不带效果元数据时，
+  换成这一次调用的`failed`结果（错误码沿用检查码，英文说明请模型缩小请求），原正文不公开；Turn与同批其他调用照常继续。
+  搜索的完整存档检查不了时由Artifact Store改为不带存档提交。发现Secret等其他拒绝、带效果的结果照旧失败关闭。
 
 ## 当前增量：宿主说明的身份登记（ADR 0173，Beta Issue #46）
 
@@ -1187,9 +1194,10 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 76 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
-| 75 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
-| 74 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
+| 77 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
+| 76 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
+| 75 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
+| 74 | `d82e71cc` 增量 | 2026-11-18 | 只读结果的保护检查做不完时只让那一次调用失败，Turn与同批调用继续（`tool_result_protection`，ADR 0174，Beta Issue #37遗留） |
 | 73 | `3a97841b` 增量 | 2026-11-18 | `host_notice_identity`：宿主说明身份的统一登记，供公开投影标注用户消息来源（ADR 0173，Beta Issue #46） |
 | 72 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断时补发说明（`truncated_call`，不计入连续补发、不使Turn失败）；非法参数反馈补上拆小建议 |
 | 71 | `493a8f14` 增量 | 2026-11-18 | 工具调用写成正文的回复补发提示继续，连续第三次失败，不再记为完成（`truncation_recovery.tool_call_text`，ADR 0109第8版，Beta Issue #40） |
