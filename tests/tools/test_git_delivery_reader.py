@@ -237,7 +237,7 @@ def simulated_windows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Simple
         observe=lambda *_args, **_kwargs: observation,
         close=lambda: None,
     )
-    monkeypatch.setattr(workspace_snapshot, "_open_native", lambda *_args: snapshot_root)
+    monkeypatch.setattr(workspace_snapshot, "_open_native", lambda *_args, **_kwargs: snapshot_root)
     return SimpleNamespace(
         root=root,
         executable=tmp_path / "unused-git.exe",

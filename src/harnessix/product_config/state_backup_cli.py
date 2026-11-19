@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 from uuid import UUID
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.cli_json import print_json
 from harnessix.product_config.state_backup import backup_product_state, verify_product_backup
 from harnessix.product_config.state_restore import (
     recover_product_state_restore,
@@ -42,12 +42,9 @@ def state_main(argv: Sequence[str] | None = None) -> None:
     recover.add_argument("--timeout", type=float, default=120.0)
     args = parser.parse_args(argv)
     try:
-        print(json.dumps(asyncio.run(_execute(args)), ensure_ascii=False, sort_keys=True))
+        print_json(asyncio.run(_execute(args)), sort_keys=True)
     except KernelError as error:
-        print(
-            json.dumps({"code": error.code, "message": error.message}, ensure_ascii=False),
-            file=sys.stderr,
-        )
+        print_json({"code": error.code, "message": error.message}, file=sys.stderr)
         raise SystemExit(2) from None
     except Exception:
         code = (
@@ -55,10 +52,7 @@ def state_main(argv: Sequence[str] | None = None) -> None:
             if args.operation in {"backup", "verify"}
             else "product_restore_internal_failure"
         )
-        print(
-            json.dumps({"code": code, "message": "产品状态操作失败"}, ensure_ascii=False),
-            file=sys.stderr,
-        )
+        print_json({"code": code, "message": "产品状态操作失败"}, file=sys.stderr)
         raise SystemExit(2) from None
 
 

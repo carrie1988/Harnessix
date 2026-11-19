@@ -13,9 +13,11 @@ from pydantic import (
     ConfigDict,
     Field,
     JsonValue,
+    SerializerFunctionWrapHandler,
     StrictInt,
     StrictStr,
     field_validator,
+    model_serializer,
     model_validator,
 )
 from pydantic.alias_generators import to_camel
@@ -348,6 +350,14 @@ class PublicArtifactRef(ProtocolModel):
 class PublicTextContent(ProtocolModel):
     kind: Literal["user_message", "assistant_message", "reasoning_summary"]
     text: str = Field(max_length=MAX_PROTOCOL_TEXT_CHARS)
+    origin: Literal["user", "harnessix"] | None = None  # 仅user_message（ADR 0173）
+
+    @model_serializer(mode="wrap")
+    def _omit_absent_origin(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        data: dict[str, object] = handler(self)  # 其他文本不带origin，线上形状不变
+        if self.origin is None:
+            data.pop("origin", None)
+        return data
 
 
 class PublicToolCallContent(ProtocolModel):

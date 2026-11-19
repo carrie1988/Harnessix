@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import aiosqlite
@@ -17,15 +17,12 @@ from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.ids import new_id
 from harnessix.agent.models import (
     ApprovalRequestContent,
-    EventDraft,
-    ItemFinished,
-    ItemStarted,
     ItemStatus,
     Thread,
     ToolCallContent,
     ToolResultContent,
 )
-from harnessix.agent.publication import PublicOutputProtection
+from harnessix.agent.publication import PROTECTION_LIMIT_FAILURES, PublicOutputProtection
 from harnessix.agent.reducer import get_turn
 from harnessix.artifacts.action_output_store import (
     ActionOutputArtifactMixin,
@@ -33,7 +30,7 @@ from harnessix.artifacts.action_output_store import (
 )
 from harnessix.artifacts.collection import collect_expired
 from harnessix.artifacts.contracts import (
-    ARTIFACT_OMITTED_KEY,
+    ARTIFACT_PROTECTION_LIMIT,
     ARTIFACT_STORAGE_FULL,
     MAX_ARTIFACT_BYTES,
     MAX_ARTIFACT_RECORDS,
@@ -50,6 +47,7 @@ from harnessix.artifacts.contracts import (
 )
 from harnessix.artifacts.persistence import ARTIFACT_READ_SELECT, insert_artifact
 from harnessix.artifacts.publication import ArtifactPublicationGuard
+from harnessix.artifacts.result_batches import result_batches
 from harnessix.domain.artifact_pagination import paginate_artifact_lines
 from harnessix.domain.models import ApprovalOutcome, EffectClass
 
@@ -193,7 +191,9 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             complete=output.complete,
             expires_at=now + timedelta(seconds=self.policy.ttl_seconds),
         )
-        batch, fallback = self._result_batches(turn_id, result, ref, max_output_chars)
+        batch, omitted = result_batches(
+            self.session._freeze_batch, turn_id, result, ref, max_output_chars
+        )
         async with self.session._connection() as database:
             await database.execute("BEGIN IMMEDIATE")
             thread = await self.session._snapshot(database, thread_id)
@@ -212,22 +212,11 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
                     or item.content.request_fingerprint != request_fingerprint(thread, turn, call)
                 ):
                     raise KernelError("approval_mismatch", "Artifact 发布缺少匹配的批准")
-            if await self._has_room(database, thread_id, turn_id, ref.size_bytes):
-                await insert_artifact(
-                    database,
-                    ref,
-                    thread_id=thread_id,
-                    turn_id=turn_id,
-                    call_id=call.call_id,
-                    workspace_scope=output.workspace_scope,
-                    body=output.body,
-                    purpose="tool_result",
-                    created_at=now,
-                    publication=self._publication,
-                )
-                self._fault("artifact.after_insert")
-            else:
-                batch = fallback
+            unsaved = await self._archive(
+                database, ref, output, call, thread_id=thread_id, turn_id=turn_id, created_at=now
+            )
+            if unsaved is not None:
+                batch = omitted[unsaved]
             updated, _ = await self.session._append_in_transaction(
                 database, thread_id, batch, expected_sequence=expected_sequence
             )
@@ -270,30 +259,42 @@ class SQLiteArtifactStore(ActionOutputArtifactMixin):
             publication=self._publication,
         )
 
-    def _result_batches(
-        self, turn_id: UUID, result: ToolResultContent, ref: ArtifactRef, max_output_chars: int
-    ) -> tuple[tuple[EventDraft, ...], tuple[EventDraft, ...]]:
-        """带存档引用的结果，以及存储已满时照常提交、不留存档的结果（ADR 0163）。"""
-        batches = []
-        for archive in (
-            {"artifact": ref.model_dump(mode="json")},
-            {ARTIFACT_OMITTED_KEY: ARTIFACT_STORAGE_FULL},
-        ):
-            content = result.model_copy(update={"output": {"preview": result.output, **archive}})
-            if len(content.model_dump_json()) > max_output_chars:
-                raise KernelError("tool_output_too_large", "Artifact 引用与预览超过 Kernel 上限")
-            item_id = new_id()
-            started = ItemStarted(item_id=item_id, content=content)
-            finished = ItemFinished(item_id=item_id, content=content, status=ItemStatus.COMPLETED)
-            batches.append(
-                self.session._freeze_batch(
-                    (
-                        EventDraft(turn_id=turn_id, payload=started),
-                        EventDraft(turn_id=turn_id, payload=finished),
-                    )
-                )
+    async def _archive(
+        self,
+        database: aiosqlite.Connection,
+        ref: ArtifactRef,
+        output: ArtifactToolResult,
+        call: ToolCallContent,
+        *,
+        thread_id: UUID,
+        turn_id: UUID,
+        created_at: datetime,
+    ) -> str | None:
+        """在发布事务内插入存档；存不下（ADR 0163）或检查做不完（ADR 0174）时返回不保存的原因。
+
+        正文在插入前检查，检查做不完时什么都没写入，已单独通过检查的预览照常提交。
+        """
+        if not await self._has_room(database, thread_id, turn_id, ref.size_bytes):
+            return ARTIFACT_STORAGE_FULL
+        try:
+            await insert_artifact(
+                database,
+                ref,
+                thread_id=thread_id,
+                turn_id=turn_id,
+                call_id=call.call_id,
+                workspace_scope=output.workspace_scope,
+                body=output.body,
+                purpose="tool_result",
+                created_at=created_at,
+                publication=self._publication,
             )
-        return batches[0], batches[1]
+        except KernelError as error:
+            if error.code not in PROTECTION_LIMIT_FAILURES:
+                raise
+            return ARTIFACT_PROTECTION_LIMIT
+        self._fault("artifact.after_insert")
+        return None
 
     async def _check_quota(
         self, database: aiosqlite.Connection, thread_id: UUID, turn_id: UUID, size: int

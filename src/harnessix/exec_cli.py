@@ -21,6 +21,7 @@ from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from harnessix.agent_cli import ApprovalOutcome, ApprovalPolicy, ThinAgentCLI
+from harnessix.product_config.cli_json import print_json
 from harnessix.product_config.preflight import run_product_preflight
 from harnessix.product_ui.cli import (
     _action_config,
@@ -453,12 +454,4 @@ def _write_summary(summary: dict[str, Any], summary_file: str | None) -> None:
         text = json.dumps(summary, ensure_ascii=False, indent=2)
         Path(summary_file).write_text(text + "\n", encoding="utf-8")
     else:
-        print(json.dumps(summary, ensure_ascii=not _stdout_is_terminal(), indent=2))
-
-
-def _stdout_is_terminal() -> bool:
-    """重定向或管道可能被宿主转码（Windows PowerShell 5.1按系统代码页），不是终端时只写ASCII。"""
-    try:
-        return sys.stdout.isatty()
-    except (AttributeError, ValueError):
-        return False
+        print_json(summary, indent=2)

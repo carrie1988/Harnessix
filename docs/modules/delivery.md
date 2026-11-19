@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 64
+version: 65
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
 modules:
   - delivery
 related_adrs:
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
   - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
   - docs/adr/0068-transactional-workspace-and-git-delivery.md
@@ -18,6 +19,8 @@ related_adrs:
   - docs/adr/0137-create-with-missing-parent-directories.md
   - docs/adr/0141-newline-aware-exact-edits.md
 related_tests:
+  - tests/product_config/test_patch_key_certificate_files.py
+  - tests/delivery/test_key_certificate_patch_policy.py
   - tests/delivery/test_windows_short_names.py
   - tests/delivery/test_create_missing_parents.py
   - tests/product_config/test_patch_missing_parents.py
@@ -78,6 +81,14 @@ supersedes: []
 A/T2/D 写阶段与 Backup2 仍须闭合，不将组件验证当作 R4 或商业发布验收。
 
 # Delivery模块设计
+
+## 当前增量：补丁可以写密钥与证书文件，其内容从不显示（ADR 0172）
+
+- Workspace事务只服务内置补丁与回滚：[`path_case.reject_case_aliases`](../../src/harnessix/delivery/path_case.py)、[`filesystem`](../../src/harnessix/delivery/filesystem.py)的成员观察与发布、[`parent_directories.remove_empty_directories`](../../src/harnessix/delivery/parent_directories.py)、`planner._target_kind`一律用写目标策略（`PatchTargetPolicy`）；两代规划器与发布前复核以`patch_targets=True`捕获和复核快照。`planner._read_existing_file`新增`patch_targets`，补丁与事务规划传True，Git交付与Git检查点经`_read_existing`照旧用读取策略。
+- [`planner._protected`](../../src/harnessix/delivery/planner.py)在`PROTECTED_COMPONENTS`与`.env*`之外拒绝读取工具的全部敏感名称（`.ssh`、`.aws`、`.gnupg`、`id_rsa`、`id_dsa`、`id_ecdsa`、`id_ed25519`等），POSIX与Windows相同；`trusted_action`复用这一个函数。`PROTECTED_COMPONENTS`不改，已保存的计划照常加载。
+- [`diff.build_workspace_diff`](../../src/harnessix/delivery/diff.py)传`hide_key_files=True`：[`diff_content`](../../src/harnessix/delivery/diff_content.py)对末段以这四个后缀结尾的文件只写`Content hidden (key or certificate file): before=<sha> after=<sha>`。审批Review、`diff_preview`与回滚的Review和结果都来自这份Diff；Git树Diff不变。事务Blob里的明文前后镜像保留。
+- 补丁与回滚定义设`patch_targets=True`（见[Trusted Actions模块设计](trusted-actions.md)）。编辑锚点对这类文件不报位置，见[Patch模块设计](patches.md)。
+- 回归：`tests/product_config/test_patch_key_certificate_files.py`、`tests/delivery/test_key_certificate_patch_policy.py`、`tests/product_config/test_patch_protected_paths.py`。
 
 ## 当前增量：Windows上8.3短名称按保护路径拒绝（ADR 0170）
 

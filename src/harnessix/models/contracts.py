@@ -123,6 +123,10 @@ class ResponseCompleted(ContractModel):
         "completed", "tool_calls", "max_output_tokens", "content_filter", "cancelled", "unknown"
     ] = "completed"
     usage: Usage = Field(default_factory=Usage)
+    # 输出在工具调用中途用满上限、被截断的调用已按拒绝形成时为真
+    # （终态改记tool_calls，ADR 0109第5版）。运行时据此告诉模型原因与做法
+    # （ADR 0171）；其余情况恒为假。
+    tool_call_truncated: bool = Field(default=False, strict=True)
 
 
 class ResponseFailed(ContractModel):

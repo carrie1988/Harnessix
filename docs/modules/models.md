@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 40
+version: 41
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -60,6 +60,11 @@ supersedes: []
 - 原因：本机vLLM的Qwen工具解析器只边生成边发送字符串参数，`apply_patch_batch`的数组参数写完才整段发出；2026-11-15/16 NL2RepoBench回归中35次请求在第302秒被判读取超时、整段作废。2026-11-17在真实副本上对照（阈值5秒）：0.10.0b48两次尝试都失败，本版一次完成（20～25秒）。
 - 工具调用开始、参数还没有字节时，[`_progress.ArgumentProgress`](../../src/harnessix/models/_progress.py)先报一次`ToolArgumentsProgress(utf8_bytes=0, tool=…)`（契约下限由1改为0）：OpenAI兼容端点在名称与空参数的第一个分片时报，Anthropic在工具块开始时报，界面据此立即说明在生成哪类内容。
 - 回归：`tests/models/test_stream_silence.py`（两个适配器：参数晚到不重试、工具调用前静默仍重试、心跳算活动、总期限仍然有效）；`tests/models/test_chat_transport_diagnostics.py`、`tests/models/test_attempt_usage.py`的期限用例不变。
+
+## 当前增量：标出被输出上限截断的工具调用（ADR 0171）
+
+- [`_chat_stream.ChatStream.finish`](../../src/harnessix/models/_chat_stream.py)：以`length`结束、已形成调用组且组内有被拒绝的调用时（ADR 0109第5版改记`tool_calls`的情况），`ResponseCompleted.tool_call_truncated`为真，其余情况恒为假；Provider事件Schema `provider-event-v4`只新增这个带默认值的字段。Anthropic的`max_tokens`半截调用仍按原规则失败。
+- 回归：`tests/models/test_tool_rejection.py::test_unsuccessful_terminal_never_releases_unknown_or_known_calls`。
 
 ## 当前增量：正文写到一半断开的请求同样重试（ADR 0144第5版）
 
@@ -895,6 +900,8 @@ Provider协议、Usage和Cost事实属于本文；Agent Loop消费规则见[Agen
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 41 | `d82e71cc` 增量 | 2026-11-18 | 文本渲染按`artifact_omitted`的原因说明完整正文未保存，新增`protection_limit`（ADR 0174） |
+| 40 | ADR 0171增量 | 2026-11-18 | `ResponseCompleted.tool_call_truncated`标出输出上限截断的工具调用（`_chat_stream.finish`） |
 | 39 | `39e1e1bf` 增量 | 2026-11-15 | 正文开始与正文增量也算可作废事件，正文写到一半断开的请求照常有界重试（ADR 0144第5版） |
 | 38 | `2d72f2c0` 增量 | 2026-11-15 | 文本渲染对带`artifact_omitted`的截断结果说明完整正文未保存（ADR 0163） |
 | 37 | 第二轮合入 | 2026-11-14 | 文档版本27～29随第二轮分支合入主线，与第30～36版并存：可读工具别名、目录拒绝在模型线协议上的英文反馈、说明随历史持久化（ADR 0136、0132）；序号空缺按到达的调用成组（第29版）保留，没有正文的响应沿用第31版，第二轮不另作处理 |
@@ -988,7 +995,8 @@ Chat/Anthropic声明Native JSON string投影；不会改变公共ModelRequest/Ev
   [`tool_result_text.py`](../../src/harnessix/models/tool_result_text.py)渲染——Grep为`行号:内容`/`行号-上下文`（同文件
   命中合并去重、不连续处`--`，每文件一次`content_sha256`与`revision`）、Glob为路径列表、read_file为一行范围与摘要加原始源码
   （不加行号前缀，避免被抄进补丁原文）、命令为退出状态加stdout/stderr预览；截断与存档以`read_artifact artifact_id=…`说明，存储已满没有存档时说明
-  “not saved (artifact storage full)”（ADR 0163）。
+  “not saved (artifact storage full)”（ADR 0163），太大、保护检查做不完时说明“not saved (too large to check for protected
+  values); narrow the request to see the rest”（ADR 0174）。
   失败、拒绝、带diff或形状不符的结果仍发规范JSON；持久历史、Artifact、审计与回放不变，渲染只由结果内容决定。
   Anthropic映射要求JSON结果正文，不提供该选项。holdout的4题实测线上字符约为原来的58%（Grep约26%，命令约35%）。
 - `prompt_cache="stable_tail"`：指令与历史在前且逐字节不变，逐请求的目录/预算说明移到末尾，不打缓存标记，供服务端自动前缀缓存

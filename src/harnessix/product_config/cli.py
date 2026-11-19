@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import sys
 from collections.abc import Sequence
+from typing import TextIO
 
 from harnessix.agent.errors import KernelError
+from harnessix.product_config.cli_json import print_json
 from harnessix.product_config.codec import load_product_config
 from harnessix.product_config.contracts import ProductConfigSnapshot
 from harnessix.product_config.migration import migrate_product_config_file
@@ -55,14 +56,14 @@ def _server_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _json(value: object) -> str:
+def _print(value: object, *, file: TextIO | None = None) -> None:
     if hasattr(value, "model_dump"):
         value = value.model_dump(mode="json")
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False)
+    print_json(value, file=file, sort_keys=True, allow_nan=False)
 
 
 def _exit_with_error(code: str, message: str, *, retryable: bool = False) -> None:
-    print(_json({"code": code, "message": message, "retryable": retryable}), file=sys.stderr)
+    _print({"code": code, "message": message, "retryable": retryable}, file=sys.stderr)
     raise SystemExit(2) from None
 
 
@@ -82,7 +83,7 @@ def config_main(argv: Sequence[str] | None = None) -> None:
             if args.state_database:
                 with SQLiteProductConfigStore(args.state_database) as store:
                     store.save_snapshot(loaded)
-            print(_json(report))
+            _print(report)
             raise SystemExit(0 if report.ready else 2)
         receipt = migrate_product_config_file(
             args.config,
@@ -93,7 +94,7 @@ def config_main(argv: Sequence[str] | None = None) -> None:
             assert isinstance(loaded, ProductConfigSnapshot)
             with SQLiteProductConfigStore(args.state_database) as store:
                 store.record_migration(receipt, loaded)
-        print(_json(receipt))
+        _print(receipt)
     except KernelError as error:
         _exit_with_error(error.code, error.message, retryable=error.retryable)
     except Exception:

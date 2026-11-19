@@ -317,4 +317,5 @@ def build_workspace_rollback_definition(
             planner.load,
             after_publish=partial(_remove_created_directories, planner),
         ),
+        patch_targets=True,
     )

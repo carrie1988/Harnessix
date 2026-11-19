@@ -157,6 +157,7 @@ from harnessix.agent.tool_call_groups import (
     validate_exclusive_tool_groups,
 )
 from harnessix.agent.tool_rejections import rejection_result
+from harnessix.agent.tool_result_protection import protect_tool_result
 from harnessix.agent.truncation_recovery import (
     RecoverableReply,
     recovery_notice_events,
@@ -2895,27 +2896,26 @@ class AgentRuntime:
         *,
         max_output_chars: int,
     ) -> tuple[Thread, ToolResultContent]:
+        protection = self._public_output_protection
         if isinstance(result, ArtifactToolResult):
             if self._artifacts is None:
                 raise KernelError("artifact_not_enabled", "未配置 Artifact 发布器，正文未保存")
-            await protect_json(
-                self._public_output_protection, result.result.model_dump(mode="json"), CancelToken()
-            )
-            async with self._lock(thread_id):
-                current = await self.store.get_thread(thread_id)
-                thread = await self._artifacts.publish(
-                    thread_id,
-                    turn_id,
-                    call,
-                    result,
-                    expected_sequence=current.sequence,
-                    max_output_chars=max_output_chars,
-                )
-            return thread, result.result
-        checked = self._validate_result(result, call, max_output_chars)
-        await protect_json(
-            self._public_output_protection, checked.model_dump(mode="json"), CancelToken()
-        )
+            checked = await protect_tool_result(protection, call, result.result)
+            if checked is result.result:
+                async with self._lock(thread_id):
+                    current = await self.store.get_thread(thread_id)
+                    thread = await self._artifacts.publish(
+                        thread_id,
+                        turn_id,
+                        call,
+                        result,
+                        expected_sequence=current.sequence,
+                        max_output_chars=max_output_chars,
+                    )
+                return thread, result.result
+        else:
+            validated = self._validate_result(result, call, max_output_chars)
+            checked = await protect_tool_result(protection, call, validated)
         item_id = new_id()
         thread = await self._commit(
             thread_id,
@@ -3233,12 +3233,7 @@ class AgentRuntime:
                         raise
                     if not attempt_mode:
                         accounted.record(get_turn(snapshot, request.turn_id))
-                    recovery = settle_reply(
-                        event.finish_reason,
-                        call_ids,
-                        texts.has_content,
-                        self._recover_truncated_replies,
-                    )
+                    recovery = settle_reply(event, call_ids, texts, self._recover_truncated_replies)
                     completed = event
                 else:
                     raise KernelError("invalid_provider_output", "不支持的 Provider 事件")

@@ -132,8 +132,18 @@ def _parts(path: str, *, max_bytes: int = 1024, max_parts: int = 64) -> tuple[st
     return parts
 
 
+def is_key_or_certificate_file(path: str) -> bool:
+    """末段是否以.key、.pem、.p12或.pfx结尾（不区分大小写）。
+
+    补丁可以写这类文件，但从不显示其内容（ADR 0172）。
+    """
+    return path.rsplit("/", 1)[-1].casefold().endswith(_DENIED_SUFFIXES)
+
+
 class WorkspaceReadPolicy:
     """跨平台共享的逻辑路径与敏感名称拒绝策略。"""
+
+    denied_suffixes: tuple[str, ...] = _DENIED_SUFFIXES
 
     def __init__(
         self,
@@ -154,7 +164,7 @@ class WorkspaceReadPolicy:
         )
         folded = tuple(part.casefold() for part in parts)
         if any(
-            part in _DENIED_NAMES or part.startswith(".env.") or part.endswith(_DENIED_SUFFIXES)
+            part in _DENIED_NAMES or part.startswith(".env.") or part.endswith(self.denied_suffixes)
             for part in folded
         ) or any(folded[: len(prefix)] == prefix for prefix in self.denied_paths):
             raise ReadToolError("path_denied")
@@ -164,8 +174,17 @@ class WorkspaceReadPolicy:
         return {
             "denied_paths": self.denied_paths,
             "denied_names": sorted(_DENIED_NAMES),
-            "denied_suffixes": _DENIED_SUFFIXES,
+            "denied_suffixes": self.denied_suffixes,
         }
+
+
+class PatchTargetPolicy(WorkspaceReadPolicy):
+    """内置补丁及其回滚的写目标：放开密钥与证书后缀，敏感名称与.env.*照旧拒绝（ADR 0172）。
+
+    只由补丁与回滚的规划、发布和复核显式选用；读取工具与其余观察仍用默认策略。
+    """
+
+    denied_suffixes = ()
 
 
 class Workspace:
@@ -178,10 +197,11 @@ class Workspace:
         denied_paths: tuple[str, ...] = (),
         path_max_bytes: int = 1024,
         path_max_parts: int = 64,
+        patch_targets: bool = False,  # 只由补丁与回滚传True（ADR 0172）
     ) -> None:
         if os.name != "posix" or not hasattr(os, "O_NOFOLLOW"):
             raise ValueError("当前工作区实现仅支持具备 no-follow 的 POSIX 系统")
-        self._policy = WorkspaceReadPolicy(
+        self._policy = (PatchTargetPolicy if patch_targets else WorkspaceReadPolicy)(
             denied_paths,
             path_max_bytes=path_max_bytes,
             path_max_parts=path_max_parts,

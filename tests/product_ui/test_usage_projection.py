@@ -13,6 +13,7 @@ from harnessix.protocol.contracts import (
     PublicUsage,
     ThreadView,
     TurnStartedPublicEvent,
+    TurnStatePublicEvent,
     TurnView,
     UsagePublicEvent,
 )
@@ -111,3 +112,77 @@ def test_a_snapshot_refresh_does_not_count_its_steps_twice() -> None:
     assert view.current_turn is not None
     assert view.current_turn.usage == _usage(18000, 600)
     assert view.current_turn.model_step == 3
+
+
+def _calling_model(thread_id: UUID, turn_id: UUID):
+    started = TurnStartedPublicEvent(request_id="r1", budget=BUDGET)
+    calling = TurnStatePublicEvent(status="calling_model")
+    return apply_replay_page(
+        cold_product_view(_thread(thread_id, cursor=0)),
+        _page(
+            thread_id,
+            _event(thread_id, turn_id, 1, started),
+            _event(thread_id, turn_id, 2, calling),
+        ),
+    )
+
+
+def _ended(turn_id: UUID, status: str, error: dict | None = None) -> TurnView:
+    return TurnView(
+        turn_id=turn_id,
+        request_id="r1",
+        status=status,
+        budget=BUDGET,
+        usage=_usage(70000, 1900),
+        model_steps=2,
+        error=error,
+        created_at=NOW,
+    )
+
+
+def test_cancelling_during_a_model_call_keeps_the_billing_note_after_the_refresh() -> None:
+    """Beta Issue #42：生成中按Ctrl+X取消，界面暖刷新后费用栏不再注明中断的请求可能已计费，
+    重新打开才有。修改前这里为False。"""
+    thread_id, turn_id = uuid4(), uuid4()
+    view = _calling_model(thread_id, turn_id)
+    error = {
+        "code": "cancelled",
+        "message": "取消已生效",
+        "retryable": False,
+        "category": "cancelled",
+    }
+    cancelled = _ended(turn_id, "cancelled", error)
+    view = refresh_thread_snapshot(view, _thread(thread_id, cursor=6, turn=cancelled))
+    cancelling = _event(thread_id, turn_id, 5, TurnStatePublicEvent(status="cancelling"))
+    final = _event(thread_id, turn_id, 6, TurnStatePublicEvent(status="cancelled"))
+    view = apply_replay_page(view, _page(thread_id, cancelling, final))
+    assert view.current_turn is not None and view.current_turn.interrupted_model_call
+    # 与重新打开（从头重放）一致。
+    reopened = apply_replay_page(
+        cold_product_view(_thread(thread_id, cursor=0)),
+        _page(
+            thread_id,
+            _event(thread_id, turn_id, 1, TurnStartedPublicEvent(request_id="r1", budget=BUDGET)),
+            _event(thread_id, turn_id, 2, TurnStatePublicEvent(status="calling_model")),
+            cancelling,
+            final,
+        ),
+    )
+    assert reopened.current_turn is not None and reopened.current_turn.interrupted_model_call
+
+
+def test_a_refresh_after_a_finished_step_adds_no_billing_note() -> None:
+    thread_id, turn_id = uuid4(), uuid4()
+    started = TurnStartedPublicEvent(request_id="r1", budget=BUDGET)
+    view = apply_replay_page(
+        cold_product_view(_thread(thread_id, cursor=0)),
+        _page(
+            thread_id,
+            _event(thread_id, turn_id, 1, started),
+            _event(thread_id, turn_id, 2, TurnStatePublicEvent(status="executing_tools")),
+        ),
+    )
+    view = refresh_thread_snapshot(
+        view, _thread(thread_id, cursor=6, turn=_ended(turn_id, "cancelled"))
+    )
+    assert view.current_turn is not None and not view.current_turn.interrupted_model_call

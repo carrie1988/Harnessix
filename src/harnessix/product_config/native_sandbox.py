@@ -33,6 +33,7 @@ from harnessix.sandbox.native_contracts import HostSandboxProbeV2, NativeSandbox
 from harnessix.sandbox.native_policy import (
     NativeSandboxFacts,
     build_native_sandbox_policy,
+    darwin_user_temp_dir,
     environment_proxy_urls,
     loopback_proxy_ports,
     macos_system_proxy_urls,
@@ -127,6 +128,7 @@ def attest_native_sandbox(
         home = resolved_directory(environ.get("HOME") or Path.home())
         workspace = resolved_directory(site.workspace_root)
         root = workspace_sandbox_root(home, workspace, environ)
+        protected = _protected_paths(site, environ)
         facts = NativeSandboxFacts(
             backend=result.backend,
             home=home,
@@ -135,8 +137,11 @@ def attest_native_sandbox(
             private_tmp=root / "tmp",
             private_cache=root / "cache",
             git_directories=workspace_git_directories(workspace),
-            write_roots=tuple(resolved_directory(item) for item in profile.write_roots),
-            protected_paths=_protected_paths(site, environ),
+            write_roots=(
+                *(resolved_directory(item) for item in profile.write_roots),
+                *_seatbelt_user_temp(seatbelt, (home, workspace, *protected)),
+            ),
+            protected_paths=protected,
             allow_workspace_env_files=profile.allow_workspace_env_files,
             blocked_loopback_ports=configured_proxy_ports(environ, runner) if seatbelt else (),
         )
@@ -268,3 +273,14 @@ def _protected_paths(site: NativeSandboxSite, environ: Mapping[str, str]) -> tup
         except (OSError, RuntimeError):
             resolved.append(path)
     return tuple(resolved)
+
+
+def _seatbelt_user_temp(seatbelt: bool, inside: Iterable[Path]) -> tuple[Path, ...]:
+    """Seatbelt下另放行macOS给当前用户的临时目录：自带mktemp不读TMPDIR（Beta Issue #44）。
+
+    HOME、工作区或受保护的状态目录位于其中时不放行（可写目录不能包含它们），保持此前的策略。
+    """
+    found = darwin_user_temp_dir() if seatbelt else None
+    if found is None or any(path.is_relative_to(found) for path in inside):
+        return ()
+    return (found,)

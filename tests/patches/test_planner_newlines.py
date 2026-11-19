@@ -339,7 +339,7 @@ def test_diff_of_a_plan_recorded_before_newline_handling_shows_its_own_after_ima
             earlier_release.setattr(
                 planner,
                 "_edit_ranges",
-                lambda before, edits, operation, limit, recorded_sha256=None: _located_ranges(
+                lambda before, edits, operation, limit, recorded_sha256=None, **_: _located_ranges(
                     before, edits, operation, limit, newline_aware=False
                 ),
             )

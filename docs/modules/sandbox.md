@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 16
+version: 17
 code_revision: 7b35b73536861a2991e39984268b2a83dca10b41
 owners:
   - core
@@ -36,6 +36,11 @@ supersedes: []
 ---
 
 # Sandbox模块设计
+
+## 当前增量：Seatbelt放行macOS用户临时目录的写入（ADR 0111第2版，Beta Issue #44）
+
+- [`native_policy.darwin_user_temp_dir`](../../src/harnessix/sandbox/native_policy.py)经`confstr(_CS_DARWIN_USER_TEMP_DIR)`取系统给当前用户的临时目录（`/var/folders/…/T`，解析符号链接后），取不到时为`None`。macOS自带`mktemp`不读`TMPDIR`，总在这里建临时文件，Maven Wrapper的`mktemp -d`因此在沙箱里失败。
+- 产品配置把它作为Seatbelt的额外可写目录（见Product Config模块）；策略文本不变，路径照旧只经`-D`参数传入。bubblewrap不变。
 
 ## 当前增量：Windows沙箱外命令不继承`PROGRAMFILES(X86)`（0.10.0b13）
 
@@ -1457,6 +1462,7 @@ Sandbox构造逻辑，但只接收平台Owner能力证明，不创建Process Lea
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 17 | `e2d758ef` 增量 | 2026-11-18 | `native_policy.darwin_user_temp_dir`：Seatbelt另放行macOS用户临时目录的写入（ADR 0111第2版，Beta Issue #44） |
 | 16 | `0fe07db5` 增量 | 2026-11-14 | macOS Seatbelt下沙箱内命令的`JAVA_TOOL_OPTIONS`追加`-Djava.io.tmpdir=<私有TMPDIR>`（`native_policy.sandbox_environment`的`jvm_temporary_directory`）：macOS上的JVM不读TMPDIR，默认临时目录在写入范围之外；不扩大写入范围（Beta Issue #25） |
 | 15 | `31428e52` 增量 | 2026-11-13 | 沙箱外命令另继承常见开发工具的非机密设置（`native_policy._HOST_TOOL_SETTINGS`，只认完整名字），沙箱内不继承（Beta Issue #20） |
 | 8 | `7b35b735` 增量 | 2026-11-11 | Windows沙箱外命令不继承带括号的`PROGRAMFILES(X86)`（0.10.0b13） |

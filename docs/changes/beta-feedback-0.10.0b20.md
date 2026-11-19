@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 56
+version: 64
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -138,9 +138,17 @@ supersedes: []
 | 四十九 | 普通Grep的存档在长凭据下超过公开保护的工作量上限，整轮开发以`public_output_limit`终止（0.10.0b50 Windows，Issue #37；三个平台相同） | 工作量只计实际比较，比模式短的文本计1 | 本文第63节 |
 | 五十 | 审批跨过Turn时限后，`harnessix exec`摘要只剩错误码，事件停在等待审批（0.10.0b50 Windows，Issue #39，4次；三个平台相同） | 审批过期时客户端续跑同一Turn，按时限失败收尾 | 本文第64节 |
 | 五十一 | 没修好的任务最后一条命令是只读搜索，完成证据却是“修改后检查通过”（0.10.0b50 Windows，Issue #36的后续） | 只读与搜索命令不算检查，摘要列出修改后运行的全部命令 | 本文第65节 |
+| 五十二 | `harnessix code`开着时`data export`只报`server_closed`并建议运行doctor，doctor却全部通过（0.10.0b51 macOS，Issue #41；三个平台相同） | 会话被占用时直接说明先按Ctrl+Q退出 | 本文第66节 |
+| 五十三 | 模型把工具调用写成了正文，界面显示“已完成”，其实什么也没执行（0.10.0b51 macOS，Issue #40；三个平台相同） | 补发提示让它真正调用，连续第三次失败而不是记为完成 | [ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版、本文第67节 |
+| 五十四 | 退出TUI后`data export`对多份真实会话以`public_output_limit`失败（0.10.0b51 macOS，Issue #43，5/8；三个平台相同） | 导出时被拒的事件页减半重读 | 本文第68节 |
+| 五十五 | 生成中取消后费用栏没有注明中断的请求可能已计费，重新打开才有（0.10.0b51 Windows，Issue #42；三个平台相同） | 暖刷新保留“模型请求中途结束” | 本文第69节 |
+| 五十六 | Windows未开UTF-8模式时，`data export`等子命令经管道输出的JSON按控制台代码页编码，调用方解析成乱码（0.10.0b53 Windows正式测试，发布会话发现） | 输出流不是终端时只写ASCII，与`exec`相同 | 本文第70节 |
+| 五十七 | macOS沙箱里Java项目的Maven Wrapper在`mktemp -d`一步失败（0.10.0b53，Issue #44；只影响macOS） | Seatbelt放行macOS用户临时目录的写入 | [ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版、本文第71节 |
+| 五十八 | 导出与事件里宿主自动说明和操作者输入都是`user_message`，无法按结构区分（0.10.0b53，Issue #46；三个平台相同） | 公开用户消息新增`origin`（user/harnessix），按派生身份判定 | [ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)、本文第72节 |
+| 五十九 | 保护检查超出资源上限或时限时整轮失败，同批尚未准备的宿主命令被记为未知效果（0.10.0b50 Windows，Issue #37遗留；三个平台相同） | 只让那一次调用失败或不带存档，命令按审计终态提交，Review检查不了时动作不执行 | [ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)、本文第73节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十一项在第61～65节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十九项在第61～73节。
 
 ## 2. 需求背景
 
@@ -1552,3 +1560,53 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 2. 只读或只做搜索的命令不算检查（`product_ui.read_only_commands`）：复用沙箱外命令免询问规则（ADR 0128）的内置只读判定，另认出“第一个程序是搜索或读取程序、其后只有整理输出的程序”的管道；判定不了的仍算检查，所以清单不全只会少改善、不会误判。修改后只运行过这类命令时为`unverified`，对话末尾的提示注明“只读或搜索命令不算”。
 
 `python 探针脚本`这类命令无法与测试区分，仍算检查；按测试程序前缀化解失败（方案3）会重新引入假的“通过”，未采用。三个平台共用一处判定（PowerShell与POSIX按宿主平台选择规则）。验证：`tests/product_ui/test_read_only_commands.py`、`tests/product_ui/test_unverified_completion.py`（marked的命令修改前为通过；探针、重定向、串联、管道到解释器仍算检查；命令列表与截断）。
+
+## 66. 第五十二项：会话被占用时导出的说明（Issue #41）
+
+0.10.0b51 macOS：真实任务结束后`harnessix code`仍开着，另一个终端用同一配置与状态目录`harnessix data export`，退出2：`{"code": "server_closed", "message": "无法读取会话，请先运行 harnessix code doctor"}`；doctor为`ready=true`，再导出仍失败；退出TUI后导出成功。
+
+根因：导出启动一个读取会话的App Server，它要取得状态目录的宿主独占锁（`product_state_owner`），锁被TUI持有，服务端以`product_state_busy`立即退出；导出把任何协议错误都换成“请先运行doctor”，doctor不取这把锁，所以全部通过。诊断同样启动服务端，会话部分只记`server_closed`。三个平台相同。
+
+修改：导出与诊断读取会话前先试一下这把锁（`data_cli._ensure_not_in_use`），被占用时不启动服务端：导出以`data_workspace_busy`退出2，说明“这个工作区的会话正被另一个 Harnessix 使用（例如仍打开着的 harnessix code）。请先在那里按 Ctrl+Q 退出，再重新运行这个命令”；诊断照常生成，`threads_error`为`data_workspace_busy`；删除沿用同一说明。TUI开着时读取会话需要服务端与TUI共享状态，不在本次修改范围。验证：`tests/product_ui/test_data_cli.py::test_export_and_diagnostics_say_to_quit_the_running_session_first`（修改前失败）；本机真实CLI：未占用时导出退出0，另一进程持锁时退出2并给出上述说明。
+
+## 67. 第五十三项：工具调用写成正文却显示“已完成”（Issue #40）
+
+见[ADR 0109](../adr/0109-recoverable-truncation-and-read-guidance.md)第8版。0.10.0b51 macOS TUI（qwen3.8-flash，思考low）：chi修复任务约225秒、8次模型尝试后显示“已完成”，末条回复以`<previous_tool_call>`开头、内含`{"name": "exec_command_shell", "arguments": {...}}`与`</function>`，没有真正的工具调用；工作区没有改动，计划停在第一步。运行时把“正常结束、没有工具调用、有正文”的回复一律当作最终答复。判定在运行时一处，三个平台相同。
+
+修改：这种回复按第6版的机制补发提示继续（第三种情况`tool_call_text`），连续第三次以`invalid_provider_output`失败。判定要求带本步工具名的调用对象，或调用标记加工具名；本机40个Beta会话库的570条真实助手消息里只认出#40这一条。验证见ADR。
+
+## 68. 第五十四项：导出大会话时事件页超过保护上限（Issue #43）
+
+0.10.0b51 macOS：requests、afero、chi、zod、clap五个真实修复会话正常退出TUI后`harnessix data export`都退出2：`{"code": "public_output_limit", ...}`；doctor通过；rich、cobra、fast-xml-parser三个会话能导出（约35～82万字节）。
+
+根因：导出固定每页256个事件读取，服务端对每页做公开结果保护扫描（1 MiB字节上限与工作量上限），工具输出大的会话一页超限即被拒绝；终端界面读历史时会减半页长重读（`sdk.event_pages.read_event_page`），导出没有用它。三个平台相同。
+
+修改：`data_cli._thread_events`经`read_event_page`读事件，被拒的页减半重读并沿用缩小的页长；单个事件仍被拒绝时照旧失败。验证：`tests/product_ui/test_data_cli.py`（256→128→64后读完100个事件，修改前抛出`public_output_limit`；单个事件被拒仍失败）；用报告人五份会话状态目录的副本、同一配置与原工作区路径真实导出：修改前requests以`public_output_limit`失败，修改后五份都退出0（约48万～171万字节）。
+
+## 69. 第五十五项：取消后费用栏少了附注（Issue #42）
+
+0.10.0b51 Windows TUI：Cobra任务在模型请求“思考中/正在生成”时按Ctrl+X，界面显示“已取消”，费用栏为“本轮 71,935 tokens · 费用≤¥0.0688”；退出后`--resume`重新打开，同一轮显示“已知费用≤¥0.0688 · 另有中断的请求可能已计费”。
+
+根因：取消命令完成后界面暖刷新（`hydrate_thread`→`refresh_thread_snapshot`），用快照重建当前Turn；快照规则只对以服务错误结束的失败或中断Turn加这个标记，已取消的Turn没有。随后重放的`cancelling`、`cancelled`状态事件面对的已是快照里的取消状态，按事件的规则（原状态为`calling_model`）也不再成立。重新打开从头重放，事件规则生效，所以有附注。三个平台相同。
+
+修改：暖刷新换下同一Turn时保留标记，并按事件投影的同一规则补判：原状态是`calling_model`而快照已结束（确定不计费的鉴权失败与限流除外）。验证：`tests/product_ui/test_usage_projection.py`（生成中取消后暖刷新保留附注，与从头重放一致，修改前失败；工具执行中取消不加附注）。
+
+## 70. 第五十六项：管道里的JSON输出按代码页编码（b53正式测试发现）
+
+0.10.0b53 Windows正式测试（发布会话，check41）：未开UTF-8模式时，`harnessix data export`的错误说明经管道写出，按控制台代码页cp936编码，按UTF-8解码得到乱码。`exec`的摘要早按Issue #26方案A处理（输出流不是终端时只写ASCII），其余打印JSON的子命令没有跟上。
+
+修改：新增`cli_json`（`is_terminal`、`print_json`），`exec`、`data`、`code doctor --json`与其错误说明、`config`、`state`统一经它打印：输出流不是终端时非ASCII字符写成`\uXXXX`，解析出的内容不变；终端里照写原文。只改JSON输出，给人看的纯文本（如`approvals`、`mcp`列表）不变。三个平台共用。验证：`tests/test_cli_json_output.py`（管道里只写ASCII、终端照写原文、`data`的错误说明在管道里为ASCII，修改前失败）、`tests/test_exec_cli.py`。
+
+## 71. 第五十七项：macOS沙箱里`mktemp -d`失败（Issue #44）
+
+见[ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版8.3节。0.10.0b53 macOS（Seatbelt）：jackson-databind任务里`./mvnw -v`退出1，`mktemp: mkdtemp failed on /var/folders/…/T/tmp.…: Operation not permitted`；宿主机同一命令正常。macOS自带`mktemp`不读`TMPDIR`（本机核实：设了`TMPDIR`、加`-t`都仍建在`/var/folders/…/T`），那里不在Seatbelt的可写范围内。只影响macOS：Linux的`/tmp`是私有tmpfs，Windows没有Seatbelt沙箱。
+
+负责人2026-11-18选方案A：Seatbelt放行这个目录的写入（整机本来可读）。HOME、工作区或受保护目录位于其中时不放行。验证：`tests/product_config/test_native_sandbox_profile.py`；负责人在自己的终端里做了真机Seatbelt检查（全新HOME、jackson工程、`exec --approval-mode auto`）：0.10.0b54上`mktemp -d`退出码1，0.10.0b55上为0。冷启动的`./mvnw -v`随后在创建`~/.m2`一步失败：首次运行要把Maven发行包下载到HOME，而沙箱按设计不能写HOME、不能联网，这需要宿主审批，不属于本项修复。
+
+## 72. 第五十八项：导出里分不清宿主说明与人工输入（Issue #46）
+
+见[ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)。0.10.0b53：fast-xml-parser任务的导出里，操作者的原始任务（游标4）与Harnessix的重复命令提示（游标1035）都是只有`kind`与`text`的`user_message`，按结构统计人工介入得到2次，实际1次。负责人2026-11-18选方案A：公开的用户消息新增`origin`（`user`或`harnessix`），按宿主说明的派生身份判定，持久化不变，旧会话同样适用。验证：用报告人会话状态目录的副本真实导出，游标4为`user`、游标1035为`harnessix`。
+
+## 73. 第五十九项：保护检查做不完时整轮失败（Issue #37遗留）
+
+见[ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)。报告人补充的0.10.0b50 Fastify #7113会话里，grep与一条需要审批、尚未准备的宿主测试命令在同一步，grep的完整存档检查超限后两者都记为`uncertain_effect`，整轮以`interrupted`结束。第63节修复了这次的触发条件，但任何保护检查超出资源上限或10秒期限仍会让整轮失败。负责人2026-11-18决定只让那一次调用失败：只读结果的完整存档检查不了时不保存、预览照常（`artifact_omitted: "protection_limit"`），结果本身检查不了时该次调用`failed`并请模型缩小请求；命令已执行时按审计终态提交、不带存档；改动Review检查不了时原Route被系统拒绝、改动不执行。发现Secret仍使整轮失败。验证：在0.10.0b55上复现报告中的事件表（grep `failed`、命令`unknown`，均为`uncertain_effect`，触发原因`public_output_limit`），修改后grep带预览、命令照常审批并执行，整轮完成；三个平台判断相同，没有平台分支。

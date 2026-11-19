@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 171
+version: 173
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - core
@@ -140,6 +140,14 @@ supersedes: []
   “修订（第2版）”。
 - 测试：[`tests/benchmarks/test_command_path_bench.py`](../../tests/benchmarks/test_command_path_bench.py)在真实产品运行时上
   核对三条命令只有第一条现场启动Owner。
+
+## 当前增量：Seatbelt沙箱可写入macOS用户临时目录（ADR 0111第2版，Beta Issue #44）
+
+- `native_sandbox.attest_native_sandbox`在Seatbelt下把`darwin_user_temp_dir()`加入`write_roots`（`_seatbelt_user_temp`）；HOME、工作区或受保护的状态目录位于其中、或取不到该目录时不加，策略与此前相同。负责人2026-11-18选方案A。
+
+## 当前增量：`config`与`state`的JSON输出在管道里只写ASCII
+
+- `product_config.cli`（`config diagnose/migrate`）与`state_backup_cli`经`cli_json.print_json`打印结果与错误：输出流不是终端时只写ASCII，与`exec`、`data`相同（见Product UI模块）。
 
 ## 当前增量：收尾由宿主保证（ADR 0148第2版，Beta Issue #4）
 
@@ -2436,8 +2444,10 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 171 | ADR 0168第2版D6增量 | 2026-11-18 | `action_runtime._process_supervisor`在POSIX上以`standby_owner=True`构造产品运行时的Supervisor，命令的Owner提前启动；Windows与直接构造的Supervisor不变，配置与Schema不变 |
-| 170 | ADR 0168增量 | 2026-11-16 | `wrap_up.WrapUpToolView.reads_turn_in_place`：没有内层视图时为`True`，Runtime不再为它深拷贝整个Turn；选择结果不变 |
+| 173 | ADR 0168第2版D6增量 | 2026-11-18 | `action_runtime._process_supervisor`在POSIX上以`standby_owner=True`构造产品运行时的Supervisor，命令的Owner提前启动；Windows与直接构造的Supervisor不变，配置与Schema不变 |
+| 172 | ADR 0168增量 | 2026-11-16 | `wrap_up.WrapUpToolView.reads_turn_in_place`：没有内层视图时为`True`，Runtime不再为它深拷贝整个Turn；选择结果不变 |
+| 171 | `e2d758ef` 增量 | 2026-11-18 | Seatbelt沙箱的可写目录加入macOS用户临时目录（`_seatbelt_user_temp`，ADR 0111第2版，Beta Issue #44） |
+| 170 | `ef3e467e` 增量 | 2026-11-18 | `config`、`state`的JSON输出经`cli_json.print_json`，输出流不是终端时只写ASCII |
 | 169 | `3e2f83d8` 增量 | 2026-11-15 | 沙箱内与宿主Process输出改经`archive_action_output`归档：存得下时公开输出照旧带`artifact`，Artifact存储已满时改为`"artifact_omitted": "storage_full"`，结果按审计终态如实提交，本轮不再以`uncertain_effect`中断（ADR 0163） |
 | 168 | `48f5685f` 增量 | 2026-11-14 | 工作区读取时限由`read_time_limit.workspace_read_timeout`决定：配置优先，未配置时Windows为30秒、其他平台5秒（ADR 0162第2版，Beta Issue #24） |
 | 167 | 第二轮合入 | 2026-11-14 | 文档版本160～166即第二轮分支上的137～143（与主线同号，合入时顺延）；本机指令保持主线的v5，外部边界指令为v3，三种执行指令之后都附带工作习惯v2；读工具时限字段沿用主线的`WorkspaceReadTimeout`类型 |

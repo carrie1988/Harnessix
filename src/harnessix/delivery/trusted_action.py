@@ -18,7 +18,6 @@ from harnessix.delivery.action_transaction_planning import (
 )
 from harnessix.delivery.contracts import (
     MAX_TRANSACTION_FILE_BYTES,
-    PROTECTED_COMPONENTS,
     WorkspaceMutation,
     WorkspaceTransactionPlan,
     WorkspaceTransactionRecord,
@@ -26,6 +25,7 @@ from harnessix.delivery.contracts import (
 from harnessix.delivery.path_case import CASE_CONFLICT, reject_path_conflicts
 from harnessix.delivery.planner import (
     DesiredWorkspaceFile,
+    _protected,
     _read_existing_file,
     _target_kind,
 )
@@ -59,7 +59,7 @@ from harnessix.patches.contracts import ExactEdit
 from harnessix.patches.planner import apply_exact_edits
 from harnessix.tools.contracts import MAX_SCAN_BYTES, ReadToolError
 from harnessix.tools.files import _decode
-from harnessix.tools.workspace import ReadOperation
+from harnessix.tools.workspace import ReadOperation, is_key_or_certificate_file
 from harnessix.trusted_actions.contracts import (
     ActionRoutePlan,
     CanonicalActionResource,
@@ -78,7 +78,6 @@ from harnessix.workspace.contracts import (
 )
 from harnessix.workspace.leases import WorkspaceLeaseStore
 from harnessix.workspace.paths import (
-    has_windows_short_name,
     normalize_workspace_path,
     path_comparison_key,
 )
@@ -217,6 +216,7 @@ def build_workspace_patch_definition(
         # 紧凑合同显式公布较短Schema，解码仍是同一严格模型。
         input_schema=compact_workspace_patch_schema() if compact else None,
         decode_arguments=decode_compact_workspace_patch if compact else None,
+        patch_targets=True,
     )
 
 
@@ -422,13 +422,15 @@ def _desired_file(
         return DesiredWorkspaceFile(None)
     if item.operation != "create":
         # replace先于无变化判定核对SHA：内容相同但SHA过期是可纠正的SHA不符，而非未绑定的无变化。
-        before, mode = _read_existing_file(root, path, platform, checkpoint=check)
+        before, mode = _read_existing_file(
+            root, path, platform, checkpoint=check, patch_targets=True
+        )
         if hashlib.sha256(before).hexdigest() != item.expected_sha256:
             raise _sha_mismatch_error()
         if item.operation == "edit":
             assert item.edits is not None
             # edit保留现有文件的真实权限（含0664、0777等），见ADR 0068第2版。
-            edited = _apply_workspace_exact_edits(before, item.edits, operation)
+            edited = _apply_workspace_exact_edits(before, item.edits, operation, path=path)
             return DesiredWorkspaceFile(edited, mode)
     return DesiredWorkspaceFile((item.content or "").encode("utf-8"), item.mode)
 
@@ -450,8 +452,13 @@ def _apply_workspace_exact_edits(
     edits: tuple[ExactEdit, ...],
     operation: ReadOperation,
     recorded_sha256: str | None = None,
+    *,
+    path: str,
 ) -> bytes:
-    """把精确编辑错误收敛为尚未执行、可由模型修正的正式拒绝；复核已保存计划时传入其后像摘要。"""
+    """把精确编辑错误收敛为尚未执行、可由模型修正的正式拒绝；复核已保存计划时传入其后像摘要。
+
+    密钥与证书文件的锚点拒绝不透露内容位置（ADR 0172）。
+    """
 
     try:
         _decode(before)
@@ -461,6 +468,7 @@ def _apply_workspace_exact_edits(
             operation,
             max_bytes=min(MAX_TRANSACTION_FILE_BYTES, MAX_SCAN_BYTES),
             recorded_sha256=recorded_sha256,
+            conceal_content=is_key_or_certificate_file(path),
         )
     except ReadToolError as error:
         raise workspace_patch_preparation_error(
@@ -562,7 +570,7 @@ def _validate_mutation(
             raise KernelError("delivery_action_mismatch", "edit校验缺少受信前镜像读取端口")
         before = read_blob(mutation.before.sha256)
         expected_body = _apply_workspace_exact_edits(
-            before, item.edits, ReadOperation(), mutation.after.sha256
+            before, item.edits, ReadOperation(), mutation.after.sha256, path=mutation.path
         )
         after_valid = (
             mutation.after.presence == "file"
@@ -596,14 +604,6 @@ def _require_target_presence(item: WorkspacePatchFile, mutation: WorkspaceMutati
 
 def _request_id(plan_id: UUID) -> str:
     return f"action:{plan_id}"
-
-
-def _protected(path: str, platform: PlatformKind) -> bool:
-    """保护组件、.env*；Windows上8.3短名称（GIT~1会落到.git，ADR 0170）也拒绝。"""
-    return any(
-        component.casefold() in PROTECTED_COMPONENTS or component.casefold().startswith(".env")
-        for component in path.split("/")
-    ) or (platform == "windows" and has_windows_short_name(path))
 
 
 def workspace_patch_supported(root: Path | None = None) -> bool:

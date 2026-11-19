@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 74
+version: 80
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -55,6 +55,26 @@ supersedes: []
 - [`generation_estimate.in_flight_request`](../../src/harnessix/product_ui/generation_estimate.py)：进度行带工具名、参数还是0字节时也给出阶段（“正在生成修改内容”/“正在生成操作内容”）；还没有任何输出时`label`只写阶段，不写Token估算。工具调用已开始、参数不超过`HELD_BACK_PREFIX_BYTES`（64字节）时`arguments_held_back`为真。
 - [`activity_indicator`](../../src/harnessix/product_ui/activity_indicator.py)：进度5秒没有变化且`arguments_held_back`时，运行提示写“正在生成修改内容 · 已用时 48 秒，模型服务写完才会返回”，秒数从进入这一阶段算起（`_phase_at`）。参数已经逐段到达后停住、以及思考或回复阶段，仍写“模型服务 N 秒未返回新内容”。
 - 原因：vLLM、百炼的Qwen工具解析只先发出工具名与`{"files": `，写完才整段发出补丁内容；O1之后这属于正常情况，原文案把它说成了异常。回归见`tests/agent/test_generation_progress.py::test_the_tui_names_the_phase_and_estimates_what_was_generated`。
+
+## 当前增量：管道里的JSON输出只写ASCII（Beta Issue #26的做法推广）
+
+- 命令行的JSON输出（`code doctor --json`与错误说明、`data`、`config`、`state`、`exec`的摘要）统一经[`cli_json.print_json`](../../src/harnessix/product_config/cli_json.py)：输出流不是终端时只写ASCII（非ASCII字符写成`\uXXXX`，解析出的内容不变），终端里照写原文。Windows未开UTF-8模式时，管道与重定向的输出按控制台代码页（如cp936）编码，调用方按UTF-8解析成了乱码（0.10.0b53 Windows正式测试，`data export`）；`exec`早按Beta Issue #26方案A这样做。
+
+## 当前增量：截断工具调用的说明显示为一行提示（ADR 0171）
+
+- [`rendering._HOST_NOTICE_TEXT`](../../src/harnessix/product_ui/rendering.py)新增`truncated_call_notice_item_id`：显示“模型写工具调用时用满了输出上限，调用被截断未执行，已提示它拆小重发”，不显示英文正文。回归见`tests/product_ui/test_rendering_host_notices.py`。
+
+## 当前增量：生成中取消后费用栏照样注明中断的请求可能已计费（Beta Issue #42）
+
+- [`projection.refresh_thread_snapshot`](../../src/harnessix/product_ui/projection.py)换下同一Turn时经`_carry_interruption`保留“模型请求中途结束”：原投影已有该标记，或原状态是`calling_model`而快照已是失败、中断、取消中或已取消（确定不计费的鉴权失败与限流除外），与按事件投影同一规则。此前生成中按Ctrl+X后界面暖刷新，快照里的已取消Turn不带标记，随后重放的状态事件又从已取消开始，费用栏只显示“费用≤…”；重新打开从头重放才显示“已知费用≤… · 另有中断的请求可能已计费”。
+
+## 当前增量：导出按服务端接受的页长读事件（Beta Issue #43）
+
+- [`data_cli._thread_events`](../../src/harnessix/product_ui/data_cli.py)经[`sdk.event_pages.read_event_page`](../../src/harnessix/sdk/event_pages.py)读事件：一页被以`public_output_limit`或`response_too_large`拒绝时减半页长重读，此后沿用缩小的页长（终端界面`ThinAgentCLI._paged`一直如此）。此前固定256个事件一页，工具输出大的会话超过每页的公开保护上限，导出以`public_output_limit`失败。单个事件仍被拒绝时照旧失败。
+
+## 当前增量：会话被占用时导出直接说明先退出（Beta Issue #41）
+
+- [`data_cli._ensure_not_in_use`](../../src/harnessix/product_ui/data_cli.py)：导出与诊断读取会话前先试一下状态目录的宿主独占锁（`product_state_owner`），被占用（`product_state_busy`，如仍打开着的`harnessix code`）时导出以`data_workspace_busy`退出2，说明“先在那里按Ctrl+Q退出”；诊断照常生成，`threads_error`为`data_workspace_busy`。删除沿用同一说明（`WORKSPACE_BUSY`）。此前导出启动读取会话的服务端，服务端因锁被占用立即退出，导出只报`server_closed`并建议运行doctor，而doctor全部通过。
 
 ## 当前增量：只读和搜索命令不算检查，摘要列出修改后运行的命令（Beta Issue #36的后续）
 
@@ -234,7 +254,7 @@ supersedes: []
   界面上成了“你：[Harnessix host notice] …”，像是用户自己说的话。
 - [`rendering.transcript_lines`](../../src/harnessix/product_ui/rendering.py)现在按Item身份识别这三类说明
   （`completion_notice_item_id`、`recovery_notice_item_id`、`step_notice_item_id`，由Turn与步骤派生），各显示为一行弱化的“提示”
-  加一句中文（“模型停下时任务还没有做完，已提示它继续”“模型的回复被截断或没有内容，已提示它继续”“已把重复或前后结果不一致的命令、修改告知模型”），不显示英文正文。判定只按身份、不按正文前缀：用户自己输入同样的文字仍显示为“你”。
+  加一句中文（“模型停下时任务还没有做完，已提示它继续”“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”“已把重复或前后结果不一致的命令、修改告知模型”），不显示英文正文。判定只按身份、不按正文前缀：用户自己输入同样的文字仍显示为“你”。
 - 会话基线与预算、目录说明保持不显示（见下两节）。只有用户自己那一条输入的Turn不做身份派生；派生结果按Turn与步骤缓存。
   回归见[`test_rendering_host_notices.py`](../../tests/product_ui/test_rendering_host_notices.py)。
 
@@ -1297,8 +1317,14 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 74 | ADR 0167增量 | 2026-11-17 | 压缩较早的对话时运行提示与底栏写“正在压缩较早的对话”和已用时（`projection`的`TransientItemStream.compaction`、`generation_estimate.compacting`） |
-| 73 | ADR 0166增量 | 2026-11-17 | 服务端攒工具参数时进度行带工具名，参数0字节也显示阶段；运行提示写“已用时N秒，模型服务写完才会返回”（`arguments_held_back`） |
+| 80 | ADR 0167增量 | 2026-11-17 | 压缩较早的对话时运行提示与底栏写“正在压缩较早的对话”和已用时（`projection`的`TransientItemStream.compaction`、`generation_estimate.compacting`） |
+| 79 | ADR 0166增量 | 2026-11-17 | 服务端攒工具参数时进度行带工具名，参数0字节也显示阶段；运行提示写“已用时N秒，模型服务写完才会返回”（`arguments_held_back`） |
+| 78 | `ef3e467e` 增量 | 2026-11-18 | `data`、`code doctor --json`与错误说明经`cli_json.print_json`：输出流不是终端时只写ASCII（#26做法推广，b53 Windows正式测试发现） |
+| 77 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断的宿主说明显示为一行“提示” |
+| 76 | `3aa6c0da` 增量 | 2026-11-18 | 暖刷新保留“模型请求中途结束”，生成中取消后费用栏与重新打开一致（`projection._carry_interruption`，Beta Issue #42） |
+| 75 | `20bc1983` 增量 | 2026-11-18 | 导出读事件时被拒的页减半重读并沿用（`data_cli._thread_events`经`read_event_page`，Beta Issue #43） |
+| 74 | `493a8f14` 增量 | 2026-11-18 | 恢复补发提示的界面说明改为“模型的回复被截断、没有内容或把工具调用写成了文字，已提示它继续”（ADR 0109第8版，Beta Issue #40） |
+| 73 | `db4760cc` 增量 | 2026-11-18 | 会话被占用时导出与诊断不再启动服务端，导出以`data_workspace_busy`说明先按Ctrl+Q退出（`data_cli._ensure_not_in_use`，Beta Issue #41） |
 | 72 | `f1744c7a` 增量 | 2026-11-18 | 完成证据：只读与搜索命令不算检查（`read_only_commands`，复用ADR 0128的只读判定），摘要新增`commands_after_last_edit`与`commands_omitted`（Beta Issue #36的后续） |
 | 71 | `ec4f0312` 增量 | 2026-11-18 | 审批晚于Turn截止时间时续跑同一Turn，按时限失败收尾（`sdk.approval_response`，Beta Issue #39） |
 | 70 | `39e1e1bf` 增量 | 2026-11-15 | 失败且没有正文的回复（断开后作废的半截回复、整轮失败时的收尾）不显示空行（ADR 0144第5版） |

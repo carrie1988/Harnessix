@@ -5,6 +5,7 @@ from __future__ import annotations
 from harnessix.agent.approvals import remaining_seconds
 from harnessix.agent.errors import AgentFailure, KernelError
 from harnessix.agent.models import ToolCallContent, ToolResultContent, Turn, TurnStatus
+from harnessix.agent.publication import PROTECTION_LIMIT_FAILURES
 from harnessix.delivery.workspace_patch_errors import (
     WorkspacePatchNoChangeError,
     WorkspacePatchPreconditionError,
@@ -28,10 +29,9 @@ _WORKSPACE_PATCH_PLANNING_FAILURES = {
     ),
     "delivery_path_denied": (
         "A path in files cannot be written by a patch: it is the workspace root, repeats "
-        "another entry, or is protected (for example .git, .env, .ssh, or key and certificate "
-        "files such as .key, .pem, .p12 and .pfx), or on Windows is an 8.3 short name such as "
-        "GIT~1 (use the full name). Fix that path and resend; to ship sample keys or "
-        "certificates, generate them when the code runs instead of storing them"
+        "another entry, or is protected (for example .git, .env, .ssh or id_rsa), or on "
+        "Windows is an 8.3 short name such as GIT~1 (use the full name). Fix that path and "
+        "resend"
     ),
     "workspace_patch_cwd_unsupported": "apply_patch_batch only runs from the workspace root",
     # create会补建缺失的父目录（POSIX自ADR 0137，Windows自其第2版）；
@@ -87,10 +87,10 @@ def workspace_patch_planning_rejection(
 
 
 def _planning_failure_code(rejection: Exception) -> str | None:
-    """规划失败的公开码。规划按工作区读取策略观察要写的路径，保护名称与后缀（.ssh、.env、.key、
-    .pem等）以ReadToolError("path_denied")失败：它与Delivery层的保护路径同属“这个路径不能写”。
+    """规划失败的公开码。POSIX规划按写目标策略观察要写的路径，保护名称（.ssh、.env.*、id_rsa等）
+    以ReadToolError("path_denied")失败：它与Delivery层的保护路径同属“这个路径不能写”。
     此前未转换，整轮以runtime_error中断（2026-11-17 NL2RepoBench冒烟：wsgidav新建
-    sample_bogo_server.key）。"""
+    sample_bogo_server.key）。密钥与证书文件自ADR 0172起可写，不再走到这里。"""
     if isinstance(rejection, KernelError):
         return rejection.code
     if isinstance(rejection, ReadToolError) and rejection.code == "path_denied":
@@ -165,11 +165,19 @@ def workspace_patch_preparation_rejection(
     return ToolResultContent(call_id=call.call_id, outcome="failed", error=failure)
 
 
-# Review存档存不下时改动没有执行；写给模型的英文说明（ADR 0163）。
-_REVIEW_STORAGE_FULL = (
-    "Artifact storage is full, so the review of this action could not be saved and the action "
-    "was not run; nothing changed. Storage is freed as old archives expire"
-)
+# Review存档存不下（ADR 0163）或太大、保护检查做不完（ADR 0174）时动作没有执行；写给模型的英文说明。
+_UNSAVED_REVIEW = {
+    "artifact_quota_exceeded": (
+        "Artifact storage is full, so the review of this action could not be saved and the "
+        "action was not run; nothing changed. Storage is freed as old archives expire"
+    ),
+    **dict.fromkeys(
+        PROTECTION_LIMIT_FAILURES,
+        "The review of this action was too large to check for protected values before it could "
+        "be shown for approval, so the action was not run; nothing changed. Split it into "
+        "smaller actions",
+    ),
+}
 
 
 def preparation_rejection_result(
@@ -179,9 +187,10 @@ def preparation_rejection_result(
     rejection: KernelError,
     route: ActionRouteSnapshot | None = None,
 ) -> ToolResultContent | None:
-    """尚未执行的准备期拒绝：任意Action的Review存档存不下，或内置回滚的授权/版本拒绝。"""
+    """尚未执行的准备期拒绝：任意Action的Review存档存不下或检查做不完，或内置回滚的授权/版本拒绝。"""
 
-    if rejection.code != "artifact_quota_exceeded" or route is None:
+    message = _UNSAVED_REVIEW.get(rejection.code)
+    if message is None or route is None:
         return rollback_preparation_rejection(router, binding, call, rejection, route)
     plan_id = route.plan.execution.plan_id
     current = router.status(plan_id)
@@ -203,7 +212,7 @@ def preparation_rejection_result(
     return ToolResultContent(
         call_id=call.call_id,
         outcome="failed",
-        error=AgentFailure(code=rejection.code, message=_REVIEW_STORAGE_FULL),
+        error=AgentFailure(code=rejection.code, message=message),
     )
 
 

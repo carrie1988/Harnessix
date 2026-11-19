@@ -393,3 +393,44 @@ async def test_pending_sandbox_approval_is_filled_in_on_resume(
             resumed = await case.agent.resume_turn(case.thread_id, case.turn_id)
             assert _result(resumed).outcome == "succeeded"
             assert (case.workspace / "resumed.txt").read_text(encoding="utf-8") == "resumed\n"
+
+
+def test_seatbelt_makes_the_macos_user_temp_dir_writable(tmp_path, monkeypatch) -> None:
+    """Beta Issue #44：macOS自带mktemp不读TMPDIR，总在/var/folders/…/T建目录，Maven Wrapper的
+    `mktemp -d`在沙箱里失败。Seatbelt把这个目录列入可写目录（负责人选方案A）；HOME、工作区或
+    受保护目录位于其中时不放行（可写目录不能包含它们）。"""
+    from harnessix.product_config import native_sandbox
+
+    user_temp = (tmp_path / "user-temp").resolve()
+    user_temp.mkdir()
+    monkeypatch.setattr(native_sandbox, "darwin_user_temp_dir", lambda: user_temp)
+    home, workspace = tmp_path / "home", tmp_path / "work"
+    assert native_sandbox._seatbelt_user_temp(True, (home, workspace)) == (user_temp,)
+    assert native_sandbox._seatbelt_user_temp(False, (home, workspace)) == ()
+    assert native_sandbox._seatbelt_user_temp(True, (user_temp / "home", workspace)) == ()
+    monkeypatch.setattr(native_sandbox, "darwin_user_temp_dir", lambda: None)
+    assert native_sandbox._seatbelt_user_temp(True, (home, workspace)) == ()
+
+
+def test_the_user_temp_dir_is_a_plain_writable_root_in_the_seatbelt_text(tmp_path) -> None:
+    from harnessix.sandbox.native_policy import NativeSandboxFacts, build_native_sandbox_policy
+    from harnessix.sandbox.seatbelt import seatbelt_policy
+
+    root = tmp_path.resolve()
+    for name in ("home", "work", "user-temp", "box/tmp", "box/cache"):
+        (root / name).mkdir(parents=True)
+    policy = build_native_sandbox_policy(
+        NativeSandboxFacts(
+            backend="seatbelt",
+            home=root / "home",
+            workspace=root / "work",
+            workspace_mode="read_write",
+            private_tmp=root / "box/tmp",
+            private_cache=root / "box/cache",
+            write_roots=(root / "user-temp",),
+        )
+    )
+    assert str(root / "user-temp") in policy.writable_roots
+    text, parameters = seatbelt_policy(policy)
+    assert any(item.endswith("=" + str(root / "user-temp")) for item in parameters)
+    assert str(root) not in text  # 路径只经-D参数传入

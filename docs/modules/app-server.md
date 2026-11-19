@@ -1406,6 +1406,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 20 | ADR 0167增量 | 2026-11-17 | 压缩进度项（`compaction_progress_item_id`）同正文流一样按客户端声明的`PreviewStreams`能力过滤 |
 | 19 | ADR 0168增量 | 2026-11-16 | Turn停下来等客户端（审批、提问）或已经结束时，Session追加通知立即唤醒`events/next`的长轮询（`query_runtime.ThreadSignals`）；其余事件仍由50毫秒重读取走（自`feat/r2-cmdpath`移植） |
 | 18 | `3e2f83d8` 增量 | 2026-11-15 | `harnessix exec`的JSON摘要写到标准输出、而标准输出不是终端（重定向或管道）时只写ASCII（`exec_cli._write_summary`）：Windows PowerShell 5.1的`>`与管道按系统代码页转码，中文吞掉引号后JSON无法解析；解析出的内容不变，终端里照常显示中文，`--summary-file`照常按UTF-8写原文（Issue #26的Windows复测发现，负责人2026-11-15选A） |
 | 17 | `98e58f5d` 增量 | 2026-11-14 | 瘦CLI的审批提示写明工具、完整命令、理由与要修改的文件（`agent_cli.approval_prompt`，控制字符转成可见转义）；`harnessix exec`的提示写到标准错误、不受`--quiet`影响，标准输出只留给JSON摘要（Beta Issue #26） |

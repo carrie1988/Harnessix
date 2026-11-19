@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 15
+version: 16
 code_revision: 5e26f952ead508dcf003c73fc54e717c6a4169d7
 owners:
   - core
@@ -27,6 +27,10 @@ supersedes: []
 ---
 
 # Protocol模块设计
+
+## 当前增量：用户消息注明是否由Harnessix发出（ADR 0173，Beta Issue #46）
+
+- [`PublicTextContent`](../../src/harnessix/protocol/contracts.py)新增可选`origin`：只在`kind=user_message`时出现，用户输入为`user`，Harnessix的自动说明为`harnessix`；其他文本不带该字段（序列化时省略，线上形状不变）。[`projection.project_event`](../../src/harnessix/protocol/projection.py)把事件的`turn_id`交给`project_item`，按`agent.host_notice_identity.is_host_notice`判定，不看正文前缀。导出（`data export`）与`exec --events-file`随之可区分。
 
 ## 当前增量：客户端判断增量是否属于思考预览
 
@@ -1557,7 +1561,8 @@ Params摘要、State、Outcome摘要和两个时间。执行时重新读取并�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
-| 15 | ADR 0168增量 | 2026-11-16 | `events/next`第14.2节：审批、提问和Turn结束由App Server立即唤醒，其余不产生Delta的事件仍以50毫秒轮询观察；合同与Schema不变 |
+| 16 | ADR 0168增量 | 2026-11-16 | `events/next`第14.2节：审批、提问和Turn结束由App Server立即唤醒，其余不产生Delta的事件仍以50毫秒轮询观察；合同与Schema不变 |
+| 15 | `3a97841b` 增量 | 2026-11-18 | `PublicTextContent.origin`（user/harnessix，只在user_message时出现），按派生身份判定（ADR 0173，Beta Issue #46） |
 | 14 | `6d0c6152` 增量 | 2026-11-13 | 新增`delta_streams.is_reasoning_delta`，供只依赖公共协议的客户端区分思考预览与正文增量；合同与Schema不变 |
 | 13 | `a22e64ee` 增量 | 2026-11-13 | 握手增加`generation_progress`能力，生成进度沿用Delta格式；`protocol_json_size`由`contracts.py`移到`codec.py`（没有调用方，行为不变）（ADR 0156） |
 | 12 | `1d857b39` 增量 | 2026-11-10 | 握手增加`reasoning_deltas`能力，思考预览沿用Delta格式（0.10.0b9） |

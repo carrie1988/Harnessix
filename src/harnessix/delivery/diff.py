@@ -29,6 +29,8 @@ def build_workspace_diff(
         checkpoint=_checkpoint,
         missing_newline_markers=False,
         new_directories=planned_new_directories(plan, store.blob),
+        # Patch与回滚的审批、结果预览共用这份Diff：密钥与证书文件只显示摘要（ADR 0172）。
+        hide_key_files=True,
     )
     document_type: type[WorkspaceDiffDocument] = (
         WorkspaceDiffDocumentV2 if preserves_file_modes(plan) else WorkspaceDiffDocument

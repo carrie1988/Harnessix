@@ -1,13 +1,14 @@
 ---
 doc_type: module-design
 status: current
-version: 55
+version: 57
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
 modules:
   - trusted_actions
 related_adrs:
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
   - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0097-typed-binary-publication-and-owner-protection.md
   - docs/adr/0065-platform-capability-ports-and-execution-plan.md
@@ -23,6 +24,7 @@ related_adrs:
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0142-stale-approved-plan-fails-without-effect.md
 related_tests:
+  - tests/product_config/test_patch_key_certificate_files.py
   - tests/delivery/test_windows_short_names.py
   - tests/product_config/test_patch_protected_paths.py
   - tests/product_config/test_stale_approved_plan.py
@@ -59,6 +61,12 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：补丁与回滚的快照选用写目标策略，说明不再列出密钥与证书（ADR 0172）
+
+- [`TrustedActionDefinition.patch_targets`](../../src/harnessix/trusted_actions/router.py)（默认False）：内置补丁与回滚为True。[`planning._plan_normalized_action`](../../src/harnessix/trusted_actions/planning.py)按它捕获两代快照，Router执行前按它复核（`verify_host_workspace_snapshot`），`_validated_definition`原样带上。
+- [`preparation_rejection.py`](../../src/harnessix/trusted_actions/preparation_rejection.py)里`delivery_path_denied`的说明改为“protected (for example .git, .env, .ssh or id_rsa)”，删去密钥与证书文件和“运行时生成示例密钥”的建议，保留Windows 8.3短名称一句。下文“规划时写受保护路径只拒绝这次调用”的转换不变，密钥与证书文件已不会走到这里。
+- 回归：`tests/product_config/test_patch_protected_paths.py`、`tests/product_config/test_patch_key_certificate_files.py`。
 
 ## 当前增量：时限已过仍未获批的Action以系统拒绝结束（Beta Issue #39）
 
@@ -1684,6 +1692,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 57 | `d82e71cc` 增量 | 2026-11-18 | 命令完整输出的保护检查超限时按审计终态提交、带`artifact_omitted: "protection_limit"`；Review检查超限或超时时关闭原Route并以失败结果说明动作未执行，不再以`uncertain_effect`中断（ADR 0174，Beta Issue #37遗留） |
 | 55 | `d69bdb2a` 增量 | 2026-11-18 | Turn时限已过而仍未获批的Route以系统拒绝结束，调用记为未执行（`cancelled`、`time_budget_exceeded`），不再记为未知效果（Beta Issue #39） |
 | 52 | `2d72f2c0` 增量 | 2026-11-15 | 命令存档存不下时结果按审计终态照常提交并带`artifact_omitted`，不再记为未知效果中断本轮；Review存不下时关闭原Route并以失败结果说明改动未执行（ADR 0163） |
 | 51 | 第二轮合入 | 2026-11-14 | 命令非零退出与超时给模型英文说明（ADR 0136）；内置Patch规划期拒绝的说明改为写给模型的英文表并附整批未应用的事实（ADR 0129），父路径两类拒绝不再经`sanitize_plan_exception`重建；预留的文档版本47未另行使用 |
@@ -1719,7 +1728,9 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 配置Output Provider的成功和失败返回值共用[`validate_public_projection`](../../src/harnessix/trusted_actions/public_outcomes.py)：
 除顶层artifact外的原摘要必须匹配Audit output_sha256，完整[`ArtifactRef`](../../src/harnessix/artifacts/contracts.py)
 必须匹配artifact_sha256。存储配额不足时以顶层`artifact_omitted: "storage_full"`代替artifact，二者恰有其一，
-都不计入摘要；Review存不下时原Route以`artifact_quota_exceeded`拒绝并返回失败结果（ADR 0163）。Process/Eval还必须满足正式DTO、计划profile/process_id和终态语义；
+都不计入摘要；Review存不下时原Route以`artifact_quota_exceeded`拒绝并返回失败结果（ADR 0163）。完整输出的保护检查超出资源
+上限时取值为`"protection_limit"`；Review的保护检查超限或超时时Review阶段保留`public_output_limit`/`public_output_timeout`，
+原Route同样由`system.validation`拒绝、结果为失败并说明动作未执行（ADR 0174）。Process/Eval还必须满足正式DTO、计划profile/process_id和终态语义；
 成功Process要求零退出，Eval非零退出仍是基础设施成功且passed=false。摘要相等不能替代业务语义。
 
 [`_project_output`](../../src/harnessix/trusted_actions/agent_gateway_output.py)给Owner回调和后置校验独立10秒

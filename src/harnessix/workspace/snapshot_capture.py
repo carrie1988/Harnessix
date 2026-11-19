@@ -166,7 +166,9 @@ def capture_snapshot_facts(
     external_roots: Mapping[str, tuple[str | Path, tuple[ResourceAccess, ...]]] | None,
     platform: PlatformKind | None,
     checkpoint: Callable[[], None],
+    patch_targets: bool = False,
 ) -> SnapshotCapture:
+    """patch_targets只由补丁与回滚传True：工作区根用写目标策略（ADR 0172）。"""
     checkpoint()
     selected = platform or _native_platform()
     cwd = normalize_workspace_path(cwd, selected)
@@ -175,7 +177,7 @@ def capture_snapshot_facts(
         raise KernelError("workspace_snapshot_limit", "Workspace快照资源超过上限")
     with ExitStack() as stack:
         roots, contracts = _open_roots(
-            Path(root), external_roots or {}, selected, stack, checkpoint
+            Path(root), external_roots or {}, selected, stack, checkpoint, patch_targets
         )
         observer = _Observations(
             roots,
@@ -247,8 +249,9 @@ def _open_roots(
     platform: PlatformKind,
     stack: ExitStack,
     checkpoint: Callable[[], None],
+    patch_targets: bool,
 ) -> tuple[dict[str, _NativeRoot], tuple[ExternalRoot, ...]]:
-    workspace = _open_native(root, platform)
+    workspace = _open_native(root, platform, patch_targets=patch_targets)
     stack.callback(workspace.close)
     roots: dict[str, _NativeRoot] = {"workspace": workspace}
     contracts: list[ExternalRoot] = []

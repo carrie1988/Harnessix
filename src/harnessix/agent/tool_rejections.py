@@ -39,7 +39,9 @@ _MODEL_FEEDBACK: dict[RejectionReason, str] = {
     "invalid_arguments_json": (
         "The arguments of this call were not a valid JSON object, so nothing was executed. "
         "The original arguments are not kept in history. Send the call again with complete, "
-        "correctly escaped JSON arguments."
+        "correctly escaped JSON arguments. If the call was long, the reply probably reached the "
+        "output token limit and cut it off: split the work into smaller calls instead of "
+        "sending it unchanged."
     ),
 }
 

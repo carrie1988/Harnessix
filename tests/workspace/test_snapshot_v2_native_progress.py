@@ -291,6 +291,7 @@ def test_port_only_changes_checkpoint_not_capture_arguments(case, monkeypatch, p
         "external_roots": external,
         "platform": platform,
         "checkpoint": local,
+        "patch_targets": False,
     }
 
 

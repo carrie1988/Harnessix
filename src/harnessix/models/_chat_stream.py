@@ -344,7 +344,8 @@ class ChatStream:
             events.extend(
                 _complete_calls(self._calls, self._names, repair_arguments=self._repair_arguments)
             )
-        events.append(reasons[finish])
+        truncated = any(isinstance(event, ToolCallRejected) for event in cut)
+        events.append(reasons[finish].model_copy(update={"tool_call_truncated": truncated}))
         return events
 
 

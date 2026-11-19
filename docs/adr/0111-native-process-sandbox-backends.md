@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: current
-version: 1
+version: 2
 code_revision: d5f34d25d125f952624f8f7b1f76de6d6468bb09
 owners: [core]
 modules: [sandbox, processes, execution, product_config]
@@ -128,6 +128,7 @@ supersedes: []
 | 私有 TMPDIR | 每条命令一个，结束即删除；Linux 上同时把 `/tmp` 换成私有 tmpfs |
 | 私有缓存目录 | 按工作区隔离、跨会话保留：macOS 为 `~/Library/Caches/harnessix/sandbox/<工作区指纹>/`，Linux 为 `${XDG_CACHE_HOME:-~/.cache}/harnessix/sandbox/<工作区指纹>/`。常见工具的缓存经环境变量指向这里（如 `XDG_CACHE_HOME`、`PIP_CACHE_DIR`、`npm_config_cache`、`GOCACHE`），清单随兼容用例定稿 |
 | `write_roots` | 用户显式声明 |
+| macOS 用户临时目录 | 仅 Seatbelt：系统给当前用户的临时目录（`confstr(_CS_DARWIN_USER_TEMP_DIR)`，即 `/var/folders/…/T`）。HOME、工作区或受保护目录位于其中时不放行。见 8.3 |
 
 真实 HOME 不可写，是为了防止命令改写 `~/.zshrc`、`~/.gitconfig` 一类文件，在你之后打开终端或运行 Git 时于沙箱外执行。
 
@@ -240,7 +241,7 @@ supersedes: []
 | 保证项 | seatbelt | bubblewrap | 沙箱外命令（ADR 0113，对照） |
 |---|---|---|---|
 | 拒读凭据、历史与 Harnessix 状态 | 是 | 是 | 否 |
-| 写入限于工作区、私有 TMPDIR 与缓存目录、`write_roots` | 是 | 是 | 否 |
+| 写入限于工作区、私有 TMPDIR 与缓存目录、`write_roots` | 是，另含 macOS 用户临时目录（8.3） | 是 | 否 |
 | `.git` 只读 | 是 | 是 | 否 |
 | 工作区 `.env*` 拒读 | 是，且磁盘上所有 `.env*` 都拒读 | 仅工作区内启动前已存在且被查到的文件 | 否 |
 | 访问外网 | 不能直接访问；已配置的代理端口被拦截，未登记的本地代理仍可能被利用 | 不能 | 能 |
@@ -374,3 +375,12 @@ supersedes: []
 
 - 背景：放行回环后，沙箱内命令可以执行 `curl -x http://127.0.0.1:7890 …`，经本机代理访问外网，绕过“联网必须走沙箱外命令并经用户批准”。
 - 决定：采用加固方案 A，做法与局限见 2.4 节。工作量约 0.5 天，并入实施第 3 步。
+
+### 8.3 用户已拍板：Seatbelt 放行 macOS 用户临时目录的写入（2026-11-18，第 2 版）
+
+- 背景（Beta Issue #44，0.10.0b53 macOS）：Java 项目自带的 Maven Wrapper（`./mvnw`）第一步是 `mktemp -d`，在沙箱里报 `mkdtemp failed on /var/folders/…/T/tmp.…: Operation not permitted`。macOS 自带的 `/usr/bin/mktemp` 不读 `TMPDIR`（设了 `TMPDIR` 或加 `-t` 也一样，本机核实），总在系统给每个用户的临时目录里建，那里不在可写范围内。与 Issue #25（JVM 不读 `TMPDIR`，经 `JAVA_TOOL_OPTIONS` 指回私有 TMPDIR）同类。
+- 方案：A 放行这个目录的写入；B 在沙箱 PATH 里放 `mktemp` 包装，未给模板时补 `-p "$TMPDIR"`；C 只写文档。负责人选 A（我推荐的是 B）。
+- 决定：Seatbelt 策略把该目录（解析符号链接后的真实路径）加入可写目录；整机本来就可读，只多放行写入。HOME、工作区或受保护的状态目录位于其中时不放行，保持原策略（可写目录不能包含它们）。取不到该目录时同样不放行。bubblewrap 不变（Linux 的 `/tmp` 已换成私有 tmpfs）。
+- 后果：所有按这个目录建临时文件的 macOS 工具（`mktemp`、Foundation 的临时目录等）在沙箱里都能用；代价是沙箱内命令可以写入这个当前用户所有程序共用的临时目录，包括改写其他程序留下的临时文件。保证清单相应注明。
+- 实现与验证：`sandbox.native_policy.darwin_user_temp_dir`、`product_config.native_sandbox._seatbelt_user_temp`；`tests/product_config/test_native_sandbox_profile.py`（放行条件、路径只经 `-D` 参数传入）。真机 Seatbelt 由发布会话在 macOS 正式测试中用 `./mvnw -v` 验证。
+

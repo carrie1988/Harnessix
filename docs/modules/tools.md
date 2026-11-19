@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 37
+version: 38
 code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
@@ -11,6 +11,7 @@ modules:
   - artifacts
   - processes
 related_adrs:
+  - docs/adr/0172-key-and-certificate-files-are-writable-with-hidden-diffs.md
   - docs/adr/0170-windows-short-names-are-denied-for-model-paths.md
   - docs/adr/0023-workspace-read-tools.md
   - docs/adr/0024-bounded-search-and-artifact-scope.md
@@ -24,6 +25,7 @@ related_adrs:
   - docs/adr/0079-preflight-and-native-read-port.md
   - docs/adr/0080-capability-proven-product-action-composition.md
 related_tests:
+  - tests/delivery/test_key_certificate_patch_policy.py
   - tests/tools/test_regex_grep.py
   - tests/tools/test_regex_grep_runtime.py
   - tests/tools/test_grep_snapshots.py
@@ -107,6 +109,13 @@ Glob及其Schema、描述符摘要与执行合同逐字节不变。
 正则解释会静默无命中，回退把这类查询变为可用结果而不改变显式`match_mode=literal`的语义。
 
 # Coding Tool Runtime模块设计
+
+## 当前增量：补丁写目标策略（ADR 0172）
+
+- [`workspace.PatchTargetPolicy`](../../src/harnessix/tools/workspace.py)继承`WorkspaceReadPolicy`，只把`denied_suffixes`置空：`.key`、`.pem`、`.p12`、`.pfx`可以出现在路径段里，敏感名称（`.git`、`.ssh`、`.aws`、`.gnupg`、`.env`、私钥文件名等）与`.env.*`照旧拒绝。`Workspace`新增`patch_targets`参数（默认False，即`WorkspaceReadPolicy`）；只有补丁与回滚的规划、发布和复核显式选用写目标策略。
+- `read_file`、`list_files`、`glob`、`grep`、默认`WorkspaceReadPolicy`与默认`Workspace(...)`逐字节不变，照旧拒绝这四个后缀；Windows读取端口不变。
+- [`is_key_or_certificate_file`](../../src/harnessix/tools/workspace.py)按末段判断是否为密钥或证书文件，Workspace事务Diff与编辑锚点说明据此隐藏内容。
+- 回归：`tests/delivery/test_key_certificate_patch_policy.py`、`tests/product_config/test_patch_key_certificate_files.py`。
 
 ## 当前增量：Windows读取工具拒绝8.3短名称（ADR 0170）
 
