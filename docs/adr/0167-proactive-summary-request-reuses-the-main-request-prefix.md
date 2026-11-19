@@ -1,7 +1,7 @@
 ---
 doc_type: adr
 status: reviewing
-version: 1
+version: 2
 code_revision: pending
 owners: [core]
 modules: [agent, context, app_server, product_ui]
@@ -107,3 +107,17 @@ ADR 0058规定摘要请求是“摘要指令＋一条包含来源JSON的用户�
   加说明，按Token计费时摘要请求稍贵。
 - 摘要可能也概括了随后原样保留的最近几步，这部分内容会重复。压缩后最近的消息以原文为准。
 - 压缩之后第一次主请求的重算不受这项影响：被替换的历史之后的内容只能重新计算。
+
+## 修订（第2版，2026-11-20）：参数进度不打断摘要
+
+- 背景：NL2RepoBench第二批（2026-11-19）的sqlparse任务里，候选版本整轮以`invalid_provider_output`
+  “不支持的摘要Provider事件”失败。模型在共用前缀的摘要请求里开始写工具调用；适配器在调用写完之前
+  先报参数进度（参数还是空的时候就报一次，vLLM实测），摘要流不认这种事件，在决策第3条的跳过之前就
+  失败了。原测试的模拟流直接交出完整调用，没有覆盖进度事件。独立请求不带工具，不会出现这种情况。
+- 修订：摘要流把参数进度与思考增量同样当作界面的临时显示，跳过不处理。之后照常读到用量、尝试终态
+  与工具调用，按决策第3条跳过这次压缩，整轮继续。
+- 没有在第一条进度处就中止请求：此时用量还没有上报，中止后整轮会因“已有模型尝试未完整上报用量”
+  不能再发付费请求。等调用写完最多多等一份摘要输出上限（产品默认2048～4096 Token）。
+- 其余不变：独立请求里工具调用仍是Provider违约；压缩期间界面仍显示“正在压缩较早的对话”。
+- 回归：`tests/context/test_shared_prefix_summary.py`的
+  `test_argument_progress_before_the_tool_call_still_skips_this_compaction`（修订前失败，报同一错误）。

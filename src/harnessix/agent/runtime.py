@@ -262,6 +262,7 @@ from harnessix.models.contracts import (
     TextCompleted,
     TextDelta,
     TextStarted,
+    ToolArgumentsProgress,
     ToolCallCompleted,
     ToolCallRejected,
 )
@@ -1874,7 +1875,7 @@ class AgentRuntime:
                     continue
                 if response_id is None:
                     raise KernelError("invalid_provider_output", "摘要响应尚未开始")
-                if isinstance(event, ReasoningDelta):
+                if isinstance(event, ReasoningDelta | ToolArgumentsProgress):
                     continue
                 if isinstance(event, TextStarted):
                     if content_id is not None:
