@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 78
+version: 79
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -71,6 +71,7 @@ supersedes: []
 - [`compaction_summary_request.summary_request`](../../src/harnessix/agent/compaction_summary_request.py)替代`_run_compaction`里内联的请求构造。主动压缩时请求包含：与下一次主请求相同的Context准备得到的系统指令、与主请求相同的线上工具（`catalog_tools`：有稳定目录时是整份目录，否则是本步视图选出的工具；本步不可执行任何工具）、压缩计划的模型历史视图，末尾再加一条宿主说明`SHARED_PREFIX_SUMMARY_NOTE`。请求开头与上一次主请求逐字相同，服务端前缀缓存可以复用。
 - 以下情况沿用原独立请求（ADR 0058，逐字不变）：被动压缩、预算压力压缩、Context准备放不下，或剩余Token预算放不下。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)按“非被动压缩且本Turn未退回”传入`shared_prefix`。
 - 共用前缀的摘要回复里出现工具调用：`summary_tool_call_error`报`provider_summary_tool_call`，归入主动压缩可跳过的失败，`_isolated_summary_turns`记下这个Turn，之后的压缩改用独立请求。独立请求里的工具调用仍按原规则报`context_compaction_summary_tool_forbidden`或`invalid_provider_output`。
+- 摘要流把`ToolArgumentsProgress`与`ReasoningDelta`同样跳过（ADR 0167第2版）：适配器在调用写完前先报参数进度，此前这条进度落进“不支持的摘要Provider事件”，整轮失败；现在照常读到用量、尝试终态与工具调用后再按上一条跳过。回归见`tests/context/test_shared_prefix_summary.py`。
 - 压缩计划、账本事件、预留、校验、激活与投影不变。原因：NL2RepoBench回归里摘要请求平均等148秒才收到第一个字（全部重算）。
 - 界面：摘要请求开始前，[`generation_progress.announce_compaction`](../../src/harnessix/agent/generation_progress.py)以`compaction_progress_item_id`发布一行进度（与该步主请求的进度流不同身份），终端界面据此显示“正在压缩较早的对话 · 已用时 N 秒”。回归见`tests/agent/test_compaction_progress.py`。
 - 回归：`tests/context/test_shared_prefix_summary.py`；`tests/context/test_compaction_runtime.py`原有用例不变。
@@ -1201,7 +1202,8 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
-| 78 | ADR 0168第3版增量 | 2026-11-18 | 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（尝试开始仍单独先提交）；`_commit`拆成检查与追加，期望序号走轻查询（D3、D4） |
+| 79 | ADR 0168第3版增量 | 2026-11-18 | 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（尝试开始仍单独先提交）；`_commit`拆成检查与追加，期望序号走轻查询（D3、D4） |
+| 78 | ADR 0167第2版增量 | 2026-11-20 | 摘要流跳过工具参数进度（`ToolArgumentsProgress`），共用前缀的摘要回复里出现工具调用时照常跳过这次压缩，不再整轮失败 |
 | 77 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
 | 76 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
 | 75 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |

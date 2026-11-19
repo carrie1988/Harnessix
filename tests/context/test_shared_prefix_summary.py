@@ -28,6 +28,7 @@ from harnessix.models.contracts import (
     ModelRequest,
     ResponseCompleted,
     ResponseStarted,
+    ToolArgumentsProgress,
     ToolCallCompleted,
 )
 from harnessix.models.scripted import ScriptedProvider
@@ -216,6 +217,41 @@ async def test_a_tool_call_in_the_shared_request_skips_this_compaction(tmp_path:
         and item.content.text.startswith(SUMMARY_PROJECTION_HEADER)
         for item in normal.requests[-1].history
     )
+
+
+async def test_argument_progress_before_the_tool_call_still_skips_this_compaction(
+    tmp_path: Path,
+):
+    """适配器在调用写完前先报参数进度（vLLM实测，参数还是空的时候就报一次）。
+
+    进度只是界面的临时显示：摘要流照常读到用量与调用，这次压缩跳过、整轮继续。此前进度落进
+    “不支持的摘要Provider事件”，整轮失败（NL2RepoBench第二批sqlparse，2026-11-19）。
+    """
+    start = attempt_start()
+    summary = ScriptedProvider(
+        [
+            [
+                start,
+                ResponseStarted(response_id="response-1"),
+                ToolArgumentsProgress(utf8_bytes=0, tool="test.read"),
+                ToolArgumentsProgress(utf8_bytes=4096, tool="test.read"),
+                observed(start, completeness="complete", input_tokens=10, output_tokens=3),
+                ModelAttemptFinished(attempt_id=start.attempt_id, outcome="completed"),
+                ToolCallCompleted(call_id="call-1", tool="test.read", arguments={}),
+                ResponseCompleted(
+                    finish_reason="tool_calls", usage=Usage(input_tokens=10, output_tokens=3)
+                ),
+            ]
+        ]
+    )
+    normal, turn, isolated = await _run(tmp_path, summary)
+
+    assert turn.status == "completed", turn.error
+    (record,) = turn.compactions
+    assert record.status == "failed" and record.failure.code == SUMMARY_TOOL_CALL
+    assert record.attempt.status == "completed"
+    assert isolated == {turn.turn_id}
+    assert len(normal.requests) == 2
 
 
 @pytest.mark.parametrize("note", [SHARED_PREFIX_SUMMARY_NOTE])
