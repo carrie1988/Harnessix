@@ -300,6 +300,8 @@ ADR中的版本号、阶段状态和测试数字只对应当时决策背景。�
 - [ADR 0171：输出在工具调用中途用满上限时，告诉模型拆成更小的调用](0171-a-tool-call-cut-off-by-the-output-limit-asks-to-split-it.md)：回复写满输出上限时被截断的工具调用按非法参数拒绝（ADR 0109第5版），模型只得到“请重发正确转义的JSON”而原样重写、再次被截断（NL2RepoBench wsgidav一次约9.5分钟）；适配器在终态标出截断，运行时补发一条说明（原因是输出上限，应拆成更小的调用），不计入连续补发次数、不使Turn失败；非法参数的英文反馈补上同样的建议；不新增事件类型或拒绝原因。
 - [ADR 0172：补丁可以写密钥与证书文件，其内容从不显示](0172-key-and-certificate-files-are-writable-with-hidden-diffs.md)：此前macOS与Linux上补丁写`.key/.pem/.p12/.pfx`被读取策略附带拒绝，Windows照常写入；负责人决定（B2）所有平台都可以写，补丁与回滚显式选用只放开这四个后缀的写目标策略，Review、`diff_preview`与回滚Diff只写前后摘要，锚点拒绝不报行号；`.ssh`、`.aws`、`.gnupg`、`.env*`、私钥文件名在两个平台都受保护；读取工具不变。
 
+- [ADR 0175：本轮结束时尚未开始的调用记为未执行](0175-calls-that-never-started-are-recorded-as-not-executed.md)：Turn因其他原因失败时，同批从未规划、仍待审批或已批准未Claim的写调用此前一律记为未知效果、整轮以`uncertain_effect`中断（Beta Issue #37遗留）；Router能证明它们没有开始：没有Route的记为`cancelled`/`action_not_started`，待审批由`system.cancel`以`turn_ended`拒绝，`ready`以`ready→failed`/`action_not_started`结束；Turn保留原失败码。
+
 - [ADR 0174：保护检查做不完时只让那一次调用失败](0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)：公开前的Secret保护检查超出资源上限或10秒期限时，此前整轮失败、同批尚未准备的命令被记为未知效果并以`uncertain_effect`中断（Beta Issue #37遗留，Fastify会话）；改为只影响那一次调用：只读结果的完整存档不保存、预览照常并带`artifact_omitted: "protection_limit"`，结果本身检查不了时该次调用`failed`；命令按审计终态提交不带存档；Review检查不了时原Route被系统拒绝、改动未执行；发现Secret仍使整轮失败。
 
 - [ADR 0173：公开的用户消息注明是否由Harnessix发出](0173-public-user-messages-say-whether-harnessix-sent-them.md)：重复命令提示等宿主说明在导出与事件里和操作者输入都是只有kind与text的user_message，无法按结构区分（Beta Issue #46）；`PublicTextContent`新增`origin`（user/harnessix，只在user_message时出现），按派生身份判定，旧会话同样适用，持久化与其他文本的线上形状不变。

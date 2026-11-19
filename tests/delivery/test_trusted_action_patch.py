@@ -716,7 +716,8 @@ async def test_review_committed_before_session_approval_is_not_readable(
                 "修改文件",
                 request_id="orphan-review",
             )
-            assert failed.status is TurnStatus.INTERRUPTED
+            # 改动从未开始，收尾记为未执行（ADR 0175）；孤儿Review照旧不可读。
+            assert failed.status is TurnStatus.FAILED
             with sqlite3.connect(sessions.path) as database:
                 row = database.execute(
                     "SELECT manifest_json FROM agent_artifacts WHERE purpose='action_review'"

@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 57
+version: 58
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -62,6 +62,16 @@ supersedes: []
 
 # Trusted Actions模块设计
 
+## 当前增量：本轮结束时尚未开始的调用记为未执行（ADR 0175，Beta Issue #37遗留）
+
+- 收尾核对（`agent_gateway_support.recover_action`）按Route证明调用没有开始：没有Route的写调用由
+  [`unplanned_result`](../../src/harnessix/trusted_actions/preparation_rejection.py)记为`cancelled`/`action_not_started`（只读调用照旧按本轮错误收尾）；
+  [`close_unstarted_route`](../../src/harnessix/trusted_actions/preparation_rejection.py)取代`cancel_pending_approval`：`pending_approval`由`system.cancel`拒绝，
+  原因按本轮结束方式为`turn_cancelled`、`turn_time_budget_exceeded`或新增的`turn_ended`；`ready`由
+  [`operation_router.end_unstarted_plan`](../../src/harnessix/trusted_actions/operation_router.py)以`ready→failed`、`action_not_started`结束（Claim在调用Executor前原子提交`running`，`ready`即证明没有效果）。
+  结果均为`cancelled`，Turn不再因它们以`uncertain_effect`中断。`ALLOWED_ROUTE_TRANSITIONS`的`ready→failed`说明同步扩展。
+- 回归：`tests/product_config/test_unstarted_calls_not_executed.py`、`tests/trusted_actions/test_gateway_error_runtime.py`。
+
 ## 当前增量：补丁与回滚的快照选用写目标策略，说明不再列出密钥与证书（ADR 0172）
 
 - [`TrustedActionDefinition.patch_targets`](../../src/harnessix/trusted_actions/router.py)（默认False）：内置补丁与回滚为True。[`planning._plan_normalized_action`](../../src/harnessix/trusted_actions/planning.py)按它捕获两代快照，Router执行前按它复核（`verify_host_workspace_snapshot`），`_validated_definition`原样带上。
@@ -70,7 +80,7 @@ supersedes: []
 
 ## 当前增量：时限已过仍未获批的Action以系统拒绝结束（Beta Issue #39）
 
-- [`preparation_rejection.cancel_pending_approval`](../../src/harnessix/trusted_actions/preparation_rejection.py)：除取消中的Turn外，Turn时限已过（`remaining_seconds(turn) <= 0`）而Route仍为`pending_approval`时，同样以`system.cancel`拒绝（原因`turn_time_budget_exceeded`），调用结果为`cancelled`、`time_budget_exceeded`（“审批超过本轮时限，Action没有执行”）。计划从未获批，未执行可以证明；此前收尾时记为未知效果，整轮以`uncertain_effect`中断。适用于审批晚于截止时间后的续跑与重启恢复。
+- `preparation_rejection.cancel_pending_approval`（ADR 0175起并入`close_unstarted_route`）：除取消中的Turn外，Turn时限已过（`remaining_seconds(turn) <= 0`）而Route仍为`pending_approval`时，同样以`system.cancel`拒绝（原因`turn_time_budget_exceeded`），调用结果为`cancelled`、`time_budget_exceeded`（“审批超过本轮时限，Action没有执行”）。计划从未获批，未执行可以证明；此前收尾时记为未知效果，整轮以`uncertain_effect`中断。适用于审批晚于截止时间后的续跑与重启恢复。
 
 ## 当前增量：Patch拒绝说明提到8.3短名称（ADR 0170）
 
@@ -1692,6 +1702,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 58 | `de63875c` 增量 | 2026-11-18 | 收尾时Route证明尚未开始的写调用记为未执行：没有Route记`action_not_started`，待审批由`system.cancel`以`turn_ended`（或取消、时限）拒绝，`ready`以`ready→failed`/`action_not_started`结束（`close_unstarted_route`、`unplanned_result`、`operation_router.end_unstarted_plan`，ADR 0175） |
 | 57 | `d82e71cc` 增量 | 2026-11-18 | 命令完整输出的保护检查超限时按审计终态提交、带`artifact_omitted: "protection_limit"`；Review检查超限或超时时关闭原Route并以失败结果说明动作未执行，不再以`uncertain_effect`中断（ADR 0174，Beta Issue #37遗留） |
 | 55 | `d69bdb2a` 增量 | 2026-11-18 | Turn时限已过而仍未获批的Route以系统拒绝结束，调用记为未执行（`cancelled`、`time_budget_exceeded`），不再记为未知效果（Beta Issue #39） |
 | 52 | `2d72f2c0` 增量 | 2026-11-15 | 命令存档存不下时结果按审计终态照常提交并带`artifact_omitted`，不再记为未知效果中断本轮；Review存不下时关闭原Route并以失败结果说明改动未执行（ADR 0163） |

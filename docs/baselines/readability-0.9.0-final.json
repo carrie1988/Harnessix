@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 661,
-    "physical_lines": 138131,
-    "logical_lines": 119438,
+    "physical_lines": 138178,
+    "logical_lines": 119469,
     "documented_modules": 661,
     "classes": 1267,
     "documented_classes": 665,
-    "functions": 5523,
-    "documented_functions": 1984,
+    "functions": 5526,
+    "documented_functions": 1987,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -276,7 +276,7 @@
     },
     {
       "path": "src/harnessix/trusted_actions/agent_gateway_support.py",
-      "lines": 608
+      "lines": 607
     }
   ],
   "oversized_symbols": [

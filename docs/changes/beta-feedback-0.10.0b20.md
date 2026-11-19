@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 64
+version: 65
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -146,9 +146,10 @@ supersedes: []
 | 五十七 | macOS沙箱里Java项目的Maven Wrapper在`mktemp -d`一步失败（0.10.0b53，Issue #44；只影响macOS） | Seatbelt放行macOS用户临时目录的写入 | [ADR 0111](../adr/0111-native-process-sandbox-backends.md)第2版、本文第71节 |
 | 五十八 | 导出与事件里宿主自动说明和操作者输入都是`user_message`，无法按结构区分（0.10.0b53，Issue #46；三个平台相同） | 公开用户消息新增`origin`（user/harnessix），按派生身份判定 | [ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)、本文第72节 |
 | 五十九 | 保护检查超出资源上限或时限时整轮失败，同批尚未准备的宿主命令被记为未知效果（0.10.0b50 Windows，Issue #37遗留；三个平台相同） | 只让那一次调用失败或不带存档，命令按审计终态提交，Review检查不了时动作不执行 | [ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)、本文第73节 |
+| 六十 | 本轮因其他原因失败时，同批尚未开始的写调用一律记为未知效果，整轮以`uncertain_effect`中断（Issue #37遗留；三个平台相同） | Router能证明没有开始的调用记为未执行（`action_not_started`），关闭待审批与已批准未开始的计划 | [ADR 0175](../adr/0175-calls-that-never-started-are-recorded-as-not-executed.md)、本文第74节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至五十九项在第61～73节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至六十项在第61～74节。
 
 ## 2. 需求背景
 
@@ -1610,3 +1611,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 73. 第五十九项：保护检查做不完时整轮失败（Issue #37遗留）
 
 见[ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)。报告人补充的0.10.0b50 Fastify #7113会话里，grep与一条需要审批、尚未准备的宿主测试命令在同一步，grep的完整存档检查超限后两者都记为`uncertain_effect`，整轮以`interrupted`结束。第63节修复了这次的触发条件，但任何保护检查超出资源上限或10秒期限仍会让整轮失败。负责人2026-11-18决定只让那一次调用失败：只读结果的完整存档检查不了时不保存、预览照常（`artifact_omitted: "protection_limit"`），结果本身检查不了时该次调用`failed`并请模型缩小请求；命令已执行时按审计终态提交、不带存档；改动Review检查不了时原Route被系统拒绝、改动不执行。发现Secret仍使整轮失败。验证：在0.10.0b55上复现报告中的事件表（grep `failed`、命令`unknown`，均为`uncertain_effect`，触发原因`public_output_limit`），修改后grep带预览、命令照常审批并执行，整轮完成；三个平台判断相同，没有平台分支。
+
+## 74. 第六十项：尚未开始的调用被记为未知效果（Issue #37遗留）
+
+见[ADR 0175](../adr/0175-calls-that-never-started-are-recorded-as-not-executed.md)。#37报告人期望同批的宿主命令“明确记录为待批、未执行或已有确定执行收据”。第73节让保护检查超限不再使Turn失败，但Turn因其他原因失败（发现Secret、Provider错误、时限、宿主中断）时，同批从未规划、仍待审批或已批准未开始的写调用仍一律记为`unknown`，整轮以`uncertain_effect`中断。负责人2026-11-18选方案A：Router能证明没有开始的调用记为`cancelled`（错误码`action_not_started`，用户取消或时限已过时沿用`cancelled`/`time_budget_exceeded`），待审批的计划由系统拒绝（`turn_ended`），已批准未Claim的计划以`ready→failed`结束、不能再执行；Turn保留原失败码。没有Router证据的调用照旧记为未知。验证：新测试在修改前为`interrupted`、修改后为`failed`，改动与命令都没有执行。

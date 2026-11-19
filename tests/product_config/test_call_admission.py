@@ -59,7 +59,10 @@ async def test_invalid_admission_result_fails_closed(tmp_path):
     view = AdmissionView("not a failure")
     async with product(tmp_path, model_tool_view=view) as (root, runtime, provider, *_):
         _thread, turn, _call = await patch_turn(runtime, provider, root, _proposal())
-        # 写入类工具阶段的任何宿主异常按既有规则中断为未知效果（不执行、不自动重放），而非静默放行。
-        assert turn.status is TurnStatus.INTERRUPTED
-        assert turn.error is not None and turn.error.code == "uncertain_effect"
+        # 写入类工具阶段的宿主异常失败关闭，不静默放行；调用从未规划，记为未执行（ADR 0175）。
+        assert turn.status is TurnStatus.FAILED
+        assert turn.error is not None and turn.error.code != "uncertain_effect"
+        output = result(turn)
+        assert output.outcome == "cancelled"
+        assert output.error is not None and output.error.code == "action_not_started"
         assert_unchanged(root)

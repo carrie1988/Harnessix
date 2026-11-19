@@ -516,10 +516,11 @@ async def test_actually_dispatched_unknown_remains_conservative(
     assert len(provider.requests) == provider.closed_streams == 1
 
 
-async def test_prepare_crash_before_session_approval_keeps_uncertain_write(
+async def test_prepare_crash_before_session_approval_records_the_write_as_not_run(
     action_harness: ActionHarness, monkeypatch
 ) -> None:
-    """Router已形成计划但Session尚无审批时，不把未执行误判成安全无效果。"""
+    """Router已形成计划但Session尚无审批时，计划仍待审批、从未执行：收尾由系统拒绝并关闭它，
+    调用记为未执行，Turn保留原失败码（ADR 0175；此前记为未知效果、以uncertain_effect中断）。"""
     harness = action_harness
     real_prepare = harness.gateway.prepare
 
@@ -541,19 +542,19 @@ async def test_prepare_crash_before_session_approval_keeps_uncertain_write(
 
     assert harness.prepare.await_count == 1
     assert harness.execute.await_count == harness.executor.calls == 0
-    assert turn.status is TurnStatus.INTERRUPTED
-    assert turn.error is not None and turn.error.code == "uncertain_effect"
-    assert turn.error.message.endswith("触发原因：runtime_error")
+    assert turn.status is TurnStatus.FAILED
+    assert turn.error is not None and turn.error.code == "runtime_error"
     assert turn.usage == Usage(input_tokens=1)
     calls = [item.content for item in turn.items if isinstance(item.content, ToolCallContent)]
     results = [item.content for item in turn.items if isinstance(item.content, ToolResultContent)]
     assert len(calls) == len(results) == 1
-    assert results[0].call_id == calls[0].call_id and results[0].outcome == "unknown"
+    assert results[0].call_id == calls[0].call_id and results[0].outcome == "cancelled"
+    assert results[0].error is not None and results[0].error.code == "action_not_started"
     assert not any(
         isinstance(item.content, TrustedActionApprovalRequestContent) for item in turn.items
     )
     plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, calls[0])
-    assert harness.router.status(plan_id).state == "pending_approval"
+    assert harness.router.status(plan_id).state == "denied"
     assert_settled(turn)
     assert len(provider.requests) == provider.closed_streams == 1
     assert replay(await harness.store.events(thread.thread_id)) == await harness.store.get_thread(

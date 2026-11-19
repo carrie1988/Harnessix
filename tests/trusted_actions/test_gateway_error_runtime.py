@@ -17,6 +17,7 @@ from harnessix.models.scripted import ScriptedProvider
 from harnessix.protocol.requests import SQLiteProtocolRequestStore
 from harnessix.sdk.agent_client import AgentClient, InProcessAgentTransport
 from harnessix.session.sqlite import SQLiteSessionStore
+from harnessix.trusted_actions.contracts import UNSTARTED_PLAN_CODE
 from tests.agent.helpers import answer
 from tests.agent.test_telemetry import instrumented
 from tests.agent.test_trusted_action_runtime import action_step, approval
@@ -84,9 +85,12 @@ async def test_gateway_errors_never_publish_internal_diagnostics_across_runtime(
                 )
                 turn = await runtime.resume_turn(thread.thread_id, turn.turn_id)
                 assert actions.status(request.plan_id).state == "succeeded"
-            assert turn.status is (TurnStatus.FAILED if read_only else TurnStatus.INTERRUPTED)
+            # 只有已执行的写调用（Owner输出阶段）才是未知效果；规划上下文或审批Review失败时
+            # 写调用从未开始，记为未执行，Turn保留原错误码（ADR 0175）。
+            executed = stage == "output" and not read_only
+            assert turn.status is (TurnStatus.INTERRUPTED if executed else TurnStatus.FAILED)
             assert turn.error is not None
-            assert turn.error.code == (expected if read_only else "uncertain_effect")
+            assert turn.error.code == ("uncertain_effect" if executed else expected)
             assert not turn.error.retryable
             assert not pending_calls(turn)
             assert executor.calls == (1 if stage == "output" else 0)
@@ -99,6 +103,10 @@ async def test_gateway_errors_never_publish_internal_diagnostics_across_runtime(
             if stage == "output":
                 assert results[0].error is not None and results[0].error.code == expected
                 assert not results[0].error.retryable
+            elif not read_only:
+                assert results[0].outcome == "cancelled"
+                assert results[0].error is not None
+                assert results[0].error.code == UNSTARTED_PLAN_CODE
             assert await runtime.resume_turn(thread.thread_id, turn.turn_id) == turn
             events = await store.events(thread.thread_id)
             assert replay(events) == await store.get_thread(thread.thread_id)

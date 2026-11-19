@@ -265,9 +265,10 @@ async def test_actual_sdk_cancel_after_approval_cannot_append_preapproval_cancel
             actual.turn.turn_id,
             request_id="decision-ledger-cancel-approved",
         )
-        # 原 ready 调用未执行、没有确定结果，真实取消链以 interrupted 而非 cancelled 结算。
-        assert cancelled.status == "interrupted"
-        assert scenario.router.status(route_id).state == "ready"
+        # 原 ready 调用尚未 Claim：取消时以确定失败结束、记为未执行，Turn 为 cancelled（ADR 0175）；
+        # 人工批准保留，Ledger 仍不能把它追加为审批前取消。
+        assert cancelled.status == "cancelled"
+        assert scenario.router.status(route_id).state == "failed"
         assert scenario.router.approval(route_id) == approval
         history, effects = await _history(actual), _original_effects(actual)
         assert any(

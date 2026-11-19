@@ -16,9 +16,14 @@ from harnessix.delivery.workspace_patch_errors import (
     located_patch_message,
     unapplied_batch_notice,
 )
-from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
+from harnessix.domain.models import ApprovalDecision, ApprovalOutcome, EffectClass
 from harnessix.tools.contracts import ReadToolError
-from harnessix.trusted_actions.contracts import ActionRouteSnapshot, TrustedToolBinding
+from harnessix.trusted_actions.contracts import (
+    UNSTARTED_PLAN_CODE,
+    ActionRouteSnapshot,
+    TrustedToolBinding,
+)
+from harnessix.trusted_actions.operation_router import end_unstarted_plan
 from harnessix.trusted_actions.router import TrustedActionRouter
 
 # 规划期的确定性边界拒绝及其写给模型的英文说明；Router已按固定码表归一，这里不读取内部消息。
@@ -259,33 +264,57 @@ def rollback_preparation_rejection(
     )
 
 
-def cancel_pending_approval(
+def close_unstarted_route(
     router: TrustedActionRouter,
     route: ActionRouteSnapshot,
     turn: Turn,
     call: ToolCallContent,
 ) -> ToolResultContent | None:
-    """CANCELLING或Turn时限已过、且仍未批准时证明未执行；不冒充已完成的Session审批投影。
+    """本轮收尾时，Route证明尚未开始的调用记为未执行，并关闭Route，不留可再批准或可执行的计划。
 
-    时限已过：审批晚于截止时间被拒绝（approval_expired）后续跑，或重启恢复时到期。
-    计划从未获批，系统以拒绝结束它，调用记为未执行；此前记为未知效果，
-    整轮以uncertain_effect中断（Beta Issue #39）。
+    待审批：系统拒绝（用户取消、时限已过，或本轮因其他原因结束）；已批准未Claim：Executor从未
+    调用，以确定失败结束。此前都记为未知效果，整轮以uncertain_effect中断（Beta Issue #39、#37）。
+    其他状态返回None，由调用方照常核对。
     """
 
-    if route.state != "pending_approval":
-        return None
-    if turn.status is TurnStatus.CANCELLING:
-        reason = "turn_cancelled"
-        failure = AgentFailure(code="cancelled", message="用户取消了尚未批准的Action")
-    elif remaining_seconds(turn) <= 0:
-        reason = "turn_time_budget_exceeded"
-        failure = AgentFailure(
-            code="time_budget_exceeded", message="审批超过本轮时限，Action没有执行"
+    plan_id = route.plan.execution.plan_id
+    reason, failure = _turn_ending(turn)
+    if route.state == "pending_approval":
+        decision = ApprovalDecision(
+            outcome=ApprovalOutcome.REJECTED, actor="system.cancel", reason=reason
         )
+        if router.decide(plan_id, decision).state != "denied":
+            raise KernelError("action_route_conflict", "尚未批准的Action未能关闭")
+    elif route.state == "ready":
+        end_unstarted_plan(router, plan_id)
+        failure = failure.model_copy(update={"message": _UNSTARTED_MESSAGE})
     else:
         return None
-    router.decide(
-        route.plan.execution.plan_id,
-        ApprovalDecision(outcome=ApprovalOutcome.REJECTED, actor="system.cancel", reason=reason),
-    )
+    return ToolResultContent(call_id=call.call_id, outcome="cancelled", error=failure)
+
+
+_UNSTARTED_MESSAGE = "本轮在这次调用开始前结束，调用没有执行"
+
+
+def _turn_ending(turn: Turn) -> tuple[str, AgentFailure]:
+    """本轮为什么结束：用户取消、时限已过，或其他原因（另一个调用失败、宿主中断等）。"""
+    if turn.status is TurnStatus.CANCELLING:
+        return "turn_cancelled", AgentFailure(
+            code="cancelled", message="用户取消了尚未批准的Action"
+        )
+    if remaining_seconds(turn) <= 0:
+        return "turn_time_budget_exceeded", AgentFailure(
+            code="time_budget_exceeded", message="审批超过本轮时限，Action没有执行"
+        )
+    return "turn_ended", AgentFailure(code=UNSTARTED_PLAN_CODE, message=_UNSTARTED_MESSAGE)
+
+
+def unplanned_result(call: ToolCallContent) -> ToolResultContent | None:
+    """本轮收尾时写调用连Route都没有：从未规划，Executor不可能被调用，记为未执行（Issue #37）。
+
+    只读调用不会被记为未知效果，照常按本轮错误收尾，返回None。
+    """
+    if call.effect_class is EffectClass.READ_ONLY:
+        return None
+    failure = AgentFailure(code=UNSTARTED_PLAN_CODE, message=_UNSTARTED_MESSAGE)
     return ToolResultContent(call_id=call.call_id, outcome="cancelled", error=failure)
