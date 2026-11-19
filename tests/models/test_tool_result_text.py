@@ -161,6 +161,44 @@ def test_process_output_keeps_exit_status_and_stream_text():
     )
 
 
+def test_unsaved_search_reasons_render_without_scanning_files():
+    """不经grep_output（它用POSIX无跟随快照，Windows上不可用）：三个平台都核对原因说明。"""
+    gaps = dict.fromkeys(
+        (
+            "unreadable_entries",
+            "oversized_files",
+            "invalid_utf8_files",
+            "binary_files",
+            "long_lines",
+        ),
+        0,
+    )
+    preview = {
+        "path": ".",
+        "stats": {"files_read": 1, **gaps},
+        "scan_complete": True,
+        "truncated": True,
+        "truncation_reason": "result_limit",
+        "matches": [
+            {
+                "path": "m.py",
+                "revision": "r1",
+                "line": 1,
+                "text": "x = f(1)",
+                "text_truncated": False,
+            }
+        ],
+    }
+    lines = tool_result_text(
+        succeeded({"preview": preview, "artifact_omitted": "protection_limit"})
+    ).splitlines()
+    assert lines[0] == (
+        "grep .: 1 match; truncated (result_limit); full results not saved (too large to check "
+        "for protected values); narrow the request to see the rest"
+    )
+    assert lines[1:] == ["== m.py revision=r1", "1:x = f(1)"]
+
+
 @pytest.mark.parametrize(
     ("reason", "note"),
     [

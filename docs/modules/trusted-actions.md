@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 58
+version: 59
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -61,6 +61,15 @@ supersedes: []
 ---
 
 # Trusted Actions模块设计
+
+## 当前增量：沙箱拦截时提示模型改用沙箱外命令（ADR 0176，Beta Issue #44后续）
+
+- [`sandbox_denial.sandbox_denial_hint`](../../src/harnessix/trusted_actions/sandbox_denial.py)：计划沙箱级别为`host_sandboxed`、
+  诊断预览stdout或stderr含`DENIAL_SIGNATURES`之一（写入被拒、只读文件系统、域名解析失败、网络不可达等，不含`Permission denied`
+  与`Connection refused`）时返回`SANDBOX_DENIAL_HINT`；`agent_gateway_output._process_failure_feedback`只对`process_nonzero_exit`
+  把它追加到非零退出说明之后。不写具体工具名，不授予权限。
+- 回归：`tests/trusted_actions/test_sandbox_denial.py`、`tests/product_config/test_native_sandbox_action.py`（真实沙箱）、
+  `tests/product_config/test_native_host_command.py`。
 
 ## 当前增量：本轮结束时尚未开始的调用记为未执行（ADR 0175，Beta Issue #37遗留）
 
@@ -1702,6 +1711,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 59 | `6af5a4b1` 增量 | 2026-11-18 | 本机沙箱里非零退出且输出有明确拦截措辞时，模型反馈追加改用沙箱外命令的提示（`sandbox_denial`，ADR 0176，Beta Issue #44后续） |
 | 58 | `de63875c` 增量 | 2026-11-18 | 收尾时Route证明尚未开始的写调用记为未执行：没有Route记`action_not_started`，待审批由`system.cancel`以`turn_ended`（或取消、时限）拒绝，`ready`以`ready→failed`/`action_not_started`结束（`close_unstarted_route`、`unplanned_result`、`operation_router.end_unstarted_plan`，ADR 0175） |
 | 57 | `d82e71cc` 增量 | 2026-11-18 | 命令完整输出的保护检查超限时按审计终态提交、带`artifact_omitted: "protection_limit"`；Review检查超限或超时时关闭原Route并以失败结果说明动作未执行，不再以`uncertain_effect`中断（ADR 0174，Beta Issue #37遗留） |
 | 55 | `d69bdb2a` 增量 | 2026-11-18 | Turn时限已过而仍未获批的Route以系统拒绝结束，调用记为未执行（`cancelled`、`time_budget_exceeded`），不再记为未知效果（Beta Issue #39） |

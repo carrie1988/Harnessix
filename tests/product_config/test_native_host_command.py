@@ -166,3 +166,19 @@ async def test_an_overdue_host_command_approval_ends_the_turn_on_resume(
         assert result.outcome == "cancelled"
         assert result.error is not None and result.error.code == "time_budget_exceeded"
         assert case.router.status(case.approval.plan_id).state == "denied"
+
+
+async def test_a_denial_message_from_a_host_command_gets_no_sandbox_hint(tmp_path: Path) -> None:
+    """沙箱外的命令即使输出里有Operation not permitted，也不提示改用沙箱外执行（ADR 0176）。"""
+    from harnessix.trusted_actions.sandbox_denial import SANDBOX_DENIAL_HINT
+
+    async with _native_case(
+        tmp_path,
+        "echo 'mkdir: /x: Operation not permitted' >&2; exit 1",
+        host_profile(),
+        environ={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)},
+    ) as case:
+        result = _result(await case.approve_and_resume())
+    assert result.error is not None and result.error.code == "process_nonzero_exit"
+    assert "non-zero status" in result.error.message
+    assert SANDBOX_DENIAL_HINT not in result.error.message
