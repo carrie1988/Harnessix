@@ -39,7 +39,11 @@ from harnessix.execution.store import SQLiteExecutionPlanStore
 from harnessix.patches.contracts import ExactEdit
 from harnessix.product_config.workspace_patch_review import WorkspacePatchReviewProvider
 from harnessix.trusted_actions.agent_gateway import RouterBackedAgentActionGateway
-from harnessix.trusted_actions.contracts import ActionExecutionOutcome, build_trusted_tool_binding
+from harnessix.trusted_actions.contracts import (
+    UNSTARTED_PLAN_CODE,
+    ActionExecutionOutcome,
+    build_trusted_tool_binding,
+)
 from harnessix.trusted_actions.preparation_rejection import workspace_patch_preparation_rejection
 from harnessix.trusted_actions.router import TrustedActionRouter
 from harnessix.trusted_actions.store import SQLiteActionAuditStore
@@ -92,6 +96,24 @@ async def patch_turn(runtime, provider, root, proposal):
     turn = await runtime.run_turn(thread.thread_id, "修改文件", request_id="patch")
     call = next(item.content for item in turn.items if isinstance(item.content, ToolCallContent))
     return thread, turn, call
+
+
+def assert_not_started(turn, router, plan_id):
+    """Review失败时改动从未开始：收尾记为未执行，系统拒绝并关闭原Route（ADR 0175）。
+
+    此前记为未知效果，Turn以uncertain_effect中断，Route停在待审批。不采信回调自报的拒绝原因。
+    """
+    assert turn.status is TurnStatus.FAILED
+    output = result(turn)
+    assert output.outcome == "cancelled"
+    assert output.error is not None and output.error.code == UNSTARTED_PLAN_CODE
+    assert router.status(plan_id).state == "denied"
+    decision = router.approval(plan_id).decision
+    assert (decision.outcome, decision.actor, decision.reason) == (
+        ApprovalOutcome.REJECTED,
+        "system.cancel",
+        "turn_ended",
+    )
 
 
 def assert_unchanged(root):
@@ -546,9 +568,7 @@ async def test_no_change_origin_requires_original_preparation_and_bound_plan(
             proposal = no_change_proposal()
         thread, turn, call = await patch_turn(runtime, provider, root, proposal)
         plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-        assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
-        assert router.status(plan_id).state == "pending_approval"
-        assert router.approval(plan_id) is None
+        assert_not_started(turn, router, plan_id)
         assert all(event.executor_id is None for event in router.events(plan_id))
         assert_unchanged(root)
 
@@ -668,9 +688,7 @@ async def test_non_sha_review_errors_remain_unknown(tmp_path, monkeypatch, kind,
             monkeypatch.setattr(WorkspacePatchTransactionPlanner, "prepare", fail_prepare)
         thread, turn, call = await patch_turn(runtime, provider, root, _proposal())
         plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-        assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
-        assert router.status(plan_id).state == "pending_approval"
-        assert router.approval(plan_id) is None
+        assert_not_started(turn, router, plan_id)
         assert "internal-path-canary" not in turn.model_dump_json()
         if kind in {"artifact-typed", "typed-prepare"}:
             assert error.review_plan_id is None
@@ -701,9 +719,7 @@ async def test_replacement_callback_cannot_claim_builtin_sha_rejection(tmp_path,
         composition.gateway._state.reviews["apply_patch_batch"] = ExtensionReview()
         thread, turn, call = await patch_turn(runtime, provider, root, _proposal())
         plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-        assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
-        assert router.status(plan_id).state == "pending_approval"
-        assert router.approval(plan_id) is None
+        assert_not_started(turn, router, plan_id)
         assert "callback-canary" not in turn.model_dump_json()
         assert_unchanged(root)
 
@@ -816,14 +832,17 @@ async def test_rejection_requires_successful_route_close(tmp_path, monkeypatch, 
                     release.set()
                 thread, turn, call = await task
             plan_id = trusted_action_invocation_id(thread.thread_id, turn.turn_id, call)
-            assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
             assert result(turn).error.code != ("delivery_no_change" if no_change else CODE)
             checkpoint = router.approval(plan_id)
             if race in {"approved-during-review", "approval-cas"}:
-                assert router.status(plan_id).state == "ready"
+                # 竞争审批人已批准、计划尚未Claim：随本轮以确定失败结束，不再能被执行（ADR 0175）。
+                assert turn.status is TurnStatus.FAILED and result(turn).outcome == "cancelled"
+                assert router.status(plan_id).state == "failed"
                 assert checkpoint.decision.outcome is ApprovalOutcome.APPROVED
                 assert checkpoint.decision.actor == "competing-reviewer"
             else:
+                # Route关不上时没有证据，照旧记为未知效果。
+                assert turn.status is TurnStatus.INTERRUPTED and result(turn).outcome == "unknown"
                 assert router.status(plan_id).state == "pending_approval"
                 assert (checkpoint is None) == (race == "not-closed")
             assert all(event.executor_id is None for event in router.events(plan_id))

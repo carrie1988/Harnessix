@@ -48,8 +48,9 @@ from harnessix.trusted_actions.contracts import (
 )
 from harnessix.trusted_actions.legacy_projection import project_legacy_terminal
 from harnessix.trusted_actions.preparation_rejection import (
-    cancel_pending_approval,
+    close_unstarted_route,
     preparation_rejection_result,
+    unplanned_result,
     workspace_patch_planning_rejection,
     workspace_patch_preparation_rejection,
 )
@@ -355,18 +356,16 @@ async def recover_action(
         route = state.router.status(plan_id)
     except KernelError as error:
         if error.code == "action_route_not_found":
-            return None
+            return unplanned_result(call)
         raise
     terminal_before_recovery = route.state in {"denied", "succeeded", "failed"}
     _validate_route(route, thread, turn, call, binding)
     if approval is not None:
         _validate_approval(state, thread, turn, call, approval)
         route = _restore_session_decision(state, route, approval)
-    cancelled = cancel_pending_approval(state.router, route, turn, call)
-    if cancelled is not None:
-        return cancelled
-    if route.state in {"pending_approval", "ready"}:
-        return None
+    unstarted = close_unstarted_route(state.router, route, turn, call)
+    if unstarted is not None:
+        return unstarted
     if route.state in {"running", "reconciling"}:
         route = state.router.recover_interrupted_plan(plan_id)
     if route.state == "unknown":

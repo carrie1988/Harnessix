@@ -16,6 +16,7 @@ from harnessix.domain.models import utc_now
 from harnessix.execution.contracts import canonical_digest
 from harnessix.trusted_actions.contracts import (
     STALE_PLAN_CODE,
+    UNSTARTED_PLAN_CODE,
     ActionExecutionOutcome,
     ActionRoutePlan,
     ActionRouteSnapshot,
@@ -134,6 +135,21 @@ def _reject_stale_plan(
     )
     return ActionExecutionOutcome(
         kind="failed", external_action_id=identity, error_code=STALE_PLAN_CODE
+    )
+
+
+def end_unstarted_plan(router: TrustedActionRouter, plan_id: UUID) -> ActionRouteSnapshot:
+    """已批准但尚未Claim的计划随本轮结束：没有Operation、没有调用Executor，以确定失败结束。
+
+    Claim在调用Executor之前原子提交running，ready即证明没有任何效果；结束后不能再被执行。
+    """
+    current = router._audit.load(plan_id)
+    return router._audit.transition(
+        plan_id,
+        expected={"ready"},
+        target="failed",
+        external_action_id=current.plan.external_action_id,
+        error_code=UNSTARTED_PLAN_CODE,
     )
 
 
