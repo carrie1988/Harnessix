@@ -1,7 +1,7 @@
 ---
 doc_type: change-design
 status: current
-version: 65
+version: 66
 code_revision: d387a5cddf49c25e84eb9ab75cde2abeb4465dab
 owners:
   - core
@@ -147,9 +147,10 @@ supersedes: []
 | 五十八 | 导出与事件里宿主自动说明和操作者输入都是`user_message`，无法按结构区分（0.10.0b53，Issue #46；三个平台相同） | 公开用户消息新增`origin`（user/harnessix），按派生身份判定 | [ADR 0173](../adr/0173-public-user-messages-say-whether-harnessix-sent-them.md)、本文第72节 |
 | 五十九 | 保护检查超出资源上限或时限时整轮失败，同批尚未准备的宿主命令被记为未知效果（0.10.0b50 Windows，Issue #37遗留；三个平台相同） | 只让那一次调用失败或不带存档，命令按审计终态提交，Review检查不了时动作不执行 | [ADR 0174](../adr/0174-a-protection-check-that-cannot-finish-fails-only-that-call.md)、本文第73节 |
 | 六十 | 本轮因其他原因失败时，同批尚未开始的写调用一律记为未知效果，整轮以`uncertain_effect`中断（Issue #37遗留；三个平台相同） | Router能证明没有开始的调用记为未执行（`action_not_started`），关闭待审批与已批准未开始的计划 | [ADR 0175](../adr/0175-calls-that-never-started-are-recorded-as-not-executed.md)、本文第74节 |
+| 六十一 | 沙箱拦下写HOME或联网的命令时模型只看到普通的非零退出，不知道可以改用沙箱外命令（Issue #44后续：Maven Wrapper首次运行在`~/.m2`失败；macOS与Linux） | 本机沙箱里非零退出且输出有明确拦截措辞时，给模型的说明追加改用沙箱外命令（需批准）的提示 | [ADR 0176](../adr/0176-a-sandbox-denial-tells-the-model-to-use-the-host-command.md)、本文第75节 |
 
 第1～14节描述第一项；第二至五项的设计分别集中在第15～18节，第19节是第四、五项的真实模型验证，
-第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至六十项在第61～74节。
+第六、七项在第20、21节，第八项在第22节，第九项在第23节，第十、十一项在第24、25节，第十二至四十六项在第26～60节，第四十七至六十一项在第61～75节。
 
 ## 2. 需求背景
 
@@ -1615,3 +1616,7 @@ b25首次报告、b32复测仍可复现）。`requires-python <3.15`无效（uv�
 ## 74. 第六十项：尚未开始的调用被记为未知效果（Issue #37遗留）
 
 见[ADR 0175](../adr/0175-calls-that-never-started-are-recorded-as-not-executed.md)。#37报告人期望同批的宿主命令“明确记录为待批、未执行或已有确定执行收据”。第73节让保护检查超限不再使Turn失败，但Turn因其他原因失败（发现Secret、Provider错误、时限、宿主中断）时，同批从未规划、仍待审批或已批准未开始的写调用仍一律记为`unknown`，整轮以`uncertain_effect`中断。负责人2026-11-18选方案A：Router能证明没有开始的调用记为`cancelled`（错误码`action_not_started`，用户取消或时限已过时沿用`cancelled`/`time_budget_exceeded`），待审批的计划由系统拒绝（`turn_ended`），已批准未Claim的计划以`ready→failed`结束、不能再执行；Turn保留原失败码。没有Router证据的调用照旧记为未知。验证：新测试在修改前为`interrupted`、修改后为`failed`，改动与命令都没有执行。
+
+## 75. 第六十一项：沙箱拦截没有可照着做的提示（Issue #44后续）
+
+见[ADR 0176](../adr/0176-a-sandbox-denial-tells-the-model-to-use-the-host-command.md)。第71节修复了`mktemp -d`之后，Maven Wrapper冷启动仍在创建`~/.m2`一步失败（报告人复测：公网冷下载在沙箱里失败），模型只得到普通的非零退出说明。负责人2026-11-18选方案A：计划为本机沙箱（`host_sandboxed`）、非零退出、且诊断预览有明确拦截措辞（`Operation not permitted`、`Read-only file system`、域名解析失败或网络不可达）时，给模型的英文说明追加一句：这是沙箱拦截，确实需要时改用沙箱外运行的命令工具（需用户批准），不要以其他方式绕过。普通失败、沙箱外命令与容器Profile不加。验证：判断逻辑的单元测试三个平台都运行；真实Seatbelt/bubblewrap里`mkdir -p "$HOME/.m2/wrapper"`的端到端测试在247与普通终端运行。

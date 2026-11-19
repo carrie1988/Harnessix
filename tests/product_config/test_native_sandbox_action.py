@@ -21,6 +21,7 @@ from harnessix.processes.supervisor_capabilities import probe_posix_process_capa
 from harnessix.product_config.native_process import attest_native_process_profile
 from harnessix.product_config.native_sandbox import NativeSandboxSite, prepare_sandboxed_argv
 from harnessix.sandbox.native_probe import probe_native_sandbox
+from harnessix.trusted_actions.sandbox_denial import SANDBOX_DENIAL_HINT
 from tests.product_config.test_native_process_action import _native_case, _result
 from tests.product_config.test_native_process_profile import native_profile
 
@@ -195,6 +196,29 @@ async def test_read_only_mode_rejects_workspace_writes(tmp_path: Path) -> None:
         assert result.outcome == "failed"
         assert result.error is not None and result.error.code == "process_nonzero_exit"
         assert not (case.workspace / "new.txt").exists()
+
+
+async def test_a_blocked_write_to_home_tells_the_model_to_use_the_host_command(
+    tmp_path: Path,
+) -> None:
+    """Maven Wrapper首次运行在创建~/.m2时被拦（Issue #44后续）：失败说明带沙箱提示（ADR 0176）。
+
+    0.10.0b55只有普通的非零退出说明。Seatbelt报Operation not permitted，
+    bubblewrap报Read-only file system。
+    """
+    async with _case(tmp_path, 'mkdir -p "$HOME/.m2/wrapper"') as case:
+        result = _result(await case.approve_and_resume())
+    assert result.outcome == "failed"
+    assert result.error is not None and result.error.code == "process_nonzero_exit"
+    assert SANDBOX_DENIAL_HINT in result.error.message
+    assert not (tmp_path / "home/.m2").exists()
+
+
+async def test_an_ordinary_failure_in_the_sandbox_gets_no_sandbox_hint(tmp_path: Path) -> None:
+    async with _case(tmp_path, "echo 'AssertionError: 2 != 3' >&2; exit 1") as case:
+        result = _result(await case.approve_and_resume())
+    assert result.error is not None and result.error.code == "process_nonzero_exit"
+    assert SANDBOX_DENIAL_HINT not in result.error.message
 
 
 @pytest.mark.skipif(BACKEND != "bubblewrap", reason="只有bubblewrap用私有挂载覆盖/tmp")

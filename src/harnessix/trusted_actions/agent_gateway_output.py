@@ -52,6 +52,7 @@ from harnessix.trusted_actions.public_outcomes import (
     validate_success_summary,
 )
 from harnessix.trusted_actions.router import TrustedActionRouter
+from harnessix.trusted_actions.sandbox_denial import sandbox_denial_hint
 
 
 class TrustedActionOutputProvider(Protocol):
@@ -268,6 +269,9 @@ def _process_failure_feedback(
     )
     if message is None:
         return result
+    if error.code == "process_nonzero_exit":
+        hint = sandbox_denial_hint(route.plan, result.output)
+        message = message if hint is None else f"{message} {hint}"
     return result.model_copy(update={"error": error.model_copy(update={"message": message})})
 
 
