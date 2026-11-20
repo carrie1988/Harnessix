@@ -1,0 +1,9 @@
+# 任务容器的内存上限（2026-11-20起每次评测都带，pipeline.py freeze检查）。
+# 共用评测主机上，一个试次里失控的命令曾把内存涨到182 GB、触发整机内存耗尽，连带其他试次失败
+# （NL2RepoBench O3第2轮boltons，2026-11-19）。上限只作用于这个试次的任务容器：超出时内核在容器内
+# 结束占用最多的进程（命令以137退出、模型看得到），主机与其他试次不受影响。
+# 上限值由运行说明的compose_env给出（HARNESSIX_TASK_MEMORY，如32g）；不另设交换空间。
+services:
+  main:
+    mem_limit: ${HARNESSIX_TASK_MEMORY:?required}
+    memswap_limit: ${HARNESSIX_TASK_MEMORY:?required}

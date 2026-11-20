@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -103,6 +104,23 @@ def check_network_isolation(spec: dict[str, Any]) -> None:
             raise SystemExit(f"组别{arm['arm_id']}的network_isolation应为{expected}")
 
 
+TASK_MEMORY_LIMIT = _COMPOSE + "task-memory-limit.yaml"
+_MEMORY_SIZE = re.compile(r"[1-9][0-9]*[mg]")
+
+
+def check_task_memory_limit(spec: dict[str, Any]) -> None:
+    """每次评测的任务容器都有内存上限（2026-11-20负责人同意）：共用主机上一个失控试次不能拖垮整机。"""
+    overlays = spec.get("environment", {}).get("extra_docker_compose", [])
+    size = spec.get("compose_env", {}).get("HARNESSIX_TASK_MEMORY")
+    if TASK_MEMORY_LIMIT not in overlays or not (
+        isinstance(size, str) and _MEMORY_SIZE.fullmatch(size)
+    ):
+        raise SystemExit(
+            "运行说明须带compose/task-memory-limit.yaml，并在compose_env给出"
+            "HARNESSIX_TASK_MEMORY（如32g）"
+        )
+
+
 # 以仓库相对路径登记的智能体文件：mini的配置文件，以及Harbor渲染任务说明用的提示模板。
 _REPOSITORY_FILE_KWARGS = ("config_file", "prompt_template_path")
 
@@ -122,6 +140,7 @@ def freeze(
 ) -> RunPlan:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     check_network_isolation(spec)
+    check_task_memory_limit(spec)
     environment = _environment(spec, code_root)
     receipt = tasks / "prepare-receipt.json"
     task_dirs = sorted(p for p in tasks.iterdir() if (p / "task.toml").is_file())

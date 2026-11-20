@@ -15,9 +15,11 @@ from harbor.utils.templating import render_prompt_template
 
 from integrations.harbor.pipeline import (
     NETWORK_ISOLATION,
+    TASK_MEMORY_LIMIT,
     _plan_version,
     _resolve_repository_files,
     check_network_isolation,
+    check_task_memory_limit,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -273,3 +275,34 @@ def test_isolation_overlay_leaves_main_only_the_two_sidecars_once_detached() -> 
     assert "--container" in gateway["command"] and "ports" not in gateway
     mirror = services["raw-github-mirror"]["networks"]["sandbox"]["aliases"]
     assert mirror == ["raw.githubusercontent.com"]
+
+
+def _memory_spec(overlays: list[str], size: object) -> dict:
+    compose_env = {} if size is None else {"HARNESSIX_TASK_MEMORY": size}
+    return {"environment": {"extra_docker_compose": overlays}, "compose_env": compose_env}
+
+
+def test_a_new_run_needs_the_task_memory_limit() -> None:
+    """共用主机上失控的试次曾涨到182 GB、触发整机内存耗尽（2026-11-19）：冻结计划时要求上限。"""
+    check_task_memory_limit(_memory_spec([NETWORK_ISOLATION, TASK_MEMORY_LIMIT], "32g"))
+    check_task_memory_limit(_memory_spec([TASK_MEMORY_LIMIT], "16384m"))
+    for spec in (
+        _memory_spec([NETWORK_ISOLATION], "32g"),
+        _memory_spec([TASK_MEMORY_LIMIT], None),
+        _memory_spec([TASK_MEMORY_LIMIT], "32"),
+        _memory_spec([TASK_MEMORY_LIMIT], "0g"),
+        _memory_spec([TASK_MEMORY_LIMIT], 32),
+        _memory_spec([TASK_MEMORY_LIMIT], "unlimited"),
+    ):
+        with pytest.raises(SystemExit, match="task-memory-limit"):
+            check_task_memory_limit(spec)
+
+
+def test_memory_limit_overlay_caps_only_the_task_container_without_extra_swap() -> None:
+    compose = yaml.safe_load((ROOT / TASK_MEMORY_LIMIT).read_text(encoding="utf-8"))
+    assert set(compose["services"]) == {"main"}
+    main = compose["services"]["main"]
+    assert main == {
+        "mem_limit": "${HARNESSIX_TASK_MEMORY:?required}",
+        "memswap_limit": "${HARNESSIX_TASK_MEMORY:?required}",
+    }

@@ -1,7 +1,7 @@
 ---
 doc_type: deployment-design
 status: current
-version: 10
+version: 11
 code_revision: 9c6c60ac3954edbe8943493b8b1c07d313c807aa
 owners: [core]
 modules: [evals, observability, sdk]
@@ -305,6 +305,11 @@ E0及之后的SWE-bench运行都按“固定任务 → 冻结计划 → 运行 �
    模型转发边车（别名host.docker.internal，转发到宿主机转发）与离线镜像；安装与判分阶段仍可出网
    （包镜像）。适配器在运行前断开、结束后恢复，经过写入`agent/network-isolation.json`。宿主机转发
    此时看到的是各试次的模型转发边车容器，按试次固定副本的口径不变。
+   任务容器内存上限（2026-11-20负责人同意，每次评测都带）：运行说明加入`compose/task-memory-limit.yaml`，
+   并在`compose_env`给出`HARNESSIX_TASK_MEMORY`（共用评测主机251 GB、8个试次并发时用`32g`），不另设交换空间；
+   `pipeline.py freeze`缺少任一项即拒绝。起因是一个试次里失控的自测代码把内存涨到182 GB，触发整机内存耗尽，
+   连带其他试次失败（NL2RepoBench O3第2轮boltons，2026-11-19）。上限只作用于该试次的任务容器：超出时内核
+   在容器内结束占用最多的进程（命令以137退出），这属于该试次自己的结果，不按基础设施故障剔除。
 5. 冻结与运行：`pipeline.py freeze`以Harbor内容哈希作为条目摘要，组别配置摘要覆盖智能体配置、
    环境配置、任务准备收据与代码版本；`pipeline.py run`每个组别一个零重试Job。
 6. 收尾：`pipeline.py finish`导入全部组别、运行官方判分（swebench 5.0.2，离线，本地镜像）、
