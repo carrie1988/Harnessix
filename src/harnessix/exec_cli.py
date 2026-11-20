@@ -60,6 +60,8 @@ from harnessix.sdk import AgentClient, AgentSDKError, SubprocessAgentTransport
 ApprovalMode = Literal["manual", "auto-edit", "auto"]
 # 只在容器沙箱内执行的进程类工具；其他工具始终需要人工确认。
 _SANDBOXED_PROCESS_TOOL_PREFIXES = ("exec_command.", "run_profile.")
+# 摘要列出的命令：沙箱内外的命令都以`cmd`给出命令文本；run_profile按Profile名运行，不列。
+_LISTED_COMMAND_PREFIXES = ("exec_command.", "host_command.")
 
 EXIT_COMPLETED = 0
 EXIT_TURN_FAILED = 1
@@ -183,7 +185,10 @@ def _changed_paths(workspace: Path, git_executable: str | None) -> list[str] | N
 
 
 def _commands(items: Sequence[PublicItem]) -> list[dict[str, Any]]:
-    """按调用顺序列出沙箱命令及其结果，供外层编排复用候选自己的检查命令。"""
+    """按调用顺序列出运行过的命令及其结果（沙箱内外都列），供外层编排复用候选自己的检查命令。
+
+    沙箱不可用时每条命令都是沙箱外命令；此前只列沙箱内命令，这时`commands`为空。
+    """
 
     results = {
         item.content.call_id: item.content
@@ -193,7 +198,9 @@ def _commands(items: Sequence[PublicItem]) -> list[dict[str, Any]]:
     commands = []
     for item in items:
         call = item.content
-        if not isinstance(call, PublicToolCallContent) or not call.tool.startswith("exec_command."):
+        if not isinstance(call, PublicToolCallContent) or not call.tool.startswith(
+            _LISTED_COMMAND_PREFIXES
+        ):
             continue
         result = results.get(call.call_id)
         output = result.output if result is not None else None

@@ -170,6 +170,44 @@ def test_summary_lists_sandbox_commands_with_their_results_in_call_order():
     ]
 
 
+def test_summary_lists_commands_outside_the_sandbox_too():
+    """沙箱不可用时每条命令都是沙箱外命令，`commands`此前为空（0.10.0b58发版测试，10条命令）。"""
+    host, profile = uuid4(), uuid4()
+    call = {"kind": "tool_call", "tool_version": "v1", "requires_approval": True}
+    items = [
+        _item(
+            {
+                **call,
+                "call_id": host,
+                "tool": "host_command.host",
+                "effect_class": "non_idempotent_write",
+                "arguments": {"profile": "host", "cmd": "pytest -q"},
+            }
+        ),
+        _item(
+            {
+                **call,
+                "call_id": profile,
+                "tool": "run_profile.tests",
+                "effect_class": "non_idempotent_write",
+                "arguments": {"profile": "tests"},
+            }
+        ),
+        _item(
+            {
+                "kind": "tool_result",
+                "call_id": host,
+                "outcome": "succeeded",
+                "output": {"returncode": 0},
+            }
+        ),
+    ]
+
+    assert _commands(items) == [
+        {"tool": "host_command.host", "cmd": "pytest -q", "outcome": "succeeded", "returncode": 0}
+    ]
+
+
 def test_local_free_chains_get_a_larger_token_budget(tmp_path):
     from harnessix.product_config.codec import canonical_product_config_bytes
     from harnessix.product_config.product_contracts import ConfigurationDraft
