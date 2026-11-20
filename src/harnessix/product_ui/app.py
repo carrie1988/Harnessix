@@ -154,6 +154,7 @@ class ProductApp(TurnPacing, App[CloseReport]):
         if await self._main_view.render_state(state):
             self._update_composer(state)
             self.refresh_bindings()
+            self._presenter.close_resolved_approval()
             self._presenter.prompt_later(
                 lambda: not (self._intent_in_flight or self._quitting or len(self.screen_stack) > 1)
             )

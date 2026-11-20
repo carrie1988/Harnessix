@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any, Literal
+from uuid import UUID
 
 from textual.app import App
 from textual.timer import Timer
@@ -33,6 +34,7 @@ from harnessix.product_ui.interactions import (
     pending_approval,
     pending_question,
 )
+from harnessix.product_ui.projection import ProductViewState
 from harnessix.product_ui.turn_pacing import wrap_up
 
 PromptKind = Literal["approval", "question"]
@@ -44,12 +46,13 @@ async def _apply_approval_reply(
     controller: ProductController,
     binding: ApprovalBinding,
     reply: ApprovalScreenResult | WrapUpFromApproval | None,
+    wrap_up_turn: Callable[[], Awaitable[None]],
 ) -> None:
     """审批窗口的结果：收尾、批准或拒绝；关闭窗口不产生结果。"""
 
     if isinstance(reply, WrapUpFromApproval):
         # 窗口本身就在一次交互里，再经应用动作会被“交互进行中”挡掉；与主界面Ctrl+F共用同一发送。
-        await wrap_up(controller)
+        await wrap_up_turn()
     elif reply is not None:
         await controller.dispatch(
             RespondApprovalIntent(
@@ -61,33 +64,79 @@ async def _apply_approval_reply(
         )
 
 
-class InteractionPresenter:
-    """读取Controller快照并驱动一次性Modal，不持有协议或持久化端口。"""
+class PendingDecisions:
+    """哪条审批或提问还在等用户决定（ADR 0148第6版）。
 
-    def __init__(self, app: App[Any], controller: ProductController) -> None:
-        self._app = app
+    以Controller快照为准，再加上本界面已经发出收尾的Turn：收尾说明回到界面之前，也不再为这些Turn
+    请用户批准；Controller随后按收尾规则拒绝它们的审批。
+    """
+
+    def __init__(self, controller: ProductController) -> None:
         self._controller = controller
-        # 已经弹出过（自动或用户手动打开）的审批与提问；每项只自动弹出一次。
-        self._prompted: set[ApprovalBinding | QuestionBinding] = set()
-        self._prompt_timer: Timer | None = None
+        self._wrapping_up: set[UUID] = set()
 
-    def _pending(self) -> tuple[PromptKind, ApprovalBinding | QuestionBinding] | None:
+    def _wrap_up_requested(self, view: ProductViewState | None) -> bool:
+        turn = None if view is None else view.current_turn
+        return wrap_up_requested(view) or (turn is not None and turn.turn_id in self._wrapping_up)
+
+    def next_prompt(self) -> tuple[PromptKind, ApprovalBinding | QuestionBinding] | None:
         view = self._controller.state.thread_view
         try:
             approval, question = pending_approval(view), pending_question(view)
         except ProductUIError:
             return None
         # 收尾之后的审批由Controller直接拒绝，不再弹窗请用户批准（Beta Issue #4）。
-        if approval is not None and not wrap_up_requested(view):
+        if approval is not None and not self._wrap_up_requested(view):
             return "approval", approval.binding
         if question is not None:
             return "question", question.binding
         return None
 
+    def awaits_decision(self, binding: ApprovalBinding) -> bool:
+        """这条审批仍是当前待决的审批，本轮也没有要求收尾。"""
+
+        view = self._controller.state.thread_view
+        try:
+            pending = pending_approval(view)
+        except ProductUIError:
+            return True  # 事件分页间的瞬时状态，下一次更新再判断。
+        return (
+            pending is not None and pending.binding == binding and not self._wrap_up_requested(view)
+        )
+
+    async def wrap_up(self) -> None:
+        """一键收尾：先记下本轮已要求收尾，再发送收尾说明；同一轮只发一次，没有送达时撤销记录。"""
+
+        control = active_turn_control(self._controller.state.thread_view)
+        if control is None:
+            await wrap_up(self._controller)  # 照原样说明当前没有可以收尾的任务。
+            return
+        turn_id = control.binding.turn_id
+        if turn_id in self._wrapping_up:
+            return
+        self._wrapping_up.add(turn_id)
+        try:
+            await wrap_up(self._controller)
+        except BaseException:
+            self._wrapping_up.discard(turn_id)
+            raise
+
+
+class InteractionPresenter:
+    """读取Controller快照并驱动一次性Modal，不持有协议或持久化端口。"""
+
+    def __init__(self, app: App[Any], controller: ProductController) -> None:
+        self._app = app
+        self._controller = controller
+        self._decisions = PendingDecisions(controller)
+        # 已经弹出过（自动或用户手动打开）的审批与提问；每项只自动弹出一次。
+        self._prompted: set[ApprovalBinding | QuestionBinding] = set()
+        self._prompt_timer: Timer | None = None
+
     def prompt_later(self, can_open: Callable[[], bool]) -> None:
         """有尚未弹出过的审批或提问时稍后自动弹窗；届时仍在等待且界面空闲才打开。"""
 
-        pending = self._pending()
+        pending = self._decisions.next_prompt()
         if self._prompt_timer is None and pending is not None and pending[1] not in self._prompted:
             self._prompt_timer = self._app.set_timer(
                 AUTO_PROMPT_DELAY_SECONDS, lambda: self._prompt_now(can_open)
@@ -95,7 +144,7 @@ class InteractionPresenter:
 
     async def _prompt_now(self, can_open: Callable[[], bool]) -> None:
         self._prompt_timer = None
-        pending = self._pending()
+        pending = self._decisions.next_prompt()
         if pending is None or pending[1] in self._prompted or not can_open():
             return
         # 领取后不再自动弹出，选“暂不处理”不会反复打扰。
@@ -108,11 +157,26 @@ class InteractionPresenter:
             raise ProductUIError("approval_stale", "当前没有可处理的审批")
         self._prompted.add(pending.binding)
         await self._controller.dispatch(LoadApprovalEvidenceIntent(pending.binding))
+        if not self._decisions.awaits_decision(pending.binding):
+            return  # 读取证据期间已按收尾拒绝或已自动处理，结果见对话记录。
         state = self._controller.state
         review = approval_review(state.thread_view, state.approval_evidence)
         screen = ApprovalScreen(review, self._controller.rule_offer)
         reply = await self._app.push_screen_wait(screen)
-        await _apply_approval_reply(self._controller, review.pending.binding, reply)
+        await _apply_approval_reply(
+            self._controller, review.pending.binding, reply, self._decisions.wrap_up
+        )
+
+    def close_resolved_approval(self) -> None:
+        """审批窗口所对应的审批已不再等用户决定（收尾拒绝、规则批准、本轮结束）时关闭，不产生结果。"""
+
+        screen = self._app.screen
+        if isinstance(screen, ApprovalScreen):
+            if not self._decisions.awaits_decision(screen.review.pending.binding):
+                screen.dismiss(None)
+
+    async def wrap_up(self) -> None:
+        await self._decisions.wrap_up()
 
     async def toggle_auto_accept(self) -> None:
         await self._controller.dispatch(ToggleAutoAcceptIntent())

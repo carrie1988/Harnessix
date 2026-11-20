@@ -13,7 +13,11 @@ from typing import TYPE_CHECKING, Any
 from textual.app import App
 
 from harnessix.product_config.wrap_up import WRAP_UP_STEER
-from harnessix.product_ui.controller import ProductController, SubmitPromptIntent
+from harnessix.product_ui.controller import (
+    ProductController,
+    ProductControllerState,
+    SubmitPromptIntent,
+)
 from harnessix.product_ui.errors import ProductUIError
 from harnessix.product_ui.interaction_screens import CheckpointScreen
 from harnessix.product_ui.interactions import (
@@ -29,6 +33,9 @@ from harnessix.product_ui.turn_checkpoint import (
     ActiveTimeMeter,
     checkpoint_minutes,
 )
+
+if TYPE_CHECKING:
+    from harnessix.product_ui.interaction_presenter import InteractionPresenter
 
 CHECKPOINT_TICK_SECONDS = 1.0
 # 一键收尾替用户发送的补充说明：任务其实已经做完、模型还在自己加验证时用。
@@ -104,9 +111,13 @@ class TurnPacing:
         controller: ProductController
         _intent_in_flight: bool
         _quitting: bool
+        _presenter: InteractionPresenter
         screen_stack: list[Any]
         set_interval: Callable[..., Any]
+        run_worker: Callable[..., Any]
         _start_interaction: Callable[[Callable[[], Awaitable[None]], str], None]
+        _show_error: Callable[[ProductUIError], None]
+        _render_state: Callable[[ProductControllerState], Awaitable[None]]
 
     _pacing_meter: ActiveTimeMeter | None = None
     checkpoint_pause_seconds: float = UNANSWERED_PAUSE_SECONDS
@@ -148,4 +159,17 @@ class TurnPacing:
             )
 
     def action_wrap_up_turn(self) -> None:
-        self._start_interaction(lambda: wrap_up(self.controller), "wrap-up-turn")
+        # 收尾不开窗口，经Controller串行发送，所以不经交互门闩：自动弹窗正在准备审批（读取证据）时
+        # 门闩已被占用，经门闩发送会把这次按键悄悄丢掉（ADR 0148第6版）。
+        self.run_worker(
+            self._send_wrap_up(), name="wrap-up-turn", group="wrap-up", exit_on_error=False
+        )
+
+    async def _send_wrap_up(self) -> None:
+        if self._quitting:
+            return
+        try:
+            await self._presenter.wrap_up()
+        except ProductUIError as error:
+            self._show_error(error)
+        await self._render_state(self.controller.state)
