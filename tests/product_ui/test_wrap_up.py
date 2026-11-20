@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
+from uuid import UUID
 
+import pytest
+from textual.pilot import Pilot
 from textual.widgets import Input
 
 from harnessix.agent.models import ApprovalRequestContent, TextContent
@@ -13,8 +19,20 @@ from harnessix.app_server.service import AgentApplicationService
 from harnessix.models.scripted import ScriptedProvider
 from harnessix.product_config.wrap_up import WrapUpToolView
 from harnessix.product_ui.app import ProductApp, action_enabled
-from harnessix.product_ui.controller import ProductController, ProductControllerState, StartRequest
+from harnessix.product_ui.approval_automation import WRAP_UP_REJECTION_REASON, wrap_up_requested
+from harnessix.product_ui.controller import (
+    CloseReport,
+    ProductController,
+    ProductControllerState,
+    ProductIntent,
+    StartRequest,
+)
 from harnessix.product_ui.interaction_screens import ApprovalScreen, SteerScreen
+from harnessix.product_ui.interactions import (
+    LoadApprovalEvidenceIntent,
+    SteerTurnIntent,
+    active_turn_control,
+)
 from harnessix.product_ui.session import RecoverableAgentSession
 from harnessix.product_ui.state_store import ClientStateStore
 from harnessix.product_ui.turn_pacing import WRAP_UP_MESSAGE
@@ -191,6 +209,121 @@ async def test_wrap_up_from_inside_the_approval_dialog(tmp_path: Path) -> None:
     ]
     assert ("user_message", WRAP_UP_MESSAGE) in texts
     assert texts[-1] == ("assistant_message", "已完成：总结如下。")
+
+
+@asynccontextmanager
+async def _waiting_for_approval(
+    tmp_path: Path,
+) -> AsyncIterator[tuple[ProductApp, Pilot[CloseReport], RecordingTools, SQLiteSessionStore]]:
+    """一个已经发出任务、第一个调用正在等审批的终端界面。"""
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    sessions = SQLiteSessionStore(tmp_path / "sessions.db")
+    requests = SQLiteProtocolRequestStore(sessions.path)
+    tools = RecordingTools(approval=True)
+    provider = ScriptedProvider([tool_step("test.read"), answer("已完成：总结如下。")])
+    async with AgentRuntime(sessions, provider, tools, model_tool_view=WrapUpToolView()) as runtime:
+
+        def transport() -> InProcessAgentTransport:
+            service = AgentApplicationService(
+                runtime, sessions, requests, workspace=workspace.resolve()
+            )
+            return InProcessAgentTransport(AgentProtocolServer(service))
+
+        with ClientStateStore(
+            tmp_path / "client", workspace_identity=str(workspace.resolve())
+        ) as store:
+            controller = ProductController(RecoverableAgentSession(store, transport))
+            app = ProductApp(controller, StartRequest(workspace=str(workspace)))
+            async with app.run_test(size=(120, 30)) as pilot:
+                composer = app.query_one("#composer", Input)
+                await _wait_until(lambda: not composer.disabled)
+                await pilot.press("g", "o", "enter")
+                await _wait_until(lambda: _turn_status(controller) == "waiting_approval")
+                yield app, pilot, tools, sessions
+
+
+async def _assert_rejected_by_wrap_up(
+    sessions: SQLiteSessionStore, thread_id: UUID | None, tools: RecordingTools
+) -> None:
+    assert thread_id is not None
+    turn = (await sessions.get_thread(thread_id)).turns[-1]
+    assert tools.calls == []
+    decisions = [
+        item.content.decision
+        for item in turn.items
+        if isinstance(item.content, ApprovalRequestContent) and item.content.decision
+    ]
+    assert [(d.outcome.value, d.reason) for d in decisions] == [
+        ("rejected", WRAP_UP_REJECTION_REASON)
+    ]
+    texts = [
+        (item.content.kind, item.content.text)
+        for item in turn.items
+        if isinstance(item.content, TextContent)
+    ]
+    assert ("user_message", WRAP_UP_MESSAGE) in texts
+    assert texts[-1] == ("assistant_message", "已完成：总结如下。")
+
+
+async def test_an_open_approval_dialog_closes_once_wrap_up_rejects_its_approval(
+    tmp_path: Path,
+) -> None:
+    """收尾说明在窗口弹出之后才到达界面（发布会话Windows真机0.10.0b58/b59，5次中4次窗口在收尾后仍在屏幕上）。
+
+    此前这条审批已按收尾拒绝、本轮已在总结，窗口却一直留在屏幕上请用户批准。
+    现在窗口所对应的审批不再等用户决定时，窗口自己关闭，不产生审批结果。
+    """
+    async with _waiting_for_approval(tmp_path) as (app, _pilot, tools, sessions):
+        controller = app.controller
+        await _wait_until(
+            lambda: (
+                isinstance(app.screen, ApprovalScreen)
+                and bool(app.screen.query("#approval-reason"))
+            ),
+            timeout_seconds=10,
+        )
+        control = active_turn_control(controller.state.thread_view)
+        assert control is not None
+        # 与Ctrl+F发出的是同一条说明；绕过窗口直接发送，相当于它在窗口弹出之后才到达界面。
+        await controller.dispatch(SteerTurnIntent(control.binding, WRAP_UP_MESSAGE))
+        await _wait_until(lambda: not isinstance(app.screen, ApprovalScreen))
+        await _wait_until(lambda: _turn_status(controller) == "completed", timeout_seconds=30)
+        thread_id = controller.state.selected_thread_id
+    await _assert_rejected_by_wrap_up(sessions, thread_id, tools)
+
+
+async def test_wrap_up_pressed_while_the_dialog_is_being_prepared_is_not_lost(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """自动弹窗正在读取审批证据、窗口还没出现时按Ctrl+F。
+
+    此前主界面的交互门闩已被这次准备占用，按键被悄悄丢掉，随后窗口照常弹出等用户批准。
+    现在收尾照常送出，窗口不再弹出，这条审批按收尾规则拒绝。
+    """
+    async with _waiting_for_approval(tmp_path) as (app, pilot, tools, sessions):
+        controller = app.controller
+        loading, release = asyncio.Event(), asyncio.Event()
+        dispatch = controller.dispatch
+
+        async def slow_evidence(intent: ProductIntent) -> None:
+            if isinstance(intent, LoadApprovalEvidenceIntent):
+                loading.set()
+                await release.wait()
+            await dispatch(intent)
+
+        monkeypatch.setattr(controller, "dispatch", slow_evidence)
+        async with asyncio.timeout(10):
+            await loading.wait()
+        assert app._intent_in_flight
+        assert not isinstance(app.screen, ApprovalScreen)
+        await pilot.press("ctrl+f")
+        await _wait_until(lambda: wrap_up_requested(controller.state.thread_view))
+        release.set()
+        await _wait_until(lambda: _turn_status(controller) == "completed", timeout_seconds=30)
+        assert not isinstance(app.screen, ApprovalScreen)
+        thread_id = controller.state.selected_thread_id
+    await _assert_rejected_by_wrap_up(sessions, thread_id, tools)
 
 
 def test_wrap_up_is_a_main_screen_action_hidden_behind_dialogs() -> None:

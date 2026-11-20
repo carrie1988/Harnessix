@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 80
+version: 81
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -182,6 +182,9 @@ supersedes: []
 - **一键收尾（`Ctrl+F`）**：`wrap_up`向当前Turn发送固定的补充说明`WRAP_UP_MESSAGE`（与`Ctrl+S`同一条Steer通道）。
   Turn不可补充说明时报`turn_control_stale`。审批窗口自动弹出后主界面操作停用，窗口自己接住`Ctrl+F`：关闭窗口、返回
   `WrapUpFromApproval`，`InteractionPresenter.approval`直接调用同一个`wrap_up`，这条审批随后按收尾规则拒绝（ADR 0148第5版）。
+  主界面的`Ctrl+F`不经交互门闩（`TurnPacing._send_wrap_up`）：自动弹窗正在读取审批证据时门闩已被占用，经门闩发送会把按键
+  悄悄丢掉。两条入口都经`InteractionPresenter.wrap_up`：先记下本轮已要求收尾（同一轮只发一次），收尾说明回到界面之前也
+  不再为这一轮弹审批窗口；发送失败时撤销记录（ADR 0148第6版）。
 - **运行时间检查点**：[`turn_checkpoint.py`](../../src/harnessix/product_ui/turn_checkpoint.py)的`ActiveTimeMeter`
   按Turn累计实际运行时间——每秒观察一次当前Turn的状态，只有已接受、准备上下文、调用模型、执行工具、收尾这些状态计时，
   等待审批、等待操作、等待回答不计；Turn变了就从零开始。满60分钟且没有其他窗口打开时，`run_checkpoint`弹出
@@ -332,7 +335,7 @@ supersedes: []
 
 2026-11-10在247上用tmux驱动TUI完成真实开发任务时发现的问题，按用户“易用、稳定、功能可用”的要求修复：
 
-- **审批与提问自动弹窗**：[`InteractionPresenter.prompt_later`](../../src/harnessix/product_ui/interaction_presenter.py)在新的待审批或待回答项出现约2秒后弹窗，届时仍在等待且没有其他弹窗、Intent才打开。延迟避免沙箱策略或“自动接受修改”即将决定的审批一闪而过。每项只自动弹出一次（自动或用户手动打开都记为已弹出），选“暂不处理”后不再打扰，`Ctrl+A`/`Ctrl+U`仍可打开。
+- **审批与提问自动弹窗**：[`InteractionPresenter.prompt_later`](../../src/harnessix/product_ui/interaction_presenter.py)在新的待审批或待回答项出现约2秒后弹窗，届时仍在等待且没有其他弹窗、Intent才打开。延迟避免沙箱策略或“自动接受修改”即将决定的审批一闪而过。每项只自动弹出一次（自动或用户手动打开都记为已弹出），选“暂不处理”后不再打扰，`Ctrl+A`/`Ctrl+U`仍可打开。审批窗口在读取证据之后、显示之前再确认一次这条审批仍等用户决定；窗口打开后，它所对应的审批不再等用户决定（已被拒绝或批准、本轮结束、本轮已要求收尾）时，每次界面更新由`InteractionPresenter.close_resolved_approval`关闭窗口，不产生审批结果，结果照常显示在对话记录里（ADR 0148第6版）。
 - **情境快捷键**：`ProductApp.check_action`经`action_enabled`判断，审批、回答、取消、补充说明、重连只在可用时显示和响应，底部快捷键栏随状态刷新（`refresh_bindings`）；去掉Textual命令面板；“取消Turn”“补充Turn”改为“取消任务”“补充说明”。
 - **白话状态栏**：去掉`ready · 连接代际N`与`Turn <内部状态>`，改为“就绪/思考中/执行中/等待你审批（Ctrl+A）/已完成”等（`rendering.turn_status_label`）；连接异常时显示“连接中断，按 Ctrl+R 重新连接”。Token显示千分位，费用文案缩短为“费用≤¥x”。
 - **累计用量**：[`projection.py`](../../src/harnessix/product_ui/projection.py)此前用逐步用量事件覆盖Turn用量，快照刷新时又恢复累计值，状态栏数字忽大忽小、结束时偏低。现在逐步累加，`TurnProjection.usage_cursor`记录用量已计入到哪个事件游标，快照已含的步骤重放时不再计入。
@@ -1317,6 +1320,7 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 81 | ADR 0148第6版增量 | 2026-11-19 | 审批窗口所对应的审批已被处理（收尾拒绝、规则批准、本轮结束）时自动关闭；读取证据期间按`Ctrl+F`不再被交互门闩丢掉，收尾后不再为本轮弹审批窗口（`close_resolved_approval`、`InteractionPresenter.wrap_up`） |
 | 80 | ADR 0167增量 | 2026-11-17 | 压缩较早的对话时运行提示与底栏写“正在压缩较早的对话”和已用时（`projection`的`TransientItemStream.compaction`、`generation_estimate.compacting`） |
 | 79 | ADR 0166增量 | 2026-11-17 | 服务端攒工具参数时进度行带工具名，参数0字节也显示阶段；运行提示写“已用时N秒，模型服务写完才会返回”（`arguments_held_back`） |
 | 78 | `ef3e467e` 增量 | 2026-11-18 | `data`、`code doctor --json`与错误说明经`cli_json.print_json`：输出流不是终端时只写ASCII（#26做法推广，b53 Windows正式测试发现） |

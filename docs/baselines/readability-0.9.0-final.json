@@ -17,13 +17,13 @@
   },
   "summary": {
     "source_files": 670,
-    "physical_lines": 139670,
-    "logical_lines": 120548,
+    "physical_lines": 139759,
+    "logical_lines": 120618,
     "documented_modules": 670,
-    "classes": 1281,
-    "documented_classes": 678,
-    "functions": 5617,
-    "documented_functions": 2045,
+    "classes": 1282,
+    "documented_classes": 679,
+    "functions": 5624,
+    "documented_functions": 2048,
     "public_exports": 359,
     "public_contract_types": 161,
     "undocumented_public_behavior": 0,
@@ -1619,7 +1619,7 @@
       "qualname": "ProductApp",
       "kind": "class",
       "line": 104,
-      "lines": 187,
+      "lines": 188,
       "documented": true
     },
     {
