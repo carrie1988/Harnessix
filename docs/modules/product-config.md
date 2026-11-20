@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 171
+version: 173
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - core
@@ -19,6 +19,7 @@ related_adrs:
   - docs/adr/0113-sandboxed-command-approval-and-host-escalation.md
   - docs/adr/0134-default-working-habits-and-thin-eval-template.md
   - docs/adr/0135-command-ledger-step-notices.md
+  - docs/adr/0168-host-overhead-per-model-step.md
 related_tests:
   - tests/product_config/test_closing_phase_budget.py
   - tests/product_config/test_optional_pre_edit_profile.py
@@ -127,6 +128,19 @@ related_tests:
 supersedes: []
 ---
 
+## 当前增量：产品运行时的Supervisor保有待命Owner（ADR 0168第2版D6）
+
+- [`_process_supervisor`](../../src/harnessix/product_config/action_runtime.py)在POSIX上以`standby_owner=True`构造本次产品启动
+  共享的`PosixProcessSupervisor`：每条命令交出Start帧后为下一条命令提前启动Owner，下一条命令不再等解释器启动与
+  导入（Linux评测机上约215毫秒）。命令Profile、原生命令Profile和借用该Supervisor的Git进程宿主都经过它；每次启动
+  的第一条命令仍现场启动。Windows仍每条命令现场启动Owner。
+- 批准、Lease、审计与沙箱前缀的内容和顺序不变：待命Owner不带任何一条命令的配置，读到完整的Start帧之前不创建
+  目标进程；产品配置与Action配置的Schema不变，没有新增开关。直接构造Supervisor的用途（独立Git、评测检查Profile）
+  默认不开启。细节、安全论证与三平台验证清单见[Process Runtime模块设计](processes.md)开头的增量小节与ADR 0168
+  “修订（第2版）”。
+- 测试：[`tests/benchmarks/test_command_path_bench.py`](../../tests/benchmarks/test_command_path_bench.py)在真实产品运行时上
+  核对三条命令只有第一条现场启动Owner。
+
 ## 当前增量：Seatbelt沙箱可写入macOS用户临时目录（ADR 0111第2版，Beta Issue #44）
 
 - `native_sandbox.attest_native_sandbox`在Seatbelt下把`darwin_user_temp_dir()`加入`write_roots`（`_seatbelt_user_temp`）；HOME、工作区或受保护的状态目录位于其中、或取不到该目录时不加，策略与此前相同。负责人2026-11-18选方案A。
@@ -139,6 +153,8 @@ supersedes: []
 
 - [`wrap_up.WrapUpToolView`](../../src/harnessix/product_config/wrap_up.py)：本轮记入固定收尾说明之后，`select`返回空的工具集，`admit_call`以`tool_wrap_up_requested`拒绝尚未开始、经审批边界的调用；之前照原视图（通用执行时为全部工具）。
 - `server._model_tool_view`始终安装它；`WRAP_UP_STEER`、`WRAP_UP_PROMPT`由界面直接引用。回归见`tests/product_config/test_wrap_up_stops_work.py`。
+- 没有内层视图（通用执行）时`select`只读本轮用户消息的正文，`reads_turn_in_place`为`True`：Runtime把Session中的Turn直接交给它，
+  不先深拷贝（ADR 0168）；有内层编码阶段视图时为`False`，内层视图照旧拿到独立的深拷贝。回归见`tests/agent/test_tool_view_turn.py`。
 - 第4版：收尾之后的空目录带上`WRAP_UP_NOTICE`（`ModelToolSelection.notice`），进入请求末尾的目录说明；百炼qwen3.8-flash此前约五分之一的情况下在收尾后仍连续4～6次调用工具。
 
 ## 当前增量：按配置告诉模型它是谁（Beta Issue #17）
@@ -2428,6 +2444,8 @@ Route Execute期限由固定Process Profile最大`timeout_seconds + 30`秒决定
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 173 | ADR 0168第2版D6增量 | 2026-11-18 | `action_runtime._process_supervisor`在POSIX上以`standby_owner=True`构造产品运行时的Supervisor，命令的Owner提前启动；Windows与直接构造的Supervisor不变，配置与Schema不变 |
+| 172 | ADR 0168增量 | 2026-11-16 | `wrap_up.WrapUpToolView.reads_turn_in_place`：没有内层视图时为`True`，Runtime不再为它深拷贝整个Turn；选择结果不变 |
 | 171 | `e2d758ef` 增量 | 2026-11-18 | Seatbelt沙箱的可写目录加入macOS用户临时目录（`_seatbelt_user_temp`，ADR 0111第2版，Beta Issue #44） |
 | 170 | `ef3e467e` 增量 | 2026-11-18 | `config`、`state`的JSON输出经`cli_json.print_json`，输出流不是终端时只写ASCII |
 | 169 | `3e2f83d8` 增量 | 2026-11-15 | 沙箱内与宿主Process输出改经`archive_action_output`归档：存得下时公开输出照旧带`artifact`，Artifact存储已满时改为`"artifact_omitted": "storage_full"`，结果按审计终态如实提交，本轮不再以`uncertain_effect`中断（ADR 0163） |

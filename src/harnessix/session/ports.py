@@ -6,14 +6,21 @@ from typing import Protocol
 from uuid import UUID
 
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
+from harnessix.session.append_signal import AppendSignal
 
 
 class SessionStore(Protocol):
+    appends: AppendSignal
+
     async def initialize(self) -> None: ...
 
     def runtime_owner(self) -> AbstractAsyncContextManager[None]: ...
 
     async def get_thread(self, thread_id: UUID) -> Thread: ...
+
+    async def committed_sequence(self, thread_id: UUID) -> int:
+        """已提交的最新序号，只作追加的期望序号；追加自身仍完整校验Thread并比对序号。"""
+        ...
 
     async def thread_ids(self) -> list[UUID]: ...
 

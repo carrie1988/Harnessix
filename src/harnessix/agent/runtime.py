@@ -27,11 +27,13 @@ from harnessix.agent.approvals import (
     with_rejection_reason,
 )
 from harnessix.agent.argument_normalization import normalize_proposal
+from harnessix.agent.attempt_fact_commits import AttemptFact, AttemptFactCommits
 from harnessix.agent.call_repair import fill_patch_preconditions, repair_proposal
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.cancelled_turn_notice import cancelled_turn_notice_payloads
 from harnessix.agent.compaction_calibration import calibrated_limit
 from harnessix.agent.compaction_reducer import compaction_source
+from harnessix.agent.compaction_summary_request import summary_request, summary_tool_call_error
 from harnessix.agent.completion_guard import (
     CompletionGuardMode,
     completion_guard_mode,
@@ -41,6 +43,7 @@ from harnessix.agent.completion_guard import (
 )
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
+from harnessix.agent.generation_progress import announce_compaction
 from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
@@ -124,7 +127,7 @@ from harnessix.agent.publication import (
 )
 from harnessix.agent.question_events import question_answer_events
 from harnessix.agent.reducer import get_turn, pending_calls
-from harnessix.agent.request_notes import append_request_notes, without_request_notes
+from harnessix.agent.request_notes import append_request_notes, tool_view_turn
 from harnessix.agent.runtime_configuration import (
     ensure_approval_runtime,
     select_artifact_verifier,
@@ -148,7 +151,7 @@ from harnessix.agent.session_baseline import (
     recorded_baseline,
 )
 from harnessix.agent.step_notices import append_step_notice
-from harnessix.agent.telemetry import KernelTelemetry
+from harnessix.agent.telemetry import AccountedUsage, KernelTelemetry
 from harnessix.agent.tool_call_groups import (
     require_exclusive_tool_calls,
     validate_exclusive_tool_groups,
@@ -178,14 +181,11 @@ from harnessix.agent.turn_budget_compaction import (
     STOP_ON_UNKNOWN_USAGE,
     UnknownUsagePolicy,
     covered_through_step,
-    pressure_summary_instructions,
     remaining_request_slots,
     require_context_unchanged,
     require_request_slots,
     require_reserved_unknown_usage,
     require_summary_slot,
-    summary_output_limit,
-    summary_request_item,
     summary_stamp,
     summary_stamp_bytes,
 )
@@ -263,6 +263,7 @@ from harnessix.models.contracts import (
     TextCompleted,
     TextDelta,
     TextStarted,
+    ToolArgumentsProgress,
     ToolCallCompleted,
     ToolCallRejected,
 )
@@ -373,6 +374,7 @@ class AgentRuntime:
         self._budget_pressure_compaction = budget_pressure_compaction
         # 主动压缩摘要截断后的退避点（Turn → 当时历史UTF-8字节）；仅调度用，不进入事件。
         self._compaction_backoff: dict[UUID, int] = {}
+        self._isolated_summary_turns: set[UUID] = set()
         if working_set_result_groups is not None and (
             type(working_set_result_groups) is not int or not 1 <= working_set_result_groups <= 64
         ):
@@ -842,6 +844,10 @@ class AgentRuntime:
         self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
     ) -> Thread:
         """公开检查完成后在Thread锁内CAS追加；原事件与正文不做替换。"""
+        await self._protect_payloads(turn_id, payloads)
+        return await self._append_payloads(thread_id, turn_id, payloads)
+
+    async def _protect_payloads(self, turn_id: UUID, payloads: Sequence[EventPayload]) -> None:
         if self._public_output_protection is not None:
             active = self._active.get(turn_id)
             await protect_json(
@@ -849,12 +855,17 @@ class AgentRuntime:
                 [payload.model_dump(mode="json") for payload in payloads],
                 active[1] if active else CancelToken(),
             )
+
+    async def _append_payloads(
+        self, thread_id: UUID, turn_id: UUID, payloads: Sequence[EventPayload]
+    ) -> Thread:
+        """已过公开检查的事实在Thread锁内CAS追加；期望序号取自投影行（ADR 0168 D4）。"""
         async with self._lock(thread_id):
-            thread = await self.store.get_thread(thread_id)
+            expected = await self.store.committed_sequence(thread_id)
             return await (self._batch_diffs or self.store).append(
                 thread_id,
                 [EventDraft(turn_id=turn_id, payload=p) for p in payloads],
-                expected_sequence=thread.sequence,
+                expected_sequence=expected,
             )
 
     async def _state(
@@ -1728,20 +1739,13 @@ class AgentRuntime:
         token: CancelToken,
     ) -> str:
         assert self._summary_provider is not None
-        accounted = get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage
-
-        def record_usage(thread: Thread) -> None:
-            nonlocal accounted
-            current = get_turn(thread, request.turn_id).usage
-            self._telemetry.usage(
-                Usage(
-                    input_tokens=current.input_tokens - accounted.input_tokens,
-                    output_tokens=current.output_tokens - accounted.output_tokens,
-                )
-            )
-            accounted = current
+        accounted = AccountedUsage(
+            self._telemetry,
+            get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage,
+        )
 
         await protect_request(request, self._public_output_protection, token)
+        announce_compaction(request, self._emit_delta)
         async with aclosing(self._summary_provider.stream(request, token)) as stream:
             try:
                 first = await token.run(anext(stream))
@@ -1855,7 +1859,7 @@ class AgentRuntime:
                             ) from None
                         raise
                     if isinstance(event, ModelUsageObserved):
-                        record_usage(snapshot)
+                        accounted.record(get_turn(snapshot, request.turn_id))
                         self._fault("runtime.after_compaction_usage_observed")
                     else:
                         self._fault("runtime.after_compaction_attempt_finished")
@@ -1873,7 +1877,7 @@ class AgentRuntime:
                     continue
                 if response_id is None:
                     raise KernelError("invalid_provider_output", "摘要响应尚未开始")
-                if isinstance(event, ReasoningDelta):
+                if isinstance(event, ReasoningDelta | ToolArgumentsProgress):
                     continue
                 if isinstance(event, TextStarted):
                     if content_id is not None:
@@ -1910,11 +1914,8 @@ class AgentRuntime:
                                 "context_compaction_summary_overflow", "摘要正文超过候选预留"
                             )
                         text_finished = True
-                elif isinstance(event, ToolCallCompleted):
-                    raise KernelError(
-                        "context_compaction_summary_tool_forbidden",
-                        "摘要Provider不得产生工具调用",
-                    )
+                elif isinstance(event, ToolCallCompleted | ToolCallRejected):
+                    raise summary_tool_call_error(request, event)
                 elif isinstance(event, ResponseCompleted):
                     thread = await self.store.get_thread(request.thread_id)
                     turn = get_turn(thread, request.turn_id)
@@ -2052,8 +2053,13 @@ class AgentRuntime:
         prepared_history: PreparedModelHistory,
         token: CancelToken,
         planned: PreparedCompaction | None = None,
+        *,
+        shared_prefix: bool = False,
     ) -> Thread:
-        """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。"""
+        """运行可恢复Compaction账本；摘要失败、取消和预算耗尽均先结算尝试事实。
+
+        shared_prefix：主动压缩时摘要请求沿用主请求的前缀（ADR 0167）。
+        """
         assert self._compaction is not None and self._summary_provider is not None
         budget_planned = planned is not None
         require_summary_slot(turn, allow_unknown_usage=self._unknown_usage.continues(turn))
@@ -2092,37 +2098,16 @@ class AgentRuntime:
                 remaining = current.budget.max_tokens - current.usage.total_tokens
                 if remaining <= 0:
                     raise KernelError("budget_exceeded", "摘要请求的已知Token预算耗尽")
-                source_item = summary_request_item(planned)
-                summary_instructions = (
-                    pressure_summary_instructions(SUMMARY_INSTRUCTIONS, self._compaction, planned)
-                    if budget_planned
-                    else SUMMARY_INSTRUCTIONS
-                )
-                estimated_input_tokens = _estimated_model_input_tokens(
-                    (source_item,), (), summary_instructions
-                )
-                allowed_output_tokens = min(
-                    remaining - estimated_input_tokens,
-                    (
-                        summary_output_limit(self._compaction, planned)
-                        if budget_planned
-                        else self._compaction.max_summary_output_tokens
-                    ),
-                )
-                if allowed_output_tokens <= 0:
-                    raise KernelError(
-                        "budget_exceeded",
-                        "摘要请求的保守输入与最小输出超过剩余Token预算",
-                    )
-                request = ModelRequest(
-                    thread_id=thread.thread_id,
-                    turn_id=turn.turn_id,
-                    step=model_step,
-                    history=(source_item,),
-                    tools=(),
-                    instructions=summary_instructions,
-                    budget=current.budget,
-                    remaining_tokens=allowed_output_tokens,
+                request = await summary_request(
+                    self,
+                    persisted,
+                    current,
+                    planned,
+                    model_step,
+                    token,
+                    summary_instructions=SUMMARY_INSTRUCTIONS,
+                    budget_planned=budget_planned,
+                    shared_prefix=shared_prefix,
                 )
                 # 宿主说明头与时点写在正文前并从正文预留中扣除；说明头使摘要按纯文本投影。
                 # 预算压力压缩的容量已按带说明头、无时点的单段摘要精确预付。
@@ -2300,7 +2285,7 @@ class AgentRuntime:
         if self._model_tool_view is None:
             return ModelToolSelection(available)
         selected_view = self._model_tool_view.select(
-            without_request_notes(turn),
+            tool_view_turn(self._model_tool_view, turn),
             tuple(definition.model_copy(deep=True) for definition in available),
         )
         if type(selected_view) is tuple:
@@ -3111,24 +3096,50 @@ class AgentRuntime:
         open_attempt: UUID | None = None
         attempt_response_id: str | None = None
         response_id: str | None = None
-        accounted = get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage
+        accounted = AccountedUsage(
+            self._telemetry,
+            get_turn(await self.store.get_thread(request.thread_id), request.turn_id).usage,
+        )
         unreported_reservations = 0
         unreported_attempts: list[ModelAttempt] = []
         assert request.remaining_tokens is not None
         request_reservation = estimated_input_tokens + request.remaining_tokens
 
-        def record_usage(thread: Thread) -> None:
-            nonlocal accounted
-            current = get_turn(thread, request.turn_id).usage
-            self._telemetry.usage(
-                Usage(
-                    input_tokens=current.input_tokens - accounted.input_tokens,
-                    output_tokens=current.output_tokens - accounted.output_tokens,
+        def attempt_fact_durable(fact: AttemptFact, snapshot: Thread) -> None:
+            nonlocal attempt_mode, open_attempt, attempt_response_id, unreported_reservations
+            if isinstance(fact, ModelAttemptStarted):
+                attempt_mode = True
+                open_attempt = fact.attempt_id
+                attempt_response_id = None
+                # 提交后才继续消费：Provider 必须在下次 anext 才发起 HTTP。
+                self._fault("runtime.after_model_attempt_started")
+            elif isinstance(fact, ModelUsageObserved):
+                attempt_response_id = fact.response_id or attempt_response_id
+                accounted.record(get_turn(snapshot, request.turn_id))
+                self._fault("runtime.after_model_usage_observed")
+            else:
+                open_attempt = None
+                attempt = next(
+                    attempt
+                    for attempt in get_turn(snapshot, request.turn_id).model_attempts
+                    if attempt.attempt_id == fact.attempt_id
                 )
-            )
-            accounted = current
+                if attempt.usage.completeness != "complete":
+                    known_tokens = (attempt.usage.input_tokens or 0) + (
+                        attempt.usage.output_tokens or 0
+                    )
+                    unreported_reservations += max(0, request_reservation - known_tokens)
+                    unreported_attempts.append(attempt)
+                self._fault("runtime.after_model_attempt_finished")
 
-        async with aclosing(texts.watch(self.provider.stream(request, token))) as stream:
+        # 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（ADR 0168 D3）。
+        facts = AttemptFactCommits(
+            lambda payloads: self._protect_payloads(request.turn_id, payloads),
+            lambda payloads: self._append_payloads(request.thread_id, request.turn_id, payloads),
+            attempt_fact_durable,
+        )
+        events = facts.flushing(texts.watch(self.provider.stream(request, token)))
+        async with aclosing(events) as stream:
             while True:
                 token.checkpoint()
                 try:
@@ -3140,6 +3151,7 @@ class AgentRuntime:
                 event_count += 1
                 if event_count > 10000:
                     raise KernelError("provider_event_limit", "模型步骤事件数超过上限")
+                await facts.before(event)
                 if isinstance(
                     event, ModelAttemptStarted | ModelUsageObserved | ModelAttemptFinished
                 ):
@@ -3176,38 +3188,7 @@ class AgentRuntime:
                         and event.response_id != response_id
                     ):
                         raise KernelError("invalid_provider_output", "用量响应身份与当前响应不一致")
-                    try:
-                        snapshot = await self._commit(request.thread_id, request.turn_id, [event])
-                    except KernelError as error:
-                        if error.code == "invalid_event":
-                            raise KernelError(
-                                "invalid_provider_output", "模型尝试事实不符合契约"
-                            ) from None
-                        raise
-                    if isinstance(event, ModelAttemptStarted):
-                        attempt_mode = True
-                        open_attempt = event.attempt_id
-                        attempt_response_id = None
-                        # 提交后才继续消费：Provider 必须在下次 anext 才发起 HTTP。
-                        self._fault("runtime.after_model_attempt_started")
-                    elif isinstance(event, ModelUsageObserved):
-                        attempt_response_id = event.response_id or attempt_response_id
-                        record_usage(snapshot)
-                        self._fault("runtime.after_model_usage_observed")
-                    else:
-                        open_attempt = None
-                        attempt = next(
-                            attempt
-                            for attempt in get_turn(snapshot, request.turn_id).model_attempts
-                            if attempt.attempt_id == event.attempt_id
-                        )
-                        if attempt.usage.completeness != "complete":
-                            known_tokens = (attempt.usage.input_tokens or 0) + (
-                                attempt.usage.output_tokens or 0
-                            )
-                            unreported_reservations += max(0, request_reservation - known_tokens)
-                            unreported_attempts.append(attempt)
-                        self._fault("runtime.after_model_attempt_finished")
+                    await facts.record(event)
                     continue
                 if isinstance(event, ResponseFailed):
                     raise KernelError(
@@ -3243,11 +3224,8 @@ class AgentRuntime:
                     if not texts.all_completed:
                         raise KernelError("invalid_provider_output", "响应结束时文本块尚未完成")
                     try:
-                        snapshot = await self._commit(
-                            request.thread_id,
-                            request.turn_id,
-                            [UsageRecorded(step=request.step, usage=event.usage)],
-                        )
+                        terminal = UsageRecorded(step=request.step, usage=event.usage)
+                        snapshot = await facts.commit_with_terminal(terminal)
                     except KernelError as error:
                         if attempt_mode and error.code == "invalid_event":
                             raise KernelError(
@@ -3255,7 +3233,7 @@ class AgentRuntime:
                             ) from None
                         raise
                     if not attempt_mode:
-                        record_usage(snapshot)
+                        accounted.record(get_turn(snapshot, request.turn_id))
                     recovery = settle_reply(event, call_ids, texts, self._recover_truncated_replies)
                     completed = event
                 else:

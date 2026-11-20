@@ -262,6 +262,13 @@ W2（Windows沙箱外PowerShell命令，2026-11-10用户决定）让`native_proc
 宽限判断与事件等待时长放在模块级函数`_in_grace`、`_wait_ms`中，类内只增加待审批首次出现时间这一项状态和一个判断：
 `ThinAgentCLI`（294）、`_answer_pending`（79行，复杂度25）按实测登记。
 
+宿主每步开销优化（O4a，[ADR 0168](../adr/0168-host-overhead-per-model-step.md)）登记两处增长：
+- `context/tool_result_view.py`（602行，新列入超大文件）：ADR 0155的逐项复用把从头准备拆成按内容指纹记忆的逐项函数，
+  在原分支上不到600行；主线为整仓Glob输出加的多行导入与识别分支（+6）与之叠加后超出。把这些逐项函数移到`model_view_memo.py`
+  会让两个模块互相导入，留到P2-5“拆分超大模块”与`compaction_window`一起整理。
+- `processes/supervisor.py`（728→729）：回执轮询改为从1毫秒起加倍，间隔序列放在新模块`receipt_polling.py`，
+  Supervisor只多一行导入；两处轮询循环的行数不变。
+
 这些增长发生在门禁失效期间，没有逐项评审，是事实上已经存在的结构债务。本次把预算更新到当前值，让门禁重新生效，
 此后任何继续增长都会失败。偿还计划列入发布清单P2-5：优先拆分`AgentRuntime`和`coding_tool_view.py`，
 并解除`delivery`、`product_config`、`trusted_actions`之间的循环依赖。

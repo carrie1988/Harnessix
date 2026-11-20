@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -9,13 +10,21 @@ from uuid import uuid4
 
 import pytest
 
+from harnessix.context import tool_result_view
+from harnessix.context.model_view_memo import ModelViewMemo
 from harnessix.protocol.contracts import (
     PublicEvent,
     PublicUsage,
     TurnStatePublicEvent,
     UsagePublicEvent,
 )
-from scripts.host_step_overhead_bench import PHASES, format_report, run_benchmark, step_timings
+from scripts.host_step_overhead_bench import (
+    PHASES,
+    ClockedScriptedProvider,
+    format_report,
+    run_benchmark,
+    step_timings,
+)
 
 _START = datetime(2026, 11, 11, tzinfo=UTC)
 _THREAD, _TURN = uuid4(), uuid4()
@@ -102,3 +111,62 @@ async def test_one_tool_cycle_runs_on_the_product_runtime_and_times_every_step(
     assert report.session_bytes > 0
     patched = (tmp_path / "workspace" / "inventory" / "warehouse_07.py").read_text("utf-8")
     assert "# patched-07-07" in patched and "# marker-07-07" not in patched
+
+
+def _serialized(prepared: tool_result_view.PreparedModelHistory) -> str:
+    return json.dumps(
+        [
+            [item.model_dump_json() for item in prepared.history],
+            prepared.inspection.model_dump_json(),
+            [decision.model_dump_json() for decision in prepared.new_decisions],
+            [
+                [str(ref.call_id), ref.binding.model_dump_json(), ref.omitted_field]
+                for ref in prepared.references
+            ],
+        ]
+    )
+
+
+@pytest.mark.skipif(os.name != "posix", reason="外部边界命令Profile只在POSIX上可用")
+async def test_reused_model_view_equals_from_scratch_at_every_call_of_a_product_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """模型请求的历史与模型历史事件都取自这一个函数的返回值：每次调用都用同一份输入再逐项重算
+    一遍并逐字节比对，再核对每个出站请求的历史就是某次逐项重算的结果。两次独立运行的ID与时间戳
+    不同，无法直接逐字节比对。"""
+    reused_memo = ModelViewMemo()
+    monkeypatch.setattr(tool_result_view, "_MEMO", reused_memo)
+    original = tool_result_view.prepare_model_history_items
+    compared: list[int] = []
+    different: list[int] = []
+    scratch_histories: set[str] = set()
+    sent_histories: list[str] = []
+
+    def both(*args: object, **kwargs: object) -> tool_result_view.PreparedModelHistory:
+        reused = original(*args, **kwargs)
+        with monkeypatch.context() as patch:
+            patch.setattr(tool_result_view, "_MEMO", ModelViewMemo(max_entries=0))
+            scratch = original(*args, **kwargs)
+        compared.append(len(reused.history))
+        if reused != scratch or _serialized(reused) != _serialized(scratch):
+            different.append(len(compared))
+        scratch_histories.add(json.dumps([item.model_dump_json() for item in scratch.history]))
+        return reused
+
+    send = ClockedScriptedProvider.stream
+
+    def recording_stream(self, request, cancel):  # type: ignore[no-untyped-def]
+        sent_histories.append(json.dumps([item.model_dump_json() for item in request.history]))
+        return send(self, request, cancel)
+
+    monkeypatch.setattr(tool_result_view, "prepare_model_history_items", both)
+    monkeypatch.setattr(ClockedScriptedProvider, "stream", recording_stream)
+
+    report = await run_benchmark(tmp_path, steps=9)
+
+    assert report.valid, format_report(report)
+    assert different == []
+    assert len(sent_histories) == 10 and set(sent_histories) <= scratch_histories
+    # 每个模型步骤三次：准备、提交前复核、Reducer核对；共九个工具步骤加一个收尾步骤。
+    assert len(compared) >= 30 and max(compared) > 20
+    assert len(reused_memo) > 20

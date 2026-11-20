@@ -6,6 +6,9 @@
 工具名，没有内容。每个模型步骤用确定的条目身份和独立序号，客户端据此与正文、思考预览区分。
 同一步骤的请求失败后自动重试时，这一行还带上第几次尝试与上次失败的类别（只有固定的几个词），
 界面据此说明为什么还在等（Beta Issue #11）。
+
+压缩较早的对话时，摘要请求开始前用另一个条目身份发布一行（ADR 0167）：此时Turn处于准备上下文，
+界面据此写“正在压缩较早的对话”，而不是笼统的“准备中”。
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ from harnessix.agent.usage import ModelAttemptFinished, ModelAttemptStarted
 from harnessix.models.contracts import ModelRequest, ProviderEvent, ToolArgumentsProgress
 
 GENERATION_PROGRESS_VERSION: Final = "harnessix.generation-progress/v1"
+COMPACTION_PROGRESS_VERSION: Final = "harnessix.compaction-progress/v1"
 PROGRESS_INTERVAL_SECONDS: Final = 1.0
 _UNKNOWN_TOOL: Final = "-"
 # 失败尝试的错误码到公开的类别；只发布类别，不发布原始错误。
@@ -37,6 +41,12 @@ def generation_progress_item_id(turn_id: UUID, model_step: int) -> UUID:
     """某轮某步生成进度流的稳定身份；客户端据此区分进度与正文、思考预览。"""
 
     return uuid5(turn_id, f"{GENERATION_PROGRESS_VERSION}:{model_step}")
+
+
+def compaction_progress_item_id(turn_id: UUID, model_step: int) -> UUID:
+    """某轮某步之前压缩摘要请求的进度流身份；与该步主请求的进度流区分。"""
+
+    return uuid5(turn_id, f"{COMPACTION_PROGRESS_VERSION}:{model_step}")
 
 
 class GenerationCounts(NamedTuple):
@@ -163,3 +173,18 @@ class GenerationProgress:
                 delta=counts.line(),
             )
         )
+
+
+def announce_compaction(request: ModelRequest, emit: Callable[[ItemDelta], None]) -> None:
+    """压缩摘要请求开始：发布一行压缩进度（ADR 0167），界面据此说明正在压缩较早的对话。"""
+
+    emit(
+        ItemDelta(
+            thread_id=request.thread_id,
+            turn_id=request.turn_id,
+            item_id=compaction_progress_item_id(request.turn_id, request.step),
+            model_step=request.step,
+            stream_sequence=1,
+            delta=GenerationCounts().line(),
+        )
+    )

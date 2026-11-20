@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 
 import httpx2
 
 from harnessix.models._anthropic_stream import validate_event
-from harnessix.models._bounded_http import BoundedStream, InvalidWireData
+from harnessix.models._bounded_http import TRANSFER_ACTIVITY, BoundedStream, InvalidWireData
 from harnessix.models._json import strict_json
 from harnessix.models.config import AnthropicConfig
 
@@ -42,8 +42,16 @@ class MessageFrames:
 
 
 class AnthropicByteStream(httpx2.AsyncByteStream):
-    def __init__(self, source: httpx2.AsyncByteStream, config: AnthropicConfig) -> None:
-        self._bounded = BoundedStream(source, config, validate_frame=MessageFrames().validate)
+    def __init__(
+        self,
+        source: httpx2.AsyncByteStream,
+        config: AnthropicConfig,
+        *,
+        on_receive: Callable[[], None] | None = None,
+    ) -> None:
+        self._bounded = BoundedStream(
+            source, config, validate_frame=MessageFrames().validate, on_receive=on_receive
+        )
 
     def __aiter__(self) -> AsyncIterator[bytes]:
         return self._bounded.__aiter__()
@@ -58,6 +66,9 @@ class AnthropicTransport(httpx2.AsyncBaseTransport):
         self._config = config
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
+        activity = TRANSFER_ACTIVITY.get()
+        if activity is not None:
+            activity()
         response = await self._inner.handle_async_request(request)
         if response.headers.get("content-encoding", "identity").lower() != "identity":
             await response.aclose()
@@ -65,7 +76,7 @@ class AnthropicTransport(httpx2.AsyncBaseTransport):
         if not isinstance(response.stream, httpx2.AsyncByteStream):
             await response.aclose()
             raise InvalidWireData("响应不是异步流")
-        response.stream = AnthropicByteStream(response.stream, self._config)
+        response.stream = AnthropicByteStream(response.stream, self._config, on_receive=activity)
         return response
 
     async def aclose(self) -> None:

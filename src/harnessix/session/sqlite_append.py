@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Protocol
 from uuid import UUID
 
 import aiosqlite
+from pydantic import ValidationError
 
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import AgentEvent, EventDraft, Thread
@@ -23,7 +24,6 @@ class AppendStore(Protocol):
     _fault: Callable[[str], None]
 
     async def _snapshot(self, database: aiosqlite.Connection, thread_id: UUID) -> Thread | None: ...
-    def _parse_event(self, row: aiosqlite.Row) -> AgentEvent: ...
     async def _save(
         self,
         database: aiosqlite.Connection,
@@ -32,6 +32,34 @@ class AppendStore(Protocol):
         prefix: str | None = None,
         history_bytes: int | None = None,
     ) -> None: ...
+
+
+def parse_event_row(row: aiosqlite.Row) -> AgentEvent:
+    """解析无认证Store的事件行；结构或版本不支持、载荷与索引不一致都按事件损坏失败。"""
+    try:
+        event = AgentEvent.model_validate_json(row["event_json"])
+    except ValidationError:
+        raise KernelError("event_corrupt", "事件结构损坏或版本不支持") from None
+    if (
+        str(event.thread_id) != row["thread_id"]
+        or event.sequence != row["sequence"]
+        or str(event.event_id) != row["event_id"]
+    ):
+        raise KernelError("event_corrupt", "事件载荷与索引不一致")
+    return event
+
+
+def freeze_batch(drafts: Sequence[EventDraft]) -> tuple[EventDraft, ...]:
+    """先做值拷贝，冻结调用方可能持有的嵌套arguments；空批次与重复事件ID不符合契约。"""
+    try:
+        batch = tuple(
+            EventDraft.model_validate_json(d.model_dump_json(warnings="error")) for d in drafts
+        )
+    except ValueError:
+        raise KernelError("invalid_batch", "事件批次不符合契约") from None
+    if not batch or len({d.event_id for d in batch}) != len(batch):
+        raise KernelError("invalid_batch", "事件批次为空或包含重复 ID")
+    return batch
 
 
 async def append_in_transaction(
@@ -57,7 +85,7 @@ async def append_in_transaction(
             if store._publication is not None:
                 _, event, _ = await verified_event(database, store._publication, row)
             else:
-                event = store._parse_event(row)
+                event = parse_event_row(row)
             stored = EventDraft.model_validate(event.model_dump(exclude={"thread_id", "sequence"}))
             if stored != draft or event.thread_id != thread_id:
                 raise KernelError("event_conflict", "同一事件 ID 已绑定不同载荷")

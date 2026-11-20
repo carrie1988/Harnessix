@@ -8,10 +8,11 @@ from pathlib import Path
 import httpx
 import pytest
 
+from harnessix.agent.compaction_summary_request import SHARED_PREFIX_SUMMARY_NOTE
 from harnessix.agent.models import Budget, TextContent, ToolCallContent, Usage
 from harnessix.agent.ports import ModelToolSelection
 from harnessix.agent.reducer import replay
-from harnessix.agent.runtime import SUMMARY_INSTRUCTIONS, AgentRuntime
+from harnessix.agent.runtime import AgentRuntime
 from harnessix.context.compaction_contracts import CompactionPolicy
 from harnessix.context.compaction_projection import SUMMARY_PROJECTION_HEADER
 from harnessix.context.compaction_runtime_contracts import CompactionRuntimeConfig
@@ -415,7 +416,11 @@ async def test_trigger_summaries_are_stamped_with_the_covered_main_step(tmp_path
             "later messages are newer and override it.]\n"
         )
         stamps.append((through, before))
-        assert request.instructions == SUMMARY_INSTRUCTIONS
+        # 主动压缩沿用上一次主请求的前缀，末尾一条宿主说明（ADR 0167）。
+        previous = main.requests[before - 2]
+        assert request.instructions == previous.instructions
+        assert request.history[: len(previous.history)] == previous.history
+        assert request.history[-1].content.text == SHARED_PREFIX_SUMMARY_NOTE
         projected = [
             item.content.text.removeprefix(SUMMARY_PROJECTION_HEADER)
             for item in main.requests[before - 1].history

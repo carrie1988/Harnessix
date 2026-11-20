@@ -8,7 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from harnessix.agent.generation_progress import generation_progress_item_id
+from harnessix.agent.generation_progress import (
+    compaction_progress_item_id,
+    generation_progress_item_id,
+)
 from harnessix.agent.reasoning_preview import reasoning_item_id
 from harnessix.protocol.contracts import EventsNextResult
 
@@ -28,6 +31,7 @@ class PreviewStreams:
             for wanted, identity in (
                 (self.reasoning, reasoning_item_id),
                 (self.progress, generation_progress_item_id),
+                (self.progress, compaction_progress_item_id),
             )
             if not wanted
         ]

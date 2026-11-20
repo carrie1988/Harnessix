@@ -57,6 +57,11 @@ class WrapUpToolView:
 
     inner: ModelToolView | None = None
 
+    @property
+    def reads_turn_in_place(self) -> bool:
+        """没有内层视图时select只读本轮用户消息的正文，Runtime不必先深拷贝Turn（ADR 0168）。"""
+        return self.inner is None
+
     def select(
         self, turn: Turn, definitions: tuple[ToolDescriptor, ...]
     ) -> ModelToolSelection | tuple[ToolDescriptor, ...]:

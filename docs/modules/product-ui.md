@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 78
+version: 80
 code_revision: 1db45d3c93e42f25ad0ce6a22c675d170a2277b2
 owners:
   - product
@@ -43,6 +43,18 @@ supersedes: []
 ---
 
 # Product UI终端产品模块设计
+
+## 当前增量：压缩较早的对话时写明在做什么（ADR 0167）
+
+- [`projection.apply_item_delta`](../../src/harnessix/product_ui/projection.py)识别压缩进度（`TransientItemStream.compaction`）。它只在准备上下文期间保留，开始调用模型后清除；主请求的生成估算不读它。
+- [`generation_estimate.compacting`](../../src/harnessix/product_ui/generation_estimate.py)为真时，运行提示写“⠹ 正在压缩较早的对话 · 已用时 40 秒 · 已运行 …”，秒数从压缩开始算起；底栏的进展写“正在压缩较早的对话”。此前两处都只有“准备中”，一次压缩要等几十秒到几分钟。
+- 回归见`tests/agent/test_compaction_progress.py`。
+
+## 当前增量：服务端攒工具参数时说明已用时（ADR 0166）
+
+- [`generation_estimate.in_flight_request`](../../src/harnessix/product_ui/generation_estimate.py)：进度行带工具名、参数还是0字节时也给出阶段（“正在生成修改内容”/“正在生成操作内容”）；还没有任何输出时`label`只写阶段，不写Token估算。工具调用已开始、参数不超过`HELD_BACK_PREFIX_BYTES`（64字节）时`arguments_held_back`为真。
+- [`activity_indicator`](../../src/harnessix/product_ui/activity_indicator.py)：进度5秒没有变化且`arguments_held_back`时，运行提示写“正在生成修改内容 · 已用时 48 秒，模型服务写完才会返回”，秒数从进入这一阶段算起（`_phase_at`）。参数已经逐段到达后停住、以及思考或回复阶段，仍写“模型服务 N 秒未返回新内容”。
+- 原因：vLLM、百炼的Qwen工具解析只先发出工具名与`{"files": `，写完才整段发出补丁内容；O1之后这属于正常情况，原文案把它说成了异常。回归见`tests/agent/test_generation_progress.py::test_the_tui_names_the_phase_and_estimates_what_was_generated`。
 
 ## 当前增量：管道里的JSON输出只写ASCII（Beta Issue #26的做法推广）
 
@@ -157,7 +169,7 @@ supersedes: []
   底栏（[`main_view.py`](../../src/harnessix/product_ui/main_view.py)）的进展换成同一阶段，用量为“本轮 约 38,000 tokens”，费用为“费用≈¥…”（`CostUpperBound.text(estimated=True)`）。
   请求结束后换回服务商报回的用量与“≤”。估算值只保留两到三位有效数字。没有进度流时（服务端不支持）界面与此前完全相同。
 - **没有新进度时**：估算连续5秒（`SILENCE_NOTICE_SECONDS`）没有变化，运行提示改为“正在生成修改内容 · 模型服务 18 秒未返回新内容”，
-  秒数随定时器增加；有新进度后恢复。实测百炼在补丁内容生成完之前不返回任何片段，这段时间显示的就是这一行。
+  秒数随定时器增加；有新进度后恢复。服务端在攒工具参数时（百炼、vLLM在补丁内容生成完之前不返回任何片段）改写这一阶段已用时，见ADR 0166。
 - 握手：[`session.py`](../../src/harnessix/product_ui/session.py)以`generation_progress=True`创建`AgentClient`。
 - 回归见`tests/agent/test_generation_progress.py`。详见[ADR 0156](../adr/0156-generation-progress-and-live-usage-estimate.md)。
 
@@ -1305,6 +1317,8 @@ CLI只传递CAS前提，不读取或覆盖活动数据库；最终原子性由Se
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 80 | ADR 0167增量 | 2026-11-17 | 压缩较早的对话时运行提示与底栏写“正在压缩较早的对话”和已用时（`projection`的`TransientItemStream.compaction`、`generation_estimate.compacting`） |
+| 79 | ADR 0166增量 | 2026-11-17 | 服务端攒工具参数时进度行带工具名，参数0字节也显示阶段；运行提示写“已用时N秒，模型服务写完才会返回”（`arguments_held_back`） |
 | 78 | `ef3e467e` 增量 | 2026-11-18 | `data`、`code doctor --json`与错误说明经`cli_json.print_json`：输出流不是终端时只写ASCII（#26做法推广，b53 Windows正式测试发现） |
 | 77 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断的宿主说明显示为一行“提示” |
 | 76 | `3aa6c0da` 增量 | 2026-11-18 | 暖刷新保留“模型请求中途结束”，生成中取消后费用栏与重新打开一致（`projection._carry_interruption`，Beta Issue #42） |

@@ -105,11 +105,21 @@ def request_note_ids(turn_id: UUID, item_ids: Iterable[UUID]) -> frozenset[UUID]
     return frozenset(found)
 
 
-def without_request_notes(turn: Turn) -> Turn:
-    """给工具视图的独立副本：说明不是用户的新输入，不应改变视图对“最近一次用户输入”的判断。"""
+def without_request_notes(turn: Turn, *, detached: bool = True) -> Turn:
+    """给工具视图的Turn：说明不是用户的新输入，不应改变视图对“最近一次用户输入”的判断。
+
+    默认是独立的深拷贝；detached为False时是共享其余对象的浅副本，只能交给不修改、不保留它的读取方。
+    """
     notes = request_note_ids(turn.turn_id, (item.item_id for item in turn.items))
     kept = tuple(item for item in turn.items if item.item_id not in notes)
-    return turn.model_copy(update={"items": kept}).model_copy(deep=True)
+    visible = turn.model_copy(update={"items": kept})
+    return visible.model_copy(deep=True) if detached else visible
+
+
+def tool_view_turn(view: ModelToolView, turn: Turn) -> Turn:
+    """交给视图select的Turn：只有声明reads_turn_in_place为True的视图拿浅副本（ADR 0168）。"""
+    in_place = getattr(view, "reads_turn_in_place", False) is True
+    return without_request_notes(turn, detached=not in_place)
 
 
 def calls_left(turn: Turn) -> int:

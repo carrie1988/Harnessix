@@ -14,7 +14,12 @@ from harnessix.product_ui.activity_indicator import ActivityIndicator
 from harnessix.product_ui.controller import ControllerPhase, ProductControllerState
 from harnessix.product_ui.cost_estimate import cost_upper_bound
 from harnessix.product_ui.errors import ProductUIError
-from harnessix.product_ui.generation_estimate import InFlightRequest, approximate, in_flight_request
+from harnessix.product_ui.generation_estimate import (
+    InFlightRequest,
+    approximate,
+    compacting,
+    in_flight_request,
+)
 from harnessix.product_ui.interactions import (
     ACTIVE_TURN_STATES,
     UsageCostView,
@@ -61,6 +66,8 @@ def _activity_text(state: ProductControllerState) -> str:
     in_flight = in_flight_request(state.thread_view)
     if in_flight is not None:
         return in_flight.phase_label
+    if compacting(state.thread_view):
+        return "正在压缩较早的对话"
     return turn_status_label(turn.status) + _STATUS_KEYS.get(turn.status, "")
 
 

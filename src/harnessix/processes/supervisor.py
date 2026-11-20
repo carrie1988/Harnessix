@@ -33,6 +33,13 @@ from harnessix.processes.owner_protocol import (
     protected_owner_start,
 )
 from harnessix.processes.owner_receipt import OwnerReceipt, read_owner_receipt
+from harnessix.processes.owner_standby import (
+    OwnerStandby,
+    deliver_owner_start,
+    spawn_posix_owner,
+    spawn_standby_owner,
+)
+from harnessix.processes.receipt_polling import receipt_poll_delays
 from harnessix.processes.receipt_projection import (
     lease_changes_from_receipt,
     read_terminal_owner_receipt,
@@ -133,7 +140,7 @@ class SupervisedProcess:
             return self._apply_receipt(receipt)
 
     async def wait(self, cancel: CancelToken | None = None) -> ProcessLease:
-        cancellation_sent = False
+        cancellation_sent, delays = False, receipt_poll_delays(0.02)
         try:
             while self._lease.state not in _TERMINAL_STATES:
                 if cancel is not None and cancel.cancelled and not cancellation_sent:
@@ -141,7 +148,7 @@ class SupervisedProcess:
                     await self.stop("cancelled")
                 await self.refresh()
                 if self._lease.state not in _TERMINAL_STATES:
-                    await asyncio.sleep(0.02)
+                    await asyncio.sleep(next(delays))
         except asyncio.CancelledError:
             await self.stop("cancelled")
             await asyncio.shield(self._wait_terminal())
@@ -304,6 +311,8 @@ class _ProcessObservation:
     _store: SQLiteProcessLeaseStore
     _handles: dict[UUID, SupervisedProcess]
     _runs: Path
+    # 只有显式开启的POSIX Supervisor保有待命Owner（ADR 0168 D6）；其余每条命令现场启动Owner。
+    _standby: OwnerStandby | None = None
 
     def status(self, process_id: UUID) -> ProcessLease:
         """只读返回持久Lease；不会刷新Owner、发送信号或改变状态。"""
@@ -335,7 +344,9 @@ class PosixProcessSupervisor(_ProcessObservation):
         *,
         terminate_grace_seconds: float = 0.5,
         output_redaction: OutputRedactionSource | None = None,
+        standby_owner: bool = False,
     ) -> None:
+        """standby_owner为真时为下一条命令预先启动Owner（ADR 0168 D6），供连续执行命令的宿主用。"""
         if os.name != "posix":
             raise KernelError("process_platform_unsupported", "POSIX Process Supervisor不可用")
         if not 0 <= terminate_grace_seconds <= 5:
@@ -348,6 +359,11 @@ class PosixProcessSupervisor(_ProcessObservation):
         self._platform: Literal["posix", "windows"] = "posix"
         self._capability = probe_posix_process_capability()
         self._handles: dict[UUID, SupervisedProcess] = {}
+        if standby_owner:
+            self._standby = OwnerStandby(
+                lambda: spawn_standby_owner(self._root, self._runs),
+                lambda: self._probe_capability().digest,
+            )
         self._closed = False
 
     @property
@@ -496,26 +512,16 @@ class PosixProcessSupervisor(_ProcessObservation):
             raise KernelError("process_launch_failed", "Process owner状态目录创建失败") from None
         starting = _validated_lease(lease, state="starting", sequence=1)
         self._store.transition(lease, starting)
-        read_fd = write_fd = -1
-        owner: subprocess.Popen[bytes] | None = None
         try:
-            read_fd, write_fd = os.pipe()
-            owner = await asyncio.to_thread(self._spawn_owner, read_fd, run_directory)
-            os.close(read_fd)
-            read_fd = -1
-            body = owner_request.model_dump_json(warnings="error").encode("utf-8") + b"\n"
-            await asyncio.to_thread(SupervisedProcess._write_all, write_fd, body)
+            launch = await deliver_owner_start(
+                self._standby,
+                self._capability.digest,
+                lambda read_fd: self._spawn_owner(read_fd, run_directory),
+                SupervisedProcess._write_all,
+                owner_request.model_dump_json(warnings="error").encode("utf-8") + b"\n",
+            )
         except Exception:
             # 普通启动异常已完成；等待取消不证明后台 spawn 结束，不能落 failed。
-            if owner is not None:
-                owner.kill()
-                await asyncio.to_thread(owner.wait)
-            for descriptor in (read_fd, write_fd):
-                if descriptor >= 0:
-                    try:
-                        os.close(descriptor)
-                    except OSError:
-                        pass
             failed = _validated_lease(
                 starting,
                 state="failed",
@@ -525,21 +531,22 @@ class PosixProcessSupervisor(_ProcessObservation):
             )
             self._store.transition(starting, failed)
             raise KernelError("process_launch_failed", "Process owner启动失败") from None
-        assert owner is not None
+        if self._standby is not None:
+            self._standby.prepare()  # 为下一条命令预先启动Owner；本条命令不等它
         handle = SupervisedProcess(
             self._store,
             starting,
             run_directory,
             owner_identity,
-            control_fd=write_fd,
-            owner=owner,
+            control_fd=launch.control_fd,
+            owner=launch.owner,
         )
         self._handles[spec.process_id] = handle
-        for _ in range(500):
+        for delay in receipt_poll_delays(0.01, limit=500):
             await handle.refresh()
             if handle.lease.state != "starting":
                 return handle
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(delay)
         await handle.stop("closed")
         await handle.wait()
         raise KernelError("process_launch_failed", "Process owner未在时限内报告启动结果")
@@ -551,25 +558,7 @@ class PosixProcessSupervisor(_ProcessObservation):
         return _materialize_argv(spec)
 
     def _spawn_owner(self, read_fd: int, run_directory: Path) -> subprocess.Popen[bytes]:
-        return subprocess.Popen(
-            (
-                sys.executable,
-                "-m",
-                "harnessix.processes.posix_owner",
-                "--control-fd",
-                str(read_fd),
-                "--run-directory",
-                str(run_directory),
-            ),
-            cwd=self._root,
-            env={"PATH": "/usr/bin:/bin", "LANG": "C", "LC_ALL": "C"},
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            close_fds=True,
-            pass_fds=(read_fd,),
-            start_new_session=True,
-        )
+        return spawn_posix_owner(self._root, read_fd, "--run-directory", str(run_directory))
 
     async def run(
         self,
@@ -627,6 +616,8 @@ class PosixProcessSupervisor(_ProcessObservation):
         if self._closed:
             return
         self._closed = True
+        if self._standby is not None:
+            await self._standby.aclose()
         handles = tuple(self._handles.values())
         if handles:
             await asyncio.gather(*(handle.aclose() for handle in handles))

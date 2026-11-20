@@ -1,21 +1,29 @@
 """进程内的Thread投影解析缓存（ADR 0133）：原字节没有变化时不重复解析同一份投影。
 
-职责：按Thread记住最近一份“原字节SHA-256与投影版本→已解析并通过内容校验的Thread”。
+职责：按Thread记住最近一份“原字节SHA-256与投影版本→已解析并通过内容校验的Thread”；追加提交成功后，
+用写入方刚归约出的Thread预填这一份，提交后的第一次读取不再解析（ADR 0168 D1）。
 非职责：不读数据库、不验证签名或摘要、不判断投影是否可信、不落盘。每次读取仍由调用方取回原行、
 重算摘要并完成全部存储侧校验；只有调用方本次算出的摘要与版本都与记录相同时才复用解析结果。
 """
 
 from __future__ import annotations
 
+import logging
 from collections import OrderedDict
 from dataclasses import dataclass
 from uuid import UUID
 
+from harnessix.agent.errors import KernelError
 from harnessix.agent.models import Thread
 from harnessix.agent.tool_rejections import require_closed_rejections
+from harnessix.session.projection_identity import identical
 from harnessix.session.store_publication import require_projection_content_version
 
 MAX_CACHED_THREADS = 16
+# 每个缓存的第1次及此后每第N次预填，先真正解析提交的原字节，再与写入方的Thread逐层比较
+# （ADR 0168 D1）。
+PREFILL_CHECK_EVERY = 16
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +33,15 @@ class _ParsedProjection:
     thread: Thread
 
 
+@dataclass(frozen=True, slots=True)
+class WrittenProjection:
+    """写入事务写下的投影原文及其SHA-256与投影版本；摘要就是行内摘要与签名检查点所记的那个。"""
+
+    encoded: str
+    snapshot_sha256: str
+    projection_version: int
+
+
 class ParsedProjectionCache:
     """单个Store实例内的解析结果；每个Thread只留最近一份，超过上限淘汰最久未用的Thread。
 
@@ -32,9 +49,16 @@ class ParsedProjectionCache:
     JSON容器。
     """
 
-    def __init__(self, max_threads: int = MAX_CACHED_THREADS) -> None:
+    def __init__(
+        self, max_threads: int = MAX_CACHED_THREADS, *, check_every: int | None = None
+    ) -> None:
         self._max_threads = max_threads
         self._entries: OrderedDict[UUID, _ParsedProjection] = OrderedDict()
+        self._written: OrderedDict[UUID, tuple[Thread, WrittenProjection]] = OrderedDict()
+        self._check_every = PREFILL_CHECK_EVERY if check_every is None else check_every
+        self.prefills = 0
+        self.prefill_checks = 0
+        self.prefill_mismatches = 0
 
     def parsed(
         self, thread_id: UUID, snapshot_sha256: str, projection_version: int
@@ -58,6 +82,54 @@ class ParsedProjectionCache:
         self._entries.move_to_end(thread_id)
         while len(self._entries) > self._max_threads:
             self._entries.popitem(last=False)
+
+    def stage_written(self, thread: Thread, written: WrittenProjection) -> None:
+        """写入事务内记下刚写入的投影；提交成功之前不供读取，同一Thread只留最近一份。"""
+        self._written[thread.thread_id] = (thread, written)
+        self._written.move_to_end(thread.thread_id)
+        while len(self._written) > self._max_threads:
+            self._written.popitem(last=False)
+
+    def confirm_written(self, thread: Thread) -> None:
+        """提交成功后用写入方的Thread预填这份原字节的解析结果，提交后的第一次读取不再解析。
+
+        只预填与这次提交写入同一对象的记录。依据是“解析写入的原字节得到的Thread与写入方的Thread逐层
+        相同”；抽样核对发现不同时不预填、清掉该Thread的记录、记一条诊断，并在本缓存的余下生命周期内
+        停止预填，之后的读取都从原字节解析。
+        """
+        staged = self._written.pop(thread.thread_id, None)
+        if staged is None or staged[0] is not thread or self.prefill_mismatches:
+            return
+        written = staged[1]
+        ordinal = self.prefills
+        self.prefills += 1
+        if ordinal % self._check_every == 0:
+            self.prefill_checks += 1
+            if not _round_trips(thread, written):
+                self._stop_prefilling(thread)
+                return
+        self.record(thread.thread_id, written.snapshot_sha256, written.projection_version, thread)
+
+    def _stop_prefilling(self, thread: Thread) -> None:
+        self.prefill_mismatches += 1
+        self._entries.pop(thread.thread_id, None)
+        self._written.clear()
+        _LOGGER.warning(
+            "projection prefill mismatch: thread=%s sequence=%s; prefill disabled",
+            thread.thread_id,
+            thread.sequence,
+        )
+
+
+def _round_trips(thread: Thread, written: WrittenProjection) -> bool:
+    """真正解析写入的原字节（含版本内容与拒绝闭合校验），再与写入方的Thread逐层比较。"""
+    try:
+        parsed = Thread.model_validate_json(written.encoded)
+        require_projection_content_version(parsed, written.projection_version)
+        require_closed_rejections(parsed)
+    except (ValueError, KernelError):
+        return False
+    return identical(parsed, thread)
 
 
 def parse_projection(

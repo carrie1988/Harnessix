@@ -21,6 +21,7 @@ related_adrs:
   - docs/adr/0061-terminal-turn-retry-and-provider-neutral-history.md
   - docs/adr/0075-provider-profile-secret-and-safe-fallback.md
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
+  - docs/adr/0166-silence-after-a-tool-call-starts-is-bounded-by-the-request-deadline.md
 related_tests:
   - tests/models/test_current_tool_catalog.py
   - tests/context/test_compaction_wire_prepay.py
@@ -28,6 +29,7 @@ related_tests:
   - tests/models/test_openai_chat.py
   - tests/models/test_chat_terminal_diagnostics.py
   - tests/models/test_chat_stream_diagnostics.py
+  - tests/models/test_stream_silence.py
   - tests/models/test_chat_transport_diagnostics.py
   - tests/models/test_chat_text_tool_boundary.py
   - tests/models/test_chat_empty_name.py
@@ -50,6 +52,14 @@ supersedes: []
 ---
 
 # Model Runtime模块设计
+
+## 当前增量：工具调用开始之后，静默只受本次请求的总期限约束（ADR 0166）
+
+- [`_provider_io.StreamSilence`](../../src/harnessix/models/_provider_io.py)替代流式请求里的HTTP读取期限：从请求交给传输层发送起计时，工具调用开始之前连续`io_timeout_seconds`没有任何字节（含SSE注释、心跳）按读取超时处理，异常类型、错误分类与诊断原因`httpx_read_timeout`都不变；收到任何工具调用分片之后只受`timeout_seconds`约束。`chunks`逐个取分片，每次等待都受这两条约束。
+- 字节到达由[`_bounded_http.TRANSFER_ACTIVITY`](../../src/harnessix/models/_bounded_http.py)回调：上下文变量只在执行这次IO的子Task里设置，`BoundedTransport`/`AnthropicTransport`发送时调用一次，`BoundedStream`每收到一批字节调用一次，不接触内容；工具调用是否开始由`ChatStream.tool_call_started`、`AnthropicStream.tool_call_started`判断。两个适配器的SDK与HTTPX客户端改为`Timeout(io_timeout_seconds, read=None)`，连接、写入与连接池期限不变，模型目录预检仍由`wait_for_io`限制在`io_timeout_seconds`内。
+- 原因：本机vLLM的Qwen工具解析器只边生成边发送字符串参数，`apply_patch_batch`的数组参数写完才整段发出；2026-11-15/16 NL2RepoBench回归中35次请求在第302秒被判读取超时、整段作废。2026-11-17在真实副本上对照（阈值5秒）：0.10.0b48两次尝试都失败，本版一次完成（20～25秒）。
+- 工具调用开始、参数还没有字节时，[`_progress.ArgumentProgress`](../../src/harnessix/models/_progress.py)先报一次`ToolArgumentsProgress(utf8_bytes=0, tool=…)`（契约下限由1改为0）：OpenAI兼容端点在名称与空参数的第一个分片时报，Anthropic在工具块开始时报，界面据此立即说明在生成哪类内容。
+- 回归：`tests/models/test_stream_silence.py`（两个适配器：参数晚到不重试、工具调用前静默仍重试、心跳算活动、总期限仍然有效）；`tests/models/test_chat_transport_diagnostics.py`、`tests/models/test_attempt_usage.py`的期限用例不变。
 
 ## 当前增量：标出被输出上限截断的工具调用（ADR 0171）
 
@@ -824,6 +834,7 @@ estimate_cost(attempt, price, verified_context):
 | OpenAI流状态 | [`_chat_stream.py`](../../src/harnessix/models/_chat_stream.py) | `ChatStream.feed`、`finish` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py) | `test_invalid_arguments_reject_only_that_call`、`test_malformed_wire`、`test_kernel_tool_loop_pairing_usage_and_replay` | 工具、终态和Replay |
 | Anthropic流状态 | [`_anthropic_stream.py`](../../src/harnessix/models/_anthropic_stream.py) | `AnthropicStream.feed`、`finish` | [`test_anthropic.py`](../../tests/models/test_anthropic.py) | `test_bad_tool_json_never_releases_call`、`test_invalid_protocol`、`test_cumulative_usage_includes_caches_without_double_counting` | Block、Usage和工具门禁 |
 | Adapter重试与模型预检 | [`openai_chat.py`](../../src/harnessix/models/openai_chat.py)、[`anthropic.py`](../../src/harnessix/models/anthropic.py) | `probe_model_availability`、`stream`、`_failure` | [`test_openai_chat.py`](../../tests/models/test_openai_chat.py)、[`provider.py`](../../tests/contracts/provider.py) | `test_model_availability_probe_is_read_only_and_exact`、`test_model_availability_probe_honors_pre_cancel`、`test_model_availability_probe_obeys_io_timeout`、`test_error_codes_and_bounded_retry` | 无推理目录检查、取消/期限、零暴露重试和错误分类 |
+| 流式静默期限 | [`_provider_io.py`](../../src/harnessix/models/_provider_io.py)、[`_bounded_http.py`](../../src/harnessix/models/_bounded_http.py)、[`_anthropic_http.py`](../../src/harnessix/models/_anthropic_http.py) | `StreamSilence`、`TRANSFER_ACTIVITY`、`tool_call_started` | [`test_stream_silence.py`](../../tests/models/test_stream_silence.py) | `test_silence_after_a_tool_call_starts_waits_for_the_arguments`、`test_silence_before_any_tool_call_is_still_a_read_timeout`、`test_any_bytes_count_as_activity_before_a_tool_call`、`test_the_request_deadline_still_bounds_a_started_tool_call` | 工具调用开始前后的静默规则与总期限（ADR 0166） |
 | 取消和资源关闭 | [`_provider_io.py`](../../src/harnessix/models/_provider_io.py) | `wait_for_io` | [`provider.py`](../../tests/contracts/provider.py) | `test_cancel_closes_blocked_stream`、`test_consumer_exit_closes_stream` | 全等待点取消和Owned Stream |
 | Attempt/Usage合同 | [`usage.py`](../../src/harnessix/agent/usage.py) | `UsageObservation`、`ModelAttempt`及三类Event | [`test_attempt_usage.py`](../../tests/models/test_attempt_usage.py) | `test_native_usage_details_and_alias_identity`、`test_duplicate_cumulative_report_is_not_added_twice` | 累计、身份和不双记 |
 | Attempt崩溃恢复 | [`runtime.py`](../../src/harnessix/agent/runtime.py) | `_sample_events`、`_finish` | [`test_attempt_crash_recovery.py`](../../tests/models/test_attempt_crash_recovery.py) | `test_sdk_crash_preserves_attempt_and_never_reissues_request` | 意图先提交和不重发 |

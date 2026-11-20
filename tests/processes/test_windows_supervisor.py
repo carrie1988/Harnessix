@@ -281,6 +281,39 @@ async def test_windows_conpty_unicode_input_resize_and_tree_owner(tmp_path: Path
     assert lease.stderr.eof and lease.stderr.observed_bytes == 0
 
 
+async def test_windows_supervisor_starts_every_owner_on_the_spot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ADR 0168 D6只在POSIX开启：Windows每条命令现场启动Owner，没有待命Owner。"""
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    async with WindowsProcessSupervisor(tmp_path / "state") as supervisor:
+        started: list[int] = []
+        original = supervisor._spawn_owner
+
+        def counted(read_fd: int, run_directory: Path) -> subprocess.Popen[bytes]:
+            owner = original(read_fd, run_directory)
+            started.append(owner.pid)
+            return owner
+
+        monkeypatch.setattr(supervisor, "_spawn_owner", counted)
+        for text in ("one", "two", "three"):
+            spec = build_process_spec(
+                invocation="argv", argv=(sys.executable, "-I", "-c", f"print({text!r})")
+            )
+            lease = await supervisor.run(
+                _plan(workspace, spec, supervisor),
+                spec,
+                supervisor.capability,
+                workspace=workspace,
+                environment={},
+            )
+            assert lease.state == "exited" and lease.returncode == 0
+            assert (await supervisor.output(spec.process_id, "stdout")).strip() == text.encode()
+        assert supervisor._standby is None
+    assert len(set(started)) == 3
+
+
 async def test_windows_owner_loss_closes_job_and_restart_reconciles(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()

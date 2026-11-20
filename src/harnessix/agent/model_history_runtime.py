@@ -20,6 +20,7 @@ from harnessix.agent.compaction_input_budget import (
     CompactionInputBudget,
     prepare_compaction_input_budget,
 )
+from harnessix.agent.compaction_summary_request import SUMMARY_TOOL_CALL
 from harnessix.agent.errors import KernelError
 from harnessix.agent.ids import new_id
 from harnessix.agent.model_input_budget import estimate_model_input_tokens
@@ -73,7 +74,7 @@ _PLANNING_INFEASIBLE = frozenset(
 )
 # 主动压缩遇到以下失败时，不压缩的原请求仍在窗口内：本步保留原历史继续，
 # 历史再增长 1/4 前不再触发；超窗触发的被动压缩仍按原错误终止。
-_PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED, SUMMARY_EMPTY}
+_PROACTIVE_SKIPPABLE = _PLANNING_INFEASIBLE | {SUMMARY_TRUNCATED, SUMMARY_EMPTY, SUMMARY_TOOL_CALL}
 _BACKOFF_GROWTH_NUMERATOR, _BACKOFF_GROWTH_DENOMINATOR = SKIPPED_COMPACTION_GROWTH
 
 
@@ -97,6 +98,8 @@ class ModelHistoryHost(Protocol):
     _token_window: CompactionTokenWindow | None
     _budget_pressure_compaction: bool
     _compaction_backoff: dict[UUID, int]
+    # 共用前缀的摘要请求里模型调用过工具的Turn：本轮之后的压缩改用独立请求（ADR 0167）。
+    _isolated_summary_turns: set[UUID]
     _fault: Callable[[str], None]
 
     def _model_tools_for_turn(self, turn: Turn) -> ModelToolSelection: ...
@@ -110,6 +113,8 @@ class ModelHistoryHost(Protocol):
         prepared: PreparedModelHistory,
         token: CancelToken,
         planned: PreparedCompaction | None = None,
+        *,
+        shared_prefix: bool = False,
     ) -> Thread: ...
 
     async def _prepare_budget_context(
@@ -311,9 +316,15 @@ async def plan_history_compaction(
     )
 
 
-def _model_view(host: ModelHistoryHost, thread: Thread, model_step: int) -> PreparedModelHistory:
+def _model_view(
+    host: ModelHistoryHost, thread: Thread, model_step: int, *, detached: bool = True
+) -> PreparedModelHistory:
     return prepare_model_view(
-        thread, model_step, host._tool_result_view_policy, host._working_set_result_groups
+        thread,
+        model_step,
+        host._tool_result_view_policy,
+        host._working_set_result_groups,
+        detached=detached,
     )
 
 
@@ -331,7 +342,8 @@ async def _commit_if_current(
         turn = get_turn(thread, turn_id)
         if turn.status in {TurnStatus.CANCELLING, TurnStatus.CANCELLED}:
             raise TurnCancelled
-        current = _model_view(host, thread, model_step)
+        # 只用来确认Session在准备之后没有变化，比对完即丢弃。
+        current = _model_view(host, thread, model_step, detached=False)
         if current != prepared:
             return None
         return await (host._batch_diffs or host.store).append(
@@ -387,10 +399,20 @@ async def prepare_and_commit_model_history(
             )
         if required or planned is not None:
             try:
-                thread = await host._run_compaction(thread, turn, prepared, token, planned)
+                thread = await host._run_compaction(
+                    thread,
+                    turn,
+                    prepared,
+                    token,
+                    planned,
+                    shared_prefix=not reactive_compaction_required
+                    and turn_id not in host._isolated_summary_turns,
+                )
             except KernelError as error:
                 if reactive_compaction_required or error.code not in _PROACTIVE_SKIPPABLE:
                     raise
+                if error.code == SUMMARY_TOOL_CALL:
+                    host._isolated_summary_turns.add(turn_id)
                 # 规划失败不留记录；摘要截断或没有正文的记录已按失败关闭且用量已记账。
                 # 本步保留原历史继续，不重复规划同一步。
                 host._compaction_backoff[turn_id] = _history_utf8_bytes(prepared)

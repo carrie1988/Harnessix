@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 21
+version: 23
 code_revision: af16bc871ed3f5809e992c587fde00479d42d870
 owners:
   - core
@@ -19,7 +19,9 @@ related_adrs:
   - docs/adr/0106-v1-release-scope-and-risk-based-gates.md
   - docs/adr/0126-incremental-session-history-verification.md
   - docs/adr/0133-parsed-projection-reuse-and-reducer-sharing.md
+  - docs/adr/0168-host-overhead-per-model-step.md
 related_tests:
+  - tests/session/test_append_signal.py
   - tests/session/test_authenticated_history.py
   - tests/session/test_read_original_bytes.py
   - tests/session/test_parsed_projection_cache.py
@@ -39,6 +41,26 @@ supersedes: []
 ---
 
 # Session模块设计
+
+## 当前增量：投影读取少算一次摘要、写入方预填解析结果（ADR 0168第3版D1、D2、D4）
+
+- D2：一次认证读取只算一次投影SHA-256，同一摘要与签名检查点、行内摘要分别比对（[`projection_identity`](../../src/harnessix/session/projection_identity.py)）。
+- D1：追加提交后，[`parsed_projection_cache`](../../src/harnessix/session/parsed_projection_cache.py)把Reducer刚得到的Thread记作写入字节的解析结果；第一次及其后每第16次预填真的解析并严格比对，不符时丢弃、记录警告并停止预填。每次读取的摘要、MAC与SQL核对不变。
+- D4：`SessionStore.committed_sequence`返回投影行记录的序号，供追加的期望序号使用；没有投影行时走`get_thread`。追加事务内的完整核对不变。
+- 回归：`tests/session/test_read_original_bytes.py`、`test_projection_prefill.py`、`test_committed_sequence.py`、`test_parsed_projection_cache.py`；根`tests/conftest.py`在整个测试集里核对每一次预填。
+
+## 当前增量：追加提交后的进程内通知（ADR 0168）
+
+`SQLiteSessionStore.appends`是一个[`AppendSignal`](../../src/harnessix/session/append_signal.py)：`append`与
+`fork`的事务提交之后、且确有新事件时（幂等重放不算），在`session.after_commit`故障注入点之后把追加后的
+Thread交给订阅者。`SessionStore`端口声明该属性。
+
+- 通知只是“现在重读能看到这次追加”的提示，不是事实来源：订阅者必须仍从存储读取并保留自己的定时重读。
+- 订阅者抛出的异常被吞掉：追加已经提交，不能让调用方把它当作写入失败。
+- Artifact发布等自带事务、直接调用`_append_in_transaction`的写入不发通知。
+- 三处重复的“提交、故障注入点”收拢为`SQLiteSessionStore._commit`，顺序不变。
+
+当前唯一的订阅者是App Server的长轮询唤醒。回归见[追加通知](../../tests/session/test_append_signal.py)。
 
 ## 当前增量：类型化工具拒绝与配套协议升级
 
@@ -671,6 +693,8 @@ restore(backup):
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
 | 21 | ADR 0133增量 | 2026-11-11 | 投影解析结果按原字节摘要复用：每次读取的摘要、MAC与SQL校验不变，原字节未变时不再解析；启动恢复扫描不经过缓存；Reducer改为结构共享见Agent模块设计 |
+| 23 | ADR 0168第3版增量 | 2026-11-18 | 认证读取只算一次投影摘要；写入方预填解析结果（抽样严格核对）；追加的期望序号取自投影行（D1、D2、D4） |
+| 22 | ADR 0168增量 | 2026-11-16 | 追加提交后经`AppendSignal`在进程内通知订阅者；`append`/`fork`的提交收拢为`_commit`，持久化顺序与故障注入点不变 |
 | 20 | `f3f93a54108406bb2df7cca5d5716bc62aeaaefc` | 2026-11-10 | 增量历史校验（ADR 0126）：游标读取命中进程内已验证的链前缀缓存时，只校验本次返回的事件；增量不成立时不信任缓存，回到从根全量校验；全量读取行为不变 |
 | 13 | Git记录认证增量 | 2026-10-01 | 原Binding增加有限Git签发/只验真端口，复用原Key与HMAC；不改变数据库或开放Git产品写入 |
 | 12 | R1维护变更 | 2026-09-28 | 认证容量先验原Seal；认证Store拒绝旧式维护；候选预检、有界IO、取消结算和恢复故障回归 |

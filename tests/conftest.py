@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import logging
 import os
 import re
 import subprocess
@@ -11,6 +12,8 @@ import zlib
 from pathlib import Path
 
 import pytest
+
+from harnessix.session import parsed_projection_cache
 
 _UUID_TEXT = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
@@ -25,6 +28,11 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         "nightly: 每次推送的CI跳过、由nightly工作流每天运行的用例"
         "（单项耗时数分钟的容量用例，以及尚未接入产品的内置Git交付测试族）",
+    )
+    config.addinivalue_line(
+        "markers",
+        "projection_prefill_mismatch: 故意写下解析后与写入方Thread不同的投影、"
+        "预期预填核对报不一致的用例",
     )
 
 
@@ -161,3 +169,36 @@ def _restrict_to_user_and_system(directory: Path) -> None:
         capture_output=True,
         check=True,
     )
+
+
+class _PrefillMismatches(logging.Handler):
+    """收集写入方预填的抽样核对报出的不一致（解析缓存的诊断日志）。"""
+
+    def __init__(self) -> None:
+        super().__init__(logging.WARNING)
+        self.messages: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.messages.append(record.getMessage())
+
+
+@pytest.fixture(autouse=True)
+def _every_projection_prefill_is_checked(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> object:
+    """全部测试里每次写入方预填都先解析提交的原字节并逐层比较（ADR 0168 D1）。
+
+    产品默认每16次核对一次；测试集里每次都核对，整个测试集写下的每份投影都要满足“解析写入的原字节
+    与写入方的Thread逐层相同”，不同即判这个用例失败。
+    """
+
+    monkeypatch.setattr(parsed_projection_cache, "PREFILL_CHECK_EVERY", 1)
+    recorder = _PrefillMismatches()
+    logger = logging.getLogger(parsed_projection_cache.__name__)
+    logger.addHandler(recorder)
+    try:
+        yield
+    finally:
+        logger.removeHandler(recorder)
+    if recorder.messages and request.node.get_closest_marker("projection_prefill_mismatch") is None:
+        pytest.fail("写入方预填与提交原字节的解析结果不一致: " + "; ".join(recorder.messages))

@@ -25,6 +25,7 @@ from harnessix.models._chat_mapping import build_request
 from harnessix.models._chat_stream import ChatStream, ContentRefused, validate_frame
 from harnessix.models._history import InvalidModelRequest, encode_json
 from harnessix.models._provider_io import (
+    StreamSilence,
     finish_attempt,
     persistent_output,
     read_key,
@@ -73,6 +74,16 @@ def _failure(error: Exception) -> ResponseFailed:
     if isinstance(error, APIError):
         return ResponseFailed(code="provider_internal", retryable=True)
     return ResponseFailed(code="invalid_provider_output")
+
+
+def _silence(config: OpenAIChatConfig, deadline: float, state: ChatStream) -> StreamSilence:
+    """静默超过读取期限按HTTP客户端的读取超时处理，可重试（ADR 0166）。"""
+    return StreamSilence(
+        config.io_timeout_seconds,
+        deadline,
+        lambda: httpx.ReadTimeout("流式响应静默超过读取期限"),
+        lambda: state.tool_call_started,
+    )
 
 
 def _is_unbilled(error: Exception) -> bool:
@@ -125,7 +136,7 @@ class OpenAIChatProvider:
             ),
             trust_env=False,
             follow_redirects=False,
-            timeout=config.io_timeout_seconds,
+            timeout=httpx.Timeout(config.io_timeout_seconds, read=None),
         )
         self._client = AsyncOpenAI(
             api_key=key,
@@ -136,7 +147,8 @@ class OpenAIChatProvider:
             base_url=config.base_url,
             max_retries=0,
             http_client=client,
-            timeout=config.io_timeout_seconds,
+            # 读取静默由StreamSilence判断（ADR 0166）；连接、写入与连接池期限不变。
+            timeout=httpx.Timeout(config.io_timeout_seconds, read=None),
             default_headers={"Accept-Encoding": "identity"},
         )
         self._closed = False
@@ -266,16 +278,6 @@ class OpenAIChatProvider:
             retry_after = 0.0
             try:
                 cancel.checkpoint()
-                stream = await wait_for_io(
-                    self._client.chat.completions.create(
-                        **cast(CompletionCreateParamsStreaming, body)
-                    ),
-                    cancel,
-                    deadline,
-                )
-                content_type = stream.response.headers.get("content-type", "").split(";")[0]
-                if content_type.strip().lower() != "text/event-stream":
-                    raise InvalidWireData("响应不是 SSE")
                 state = ChatStream(
                     request,
                     names,
@@ -284,11 +286,17 @@ class OpenAIChatProvider:
                     repair_arguments=self.config.repair_tool_arguments,
                     implicit_cache=self.config.implicit_cache_usage,
                 )
-                while True:
-                    try:
-                        chunk = await wait_for_io(anext(stream), cancel, deadline)
-                    except StopAsyncIteration:
-                        break
+                silence = _silence(self.config, deadline, state)
+                stream = await silence.wait(
+                    self._client.chat.completions.create(
+                        **cast(CompletionCreateParamsStreaming, body)
+                    ),
+                    cancel,
+                )
+                content_type = stream.response.headers.get("content-type", "").split(";")[0]
+                if content_type.strip().lower() != "text/event-stream":
+                    raise InvalidWireData("响应不是 SSE")
+                async for chunk in silence.chunks(stream, cancel):
                     for event in state.feed(chunk):
                         cancel.checkpoint()
                         exposed = exposed or persistent_output(event)

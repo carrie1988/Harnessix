@@ -531,12 +531,20 @@ class _Owner:
         self.stderr.close()
 
 
-def _run(control_fd: int, run_directory: str) -> int:
-    if os.name != "posix" or control_fd < 3:
+def _run(control_fd: int, run_directory: str | None, runs_directory: str | None = None) -> int:
+    """run_directory为None时是待命启动（ADR 0168 D6）。
+
+    待命启动先等Start帧，再按其中的Process ID在runs_directory下定位运行目录。
+    两种启动对运行目录做同一组检查，都在创建目标进程之前完成。
+    """
+    if os.name != "posix" or control_fd < 3 or (run_directory is None) == (runs_directory is None):
         return 2
     try:
-        directory = _safe_run_directory(run_directory)
+        directory = None if run_directory is None else _safe_run_directory(run_directory)
         request, protected_values, remainder = _read_start(control_fd)
+        if directory is None:
+            assert runs_directory is not None
+            directory = _safe_run_directory(str(Path(runs_directory) / str(request.process_id)))
         if directory.name != str(request.process_id):
             raise ValueError("run directory does not match process id")
         return _Owner(request, control_fd, remainder, directory, protected_values).run()
@@ -547,9 +555,11 @@ def _run(control_fd: int, run_directory: str) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--control-fd", required=True, type=int)
-    parser.add_argument("--run-directory", required=True)
+    location = parser.add_mutually_exclusive_group(required=True)
+    location.add_argument("--run-directory")
+    location.add_argument("--runs-directory")
     arguments = parser.parse_args()
-    raise SystemExit(_run(arguments.control_fd, arguments.run_directory))
+    raise SystemExit(_run(arguments.control_fd, arguments.run_directory, arguments.runs_directory))
 
 
 if __name__ == "__main__":

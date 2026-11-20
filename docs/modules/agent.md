@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 74
+version: 79
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -24,6 +24,7 @@ related_adrs:
   - docs/adr/0135-command-ledger-step-notices.md
   - docs/adr/0136-readable-tool-aliases-and-model-facing-feedback.md
   - docs/adr/0131-session-baseline-for-pre-existing-workspace-changes.md
+  - docs/adr/0167-proactive-summary-request-reuses-the-main-request-prefix.md
 related_tests:
   - tests/context/test_pressure_window_candidates.py
   - tests/context/test_compaction_wire_prepay.py
@@ -52,10 +53,36 @@ related_tests:
   - tests/agent/test_pressure_compaction_loop.py
   - tests/context/test_turn_budget_compaction.py
   - tests/context/test_compaction_runtime.py
+  - tests/context/test_shared_prefix_summary.py
   - tests/product_config/test_native_sandbox_profile.py
   - tests/agent/test_step_notices.py
 supersedes: []
 ---
+
+## 当前增量：成功尝试的终态事实与响应终态合并提交（ADR 0168第3版D3、D4）
+
+- D3：[`attempt_fact_commits`](../../src/harnessix/agent/attempt_fact_commits.py)决定模型尝试事实各在哪次提交里落盘。“尝试开始”仍单独、最先提交；成功尝试的完整用量与“尝试完成”收到时照原样检查，留到与`UsageRecorded`同一事务提交，遇到其他Provider事件或步骤以任何方式结束时先按原顺序提交。
+- D4：`AgentRuntime._commit`拆成`_protect_payloads`（公开输出检查，不变）与`_append_payloads`（加锁追加，期望序号取自`SessionStore.committed_sequence`）；`_summary_text`与`_sample_events`共用`telemetry.AccountedUsage`。
+- 新的崩溃恢复点：成功尝试的用量与“尝试完成”要么一起落盘、要么都没有。
+- 回归：`tests/agent/test_attempt_fact_commits.py`（六种情形合并与逐个提交结果相同）、`tests/agent/test_attempt_crash_recovery.py`、`tests/models/test_attempt_crash_recovery.py`。
+
+## 当前增量：主动压缩的摘要请求沿用主请求的前缀（ADR 0167）
+
+- [`compaction_summary_request.summary_request`](../../src/harnessix/agent/compaction_summary_request.py)替代`_run_compaction`里内联的请求构造。主动压缩时请求包含：与下一次主请求相同的Context准备得到的系统指令、与主请求相同的线上工具（`catalog_tools`：有稳定目录时是整份目录，否则是本步视图选出的工具；本步不可执行任何工具）、压缩计划的模型历史视图，末尾再加一条宿主说明`SHARED_PREFIX_SUMMARY_NOTE`。请求开头与上一次主请求逐字相同，服务端前缀缓存可以复用。
+- 以下情况沿用原独立请求（ADR 0058，逐字不变）：被动压缩、预算压力压缩、Context准备放不下，或剩余Token预算放不下。[`model_history_runtime`](../../src/harnessix/agent/model_history_runtime.py)按“非被动压缩且本Turn未退回”传入`shared_prefix`。
+- 共用前缀的摘要回复里出现工具调用：`summary_tool_call_error`报`provider_summary_tool_call`，归入主动压缩可跳过的失败，`_isolated_summary_turns`记下这个Turn，之后的压缩改用独立请求。独立请求里的工具调用仍按原规则报`context_compaction_summary_tool_forbidden`或`invalid_provider_output`。
+- 摘要流把`ToolArgumentsProgress`与`ReasoningDelta`同样跳过（ADR 0167第2版）：适配器在调用写完前先报参数进度，此前这条进度落进“不支持的摘要Provider事件”，整轮失败；现在照常读到用量、尝试终态与工具调用后再按上一条跳过。回归见`tests/context/test_shared_prefix_summary.py`。
+- 压缩计划、账本事件、预留、校验、激活与投影不变。原因：NL2RepoBench回归里摘要请求平均等148秒才收到第一个字（全部重算）。
+- 界面：摘要请求开始前，[`generation_progress.announce_compaction`](../../src/harnessix/agent/generation_progress.py)以`compaction_progress_item_id`发布一行进度（与该步主请求的进度流不同身份），终端界面据此显示“正在压缩较早的对话 · 已用时 N 秒”。回归见`tests/agent/test_compaction_progress.py`。
+- 回归：`tests/context/test_shared_prefix_summary.py`；`tests/context/test_compaction_runtime.py`原有用例不变。
+
+## 当前增量：只读的工具视图拿Session中的Turn，不先深拷贝（ADR 0168）
+
+- `_select_model_tools`交给视图`select`的Turn由[`request_notes.tool_view_turn`](../../src/harnessix/agent/request_notes.py)给出：视图声明
+  `reads_turn_in_place`为`True`（[`ports.InPlaceTurnToolView`](../../src/harnessix/agent/ports.py)，只认布尔`True`）时，是去掉请求说明后
+  共享其余对象的浅副本；其余视图照旧拿到独立的深拷贝。`admit_call`与`step_notice`本来就拿共享的Turn与Thread，这里与它们一致。
+- 选择结果、请求字节与持久事件不变；深拷贝在160步基准的第121–160步每次约30毫秒、每步两次。运行时主文件只改一行（调用名），
+  行数不变。回归见`tests/agent/test_tool_view_turn.py`（含产品运行中每次选择都与深拷贝路径比对）。
 
 ## 当前增量：保护检查做不完只让那一次调用失败（ADR 0174，Beta Issue #37遗留）
 
@@ -563,6 +590,11 @@ Transcript和序列缺口。SQLite Store在同一事务中追加一组事件并�
 60步的会话里一次追加约12毫秒。聚合内全部是冻结模型，共享不改变取值；调用方不得原地修改其中的JSON容器。
 Store边界仍把调用方的Draft经JSON往返冻结。回归见
 [结构共享测试](../../tests/agent/test_reducer_structural_sharing.py)。
+
+Reducer核对`ModelHistoryPrepared`、以及Runtime在提交前确认Session没有变化（`_commit_if_current`）时，
+准备出的模型视图只用来比对、读完即弃，所以以`detached=False`准备：未改写的视图Item就是Thread里的
+Item本身，不再深拷贝；逐Item的核对与序列化按内容指纹复用
+（[ADR 0155](../adr/0155-model-view-item-reuse.md)）。进入模型请求的那一份视图仍是独立副本。
 
 ## 10. 公共端口与方法合同
 
@@ -1170,6 +1202,11 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 79 | ADR 0168第3版增量 | 2026-11-18 | 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（尝试开始仍单独先提交）；`_commit`拆成检查与追加，期望序号走轻查询（D3、D4） |
+| 78 | ADR 0167第2版增量 | 2026-11-20 | 摘要流跳过工具参数进度（`ToolArgumentsProgress`），共用前缀的摘要回复里出现工具调用时照常跳过这次压缩，不再整轮失败 |
+| 77 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |
+| 76 | ADR 0168增量 | 2026-11-16 | 声明`reads_turn_in_place`的工具视图拿去掉请求说明的浅副本，不再每次深拷贝整个Turn；其余视图不变（`request_notes.tool_view_turn`、`ports.InPlaceTurnToolView`） |
+| 75 | ADR 0155增量 | 2026-11-16 | 提交前复核与Reducer核对用不拷贝的模型视图（`detached=False`），逐Item结果按内容指纹复用；取值与校验结论不变（自`feat/r2-ctxprep`移植，原分支上为第55版） |
 | 74 | `d82e71cc` 增量 | 2026-11-18 | 只读结果的保护检查做不完时只让那一次调用失败，Turn与同批调用继续（`tool_result_protection`，ADR 0174，Beta Issue #37遗留） |
 | 73 | `3a97841b` 增量 | 2026-11-18 | `host_notice_identity`：宿主说明身份的统一登记，供公开投影标注用户消息来源（ADR 0173，Beta Issue #46） |
 | 72 | ADR 0171增量 | 2026-11-18 | 工具调用被输出上限截断时补发说明（`truncated_call`，不计入连续补发、不使Turn失败）；非法参数反馈补上拆小建议 |

@@ -22,9 +22,14 @@ from harnessix.agent.models import AgentEvent, EventDraft, Thread, ThreadForked
 from harnessix.agent.reducer import replay
 from harnessix.file_lock import acquire_exclusive_file_lock
 from harnessix.session import sqlite_history
+from harnessix.session.append_signal import AppendSignal
 from harnessix.session.errors import storage_errors
 from harnessix.session.parsed_projection_cache import ParsedProjectionCache, parse_projection
-from harnessix.session.sqlite_append import append_in_transaction
+from harnessix.session.sqlite_append import (
+    append_in_transaction,
+    freeze_batch,
+    parse_event_row,
+)
 from harnessix.session.sqlite_publication import (
     authenticated_events,
     save_projection,
@@ -122,10 +127,11 @@ def _validated_snapshot(
     last_sequence: int,
     event_count: int,
     *,
-    snapshot_bytes: bytes | None = None,
+    snapshot_sha256: str | None = None,
     parsed: ParsedProjectionCache | None = None,
 ) -> Thread | None:
-    """逐项校验投影与权威事件序列，供单条读取和批量恢复共用。"""
+    """逐项校验投影与权威事件序列，供单条读取和批量恢复共用；snapshot_sha256是认证读取对同一份原字节
+    算出并已与签名检查点比对过的摘要，给出时直接与行内摘要比对、不重算（ADR 0168 D2）。"""
 
     if last_sequence != event_count:
         raise KernelError("event_corrupt", "事件日志存在序号缺口")
@@ -136,8 +142,7 @@ def _validated_snapshot(
     encoded: str = row["snapshot_json"]
     if row["projection_version"] not in range(1, 23):
         raise KernelError("projection_too_new", "Session 投影版本高于当前程序支持版本")
-    body = snapshot_bytes if snapshot_bytes is not None else encoded.encode()
-    digest = hashlib.sha256(body).hexdigest()
+    digest = snapshot_sha256 or hashlib.sha256(encoded.encode()).hexdigest()
     if digest != row["snapshot_sha256"]:
         raise KernelError("projection_corrupt", "快照校验失败，请重建投影")
     try:
@@ -186,13 +191,13 @@ async def _scan_recovery_threads(
         except ValueError:
             raise KernelError("event_corrupt", "Thread 索引包含无效标识") from None
         projection = row if row["projection_thread_id"] is not None else None
-        snapshot_bytes = await verify_snapshot(database, publication, thread_id, projection)
+        digest = await verify_snapshot(database, publication, thread_id, projection)
         thread = _validated_snapshot(
             thread_id,
             projection,
             row["last_sequence"],
             row["event_count"],
-            snapshot_bytes=snapshot_bytes,
+            snapshot_sha256=digest,
         )
         if thread is not None and thread.active_turn_id is not None:
             active.append(thread)
@@ -213,6 +218,7 @@ class SQLiteSessionStore:
         self._publication = publication
         self._verified_prefixes = VerifiedPrefixCache()  # ADR 0126
         self._parsed_projections = ParsedProjectionCache()  # ADR 0133
+        self.appends = AppendSignal()  # ADR 0168
         self._fault = fault or (lambda _: None)
         self._runtime_owner_token: object | None = None
 
@@ -353,8 +359,8 @@ class SQLiteSessionStore:
         last_row = await cursor.fetchone()
         assert last_row is not None
         cache = self._parsed_projections
-        body = await verify_snapshot(database, self._publication, thread_id, row, parsed=cache)
-        return _validated_snapshot(thread_id, row, *last_row, snapshot_bytes=body, parsed=cache)
+        digest = await verify_snapshot(database, self._publication, thread_id, row, parsed=cache)
+        return _validated_snapshot(thread_id, row, *last_row, snapshot_sha256=digest, parsed=cache)
 
     async def get_thread(self, thread_id: UUID) -> Thread:
         async with self._connection() as database:
@@ -363,6 +369,18 @@ class SQLiteSessionStore:
             if thread is None:
                 raise KernelError("thread_not_found", "Thread 不存在")
             return thread
+
+    async def committed_sequence(self, thread_id: UUID) -> int:
+        """投影行记录的序号，只作追加的期望序号：不核对投影，追加事务内仍完整认证并比对（ADR 0168
+        D4）。没有投影行或序号不是整数时改走get_thread，给出与它相同的结果或错误。"""
+        async with self._connection() as database:
+            cursor = await database.execute(
+                "SELECT sequence FROM agent_threads WHERE thread_id = ?", (str(thread_id),)
+            )
+            row = await cursor.fetchone()
+        if row is None or type(row[0]) is not int:
+            return (await self.get_thread(thread_id)).sequence
+        return row[0]
 
     async def authenticated_thread_history(
         self,
@@ -447,7 +465,8 @@ class SQLiteSessionStore:
         prefix: str | None = None,
         history_bytes: int | None = None,
     ) -> None:
-        await save_projection(database, self._publication, thread, prefix, history_bytes)
+        written = await save_projection(database, self._publication, thread, prefix, history_bytes)
+        self._parsed_projections.stage_written(thread, written)
 
     async def append(
         self,
@@ -464,10 +483,17 @@ class SQLiteSessionStore:
             thread, changed = await self._append_in_transaction(
                 database, thread_id, batch, expected_sequence=expected_sequence
             )
-            await database.commit()
-            if changed:
-                self._fault("session.after_commit")
-            return thread
+            return await self._commit(database, thread, changed)
+
+    async def _commit(self, database: aiosqlite.Connection, thread: Thread, new: bool) -> Thread:
+        """提交事务；确有新事件（new）时用写入的投影预填解析缓存（ADR 0168 D1），再过故障注入点、
+        通知订阅者重读。"""
+        await database.commit()
+        if new:
+            self._parsed_projections.confirm_written(thread)
+            self._fault("session.after_commit")
+            self.appends.notify(thread)
+        return thread
 
     async def fork(
         self,
@@ -493,10 +519,7 @@ class SQLiteSessionStore:
                 thread, changed = await self._append_in_transaction(
                     database, destination_thread_id, batch, expected_sequence=0
                 )
-                await database.commit()
-                if changed:
-                    self._fault("session.after_commit")
-                return thread
+                return await self._commit(database, thread, changed)
             source = await self._snapshot(database, source_thread_id)
             if source is None:
                 raise KernelError("thread_not_found", "Fork来源Thread不存在")
@@ -513,23 +536,9 @@ class SQLiteSessionStore:
             thread, changed = await self._append_in_transaction(
                 database, destination_thread_id, batch, expected_sequence=0
             )
-            await database.commit()
-            if changed:
-                self._fault("session.after_commit")
-            return thread
+            return await self._commit(database, thread, changed)
 
-    @staticmethod
-    def _freeze_batch(drafts: Sequence[EventDraft]) -> tuple[EventDraft, ...]:
-        # 先做值拷贝，冻结调用方可能持有的嵌套 arguments。
-        try:
-            batch = tuple(
-                EventDraft.model_validate_json(d.model_dump_json(warnings="error")) for d in drafts
-            )
-        except ValueError:
-            raise KernelError("invalid_batch", "事件批次不符合契约") from None
-        if not batch or len({d.event_id for d in batch}) != len(batch):
-            raise KernelError("invalid_batch", "事件批次为空或包含重复 ID")
-        return batch
+    _freeze_batch = staticmethod(freeze_batch)
 
     async def _append_in_transaction(
         self,
@@ -541,20 +550,6 @@ class SQLiteSessionStore:
     ) -> tuple[Thread, bool]:
         """接收私有冻结批次；调用方负责 BEGIN、COMMIT 和回滚。"""
         return await append_in_transaction(self, database, thread_id, batch, expected_sequence)
-
-    @staticmethod
-    def _parse_event(row: aiosqlite.Row) -> AgentEvent:
-        try:
-            event = AgentEvent.model_validate_json(row["event_json"])
-        except ValidationError:
-            raise KernelError("event_corrupt", "事件结构损坏或版本不支持") from None
-        if (
-            str(event.thread_id) != row["thread_id"]
-            or event.sequence != row["sequence"]
-            or str(event.event_id) != row["event_id"]
-        ):
-            raise KernelError("event_corrupt", "事件载荷与索引不一致")
-        return event
 
     async def _events(
         self, database: aiosqlite.Connection, thread_id: UUID, after: int
@@ -570,7 +565,7 @@ class SQLiteSessionStore:
         )
         events = []
         for expected, row in enumerate(await cursor.fetchall(), after + 1):
-            event = self._parse_event(row)
+            event = parse_event_row(row)
             if row["sequence"] != expected:
                 raise KernelError("event_corrupt", "事件日志存在序号缺口")
             events.append(event)

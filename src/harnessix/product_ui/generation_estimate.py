@@ -16,6 +16,9 @@ from harnessix.product_ui.projection import ProductViewState
 # 与上下文预算相同的换算口径：约3个UTF-8字节折合1个Token（中文一字约1个，英文与代码约4个字符1个）。
 UTF8_BYTES_PER_TOKEN: Final = 3
 _PATCH_TOOL: Final = "apply_patch_batch"
+# 工具调用开始后参数只到了开头这么多字节：服务端在把参数攒到写完才整段发出（ADR 0166），
+# 例如vLLM与百炼只先发出`{"files": `。逐段返回参数的服务几秒内就会超过这个数。
+HELD_BACK_PREFIX_BYTES: Final = 64
 GenerationPhase = Literal["thinking", "editing", "calling", "replying"]
 # 失败尝试的类别（agent/generation_progress.py发布的固定词）到界面说明。
 _FAILURE_TEXT: Final = {
@@ -38,6 +41,8 @@ class InFlightRequest:
     phase: GenerationPhase
     output_tokens: int
     input_tokens: int
+    # 工具调用已开始、参数只到了开头几个字节：服务端写完参数才会一次返回。
+    arguments_held_back: bool = False
 
     @property
     def phase_label(self) -> str:
@@ -45,8 +50,10 @@ class InFlightRequest:
 
     @property
     def label(self) -> str:
-        """运行提示里的文案，例如“正在生成修改内容 · 约 3,400 tokens”。"""
+        """运行提示里的文案，例如“正在生成修改内容 · 约 3,400 tokens”；还没有任何输出时只写阶段。"""
 
+        if not self.output_tokens:
+            return self.phase_label
         return f"{self.phase_label} · 约 {approximate(self.output_tokens):,} tokens"
 
     @property
@@ -64,6 +71,7 @@ def _current_counts(view: ProductViewState | None) -> GenerationCounts | None:
         # model_step是已结算用量的步数；正在调用模型的步骤号更大。
         if (
             stream.progress
+            and not stream.compaction
             and stream.turn_id == turn.turn_id
             and stream.model_step > turn.model_step
         ):
@@ -71,19 +79,37 @@ def _current_counts(view: ProductViewState | None) -> GenerationCounts | None:
     return None
 
 
+def compacting(view: ProductViewState | None) -> bool:
+    """当前Turn正在为下一步压缩较早的对话（ADR 0167）：准备上下文期间收到了压缩进度。"""
+
+    turn = None if view is None else view.current_turn
+    if view is None or turn is None or turn.status != "preparing_context":
+        return False
+    return any(
+        stream.compaction and stream.turn_id == turn.turn_id and stream.model_step > turn.model_step
+        for stream in view.streams
+    )
+
+
 def in_flight_request(view: ProductViewState | None) -> InFlightRequest | None:
-    """当前Turn正在调用模型且已有生成内容时给出估算；否则返回None，界面照常显示已结算的用量。"""
+    """当前Turn正在调用模型且已有生成内容（或工具调用已开始）时给出估算；否则返回None。"""
 
     counts = _current_counts(view)
     generated = 0 if counts is None else counts.reasoning + counts.text + counts.arguments
-    if view is None or counts is None or not generated:
+    if view is None or counts is None or not (generated or counts.tool):
         return None
     phase: GenerationPhase = "thinking"
-    if counts.arguments:
+    if counts.arguments or counts.tool:
         phase = "editing" if counts.tool == _PATCH_TOOL else "calling"
     elif counts.text:
         phase = "replying"
-    return InFlightRequest(phase, generated // UTF8_BYTES_PER_TOKEN, view.last_request_tokens or 0)
+    return InFlightRequest(
+        phase,
+        generated // UTF8_BYTES_PER_TOKEN,
+        view.last_request_tokens or 0,
+        arguments_held_back=phase in {"editing", "calling"}
+        and counts.arguments <= HELD_BACK_PREFIX_BYTES,
+    )
 
 
 @dataclass(frozen=True, slots=True)

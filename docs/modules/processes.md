@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 42
+version: 44
 code_revision: a69806a85ee6b3028415830f1e3aee2ab1868bc4
 owners:
   - core
@@ -22,7 +22,9 @@ related_adrs:
   - docs/adr/0067-process-ownership-and-terminal-lifecycle.md
   - docs/adr/0069-unified-coding-action-risk-route.md
   - docs/adr/0091-action-runtime-fencing-and-bounded-reconciliation.md
+  - docs/adr/0168-host-overhead-per-model-step.md
 related_tests:
+  - tests/processes/test_owner_standby.py
   - tests/processes/test_diagnostic_preview.py
   - tests/product_config/test_process_diagnostic_preview.py
   - tests/trusted_actions/test_process_preview_projection.py
@@ -54,6 +56,62 @@ supersedes: []
 ---
 
 # Harnessix Code Process Runtime模块设计
+
+## 当前增量：下一条命令的Owner提前启动（ADR 0168第2版D6）
+
+- 产品负责人2026-11-18批准，条件是三个平台正式验证。每条命令此前都要现场启动一个Owner解释器并导入pydantic与合同
+  模块，Linux评测机上约215毫秒、本机约145毫秒。
+- `PosixProcessSupervisor(standby_owner=True)`在每次交出Start帧之后，用后台线程为下一条命令启动一个Owner
+  （[`owner_standby.py`](../../src/harnessix/processes/owner_standby.py)的`OwnerStandby`）。它以`--runs-directory`启动、阻塞在
+  控制管道上，读到完整的Start帧后按Process ID定位运行目录，做与现场启动相同的检查，然后才创建目标进程
+  （[`posix_owner._run`](../../src/harnessix/processes/posix_owner.py)）。Lease、运行目录与Start帧的顺序不变，提前的只是Owner进程。
+- 待命Owner不带任何一条命令的配置：argv（含沙箱前缀）、cwd、环境、凭据、终端模式、期限、预算与输出保护都在
+  Start帧里，Owner身份与令牌按命令生成。一个待命Owner只交给一条命令；至多一个；启动失败、交接前已退出、启动前
+  测得的能力摘要与冻结的不同、写Start帧时管道断开，都回收它并现场启动，这个Supervisor此后不再准备待命Owner。
+  Supervisor关闭时终止并回收它；宿主崩溃时它读到控制EOF自行退出。交接的其他异常与现场启动同一规则
+  （`failed/launch_failed`，不重放）。
+- 只有产品运行时的Supervisor开启（见[产品配置模块设计](product-config.md)）；直接构造的Supervisor默认关闭。
+  Windows不变：`WindowsProcessSupervisor`没有这个选项，`windows_owner.py`不变，共用的交接函数`deliver_owner_start`
+  在Windows上只走现场启动一支。`owner_standby.py`加入POSIX Owner能力摘要的模块清单。
+- 测得（`scripts/command_path_bench.py`，40条简单命令，交替各三轮）：进程启动macOS 144→8毫秒、Linux 208→7毫秒，
+  每条命令的宿主开销macOS 336→182毫秒、Linux 403→208毫秒。表格与安全论证见ADR 0168“修订（第2版）”。
+- 回归：[`tests/processes/test_owner_standby.py`](../../tests/processes/test_owner_standby.py)覆盖只用一次、配置不串用、
+  使用前崩溃、实现摘要不符、启动失败、并发、取消、关闭、宿主强杀与运行目录检查；
+  `tests/processes/test_windows_supervisor.py::test_windows_supervisor_starts_every_owner_on_the_spot`在Windows实机核对
+  没有待命Owner。真实Owner进程在测试里经`tests/processes/helpers.owner_imports_this_checkout`导入被测的这份源码
+  （几个工作树共用一个可编辑安装时，Owner按site-packages可能导入另一棵树）。
+
+### 三平台正式验证清单
+
+POSIX（macOS与Linux各一遍）：
+
+1. `pytest tests/processes/test_owner_standby.py tests/processes/test_supervisor.py tests/processes/test_posix_raw_receipt.py tests/benchmarks/test_command_path_bench.py`全部通过。
+2. 终端界面跑至少3个真实任务，每个任务有十条以上Shell命令（含一条沙箱外命令与一条运行较久、中途取消的命令）：
+   全部正常结束；运行过第一条命令之后，空闲时`ps -o pid,ppid,command -A | grep harnessix.processes.posix_owner`
+   只有一个带`--runs-directory`的进程，命令运行时另有该命令自己的Owner；取消的命令及其子进程都已退出。
+3. 退出终端界面后上述进程一个也不剩；用`kill -9`强杀持有产品运行时的进程（`ps`里带`--runs-directory`那个进程的
+   父进程）后，几秒内带`--runs-directory`的进程也自行退出。
+4. `harnessix exec`跑一个多命令任务，结果与完成证据正常。
+
+Windows（实机）：
+
+1. `pytest tests/processes/test_windows_supervisor.py tests/processes/test_windows_owner_lifecycle.py tests/processes/test_windows_raw_receipt.py tests/tools/test_windows_git.py tests/product_config/test_windows_host_command.py`全部通过，
+   其中`test_windows_supervisor_starts_every_owner_on_the_spot`证明三条命令各自现场启动Owner、没有待命Owner。
+2. 终端界面跑至少3个真实任务（PowerShell命令、沙箱外命令、中途取消一条`Start-Sleep 60`）：全部正常结束；
+   `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Select-Object ProcessId,ParentProcessId,CommandLine`
+   在空闲时看不到`harnessix.processes.windows_owner`进程，命令运行时的Owner命令行都带`--run-directory`，没有
+   `--runs-directory`。
+3. 取消与退出终端界面后没有遗留的`windows_owner`、目标进程或其子进程；Ctrl+C只作用于终端界面。
+4. `harnessix exec`跑一个多命令任务，结果与0.10.0b52相同（命令耗时不应有变化）。
+
+## 当前增量：Owner回执的轮询从1毫秒起加倍（ADR 0168）
+
+- `SupervisedProcess.wait`与POSIX启动后等待启动结果的轮询，间隔由固定的20毫秒、10毫秒改为
+  [`receipt_polling.receipt_poll_delays`](../../src/harnessix/processes/receipt_polling.py)给出的1、2、4、8……毫秒，到原间隔为止。
+  简单命令的回执在几毫秒内出现，固定间隔让每条命令平均白等半个间隔；运行较久的命令几次之后回到原间隔。
+- 启动结果仍最多轮询500次，总等待约4.975秒（原为5秒）。回执的读取、认证与Lease迁移不变，Owner与其能力摘要不变。
+- 回归见`tests/processes/test_receipt_polling.py`；既有的Supervisor与生命周期测试覆盖行为。`supervisor.py`为新增的导入多一行，
+  预算说明见[P0门禁恢复§7](../changes/p0-ci-gate-recovery.md)。
 
 ## 当前增量：macOS僵尸进程组在宿主进程运行时一侧的同类误报（0.10.0b14）
 
@@ -366,10 +424,11 @@ flowchart LR
 | 6 | [`owner_output.py`](../../src/harnessix/processes/owner_output.py) | `CapturedProcessOutput` | 理解先脱敏、后计量、摘要和落盘 |
 | 7 | [`supervisor_capabilities.py`](../../src/harnessix/processes/supervisor_capabilities.py) | `probe_posix_process_capability`、`probe_windows_process_capability` | 理解平台Owner能力如何绑定解释器、实现模块和PTY证据 |
 | 8 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `SupervisedProcess`、`PosixProcessSupervisor`、`WindowsProcessSupervisor` | 跟随计划复核、启动、控制和reconcile |
-| 9 | [`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `_Owner` | 理解Session/Process Group、selector、TERM/KILL和回执 |
-| 10 | [`windows_job.py`](../../src/harnessix/processes/windows_job.py) | `WindowsJobObject` | 理解挂起归属和kill-on-close |
-| 11 | [`windows_conpty.py`](../../src/harnessix/processes/windows_conpty.py) | `spawn_conpty`、`WindowsConPtyProcess` | 理解ConPTY与Job原子属性、EOF和resize |
-| 12 | [`windows_owner.py`](../../src/harnessix/processes/windows_owner.py) | `_Owner` | 理解Windows有界队列和Job生命周期 |
+| 9 | [`owner_standby.py`](../../src/harnessix/processes/owner_standby.py) | `deliver_owner_start`、`OwnerStandby`、`spawn_posix_owner` | 理解Start帧交给哪个Owner、待命Owner何时丢弃（ADR 0168 D6） |
+| 10 | [`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `_Owner` | 理解Session/Process Group、selector、TERM/KILL和回执 |
+| 11 | [`windows_job.py`](../../src/harnessix/processes/windows_job.py) | `WindowsJobObject` | 理解挂起归属和kill-on-close |
+| 12 | [`windows_conpty.py`](../../src/harnessix/processes/windows_conpty.py) | `spawn_conpty`、`WindowsConPtyProcess` | 理解ConPTY与Job原子属性、EOF和resize |
+| 13 | [`windows_owner.py`](../../src/harnessix/processes/windows_owner.py) | `_Owner` | 理解Windows有界队列和Job生命周期 |
 
 ### 6.2 0.5兼容与Agent Saga
 
@@ -921,7 +980,8 @@ Supervisor按顺序执行：
 | `starting`后Owner spawn/Start发送失败 | `failed/launch_failed` | Supervisor杀死已创建Owner；不宣称有运行结果 |
 | Owner发布`failed` Receipt | `failed/launch_failed` | Owner证明目标未建立运行身份 |
 | Owner已启动目标但无法证明清理 | `unknown/cleanup_failed` | 禁止自动重放 |
-| 约5秒内未报告启动结果 | 先请求关闭并等待，再抛`process_launch_failed` | 持久Lease可能为exited或unknown，诊断必须读取Lease |
+| 待命Owner交接前不可用（启动失败、已退出、能力摘要不符、写Start帧时管道断开） | 不改变Lease；回收它，本条现场启动（ADR 0168 D6） | 它没有读到完整Start帧，未启动目标；现场启动不构成重放 |
+| 500次轮询（间隔1毫秒起加倍到10毫秒，约5秒）内未报告启动结果 | 先请求关闭并等待，再抛`process_launch_failed` | 持久Lease可能为exited或unknown，诊断必须读取Lease |
 
 [`_start_bound`](../../src/harnessix/processes/supervisor.py#L417)将管道创建纳入原启动保护块，
 普通异常复用原失败结算。`CancelledError`不属于`Exception`，不据此将仍可能运行的后台spawn写成failed；
@@ -1162,7 +1222,7 @@ Windows Owner以最大64项事件队列和32项stdin队列提供有界线程间�
 | 方法 | 当前行为 | 权限/限制 |
 |---|---|---|
 | `refresh()` | 读取HMAC Receipt并CAS推进Lease | 终态幂等返回；缺Receipt且本地Owner退出→unknown |
-| `wait(cancel)` | 20ms轮询直到终态 | Token取消只发送一次stop；Task取消先停止并等待终态再抛出 |
+| `wait(cancel)` | 轮询直到终态，间隔1毫秒起加倍到20毫秒 | Token取消只发送一次stop；Task取消先停止并等待终态再抛出 |
 | `send_stdin(bytes)` | 单帧1～64 KiB | 需仍持有私有控制FD |
 | `close_stdin()` | 发送逻辑关闭 | Owner端幂等 |
 | `resize(c,r)` | 严格尺寸Command | pipe最终进入清理失败，调用方应先按Spec判断 |
@@ -1278,6 +1338,7 @@ flowchart LR
 | POSIX Owner | 单线程selector | 控制和I/O都在一个事件循环 |
 | Windows Owner | 主循环+有界reader/stdin线程 | event queue 64、stdin queue 32 |
 | Windows Owner spawn | 全局`_WINDOWS_SPAWN_LOCK` | 仅保护控制Handle临时继承窗口 |
+| 待命Owner（`OwnerStandby`，仅POSIX产品运行时） | 后台线程启动，事件循环先取走再等待 | 每个Supervisor至多一个；用一次；任何一次不可用后不再准备 |
 
 Supervisor保留每个已启动句柄直到整体`aclose()`，终态后不会从`_handles`移除。长期大量短进程会增长内存字典和
 run目录/Lease事件；当前没有按进程关闭释放、TTL、归档或垃圾回收API。
@@ -1569,6 +1630,7 @@ function agent_observe(plan):
 | 超时、取消和持久stop reason | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `wait`、`stop`、`aclose` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_timeout_kills_descendant_process_group`、`test_cancel_token_and_close_are_durable_stop_reasons` |
 | 控制丢失/PID非权威恢复 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `reconcile` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_control_loss_is_reconciled_without_pid_authority` |
 | 启动失败与重复禁用 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `_start_bound` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_launch_failure_is_terminal_and_duplicate_is_not_replayed` |
+| 待命Owner | [`owner_standby.py`](../../src/harnessix/processes/owner_standby.py)、[`posix_owner.py`](../../src/harnessix/processes/posix_owner.py) | `OwnerStandby`、`deliver_owner_start`、`_run` | [`test_owner_standby.py`](../../tests/processes/test_owner_standby.py) | `test_each_command_gets_only_its_own_configuration_from_a_standby_owner`、`test_a_standby_owner_that_died_before_use_is_never_used_again`、`test_a_standby_owner_does_not_outlive_a_host_killed_without_cleanup` |
 | 输出文件篡改失败关闭 | [`supervisor.py`](../../src/harnessix/processes/supervisor.py) | `SupervisedProcess.output` | [`test_supervisor.py`](../../tests/processes/test_supervisor.py) | `test_output_artifact_tampering_fails_closed` |
 | Windows输入规范化 | [`windows_conpty.py`](../../src/harnessix/processes/windows_conpty.py) | `WindowsTtyInputNormalizer`、`signal_eof` | [`test_windows_input.py`](../../tests/processes/test_windows_input.py) | `test_windows_tty_input_normalizes_newlines_backspace_and_chunk_boundary`、`test_windows_conpty_eof_uses_console_key_without_closing_transport` |
 | Windows Job完整树 | [`windows_job.py`](../../src/harnessix/processes/windows_job.py)、[`windows_owner.py`](../../src/harnessix/processes/windows_owner.py) | `assign_suspended`、`_Owner` | [`test_windows_supervisor.py`](../../tests/processes/test_windows_supervisor.py) | `test_windows_timeout_terminates_complete_job_tree`、`test_windows_job_assigns_suspended_process_before_resume` |
@@ -1733,6 +1795,8 @@ Action Route的Execute Deadline由所有固定Process Profile最大超时加30�
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 44 | ADR 0168第2版D6增量 | 2026-11-18 | 产品运行时的POSIX Supervisor保有待命Owner：交出Start帧后为下一条命令提前启动Owner，按Start帧里的Process ID定位运行目录；一次只一个、用一次，任何异常回收并现场启动、此后不再准备；Windows不变（`owner_standby.py`） |
+| 43 | ADR 0168增量 | 2026-11-16 | Owner回执的轮询间隔从1毫秒起加倍到原固定间隔（等待终态20毫秒、等待启动结果10毫秒），启动结果仍最多轮询500次（`receipt_polling.receipt_poll_delays`） |
 | 42 | `a69806a8` 增量 | 2026-11-14 | Windows固定Git读取新增换行设置探测用途：不关闭系统级配置、用户级配置经`GIT_CONFIG_GLOBAL`指向宿主解析的文件，绑定指纹另记用途（ADR 0043第2版） |
 | 38 | `dad55d32` 增量 | 2026-11-11 | macOS僵尸进程组：`HostProcessRuntime`发信号被拒绝时等回收后重试，不再误报cleanup_failed并关闭运行时（0.10.0b14） |
 | 37 | `b86793a7` 增量 | 2026-11-11 | Windows不再继承带括号的`PROGRAMFILES(X86)`；启动前失败归为确定未执行（0.10.0b13） |

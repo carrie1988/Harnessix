@@ -47,7 +47,9 @@ async def test_sdk_crash_preserves_attempt_and_never_reissues_request(
     turn = snapshot.turns[-1]
     assert turn.status == "interrupted" and len(turn.model_attempts) == 1
     attempt = turn.model_attempts[0]
-    assert attempt.status == ("completed" if point == "finished" else "interrupted")
+    # 成功尝试的完整用量与“尝试完成”同一事务落盘（ADR 0168 D3）：在完整用量之后崩溃，尝试已完成。
+    finished = point in {"complete_usage", "finished"}
+    assert attempt.status == ("completed" if finished else "interrupted")
     complete = point in {"complete_usage", "finished"}
     partial = point in {"initial_usage", "billing"} and kind == "anthropic"
     assert attempt.usage.completeness == (

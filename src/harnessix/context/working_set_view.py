@@ -44,9 +44,15 @@ def prepare_model_view(
     retain_recent_result_groups: int | None,
     *,
     decisions: tuple[ToolResultViewDecision, ...] | None = None,
+    detached: bool = True,
 ) -> PreparedModelHistory:
-    """未启用工作集时与原活动历史完全一致；活动摘要窗口内不叠加遮蔽。"""
-    prepared = prepare_active_model_history(thread, model_step, policy, decisions=decisions)
+    """未启用工作集时与原活动历史完全一致；活动摘要窗口内不叠加遮蔽。
+
+    detached为False时视图可能直接引用Session里的Item，只供读完即弃的核对使用。
+    """
+    prepared = prepare_active_model_history(
+        thread, model_step, policy, decisions=decisions, detached=detached
+    )
     if retain_recent_result_groups is None or not isinstance(
         prepared.inspection, ModelHistoryInspection
     ):
