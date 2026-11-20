@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -21,6 +23,18 @@ from scripts.command_path_bench import (
     trivial_command,
 )
 from tests.processes.helpers import owner_imports_this_checkout
+
+
+def test_bench_scripts_import_where_pwd_does_not_exist() -> None:
+    """Windows没有pwd模块：基准脚本及其导入链要能导入，否则整个测试文件在Windows上收集失败（0.10.0b58实机）。"""
+    code = (
+        "import sys; sys.modules['pwd'] = None; "
+        "import scripts.command_path_bench, scripts.host_step_overhead_bench, "
+        "scripts.long_history_overhead_bench"
+    )
+    root = Path(__file__).resolve().parents[2]
+    environment = {**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)}
+    subprocess.run([sys.executable, "-c", code], check=True, cwd=root, env=environment)
 
 
 def test_script_is_one_patch_then_trivial_commands_then_a_text_only_step() -> None:

@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import pwd
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -153,6 +152,8 @@ def container_user_home(process: Path) -> str:
     home = parse_environ((process / "environ").read_bytes()).get("HOME")
     if home:
         return home
+    import pwd  # 只在Linux评测机上调用；模块本身要能在Windows上导入（基准脚本经它取配置）。
+
     try:
         return pwd.getpwuid(os.stat(process).st_uid).pw_dir
     except KeyError:
