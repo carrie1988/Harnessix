@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 20
+version: 21
 code_revision: 44d044fe12a04cb33482143bd5a03b1183685394
 owners:
   - core
@@ -1406,6 +1406,7 @@ Thread再截断，会在500 Thread/50每页完整遍历时触发约2,750次单Th
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---:|---|---|---|
+| 21 | `9fbf16d3` 增量 | 2026-11-20 | `harnessix exec`摘要的`commands`同时列沙箱外命令（`host_command.*`）：沙箱不可用时每条命令都是沙箱外命令，此前`commands`为空，而`verification`早已把它们算作检查；`run_profile`没有命令文本，仍不列 |
 | 20 | ADR 0167增量 | 2026-11-17 | 压缩进度项（`compaction_progress_item_id`）同正文流一样按客户端声明的`PreviewStreams`能力过滤 |
 | 19 | ADR 0168增量 | 2026-11-16 | Turn停下来等客户端（审批、提问）或已经结束时，Session追加通知立即唤醒`events/next`的长轮询（`query_runtime.ThreadSignals`）；其余事件仍由50毫秒重读取走（自`feat/r2-cmdpath`移植） |
 | 18 | `3e2f83d8` 增量 | 2026-11-15 | `harnessix exec`的JSON摘要写到标准输出、而标准输出不是终端（重定向或管道）时只写ASCII（`exec_cli._write_summary`）：Windows PowerShell 5.1的`>`与管道按系统代码页转码，中文吞掉引号后JSON无法解析；解析出的内容不变，终端里照常显示中文，`--summary-file`照常按UTF-8写原文（Issue #26的Windows复测发现，负责人2026-11-15选A） |

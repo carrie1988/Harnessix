@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 3
+version: 4
 code_revision: 022bb9c0d061aabe669c7716fbdbdbaceddec2ea
 owners:
   - core
@@ -51,7 +51,7 @@ supersedes: []
 | `candidates/judge.py` | `judge_pair`（双顺序评审）、`tied_leaders`（并列且补丁不同的领先者）、`break_tie`（循环赛） |
 | `candidates/verification.py` | `container_argv`（与Profile一致的容器命令）、`overlay_workspace`（叠加他人草稿）、`cross_check`（矩阵执行） |
 
-输入来自`harnessix exec`摘要中的`commands`字段（每条`exec_command`的命令、结果与返回码）与各候选工作区的补丁；
+输入来自`harnessix exec`摘要中的`commands`字段（每条`exec_command`与`host_command`的命令、结果与返回码）与各候选工作区的补丁；
 容器策略来自候选使用的`ProductProcessProfile`。
 
 ## 5. 核心数据结构与字段设计
