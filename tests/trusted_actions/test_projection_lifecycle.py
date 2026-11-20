@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from harnessix.agent import host_stall
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import KernelError
 from harnessix.domain.models import ApprovalDecision, ApprovalOutcome
@@ -62,6 +63,7 @@ async def test_projection_deadline_and_cancel_collect_child_without_reexecution(
         "DEFAULT_OUTPUT_BUDGET",
         ActionOutputBudget(timeout_seconds=0.1 if mode == "timeout" else 5.0),
     )
+    monkeypatch.setattr(host_stall, "STALL_RETRY_DELAYS_SECONDS", (0.0, 0.0))
     token = CancelToken()
     try:
         thread, turn, call = agent_state(root)
@@ -94,7 +96,8 @@ async def test_projection_deadline_and_cancel_collect_child_without_reexecution(
             await task
         if mode == "timeout":
             assert caught.value.code == "trusted_action_output_timeout"
-        assert provider.closed.is_set() and provider.calls == 1
+        # 超时按宿主卡顿重做投影，三次都超时才失败（ADR 0177）；每次都回收子任务、不重执行。
+        assert provider.closed.is_set() and provider.calls == (3 if mode == "timeout" else 1)
         assert actions.status(request.plan_id).state == "succeeded"
         assert actions.events(request.plan_id)[-1].error_code is None
         assert executor.calls == 1 and executor.reconciliations == 0
@@ -104,6 +107,67 @@ async def test_projection_deadline_and_cancel_collect_child_without_reexecution(
         result = await gateway.recover(thread, turn, call, approved, CancelToken())
         assert result.outcome == "succeeded" and actions.events(request.plan_id) == before
         assert executor.calls == 1 and executor.reconciliations == 0
+    finally:
+        gateway.close()
+        plans.close()
+        audit.close()
+
+
+class StalledOnceOutput(BlockedOutput):
+    """第一次查询卡住到投影期限，之后正常返回同一份已发布的输出。"""
+
+    async def output(self, *args, **kwargs):
+        if self.calls == 0:
+            return await super().output(*args, **kwargs)
+        self.calls += 1
+        return {"summary": "completed", "artifact": output_reference("b" * 64)}
+
+
+@pytest.mark.parametrize("recovery", [False, True])
+async def test_a_host_stall_during_projection_is_retried_without_reexecution(
+    tmp_path: Path, monkeypatch, recovery
+):
+    """整机卡顿让输出投影超过10秒（golden dev23 b48 sklearn，2026-11-18，整轮以内部错误失败）。
+
+    投影按审计终态重建同一份输出，重做不重执行、不改审计（ADR 0177）。
+    """
+    root = tmp_path / "workspace"
+    root.mkdir()
+    provider = StalledOnceOutput()
+    executor = FakeExecutor(
+        ActionExecutionOutcome(
+            kind="succeeded", output={"summary": "completed"}, artifact_sha256="b" * 64
+        )
+    )
+    gateway, actions, plans, audit = build_gateway(
+        root, executor, presentation="process", output=provider
+    )
+    monkeypatch.setattr(
+        agent_gateway_output, "DEFAULT_OUTPUT_BUDGET", ActionOutputBudget(timeout_seconds=0.1)
+    )
+    monkeypatch.setattr(host_stall, "STALL_RETRY_DELAYS_SECONDS", (0.01, 0.01))
+    try:
+        thread, turn, call = agent_state(root)
+        token = CancelToken()
+        request = await gateway.prepare(thread, turn, call, token)
+        approved = gateway.decide(
+            thread,
+            turn,
+            call,
+            request,
+            ApprovalDecision(outcome=ApprovalOutcome.APPROVED, actor="lifecycle-test"),
+        )
+        if recovery:
+            await actions.execute(request.plan_id)
+        before = None if not recovery else actions.events(request.plan_id)
+        result = await (gateway.recover if recovery else gateway.execute)(
+            thread, turn, call, approved, token
+        )
+        assert result.outcome == "succeeded"
+        assert provider.closed.is_set() and provider.calls == 2
+        assert executor.calls == 1 and executor.reconciliations == 0
+        if before is not None:
+            assert actions.events(request.plan_id) == before
     finally:
         gateway.close()
         plans.close()

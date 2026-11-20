@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Sequence
 from datetime import datetime
+from functools import partial
 from time import monotonic
 from typing import Literal, Protocol
 from uuid import uuid5
@@ -14,6 +15,7 @@ from pydantic import JsonValue
 from harnessix.agent.approvals import trusted_action_request_fingerprint
 from harnessix.agent.cancellation import CancelToken, TurnCancelled
 from harnessix.agent.errors import AgentFailure, KernelError
+from harnessix.agent.host_stall import retry_after_host_stall
 from harnessix.agent.models import (
     Thread,
     ToolCallContent,
@@ -180,7 +182,11 @@ async def terminal_result(
         return build_result(route, call, outcome, origin=origin, approval=approval)
     if provider is None or route.state == "denied":
         if outcome.kind == "succeeded" and outcome.output is not None:
-            outcome = await _inline_success(state, route, outcome, cancel, descriptor)
+            outcome = await retry_after_host_stall(
+                partial(_inline_success, state, route, outcome, cancel, descriptor),
+                stalled=_projection_timed_out,
+                token=cancel,
+            )
         return build_result(route, call, outcome, origin=origin, approval=approval)
     event = state.router.events(route.plan.execution.plan_id)[-1]
     if event.output_sha256 is None and event.artifact_sha256 is None:
@@ -203,18 +209,25 @@ async def terminal_result(
             approval=approval,
         )
     try:
-        projected = await _project_output(
-            provider,
-            route,
-            thread,
-            turn,
-            call,
-            outcome,
-            cancel,
-            output_sha256=event.output_sha256,
-            artifact_sha256=event.artifact_sha256,
-            descriptor=descriptor,
-            secret_scope=getattr(state, "secret_scope", None),
+        # 投影按审计终态重建同一份输出，再次发布同一Artifact返回已有收据：
+        # 卡顿超时可以重做（ADR 0177）。
+        projected = await retry_after_host_stall(
+            partial(
+                _project_output,
+                provider,
+                route,
+                thread,
+                turn,
+                call,
+                outcome,
+                cancel,
+                output_sha256=event.output_sha256,
+                artifact_sha256=event.artifact_sha256,
+                descriptor=descriptor,
+                secret_scope=getattr(state, "secret_scope", None),
+            ),
+            stalled=_projection_timed_out,
+            token=cancel,
         )
     except KernelError as error:
         if not metadata_only_on_rejection or error.code not in PUBLIC_OUTPUT_REJECTIONS:
@@ -236,6 +249,10 @@ async def terminal_result(
         approval=approval,
     )
     return _process_failure_feedback(route, result)
+
+
+def _projection_timed_out(error: Exception) -> bool:
+    return isinstance(error, KernelError) and error.code == "trusted_action_output_timeout"
 
 
 # 超时终止的命令没有跑完：复合命令里排在后面的部分（恢复现场、清理）从未执行，

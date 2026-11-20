@@ -44,6 +44,7 @@ from harnessix.agent.completion_guard import (
 from harnessix.agent.errors import KernelError
 from harnessix.agent.execution import ToolExecutionScope
 from harnessix.agent.generation_progress import announce_compaction
+from harnessix.agent.host_stall import retry_after_host_stall
 from harnessix.agent.ids import new_id
 from harnessix.agent.input_publication import protect_input
 from harnessix.agent.lifecycle import prepare_fork_snapshot
@@ -1668,11 +1669,18 @@ class AgentRuntime:
             raise KernelError(
                 "context_artifact_scope_required", "模型历史Artifact缺少当前工作区访问能力"
             )
-        try:
+
+        async def verify() -> None:
             async with asyncio.timeout(HISTORY_ARTIFACT_TIMEOUT_SECONDS):
                 await verify_history_references(
                     verifier, access, thread, prepared.references, token
                 )
+
+        try:
+            # 只读核对：整机卡顿造成的超时稍等重做，连续三次超时才失败（ADR 0177）。
+            await retry_after_host_stall(
+                verify, stalled=lambda error: isinstance(error, TimeoutError), token=token
+            )
         except TimeoutError:
             raise KernelError(
                 "context_artifact_timeout", "模型历史Artifact验证超过时间上限", retryable=True
