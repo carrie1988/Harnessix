@@ -9956,7 +9956,7 @@
         "pkg:pypi/types-jsonschema@4.26.0.20260518",
         "pkg:pypi/types-pyyaml@6.0.12.20260906"
       ],
-      "ref": "pkg:pypi/harnessix@0.10.0b59"
+      "ref": "pkg:pypi/harnessix@0.10.0b60"
     },
     {
       "dependsOn": [
@@ -10343,16 +10343,16 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "pkg:pypi/harnessix@0.10.0b59",
+      "bom-ref": "pkg:pypi/harnessix@0.10.0b60",
       "licenses": [
         {
           "expression": "AGPL-3.0-only"
         }
       ],
       "name": "harnessix",
-      "purl": "pkg:pypi/harnessix@0.10.0b59",
+      "purl": "pkg:pypi/harnessix@0.10.0b60",
       "type": "application",
-      "version": "0.10.0b59"
+      "version": "0.10.0b60"
     },
     "lifecycles": [
       {
@@ -10370,11 +10370,11 @@
       },
       {
         "name": "harnessix:lock_sha256",
-        "value": "c7e43c0d3037d4bfe0a04ce11f32675778395c864f420678ea631d84d2fd5b32"
+        "value": "4aa61bedaec28447c1fe771aa7f53a37c23f2696f98b7c1542c987447f3f542f"
       },
       {
         "name": "harnessix:project_sha256",
-        "value": "26138439b7170f8840782312c341e4ee14d98759eda622b957cbd3a996836a96"
+        "value": "5cb6c382d7f04fd18a040e4b3f84e0889bc6e051a02ed614912b6615cd789af7"
       }
     ]
   },
