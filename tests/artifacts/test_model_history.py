@@ -9,11 +9,13 @@ from uuid import uuid4
 
 import pytest
 
+from harnessix.agent import host_stall
 from harnessix.agent import runtime as runtime_module
 from harnessix.agent.errors import KernelError
 from harnessix.agent.models import ModelHistoryPrepared, ToolResultContent, TurnStatus
 from harnessix.agent.reducer import replay
 from harnessix.agent.runtime import AgentRuntime
+from harnessix.artifacts import batch_verify
 from harnessix.artifacts import sqlite as artifact_sqlite
 from harnessix.artifacts.contracts import ArtifactRef, ArtifactToolResult
 from harnessix.artifacts.sqlite import SQLiteArtifactStore
@@ -247,6 +249,7 @@ async def test_verifier_cancellation_timeout_drains_without_provider_or_decision
     monkeypatch.setattr("harnessix.artifacts.batch_verify.verify_references", block)
     if kind == "timeout":
         monkeypatch.setattr(runtime_module, "HISTORY_ARTIFACT_TIMEOUT_SECONDS", 0.05)
+        monkeypatch.setattr(host_stall, "STALL_RETRY_DELAYS_SECONDS", (0.0, 0.0))
     provider = FakeProvider()
     async with CodingToolRuntime(tmp_path / "repo", artifacts=artifacts) as tools:
         async with AgentRuntime(
@@ -271,6 +274,38 @@ async def test_verifier_cancellation_timeout_drains_without_provider_or_decision
     assert final.status == (TurnStatus.FAILED if kind == "timeout" else TurnStatus.CANCELLED)
     if kind == "timeout":
         assert final.error.code == "context_artifact_timeout" and final.error.retryable
+
+
+async def test_a_host_stall_during_verification_is_retried_and_the_turn_continues(
+    tmp_path, monkeypatch
+):
+    """整机卡顿让第一次核对超时（NL2RepoBench O3 box，内存耗尽，2026-11-19）。
+
+    核对只读：稍等重做，本轮照常请求模型（ADR 0177）。此前整轮以context_artifact_timeout失败。
+    """
+    store, artifacts, _, thread, _ = await exercise(tmp_path, count=1)
+    real = batch_verify.verify_references
+    calls = 0
+
+    async def stall_once(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            await asyncio.Event().wait()
+        return await real(*args, **kwargs)
+
+    monkeypatch.setattr(batch_verify, "verify_references", stall_once)
+    monkeypatch.setattr(runtime_module, "HISTORY_ARTIFACT_TIMEOUT_SECONDS", 0.5)
+    monkeypatch.setattr(host_stall, "STALL_RETRY_DELAYS_SECONDS", (0.01, 0.01))
+    provider = FakeProvider()
+    async with CodingToolRuntime(tmp_path / "repo", artifacts=artifacts) as tools:
+        async with AgentRuntime(
+            store, provider, artifact_verifier=artifacts, artifact_access=tools
+        ) as runtime:
+            turn = await runtime.run_turn(thread.thread_id, "继续", request_id="stall")
+
+    assert turn.status == TurnStatus.COMPLETED, turn.error
+    assert calls == 2 and len(provider.requests) == 1
 
 
 @pytest.mark.parametrize("mode", ["not_covered", "incomplete"])

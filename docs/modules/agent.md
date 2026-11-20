@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 79
+version: 80
 code_revision: 882b96ea1e266610f9622b5956f3507fc70d1a5b
 owners:
   - core
@@ -650,7 +650,9 @@ sequenceDiagram
 Result和终态均先进入Session，再向后推进。流式Delta可提前显示，但不能替代完成后的持久文本。
 每个模型步骤前的历史Artifact引用验证由Runtime委托`artifacts/batch_verify.py`执行：`SQLiteArtifactStore`
 经批量入口共享只读连接与每归属一次快照，其他Verifier回退逐条路径；5秒预算、错误码与首个失败优先级
-与逐条语义一致（见[Artifact模块设计](artifacts.md)第13.2节）。
+与逐条语义一致（见[Artifact模块设计](artifacts.md)第13.2节）。5秒到了时经
+[`retry_after_host_stall`](../../src/harnessix/agent/host_stall.py)稍等重做，三次都超时才以`context_artifact_timeout`
+失败（ADR 0177）。
 
 ## 12. 多Tool调度
 
@@ -1202,6 +1204,7 @@ Session已经存在完整Trusted Action Tool Result且无Pending Call时，`EXEC
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 80 | ADR 0177增量 | 2026-11-20 | 历史Artifact核对与Action输出投影的本层时限到了时稍等重做（`agent/host_stall.py`，等1秒、2秒，最多三次），整机短暂卡顿不再结束整轮；其他错误与取消不重做 |
 | 79 | ADR 0168第3版增量 | 2026-11-18 | 成功尝试的完整用量与“尝试完成”与响应终态同一事务提交（尝试开始仍单独先提交）；`_commit`拆成检查与追加，期望序号走轻查询（D3、D4） |
 | 78 | ADR 0167第2版增量 | 2026-11-20 | 摘要流跳过工具参数进度（`ToolArgumentsProgress`），共用前缀的摘要回复里出现工具调用时照常跳过这次压缩，不再整轮失败 |
 | 77 | ADR 0167增量 | 2026-11-17 | 主动压缩的摘要请求沿用主请求的前缀（`compaction_summary_request`）；摘要回复里的工具调用报`provider_summary_tool_call`，本轮之后改用独立请求；压缩进度项`compaction_progress_item_id` |

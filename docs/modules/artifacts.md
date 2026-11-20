@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 28
+version: 29
 code_revision: 5d18bb3ee3b207c97c5c413438a977a91898d255
 owners:
   - core
@@ -442,6 +442,7 @@ Thread快照，单步成本O(N²)，约280个引用时超过5秒预算（0.9.3d 
 `omitted_field`覆盖证明；`batch_effect`和`process_output`只能证明各自证据，不可替换整个通用结果。
 `artifact_page`验证新的分页Tool Call参数、真实切片和结果完全一致。整组验证由Agent Runtime限制为5秒，
 失败、取消或超时均发生在Provider发网前；正文逐字节校验成本随历史正文总量线性增长，超出预算的历史规模仍失败关闭。
+5秒到了时先按宿主卡顿处理（ADR 0177）：核对只读，等1秒、2秒后各重做一次，三次都超时才失败。
 
 ### 13.3 Fork所有权
 
@@ -853,6 +854,7 @@ Manifest、路径、摘要或Thread内容，也不修改状态。
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 29 | ADR 0177增量 | 2026-11-20 | 历史Artifact核对的5秒时限到了时按宿主卡顿稍等重做（等1秒、2秒），三次都超时才以`context_artifact_timeout`失败；核对只读，时限与错误码不变 |
 | 28 | `d82e71cc` 增量 | 2026-11-18 | 存档正文的保护检查做不完时不保存存档、结果照常提交，`artifact_omitted`新增取值`protection_limit`（ADR 0174，Beta Issue #37遗留） |
 | 27 | `2d72f2c0` 增量 | 2026-11-15 | 存储配额不足时只读结果与命令输出照常提交、带`artifact_omitted`不带存档，Review存不下时关闭原Route并以失败结果说明，均不中断本轮（ADR 0163） |
 | 26 | `3e2f83d8` 增量 | 2026-11-15 | 过期正文由Runtime打开时与每小时一轮自动回收；Tombstone不再占全局件数；无法核对的行不再中止回收（ADR 0164） |

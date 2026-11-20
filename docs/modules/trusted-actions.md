@@ -1,7 +1,7 @@
 ---
 doc_type: module-design
 status: current
-version: 59
+version: 60
 code_revision: f55a206d5609867665323e554cfe89f929495556
 owners:
   - core
@@ -1711,6 +1711,7 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 
 | 文档版本 | 代码版本 | 日期 | 变更摘要 |
 |---|---|---|---|
+| 60 | ADR 0177增量 | 2026-11-20 | 输出投影（`terminal_result`里的`_project_output`与`_inline_success`）本层10秒期限到了时按宿主卡顿稍等重做，最多三次；投影按审计终态重建同一份输出、存档发布返回已有收据，不重执行、不重对账 |
 | 59 | `6af5a4b1` 增量 | 2026-11-18 | 本机沙箱里非零退出且输出有明确拦截措辞时，模型反馈追加改用沙箱外命令的提示（`sandbox_denial`，ADR 0176，Beta Issue #44后续） |
 | 58 | `de63875c` 增量 | 2026-11-18 | 收尾时Route证明尚未开始的写调用记为未执行：没有Route记`action_not_started`，待审批由`system.cancel`以`turn_ended`（或取消、时限）拒绝，`ready`以`ready→failed`/`action_not_started`结束（`close_unstarted_route`、`unplanned_result`、`operation_router.end_unstarted_plan`，ADR 0175） |
 | 57 | `d82e71cc` 增量 | 2026-11-18 | 命令完整输出的保护检查超限时按审计终态提交、带`artifact_omitted: "protection_limit"`；Review检查超限或超时时关闭原Route并以失败结果说明动作未执行，不再以`uncertain_effect`中断（ADR 0174，Beta Issue #37遗留） |
@@ -1760,6 +1761,9 @@ Plan修复、Artifact孤儿和Server报告持久化。实现Revision `0bc942bce8
 代理项；通过后复制有界JSON，避免返回原对象别名。节点含字典键，根深度为1。
 
 投影不匹配、资源越界和本层超时分别公开固定output_mismatch/output_limit/output_timeout码。
+本层超时先按宿主卡顿处理（ADR 0177）：等1秒、2秒后各重做一次，三次都超时才公开output_timeout；
+投影按Router审计终态重建同一份输出，完整输出存档以计划ID确定的Artifact ID发布、再次发布返回已有收据，
+与恢复路径重新查询Owner相同，不重执行、不重对账。其他投影错误与取消不重做。
 CancelToken与父Task取消原样传播并回收子Task。Owner自己抛出的TimeoutError但本层未过期仍按
 既有output_failed归一。效果已经发生时，Audit保持SUCCEEDED；写反馈无法确认导致Session
 INTERRUPTED，不允许因此重新Execute。Runtime故障终结查询优先补偿一次，保存结果后resume稳定。
